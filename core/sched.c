@@ -51,12 +51,12 @@ volatile thread_t *sched_active_thread;
 volatile kernel_pid_t sched_active_pid = KERNEL_PID_UNDEF;
 
 /* Needed by OpenOCD to read sched_threads */
-volatile uint8_t max_threads = sizeof(sched_threads) / sizeof(tcb_t*);
+uint8_t max_threads __attribute__((section (".openocd"))) = sizeof(sched_threads) / sizeof(tcb_t*);
 
 #ifdef DEVELHELP
 /* OpenOCD can't determine struct offsets and additionally this member is only
  * available if compiled with DEVELHELP */
-volatile uint8_t _tcb_name_offset = offsetof(tcb_t, name);
+uint8_t _tcb_name_offset __attribute__((section (".openocd"))) = offsetof(tcb_t, name);
 #endif
 
 clist_node_t *sched_runqueues[SCHED_PRIO_LEVELS];
@@ -188,12 +188,6 @@ void sched_switch(uint16_t other_prio)
 
 NORETURN void sched_task_exit(void)
 {
-    /* Prevent optimization of these symbols */
-    max_threads = max_threads;
-#ifdef DEVELHELP
-    _tcb_name_offset = _tcb_name_offset;
-#endif
-
     DEBUG("sched_task_exit: ending thread %" PRIkernel_pid "...\n", sched_active_thread->pid);
 
     (void) disableIRQ();
