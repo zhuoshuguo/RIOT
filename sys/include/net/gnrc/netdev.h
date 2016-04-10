@@ -160,6 +160,9 @@ typedef struct gnrc_netdev {
     gnrc_lwmac_t lwmac;
 #endif
 
+#ifdef MODULE_GNRC_GOMACH
+    gnrc_gomach_t gomach;
+#endif
 #endif /* MODULE_GNRC_MAC */
 } gnrc_netdev_t;
 
