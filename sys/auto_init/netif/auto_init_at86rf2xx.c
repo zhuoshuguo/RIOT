@@ -22,6 +22,7 @@
 #include "board.h"
 #include "net/gnrc/netdev2.h"
 #include "net/gnrc/netdev2/ieee802154.h"
+#include "net/gnrc/iqueue_mac/iqueue_mac.h"
 #include "net/gnrc.h"
 
 #include "at86rf2xx.h"
@@ -58,10 +59,10 @@ void auto_init_at86rf2xx(void)
             DEBUG("Error initializing AT86RF2xx radio device!\n");
         }
         else {
-            gnrc_netdev2_init(_at86rf2xx_stacks[i],
+            gnrc_iqueuemac_init(_at86rf2xx_stacks[i],
                               AT86RF2XX_MAC_STACKSIZE,
                               AT86RF2XX_MAC_PRIO,
-                              "at86rf2xx",
+                              "at86rf2xx-iqueuemac",
                               &gnrc_adpt[i]);
         }
     }
