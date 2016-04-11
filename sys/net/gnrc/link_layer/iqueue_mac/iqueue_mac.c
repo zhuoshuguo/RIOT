@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2015 Freie Universität Berlin
- *               2015 Kaspar Schleiser <kaspar@schleiser.de>
+ * Copyright (C) 2016 Shuguo Zhuo
+ *               
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -9,12 +9,10 @@
 
 /**
  * @{
- * @ingroup     net
+ * @ingroup     net_iqueue_mac
  * @file
- * @brief       Glue for netdev2 devices to netapi
+ * @brief       implementation of iqueue_mac
  *
- * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
- * @author      Kaspar Schleiser <kaspar@schleiser.de>
  * @author      Shuguo Zhuo <shuguo.zhuo@iniria.fr>
  * @}
  */
