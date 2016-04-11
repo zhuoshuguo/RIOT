@@ -29,9 +29,11 @@
 #include "shell.h"
 #include "shell_commands.h"
 
+/*
 #if FEATURE_PERIPH_RTC
 #include "periph/rtc.h"
 #endif
+*/
 
 #ifdef MODULE_NETIF
 #include "net/gnrc/pktdump.h"
@@ -40,9 +42,15 @@
 
 int main(void)
 {
+#ifdef MODULE_LTC4150
+    ltc4150_start();
+#endif
+
+ /*
 #ifdef FEATURE_PERIPH_RTC
     rtc_init();
 #endif
+*/
 
 #ifdef MODULE_NETIF
     gnrc_netreg_entry_t dump = GNRC_NETREG_ENTRY_INIT_PID(GNRC_NETREG_DEMUX_CTX_ALL,

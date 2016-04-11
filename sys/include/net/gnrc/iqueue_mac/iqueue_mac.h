@@ -29,6 +29,15 @@
 extern "C" {
 #endif
 
+
+#ifndef IQUEUE_CP_DURATION_US
+#define IQUEUE_CP_DURATION_US        (2000U * 1000)
+#endif
+
+#ifndef IQUEUE_SLEEP_DURATION_US
+#define IQUEUE_SLEEP_DURATION_US        (4000U * 1000)
+#endif
+
 /**
  * @brief   Initialize an instance of the IQUEUE_MAC layer
  *
