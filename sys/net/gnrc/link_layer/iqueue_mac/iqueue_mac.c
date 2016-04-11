@@ -15,20 +15,28 @@
  *
  * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
  * @author      Kaspar Schleiser <kaspar@schleiser.de>
+ * @author      Shuguo Zhuo <shuguo.zhuo@iniria.fr>
  * @}
  */
 
 #include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
 
+#include <kernel_types.h>
+#include <lpm.h>
 #include "msg.h"
 #include "thread.h"
-
+#include <timex.h>
+#include <periph/rtt.h>
 #include "net/gnrc.h"
 #include "net/gnrc/nettype.h"
 #include "net/netdev2.h"
-
 #include "net/gnrc/netdev2.h"
-#include "net/ethernet/hdr.h"
+#include "net/gnrc/iqueue_mac/iqueue_mac.h"
+
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
@@ -106,7 +114,7 @@ static void _pass_on_packet(gnrc_pktsnip_t *pkt)
  *
  * @return          never returns
  */
-static void *_gnrc_netdev2_thread(void *args)
+static void *_gnrc_iqueuemac_thread(void *args)
 {
     DEBUG("gnrc_netdev2: starting thread\n");
 
@@ -144,6 +152,8 @@ static void *_gnrc_netdev2_thread(void *args)
                 break;
             case GNRC_NETAPI_MSG_TYPE_SND:
                 DEBUG("gnrc_netdev2: GNRC_NETAPI_MSG_TYPE_SND received\n");
+                printf("Shuguo: we are using iqueue-mac for sending.\n");
+                
                 gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)msg.content.ptr;
                 gnrc_netdev2->send(gnrc_netdev2, pkt);
                 break;
@@ -182,7 +192,7 @@ static void *_gnrc_netdev2_thread(void *args)
     return NULL;
 }
 
-kernel_pid_t gnrc_netdev2_init(char *stack, int stacksize, char priority,
+kernel_pid_t gnrc_iqueuemac_init(char *stack, int stacksize, char priority,
                         const char *name, gnrc_netdev2_t *gnrc_netdev2)
 {
     kernel_pid_t res;
@@ -194,7 +204,7 @@ kernel_pid_t gnrc_netdev2_init(char *stack, int stacksize, char priority,
 
     /* create new gnrc_netdev2 thread */
     res = thread_create(stack, stacksize, priority, THREAD_CREATE_STACKTEST,
-                         _gnrc_netdev2_thread, (void *)gnrc_netdev2, name);
+                         _gnrc_iqueuemac_thread, (void *)gnrc_netdev2, name);
     if (res <= 0) {
         return -EINVAL;
     }

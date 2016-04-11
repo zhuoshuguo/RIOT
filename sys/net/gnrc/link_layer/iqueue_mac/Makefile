@@ -1,3 +1,3 @@
-MODULE = gnrc_netdev2
+MODULE = gnrc_iqueuemac
 
 include $(RIOTBASE)/Makefile.base
