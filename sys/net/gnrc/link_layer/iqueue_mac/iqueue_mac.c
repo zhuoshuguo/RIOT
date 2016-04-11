@@ -35,6 +35,7 @@
 #include "net/gnrc/netdev2.h"
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
 
+#include "include/iqueue_types.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
@@ -44,6 +45,70 @@
 #endif
 
 #define NETDEV2_NETAPI_MSG_QUEUE_SIZE 8
+
+
+static iqueuemac_t iqueuemac;
+
+
+static void rtt_cb(void* arg)
+{
+    msg_t msg;
+    msg.content.value = ((uint32_t) arg ) & 0xffff;
+    msg.type = IQUEUEMAC_EVENT_RTT_TYPE;
+    msg_send(&msg, iqueuemac.pid);
+
+    if (sched_context_switch_request) {
+        thread_yield();
+    }
+}
+
+void rtt_handler(uint32_t event)
+{
+    uint32_t alarm;
+    switch(event & 0xffff)
+    {
+      case IQUEUEMAC_EVENT_RTT_ENTER_CP:{
+        puts("Shuguo: we are now entering CP period!");
+        iqueuemac.state = CP;
+        alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUE_CP_DURATION_US);
+        rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_BEACON);
+      }break;
+      
+      case IQUEUEMAC_EVENT_RTT_ENTER_BEACON:{
+    	 puts("Shuguo: we are now entering BEACON period!");
+        iqueuemac.state = BEACON;
+        alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUE_CP_DURATION_US);
+        rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_VTDMA);
+      }break;
+      
+      case IQUEUEMAC_EVENT_RTT_ENTER_VTDMA:{
+    	 puts("Shuguo: we are now entering VTDMA period!");
+        iqueuemac.state = VTDMA;
+        alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUE_CP_DURATION_US);
+        rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_SLEEP);
+      }break;
+      
+      case IQUEUEMAC_EVENT_RTT_ENTER_SLEEP:{
+    	  puts("Shuguo: we are now entering SLEEP period!");
+        iqueuemac.state = SLEEPING;
+        alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUE_SLEEP_DURATION_US);
+        rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_CP);
+
+      }break;      
+      
+      case IQUEUEMAC_EVENT_RTT_START:{
+    	  puts("shuguo: starting duty cycling.");
+    	 alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUE_CP_DURATION_US);
+    	 rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_CP);
+      }break;
+
+      default: break;
+
+      }
+
+}
+
+
 
 static void _pass_on_packet(gnrc_pktsnip_t *pkt);
 
@@ -114,10 +179,16 @@ static void _pass_on_packet(gnrc_pktsnip_t *pkt)
  */
 static void *_gnrc_iqueuemac_thread(void *args)
 {
-    DEBUG("gnrc_netdev2: starting thread\n");
 
-    gnrc_netdev2_t *gnrc_netdev2 = (gnrc_netdev2_t*) args;
-    netdev2_t *dev = gnrc_netdev2->dev;
+    gnrc_netdev2_t* gnrc_netdev2 = iqueuemac.netdev = (gnrc_netdev2_t *)args;
+    netdev2_t* dev = gnrc_netdev2->dev;
+    iqueuemac.netdev2_driver = dev->driver;
+    
+        
+    /**************************************origin*************************************/
+    DEBUG("gnrc_netdev2: starting thread\n");
+    //gnrc_netdev2_t *gnrc_netdev2 = (gnrc_netdev2_t*) args;
+    //netdev2_t *dev = gnrc_netdev2->dev;
 
     gnrc_netdev2->pid = thread_getpid();
 
@@ -127,7 +198,17 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
     /* setup the MAC layers message queue */
     msg_init_queue(msg_queue, NETDEV2_NETAPI_MSG_QUEUE_SIZE);
-
+    /***************************************origin************************************/
+    
+    /*************************************iqueue-mac**************************************/
+    /* RTT is used for scheduling wakeup */
+    rtt_init();    
+    
+    /* Store pid globally, so that IRQ can use it to send msg */
+    iqueuemac.pid = thread_getpid();
+    /*************************************iqueue-mac**************************************/
+    
+    /***************************************************************************/
     /* register the event callback with the device driver */
     dev->event_callback = _event_cb;
     dev->isr_arg = (void*) gnrc_netdev2;
@@ -137,7 +218,9 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
     /* initialize low-level driver */
     dev->driver->init(dev);
+    /***************************************************************************/
 
+    rtt_handler(IQUEUEMAC_EVENT_RTT_START);
     /* start the event loop */
     while (1) {
         DEBUG("gnrc_netdev2: waiting for incoming messages\n");
@@ -148,6 +231,16 @@ static void *_gnrc_iqueuemac_thread(void *args)
                 DEBUG("gnrc_netdev2: GNRC_NETDEV_MSG_TYPE_EVENT received\n");
                 dev->driver->isr(dev);
                 break;
+                
+            case IQUEUEMAC_EVENT_RTT_TYPE:{
+                rtt_handler(msg.content.value);            
+            }break;            
+            
+            case IQUEUEMAC_EVENT_TIMEOUT_TYPE:
+            {    
+              printf("Shuguo: Hitting a timeout event.\n");
+            }break;
+            
             case GNRC_NETAPI_MSG_TYPE_SND:
                 DEBUG("gnrc_netdev2: GNRC_NETAPI_MSG_TYPE_SND received\n");
                 printf("Shuguo: we are using iqueue-mac for sending.\n");
