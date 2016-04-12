@@ -86,6 +86,8 @@ void rtt_handler(uint32_t event)
     	puts("Shuguo: setting vTDMA period timeout!");
 
     	iqueuemac_set_timeout(&iqueuemac, TIMEOUT_VTDMA, IQUEUEMAC_VTDMA_DURATION_US);
+    	iqueuemac_set_timeout(&iqueuemac, TIMEOUT_VTDMA_LONG, IQUEUEMAC_VTDMA_LONG_DURATION_US);
+    	iqueuemac_set_timeout(&iqueuemac, TIMEOUT_VTDMA_LONG_LONG, IQUEUEMAC_VTDMA_LONG_LONG_DURATION_US);
 
         //alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
         //rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_SLEEP);
@@ -125,12 +127,21 @@ void iqueue_mac_router_update(void){
 	  case R_VTDMA:{
 		  if(iqueuemac_timeout_is_expired(&iqueuemac, TIMEOUT_VTDMA)){
 			 // iqueuemac_clear_timeout(iqueuemac, TIMEOUT_VTDMA);
-			  puts("Shuguo: timeout!!  vTDMA period ends!");
+			  puts("Shuguo: vTDMA timeout!!  ");
 
 			  uint32_t alarm;
 			  alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
 			  rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_SLEEP);
 		  }
+
+		  if(iqueuemac_timeout_is_expired(&iqueuemac, TIMEOUT_VTDMA_LONG)){
+			  puts("Shuguo: vTDMA_LONG TIMEOUT!!!");
+		  }
+
+		  if(iqueuemac_timeout_is_expired(&iqueuemac, TIMEOUT_VTDMA_LONG_LONG)){
+		 	  puts("Shuguo: vTDMA_LONG_LONG TIMEOUT!!!");
+		  }
+
 	  }break;
 
 	  case R_SLEEPING:{
@@ -311,7 +322,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
             }break;
 
             case IQUEUEMAC_EVENT_TIMEOUT_TYPE:{
-              printf("Shuguo: Hitting a timeout event.\n");
+              //printf("Shuguo: Hitting a timeout event.\n");
               iqueuemac_timeout_make_expire((iqueuemac_timeout_t*) msg.content.ptr);
             }break;
 
