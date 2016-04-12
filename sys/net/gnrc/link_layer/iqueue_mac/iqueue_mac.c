@@ -36,6 +36,7 @@
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
 
 #include "include/iqueue_types.h"
+#include "include/timeout.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
@@ -68,37 +69,37 @@ void rtt_handler(uint32_t event)
     switch(event & 0xffff)
     {
       case IQUEUEMAC_EVENT_RTT_ENTER_CP:{
-        puts("Shuguo: we are now entering CP period!");
-        iqueuemac.state = CP;
-        alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUE_CP_DURATION_US);
+        iqueuemac.router_state = R_CP;
+        alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
         rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_BEACON);
       }break;
       
       case IQUEUEMAC_EVENT_RTT_ENTER_BEACON:{
-    	 puts("Shuguo: we are now entering BEACON period!");
-        iqueuemac.state = BEACON;
-        alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUE_CP_DURATION_US);
+        iqueuemac.router_state = R_BEACON;
+        alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
         rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_VTDMA);
       }break;
       
       case IQUEUEMAC_EVENT_RTT_ENTER_VTDMA:{
-    	 puts("Shuguo: we are now entering VTDMA period!");
-        iqueuemac.state = VTDMA;
-        alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUE_CP_DURATION_US);
-        rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_SLEEP);
+    	iqueuemac.router_state = R_VTDMA;
+
+    	puts("Shuguo: setting vTDMA period timeout!");
+
+    	iqueuemac_set_timeout(&iqueuemac, TIMEOUT_VTDMA, IQUEUEMAC_VTDMA_DURATION_US);
+
+        //alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
+        //rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_SLEEP);
       }break;
       
       case IQUEUEMAC_EVENT_RTT_ENTER_SLEEP:{
-    	  puts("Shuguo: we are now entering SLEEP period!");
-        iqueuemac.state = SLEEPING;
-        alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUE_SLEEP_DURATION_US);
+        iqueuemac.router_state = R_SLEEPING;
+        alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_SLEEP_DURATION_US);
         rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_CP);
-
       }break;      
       
       case IQUEUEMAC_EVENT_RTT_START:{
     	  puts("shuguo: starting duty cycling.");
-    	 alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUE_CP_DURATION_US);
+    	 alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
     	 rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_CP);
       }break;
 
@@ -108,8 +109,52 @@ void rtt_handler(uint32_t event)
 
 }
 
+void iqueue_mac_router_update(void){
 
+	switch(iqueuemac.router_state)
+	{
+	  case R_CP:{
+		  puts("Shuguo: we are now in CP period!");
+	  }break;
 
+	  case R_BEACON:{
+		  puts("Shuguo: we are now in BEACON period!");
+
+	  }break;
+
+	  case R_VTDMA:{
+		  if(iqueuemac_timeout_is_expired(&iqueuemac, TIMEOUT_VTDMA)){
+			 // iqueuemac_clear_timeout(iqueuemac, TIMEOUT_VTDMA);
+			  puts("Shuguo: timeout!!  vTDMA period ends!");
+
+			  uint32_t alarm;
+			  alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
+			  rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_SLEEP);
+		  }
+	  }break;
+
+	  case R_SLEEPING:{
+		  puts("Shuguo: we are now in SLEEP period!");
+	  }break;
+	  default: break;
+
+	}
+
+}
+
+void iqueue_mac_node_update(void){
+;
+}
+
+void iqueue_mac_update(void){
+
+	if(iqueuemac.mac_type == ROUTER){
+	  iqueue_mac_router_update();
+	}else{
+	  iqueue_mac_node_update();
+	}
+
+}
 static void _pass_on_packet(gnrc_pktsnip_t *pkt);
 
 /**
@@ -220,6 +265,8 @@ static void *_gnrc_iqueuemac_thread(void *args)
     dev->driver->init(dev);
     /***************************************************************************/
 
+    iqueuemac.mac_type = ROUTER;
+
     rtt_handler(IQUEUEMAC_EVENT_RTT_START);
     /* start the event loop */
     while (1) {
@@ -230,23 +277,6 @@ static void *_gnrc_iqueuemac_thread(void *args)
             case NETDEV2_MSG_TYPE_EVENT:
                 DEBUG("gnrc_netdev2: GNRC_NETDEV_MSG_TYPE_EVENT received\n");
                 dev->driver->isr(dev);
-                break;
-                
-            case IQUEUEMAC_EVENT_RTT_TYPE:{
-                rtt_handler(msg.content.value);            
-            }break;            
-            
-            case IQUEUEMAC_EVENT_TIMEOUT_TYPE:
-            {    
-              printf("Shuguo: Hitting a timeout event.\n");
-            }break;
-            
-            case GNRC_NETAPI_MSG_TYPE_SND:
-                DEBUG("gnrc_netdev2: GNRC_NETAPI_MSG_TYPE_SND received\n");
-                printf("Shuguo: we are using iqueue-mac for sending.\n");
-                
-                gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)msg.content.ptr;
-                gnrc_netdev2->send(gnrc_netdev2, pkt);
                 break;
             case GNRC_NETAPI_MSG_TYPE_SET:
                 /* read incoming options */
@@ -274,10 +304,32 @@ static void *_gnrc_iqueuemac_thread(void *args)
                 reply.content.value = (uint32_t)res;
                 msg_reply(&msg, &reply);
                 break;
+
+            /**************************************iqueue-mac********************************************/
+            case IQUEUEMAC_EVENT_RTT_TYPE:{
+                rtt_handler(msg.content.value);
+            }break;
+
+            case IQUEUEMAC_EVENT_TIMEOUT_TYPE:{
+              printf("Shuguo: Hitting a timeout event.\n");
+              iqueuemac_timeout_make_expire((iqueuemac_timeout_t*) msg.content.ptr);
+            }break;
+
+            case GNRC_NETAPI_MSG_TYPE_SND:{
+            DEBUG("gnrc_netdev2: GNRC_NETAPI_MSG_TYPE_SND received\n");
+            printf("Shuguo: we are using iqueue-mac for sending.\n");
+
+            gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)msg.content.ptr;
+            gnrc_netdev2->send(gnrc_netdev2, pkt);
+            }break;
+            /**************************************iqueue-mac********************************************/
+
             default:
                 DEBUG("gnrc_netdev2: Unknown command %" PRIu16 "\n", msg.type);
                 break;
         }
+
+        iqueue_mac_update();
     }
     /* never reached */
     return NULL;

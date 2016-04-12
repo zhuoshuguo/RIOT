@@ -26,10 +26,12 @@
 #include <kernel_types.h>
 #include <xtimer.h>
 #include <net/gnrc.h>
-//#include <net/gnrc/lwmac/lwmac.h>
+#include <net/netdev2.h>
+#include <net/gnrc/netdev2.h>
+#include "net/gnrc/iqueue_mac/iqueue_mac.h"
 //#include <net/gnrc/lwmac/hdr.h>
 //#include <net/gnrc/lwmac/packet_queue.h>
-//#include "timeout.h"
+#include "timeout.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,19 +49,37 @@ extern "C" {
 #define IQUEUEMAC_EVENT_TIMEOUT_TYPE        (0x4400)
 
 /******************************************************************************/
+typedef enum {
+    ROUTER = 1,
+    NODE
+} iqueuemac_type_t;
+
 
 typedef enum {
-    UNDEF = -1,
+ /*   UNDEF = -1,
     STOPPED,
     START,
     STOP,
-    RESET,
-    CP,
-    BEACON,      
-    VTDMA,   
-    SLEEPING,
-    STATE_COUNT
-} iqueuemac_state_t;
+    RESET,   */
+    R_CP,
+    R_BEACON,
+    R_VTDMA,
+    R_SLEEPING,
+   // STATE_COUNT
+} iqueuemac_router_state_t;
+
+typedef enum {
+/*    UNDEF = -1,
+    STOPPED,
+    START,
+    STOP,
+    RESET,  */
+    N_CP,
+    N_BEACON,
+    N_VTDMA,
+    N_SLEEPING,
+    //STATE_COUNT
+} iqueuemac_node_state_t;
 
 /******************************************************************************/
 
@@ -74,14 +94,22 @@ typedef enum {
 /******************************************************************************/
 
 /******************************************************************************/
-typedef struct lwmac {
+typedef struct iqueuemac {
     /* PID of IQUEUEMAC thread */
     kernel_pid_t pid;
     /* NETDEV device used by lwMAC */
 	gnrc_netdev2_t* netdev;
 	const netdev2_driver_t* netdev2_driver;
-   /* Internal state of MAC layer */
-   iqueuemac_state_t state;
+
+
+    /* Internal state of MAC layer */
+
+	iqueuemac_type_t mac_type;
+	iqueuemac_router_state_t router_state;
+	iqueuemac_node_state_t   node_state;
+
+	iqueuemac_timeout_t timeouts[IQUEUEMAC_TIMEOUT_COUNT];
+
     /* Track if a transmission might have corrupted a received packet */
     bool rx_started;
     /* Own address */
