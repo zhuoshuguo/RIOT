@@ -30,13 +30,22 @@ extern "C" {
 #endif
 
 
-#ifndef IQUEUE_CP_DURATION_US
-#define IQUEUE_CP_DURATION_US        (2000U * 1000)
+#ifndef IQUEUEMAC_CP_DURATION_US
+#define IQUEUEMAC_CP_DURATION_US        (2000U * 1000)
 #endif
 
-#ifndef IQUEUE_SLEEP_DURATION_US
-#define IQUEUE_SLEEP_DURATION_US        (4000U * 1000)
+#ifndef IQUEUEMAC_SLEEP_DURATION_US
+#define IQUEUEMAC_SLEEP_DURATION_US        (4000U * 1000)
 #endif
+
+#ifndef IQUEUEMAC_VTDMA_DURATION_US
+#define IQUEUEMAC_VTDMA_DURATION_US        (3000U * 1000)
+#endif
+
+#ifndef IQUEUEMAC_TIMEOUT_COUNT
+#define IQUEUEMAC_TIMEOUT_COUNT             (3U)
+#endif
+
 
 /**
  * @brief   Initialize an instance of the IQUEUE_MAC layer
