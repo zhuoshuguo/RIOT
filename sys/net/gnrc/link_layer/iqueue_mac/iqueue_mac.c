@@ -330,6 +330,11 @@ static void *_gnrc_iqueuemac_thread(void *args)
             DEBUG("gnrc_netdev2: GNRC_NETAPI_MSG_TYPE_SND received\n");
             printf("Shuguo: we are using iqueue-mac for sending.\n");
 
+            netopt_enable_t get_autocca2;
+            int  res_22 = 0;
+            res_22 = dev->driver->get(dev, NETOPT_AUTOCCA, &get_autocca2, sizeof(get_autocca2));
+            printf("shuguo says: the auto-CCA state is %d. the get-res is %d. \n", get_autocca2, res_22);
+
             gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)msg.content.ptr;
             gnrc_netdev2->send(gnrc_netdev2, pkt);
             }break;
@@ -340,7 +345,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
                 break;
         }
 
-        iqueue_mac_update();
+        //iqueue_mac_update();
     }
     /* never reached */
     return NULL;
