@@ -34,6 +34,7 @@
 #include "net/netdev2.h"
 #include "net/gnrc/netdev2.h"
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
+#include <net/gnrc/iqueue_mac/packet_queue.h>
 
 #include "include/iqueue_types.h"
 #include "include/timeout.h"
@@ -111,7 +112,7 @@ void rtt_handler(uint32_t event)
 
 }
 
-void iqueue_mac_router_update(void){
+void iqueue_mac_router_update(gnrc_netdev2_t* gnrc_netdev2){
 
 	switch(iqueuemac.router_state)
 	{
@@ -121,6 +122,16 @@ void iqueue_mac_router_update(void){
 
 	  case R_BEACON:{
 		  puts("Shuguo: we are now in BEACON period!");
+
+		  gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac.iqueue_mac_tx_queue));
+
+		  if(pkt != NULL){
+		    gnrc_netdev2->send(gnrc_netdev2, pkt);
+		    puts("Shuguo: we are now sending data in beacon period!");
+		  }else{
+		    puts("Shuguo: we are now in beacon period with no data to send!");
+		  }
+		  printf("Shuguo: the current queue-length is %d .\n", (int)iqueuemac.iqueue_mac_tx_queue.length);
 
 	  }break;
 
@@ -153,16 +164,16 @@ void iqueue_mac_router_update(void){
 
 }
 
-void iqueue_mac_node_update(void){
+void iqueue_mac_node_update(gnrc_netdev2_t* gnrc_netdev2){
 ;
 }
 
-void iqueue_mac_update(void){
+void iqueue_mac_update(gnrc_netdev2_t* gnrc_netdev2){
 
 	if(iqueuemac.mac_type == ROUTER){
-	  iqueue_mac_router_update();
+	  iqueue_mac_router_update(gnrc_netdev2);
 	}else{
-	  iqueue_mac_node_update();
+	  iqueue_mac_node_update(gnrc_netdev2);
 	}
 
 }
@@ -279,6 +290,10 @@ static void *_gnrc_iqueuemac_thread(void *args)
     iqueuemac.mac_type = ROUTER;
 
     rtt_handler(IQUEUEMAC_EVENT_RTT_START);
+
+
+    packet_queue_init(&(iqueuemac.iqueue_mac_tx_queue), iqueuemac._queue_nodes, IQUEUEMAC_TX_QUEUE_SIZE);
+
     /* start the event loop */
     while (1) {
         DEBUG("gnrc_netdev2: waiting for incoming messages\n");
@@ -328,15 +343,24 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
             case GNRC_NETAPI_MSG_TYPE_SND:{
             DEBUG("gnrc_netdev2: GNRC_NETAPI_MSG_TYPE_SND received\n");
-            printf("Shuguo: we are using iqueue-mac for sending.\n");
+            //printf("Shuguo: we are using iqueue-mac for sending.\n");
 
-            netopt_enable_t get_autocca2;
-            int  res_22 = 0;
-            res_22 = dev->driver->get(dev, NETOPT_AUTOCCA, &get_autocca2, sizeof(get_autocca2));
-            printf("shuguo says: the auto-CCA state is %d. the get-res is %d. \n", get_autocca2, res_22);
+            //netopt_enable_t get_autocca2;
+            //int  res_22 = 0;
+            //res_22 = dev->driver->get(dev, NETOPT_AUTOCCA, &get_autocca2, sizeof(get_autocca2));
+            //printf("shuguo says: the auto-CCA state is %d. the get-res is %d. \n", get_autocca2, res_22);
 
             gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)msg.content.ptr;
-            gnrc_netdev2->send(gnrc_netdev2, pkt);
+            //gnrc_netdev2->send(gnrc_netdev2, pkt);
+            if(packet_queue_push(&(iqueuemac.iqueue_mac_tx_queue), pkt, 0) == NULL)
+            {
+               puts("Shuguo: Cann't push packet into queue, queue is perhaps full! ");
+               gnrc_pktbuf_release(pkt);
+            }else{
+            	puts("Shuguo: successfully push one data packet into the tx_queue! ");
+            	printf("Shuguo: the current queue-length is %d .\n", (int)iqueuemac.iqueue_mac_tx_queue.length);
+            } txtsnd 4 4567 454545
+
             }break;
             /**************************************iqueue-mac********************************************/
 
@@ -345,7 +369,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
                 break;
         }
 
-        //iqueue_mac_update();
+        iqueue_mac_update(gnrc_netdev2);
     }
     /* never reached */
     return NULL;
