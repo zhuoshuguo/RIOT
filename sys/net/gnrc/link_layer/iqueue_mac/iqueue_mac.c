@@ -359,7 +359,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
             }else{
             	puts("Shuguo: successfully push one data packet into the tx_queue! ");
             	printf("Shuguo: the current queue-length is %d .\n", (int)iqueuemac.iqueue_mac_tx_queue.length);
-            } txtsnd 4 4567 454545
+            }
 
             }break;
             /**************************************iqueue-mac********************************************/
