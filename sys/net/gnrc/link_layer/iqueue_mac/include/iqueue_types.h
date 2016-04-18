@@ -30,7 +30,7 @@
 #include <net/gnrc/netdev2.h>
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
 //#include <net/gnrc/lwmac/hdr.h>
-//#include <net/gnrc/lwmac/packet_queue.h>
+#include <net/gnrc/iqueue_mac/packet_queue.h>
 #include "timeout.h"
 
 #ifdef __cplusplus
@@ -109,6 +109,11 @@ typedef struct iqueuemac {
 	iqueuemac_node_state_t   node_state;
 
 	iqueuemac_timeout_t timeouts[IQUEUEMAC_TIMEOUT_COUNT];
+
+	packet_queue_node_t _queue_nodes[IQUEUEMAC_TX_QUEUE_SIZE];
+
+	packet_queue_t iqueue_mac_tx_queue;
+
 
     /* Track if a transmission might have corrupted a received packet */
     bool rx_started;
