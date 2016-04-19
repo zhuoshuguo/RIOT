@@ -48,12 +48,9 @@ extern "C" {
 
 #define IQUEUEMAC_EVENT_TIMEOUT_TYPE        (0x4400)
 
-/******************************************************************************/
-typedef enum {
-    ROUTER = 1,
-    NODE
-} iqueuemac_type_t;
+#define IQUEUEMAC_PHASE_UNINITIALIZED (0)
 
+/******************************************************************************/
 
 typedef enum {
  /*   UNDEF = -1,
@@ -93,6 +90,20 @@ typedef enum {
 
 /******************************************************************************/
 
+typedef struct {
+    /* Address of neighbour node */
+    l2_addr_t l2_addr;
+    /* TX queue for this particular node */
+    packet_queue_t queue;
+    /* MAC type of the neighbor*/
+    iqueuemac_type_t mac_type;  /* UNKONW when this neighbor is not phase-locked yet*/
+    /* Phase relative to iqueuemac: the start of its CP period */
+    uint32_t cp_phase;
+    /* Indicating that whether this neighbor is within the same cluster*/
+    bool in_same_cluster;
+} iqueuemac_tx_neighbour_t;
+
+
 /******************************************************************************/
 typedef struct iqueuemac {
     /* PID of IQUEUEMAC thread */
@@ -101,9 +112,7 @@ typedef struct iqueuemac {
 	gnrc_netdev2_t* netdev;
 	const netdev2_driver_t* netdev2_driver;
 
-
     /* Internal state of MAC layer */
-
 	iqueuemac_type_t mac_type;
 	iqueuemac_router_state_t router_state;
 	iqueuemac_node_state_t   node_state;
@@ -114,11 +123,13 @@ typedef struct iqueuemac {
 
 	packet_queue_t iqueue_mac_tx_queue;
 
+	iqueuemac_tx_neighbour_t neighbours[IQUEUEMAC_NEIGHBOUR_COUNT + 1];
 
     /* Track if a transmission might have corrupted a received packet */
     bool rx_started;
     /* Own address */
-    //l2_addr_t l2_addr;
+    l2_addr_t own_addr;
+    l2_addr_t father_router_addr;
     
     /* Feedback of last packet that was sent */
     iqueuemac_tx_feedback_t tx_feedback;

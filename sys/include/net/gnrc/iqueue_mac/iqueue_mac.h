@@ -30,6 +30,18 @@ extern "C" {
 #endif
 
 
+typedef enum {
+	UNKNOWN = 0,
+    ROUTER,
+    NODE
+} iqueuemac_type_t;
+
+#define MAC_TYPE     ROUTER
+
+#ifndef IQUEUEMAC_SUPERFRAME_DURATION_US
+#define IQUEUEMAC_SUPERFRAME_DURATION_US        (10000U * 1000)
+#endif
+
 #ifndef IQUEUEMAC_CP_DURATION_US
 #define IQUEUEMAC_CP_DURATION_US        (5000U * 1000)
 #endif
@@ -57,6 +69,19 @@ extern "C" {
 #ifndef IQUEUEMAC_TX_QUEUE_SIZE
 #define IQUEUEMAC_TX_QUEUE_SIZE             (8U)
 #endif
+
+#ifndef IQUEUEMAC_MAX_L2_ADDR_LEN
+#define IQUEUEMAC_MAX_L2_ADDR_LEN           (2U)
+#endif
+
+
+#ifndef IQUEUEMAC_NEIGHBOUR_COUNT
+#define IQUEUEMAC_NEIGHBOUR_COUNT           (6U)
+#endif
+
+
+
+
 
 /**
  * @brief   Initialize an instance of the IQUEUE_MAC layer
