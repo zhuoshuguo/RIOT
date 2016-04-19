@@ -287,7 +287,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
     dev->driver->init(dev);
     /***************************************************************************/
 
-    iqueuemac.mac_type = ROUTER;
+    iqueuemac.mac_type = MAC_TYPE;
 
     rtt_handler(IQUEUEMAC_EVENT_RTT_START);
 

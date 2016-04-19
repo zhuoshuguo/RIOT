@@ -7,23 +7,24 @@
  */
 
 /**
- * @defgroup    net_lwmac Simplest possible MAC layer
+ * @defgroup    net_iQueueMAC Simplest possible MAC layer
  * @ingroup     net
- * @brief       Internal functions if LWMAC
+ * @brief       Internal functions if iQueueMAC
  * @{
  *
  * @file
- * @brief       Interface definition for internal functions of LWMAC protocol
+ * @brief       Interface definition for internal functions of iQueueMAC protocol
  *
  * @author      Daniel Krebs <github@daniel-krebs.net>
+ * @author      Shuguo Zhuo <shuguo.zhuo@inria.fr>
  */
 
-#ifndef GNRC_LWMAC_INTERNAL_H_
-#define GNRC_LWMAC_INTERNAL_H_
+#ifndef GNRC_IQUEUEMAC_INTERNAL_H_
+#define GNRC_IQUEUEMAC_INTERNAL_H_
 
 #include <stdint.h>
 #include "periph/rtt.h"
-#include "lwmac_types.h"
+#include "include/iqueue_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,10 +32,10 @@ extern "C" {
 
 /* @brief   Type to pass information about parsing */
 typedef struct {
-    lwmac_hdr_t* header;    /**< lwmac header of packet */
+	iqueuemac_hdr_t* header;    /**< iqueuemac header of packet */
     l2_addr_t  src_addr;    /**< copied source address of packet  */
     l2_addr_t  dst_addr;    /**< copied destination address of packet */
-} lwmac_packet_info_t;
+} iqueuemac_packet_info_t;
 
 /* @brief   Next RTT event must be at least this far in the future
  *
@@ -42,7 +43,7 @@ typedef struct {
  * the counter already passed the calculated alarm before it could be set. This
  * margin will be applied when using `_next_inphase_event()`.
  */
-#define LWMAC_RTT_EVENT_MARGIN_TICKS    ( RTT_MS_TO_TICKS(2) )
+//#define iqueuemac_RTT_EVENT_MARGIN_TICKS    ( RTT_MS_TO_TICKS(2) )
 
 /* @brief Extract the destination address out of an GNRC_NETTYPE_NETIF pktsnip
  *
@@ -75,28 +76,14 @@ void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type);
  * @return                      0 if correctly parsed
  * @return                      <0 on error
  */
-int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info);
+//int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info);
 
-
-/* @brief Shortcut to get the state of netdev
- *
- * @param[in]   lwmac           lwmac state that stores netdev pointer
- *
- * @return                      state of netdev
- */
-netopt_state_t _get_netdev_state(lwmac_t* lwmac);
-
-/* @brief Shortcut to set the state of netdev
- *
- * @param[in]   lwmac           lwmac state that stores netdev pointer
- * @param[in]   devstate        new state for netdev
- */
-void _set_netdev_state(lwmac_t* lwmac, netopt_state_t devstate);
 
 /* @brief Check if packet is broadcast
  *
  * @param[in]   pkt             packet to check
- */
+*/
+
 static inline bool _packet_is_broadcast(gnrc_pktsnip_t* pkt)
 {
     gnrc_netif_hdr_t* netif_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
@@ -105,30 +92,22 @@ static inline bool _packet_is_broadcast(gnrc_pktsnip_t* pkt)
 }
 
 /* TX queue handling */
-int _find_neighbour(lwmac_t* lwmac, uint8_t* dst_addr, int addr_len);
-int _free_neighbour(lwmac_t* lwmac);
-int _alloc_neighbour(lwmac_t* lwmac);
-void _init_neighbour(lwmac_tx_neighbour_t* neighbour, uint8_t* addr, int len);
+int _find_neighbour(iqueuemac_t* iqueuemac, uint8_t* dst_addr, int addr_len);
+int _free_neighbour(iqueuemac_t* iqueuemac);
+int _alloc_neighbour(iqueuemac_t* iqueuemac);
+void _init_neighbour(iqueuemac_tx_neighbour_t* neighbour, uint8_t* addr, int len);
 
-static inline lwmac_tx_neighbour_t* _get_neighbour(lwmac_t* lwmac, unsigned int id)
+static inline iqueuemac_tx_neighbour_t* _get_neighbour(iqueuemac_t* iqueuemac, unsigned int id)
 {
-    return &(lwmac->tx.neighbours[id]);
+    return &(iqueuemac->tx.neighbours[id]);
 }
 
-/* RTT phase calculation */
-uint32_t _ticks_to_phase(uint32_t ticks);
-uint32_t _phase_to_ticks(uint32_t phase);
-uint32_t _phase_now(void);
-uint32_t _ticks_until_phase(uint32_t phase);
-
-lwmac_tx_neighbour_t* _next_tx_neighbour(lwmac_t* lwmac);
-int _time_until_tx_us(lwmac_t* lwmac);
-bool _queue_tx_packet(lwmac_t* lwmac,  gnrc_pktsnip_t* pkt);
+bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt);
 uint32_t _next_inphase_event(uint32_t last, uint32_t interval);
 
-int _dispatch_defer(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt);
+//int _dispatch_defer(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt);
 
-void _dispatch(gnrc_pktsnip_t* buffer[]);
+//void _dispatch(gnrc_pktsnip_t* buffer[]);
 
 static inline bool _addr_match(l2_addr_t* addr1, l2_addr_t* addr2)
 {
@@ -145,5 +124,5 @@ static inline bool _addr_match(l2_addr_t* addr1, l2_addr_t* addr2)
 }
 #endif
 
-#endif /* GNRC_LWMAC_INTERNAL_H_ */
+#endif /* GNRC_IQUEUEMAC_INTERNAL_H_ */
 /** @} */
