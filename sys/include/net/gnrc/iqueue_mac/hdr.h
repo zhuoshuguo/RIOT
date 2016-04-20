@@ -101,7 +101,7 @@ typedef struct __attribute__((packed)) {
  * @brief   iqueuemac broadcast data frame
  */
 typedef struct __attribute__((packed)) {
-    lwmac_hdr_t header;
+	iqueuemac_hdr_t header;
     uint8_t seq_nr;
 } iqueuemac_frame_broadcast_t;
 

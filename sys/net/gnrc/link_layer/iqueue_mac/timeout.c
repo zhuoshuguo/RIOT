@@ -20,7 +20,7 @@
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
 
 #include "include/timeout.h"
-#include "include/iqueue_types.h"
+#include "include/iqueuemac_types.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"

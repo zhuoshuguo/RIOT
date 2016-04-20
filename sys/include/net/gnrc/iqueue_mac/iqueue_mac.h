@@ -76,7 +76,7 @@ typedef enum {
 
 
 #ifndef IQUEUEMAC_NEIGHBOUR_COUNT
-#define IQUEUEMAC_NEIGHBOUR_COUNT           (6U)
+#define IQUEUEMAC_NEIGHBOUR_COUNT           (8U)
 #endif
 
 
