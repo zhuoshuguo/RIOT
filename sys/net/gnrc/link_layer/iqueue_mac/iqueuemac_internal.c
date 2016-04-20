@@ -24,7 +24,7 @@
 #include <net/gnrc/iqueue_mac/packet_queue.h>
 
 #include "include/iqueuemac_internal.h"
-#include "include/iqueue_types.h"
+#include "include/iqueuemac_types.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
@@ -68,7 +68,7 @@ int _find_neighbour(iqueuemac_t* iqueuemac, uint8_t* dst_addr, int addr_len)
 {
     iqueuemac_tx_neighbour_t* neighbours = iqueuemac->neighbours;
 
-    for(int i = 0; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
+    for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
         if(neighbours[i].l2_addr.len == addr_len) {
             if(memcmp(&(neighbours[i].l2_addr.addr), dst_addr, addr_len) == 0) {
                 return i;
@@ -85,7 +85,7 @@ int _free_neighbour(iqueuemac_t* iqueuemac)
 {
     iqueuemac_tx_neighbour_t* neighbours = iqueuemac->neighbours;
 
-    for(int i = 0; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
+    for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
         if( packet_queue_length(&(neighbours[i].queue)) == 0) {
             /* Mark as free */
             neighbours[i].l2_addr.len = 0;
@@ -101,7 +101,7 @@ int _alloc_neighbour(iqueuemac_t* iqueuemac)
 {
     iqueuemac_tx_neighbour_t* neighbours = iqueuemac->neighbours;
 
-    for(int i = 0; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
+    for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
         if(neighbours[i].l2_addr.len == 0) {
             packet_queue_init(&(neighbours[i].queue),
                               iqueuemac->_queue_nodes,
@@ -174,6 +174,7 @@ bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
                 /* All queues are in use, so reject */
                 if(neighbour_id < 0) {
                     DEBUG("[iqueuemac-int] Couldn't allocate tx queue for packet\n");
+                    puts("Shuguo: there is no free neighbor for caching packet! ");
                     gnrc_pktbuf_release(pkt);
                     return false;
                 }
@@ -188,12 +189,16 @@ bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
 
     }
 
+    printf("Shuguo: the current find neighbour_id is %d \n", neighbour_id);
+    printf("Shuguo: the inited addr in the neighbor-list is %d %d \n", iqueuemac->neighbours[neighbour_id].l2_addr.addr[1], iqueuemac->neighbours[neighbour_id].l2_addr.addr[0]);
+
     if(packet_queue_push(&(neighbour->queue), pkt, 0) == NULL) {
-        DEBUG("[iqueuemac-int] Can't push to neighbour #%d's queue, no entries left\n",
-                neighbour_id);
+    	puts("Shuguo: Cann't push packet into queue, queue is perhaps full! ");
         gnrc_pktbuf_release(pkt);
         return false;
     }
+
+    printf("Shuguo: the current find neighbour %d 's queue-length is %d. \n", neighbour_id, (int)iqueuemac->neighbours[neighbour_id].queue.length);
 
     DEBUG("[iqueuemac-int] Queuing pkt to neighbour #%d\n", neighbour_id);
 

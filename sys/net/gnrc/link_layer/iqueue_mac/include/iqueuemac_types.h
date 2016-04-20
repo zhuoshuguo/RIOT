@@ -29,6 +29,7 @@
 #include <net/netdev2.h>
 #include <net/gnrc/netdev2.h>
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
+#include "net/gnrc/iqueue_mac/hdr.h"
 //#include <net/gnrc/lwmac/hdr.h>
 #include <net/gnrc/iqueue_mac/packet_queue.h>
 #include "timeout.h"
@@ -123,7 +124,7 @@ typedef struct iqueuemac {
 
 	packet_queue_t iqueue_mac_tx_queue;
 
-	iqueuemac_tx_neighbour_t neighbours[IQUEUEMAC_NEIGHBOUR_COUNT + 1];
+	iqueuemac_tx_neighbour_t neighbours[IQUEUEMAC_NEIGHBOUR_COUNT];
 
     /* Track if a transmission might have corrupted a received packet */
     bool rx_started;

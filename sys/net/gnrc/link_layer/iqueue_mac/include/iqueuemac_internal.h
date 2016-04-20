@@ -24,7 +24,7 @@
 
 #include <stdint.h>
 #include "periph/rtt.h"
-#include "include/iqueue_types.h"
+#include "iqueuemac_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -99,7 +99,7 @@ void _init_neighbour(iqueuemac_tx_neighbour_t* neighbour, uint8_t* addr, int len
 
 static inline iqueuemac_tx_neighbour_t* _get_neighbour(iqueuemac_t* iqueuemac, unsigned int id)
 {
-    return &(iqueuemac->tx.neighbours[id]);
+    return &(iqueuemac->neighbours[id]);
 }
 
 bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt);
