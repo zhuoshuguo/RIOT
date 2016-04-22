@@ -45,6 +45,7 @@ typedef enum {
 	TIMEOUT_VTDMA_LONG,
 	TIMEOUT_VTDMA_LONG_LONG,
 	/*****************simple-node******************/
+	TIMEOUT_N_CP_DURATION,
 	TIMEOUT_BEACON_END
 
 } iqueuemac_timeout_type_t;

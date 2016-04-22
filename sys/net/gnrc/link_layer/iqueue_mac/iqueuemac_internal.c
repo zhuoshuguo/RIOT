@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2015 Daniel Krebs
+ * Copyright (C) 2016 Shuguo Zhuo
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -203,6 +204,35 @@ bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
     DEBUG("[iqueuemac-int] Queuing pkt to neighbour #%d\n", neighbour_id);
 
     return true;
+}
+
+
+void iqueuemac_trun_on_radio(iqueuemac_t* iqueuemac)
+{
+	netopt_state_t devstate;
+	devstate = NETOPT_STATE_IDLE;
+	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev,
+	                              NETOPT_STATE,
+	                              &devstate,
+	                              sizeof(devstate));
+}
+
+void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac)
+{
+	netopt_state_t devstate;
+	devstate = NETOPT_STATE_SLEEP;
+	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev,
+	                              NETOPT_STATE,
+	                              &devstate,
+	                              sizeof(devstate));
+}
+
+
+int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, bool csma_enable)
+{
+	iqueuemac->netdev->send(iqueuemac->netdev, pkt);
+	return 1;
+
 }
 
 /******************************************************************************/

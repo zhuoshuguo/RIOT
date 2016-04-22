@@ -53,6 +53,24 @@
 static iqueuemac_t iqueuemac;
 
 
+
+void iqueuemac_init(iqueuemac_t iqueuemac)
+{
+	if(iqueuemac.mac_type == ROUTER)
+	{
+
+	}else{
+		iqueuemac.node_states.node_basic_state = N_LISTENNING;
+		iqueuemac.node_states.node_listen_state = N_LISTEN_CP_INIT;
+		iqueuemac.node_states.node_t2r_state = N_T2R_WAIT_CP_INIT;
+		iqueuemac.node_states.node_t2u_state = N_T2U_ASSEMBLE_PREAMBLE;
+		iqueuemac.node_states.node_trans_state = N_TRANS_TO_UNKOWN;
+		iqueuemac.node_states.in_cp_period = false;
+	}
+
+	iqueuemac.need_update = false;
+
+}
 static void rtt_cb(void* arg)
 {
     msg_t msg;
@@ -70,7 +88,7 @@ void rtt_handler(uint32_t event)
     uint32_t alarm;
     switch(event & 0xffff)
     {
-      case IQUEUEMAC_EVENT_RTT_ENTER_CP:{
+      case IQUEUEMAC_EVENT_RTT_R_ENTER_CP:{
         iqueuemac.router_state = R_CP;
         alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
         rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_BEACON);
@@ -98,13 +116,38 @@ void rtt_handler(uint32_t event)
       case IQUEUEMAC_EVENT_RTT_ENTER_SLEEP:{
         iqueuemac.router_state = R_SLEEPING;
         alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_SLEEP_DURATION_US);
-        rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_CP);
+        rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_ENTER_CP);
       }break;      
       
+
+      /*******************************Node RTT management***************************/
+      case IQUEUEMAC_EVENT_RTT_N_ENTER_CP:{
+    	  alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
+    	  rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP);
+    	  iqueuemac.node_states.in_cp_period = true;
+
+    	  iqueuemac.need_update = true;
+      }break;
+
+      case IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP:{
+    	  alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_CP_DURATION_US);
+    	  rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_CP);
+    	  iqueuemac.node_states.in_cp_period = false;
+
+    	  iqueuemac.need_update = true;
+      }break;
+
+      /********************************************************/
       case IQUEUEMAC_EVENT_RTT_START:{
     	  puts("shuguo: starting duty cycling.");
-    	 alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
-    	 rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_CP);
+    	  if(iqueuemac.mac_type == ROUTER)
+    	  {
+    	     alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
+    	     rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_ENTER_CP);
+    	  }else{
+     	     alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
+     	     rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_CP);
+    	  }
       }break;
 
       default: break;
@@ -113,9 +156,9 @@ void rtt_handler(uint32_t event)
 
 }
 
-void iqueue_mac_router_update(gnrc_netdev2_t* gnrc_netdev2){
+void iqueue_mac_router_update(iqueuemac_t* iqueuemac){
 
-	switch(iqueuemac.router_state)
+	switch(iqueuemac->router_state)
 	{
 	  case R_CP:{
 		  puts("Shuguo: we are now in CP period!");
@@ -124,14 +167,14 @@ void iqueue_mac_router_update(gnrc_netdev2_t* gnrc_netdev2){
 	  case R_BEACON:{
 		  puts("Shuguo: we are now in BEACON period!");
 
-		  if(iqueuemac.neighbours[1].queue.length>0)
+		  if((*iqueuemac).neighbours[1].queue.length>0)
 		  {
-			  gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac.neighbours[1].queue));
+			  gnrc_pktsnip_t *pkt = packet_queue_pop(&((*iqueuemac).neighbours[1].queue));
 			  if(pkt != NULL){
-			    gnrc_netdev2->send(gnrc_netdev2, pkt);
+				  iqueuemac_send(iqueuemac, pkt, true);
 			  	puts("Shuguo: we are now sending data in beacon period!");
 			  }
-			  printf("Shuguo: neighbor-1's queue-length is %d .\n", (int)iqueuemac.neighbours[1].queue.length);
+			  //printf("Shuguo: neighbor-1's queue-length is %d .\n", (int)iqueuemac.neighbours[1].queue.length);
 		  }
 
 		  /*
@@ -148,7 +191,7 @@ void iqueue_mac_router_update(gnrc_netdev2_t* gnrc_netdev2){
 	  }break;
 
 	  case R_VTDMA:{
-		  if(iqueuemac_timeout_is_expired(&iqueuemac, TIMEOUT_VTDMA)){
+		  if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_VTDMA)){
 			 // iqueuemac_clear_timeout(iqueuemac, TIMEOUT_VTDMA);
 			  puts("Shuguo: vTDMA timeout!!  ");
 
@@ -157,11 +200,11 @@ void iqueue_mac_router_update(gnrc_netdev2_t* gnrc_netdev2){
 			  rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_SLEEP);
 		  }
 
-		  if(iqueuemac_timeout_is_expired(&iqueuemac, TIMEOUT_VTDMA_LONG)){
+		  if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_VTDMA_LONG)){
 			  puts("Shuguo: vTDMA_LONG TIMEOUT!!!");
 		  }
 
-		  if(iqueuemac_timeout_is_expired(&iqueuemac, TIMEOUT_VTDMA_LONG_LONG)){
+		  if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_VTDMA_LONG_LONG)){
 		 	  puts("Shuguo: vTDMA_LONG_LONG TIMEOUT!!!");
 		  }
 
@@ -176,18 +219,91 @@ void iqueue_mac_router_update(gnrc_netdev2_t* gnrc_netdev2){
 
 }
 
-void iqueue_mac_node_update(gnrc_netdev2_t* gnrc_netdev2){
+void iqueue_mac_node_listen_cp_init(iqueuemac_t* iqueuemac){
+
+	iqueuemac_trun_on_radio(iqueuemac);
+
+	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+	iqueuemac->need_update = true;
+	puts("Shuguo: node is now entering CP");
+}
+
+void iqueue_mac_node_listen_cp_listen(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac->node_states.in_cp_period == false)
+	{
+		iqueuemac->node_states.node_listen_state = N_LISTEN_CP_END;
+		iqueuemac->need_update = true;
+	}
+}
+
+void iqueue_mac_node_listen_cp_end(iqueuemac_t* iqueuemac){
+
+	iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING_INIT;
+	iqueuemac->need_update = true;
+}
+
+void iqueue_mac_node_sleep_init(iqueuemac_t* iqueuemac){
+
+	iqueuemac_trun_off_radio(iqueuemac);
+	iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
+	iqueuemac->need_update = true;
+
+	puts("Shuguo: node is now entering sleeping period");
+
+}
+
+void iqueue_mac_node_sleep(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac->node_states.in_cp_period == true){
+		iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING_END;
+		iqueuemac->need_update = true;
+	}
+}
+
+void iqueue_mac_node_sleep_end(iqueuemac_t* iqueuemac){
+
+	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_INIT;
+	iqueuemac->need_update = true;
+}
+
+
+
+void iqueue_mac_node_listen_update(iqueuemac_t* iqueuemac){
+
+	switch((*iqueuemac).node_states.node_listen_state)
+   {
+	case N_LISTEN_CP_INIT: iqueue_mac_node_listen_cp_init(iqueuemac); break;
+	case N_LISTEN_CP_LISTEN: iqueue_mac_node_listen_cp_listen(iqueuemac); break;
+	case N_LISTEN_CP_END: iqueue_mac_node_listen_cp_end(iqueuemac); break;
+	case N_LISTEN_SLEEPING_INIT: iqueue_mac_node_sleep_init(iqueuemac); break;
+	case N_LISTEN_SLEEPING: iqueue_mac_node_sleep(iqueuemac); break;
+	case N_LISTEN_SLEEPING_END: iqueue_mac_node_sleep_end(iqueuemac); break;
+	default: break;
+   }
+}
+
+void iqueue_mac_node_transmit_update(iqueuemac_t* iqueuemac){
 ;
 }
 
-void iqueue_mac_update(gnrc_netdev2_t* gnrc_netdev2){
+void iqueue_mac_node_update(iqueuemac_t* iqueuemac){
 
-	if(iqueuemac.mac_type == ROUTER){
-	  iqueue_mac_router_update(gnrc_netdev2);
+	switch((*iqueuemac).node_states.node_basic_state)
+   {
+	case N_LISTENNING: iqueue_mac_node_listen_update(iqueuemac); break;
+	case N_TRANSMITTING: iqueue_mac_node_transmit_update(iqueuemac); break;
+	default: break;
+   }
+}
+
+void iqueue_mac_update(iqueuemac_t* iqueuemac){
+
+	if((*iqueuemac).mac_type == ROUTER){
+	  iqueue_mac_router_update(iqueuemac);
 	}else{
-	  iqueue_mac_node_update(gnrc_netdev2);
+	  iqueue_mac_node_update(iqueuemac);
 	}
-
 }
 static void _pass_on_packet(gnrc_pktsnip_t *pkt);
 
@@ -300,10 +416,9 @@ static void *_gnrc_iqueuemac_thread(void *args)
     /***************************************************************************/
 
     iqueuemac.mac_type = MAC_TYPE;
+    iqueuemac_init(iqueuemac);
 
     rtt_handler(IQUEUEMAC_EVENT_RTT_START);
-
-    //packet_queue_init(&(iqueuemac.iqueue_mac_tx_queue), iqueuemac._queue_nodes, IQUEUEMAC_TX_QUEUE_SIZE);
 
     /* start the event loop */
     while (1) {
@@ -314,6 +429,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
             case NETDEV2_MSG_TYPE_EVENT:
                 DEBUG("gnrc_netdev2: GNRC_NETDEV_MSG_TYPE_EVENT received\n");
                 dev->driver->isr(dev);
+                iqueuemac.need_update = true;
                 break;
             case GNRC_NETAPI_MSG_TYPE_SET:
                 /* read incoming options */
@@ -350,15 +466,17 @@ static void *_gnrc_iqueuemac_thread(void *args)
             case IQUEUEMAC_EVENT_TIMEOUT_TYPE:{
               //printf("Shuguo: Hitting a timeout event.\n");
               iqueuemac_timeout_make_expire((iqueuemac_timeout_t*) msg.content.ptr);
+              iqueuemac.need_update = true;
             }break;
 
             case GNRC_NETAPI_MSG_TYPE_SND:{
-            DEBUG("gnrc_netdev2: GNRC_NETAPI_MSG_TYPE_SND received\n");
+              DEBUG("gnrc_netdev2: GNRC_NETAPI_MSG_TYPE_SND received\n");
 
-            gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)msg.content.ptr;
-            //gnrc_netdev2->send(gnrc_netdev2, pkt);
+              gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)msg.content.ptr;
+              //gnrc_netdev2->send(gnrc_netdev2, pkt);
 
-            _queue_tx_packet(&iqueuemac,  pkt);
+              _queue_tx_packet(&iqueuemac,  pkt);
+              iqueuemac.need_update = true;
 
             }break;
             /**************************************iqueue-mac********************************************/
@@ -368,7 +486,11 @@ static void *_gnrc_iqueuemac_thread(void *args)
                 break;
         }
 
-        iqueue_mac_update(gnrc_netdev2);
+        while(iqueuemac.need_update == true)
+        {
+        	iqueuemac.need_update = false;
+            iqueue_mac_update(&iqueuemac);
+        }
     }
     /* never reached */
     return NULL;
