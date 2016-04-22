@@ -41,11 +41,14 @@ extern "C" {
 /******************************************************************************/
 
 #define IQUEUEMAC_EVENT_RTT_TYPE            (0x4300)
-#define IQUEUEMAC_EVENT_RTT_ENTER_CP          (0x4301)
+#define IQUEUEMAC_EVENT_RTT_R_ENTER_CP          (0x4301)
 #define IQUEUEMAC_EVENT_RTT_ENTER_BEACON           (0x4302)
 #define IQUEUEMAC_EVENT_RTT_ENTER_VTDMA            (0x4303)
 #define IQUEUEMAC_EVENT_RTT_ENTER_SLEEP           (0x4304)
 #define IQUEUEMAC_EVENT_RTT_START           (0x4305)
+
+#define IQUEUEMAC_EVENT_RTT_N_ENTER_CP           (0x4306)
+#define IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP           (0x4307)
 
 #define IQUEUEMAC_EVENT_TIMEOUT_TYPE        (0x4400)
 
@@ -72,12 +75,52 @@ typedef enum {
     START,
     STOP,
     RESET,  */
-    N_CP,
-    N_BEACON,
-    N_VTDMA,
-    N_SLEEPING,
-    //STATE_COUNT
-} iqueuemac_node_state_t;
+	/*Basic mode of simple mode*/
+	N_LISTENNING,
+	N_TRANSMITTING
+} mac_node_basic_state_t;
+
+typedef enum {
+	/*Listening states of simple mode*/
+	N_LISTEN_CP_INIT,
+	N_LISTEN_CP_LISTEN,
+	N_LISTEN_CP_END,
+	N_LISTEN_SLEEPING_INIT,
+	N_LISTEN_SLEEPING,
+	N_LISTEN_SLEEPING_END
+} mac_node_listen_state_t;
+
+typedef enum {
+	/*Transmitting states of simple mode*/
+	N_TRANS_TO_UNKOWN,
+	N_TRANS_TO_NODE,
+	N_TRANS_TO_ROUTER
+} mac_node_trans_state_t;
+
+typedef enum {
+	N_T2U_ASSEMBLE_PREAMBLE = 0,
+	N_T2U_TRANS_PREAMBLE,
+	N_T2U_WAIT_PREAMBLE_ACK,
+	N_T2U_SEND_DATA,
+	N_T2U_END
+} mac_node_t2u_state_t;
+
+typedef enum {
+	/*Transmitting states of simple mode*/
+	N_T2R_WAIT_CP_INIT = 0,
+	N_T2R_WAIT_CP,
+	N_T2R_TRANS_IN_CP,
+	N_T2R_WAIT_CPTRANS_FEEDBACK,
+	N_T2R_WAIT_BEACON,
+	N_T2R_WAIT_OWN_SLOTS,
+	N_T2R_TRANS_IN_VTDMA,
+	N_T2R_TRANS_END
+	/*Listening states of simple mode*/
+} mac_node_t2r_state_t;
+
+
+
+
 
 /******************************************************************************/
 
@@ -104,6 +147,17 @@ typedef struct {
     bool in_same_cluster;
 } iqueuemac_tx_neighbour_t;
 
+typedef struct {
+
+	mac_node_basic_state_t node_basic_state;
+	mac_node_listen_state_t node_listen_state;
+	mac_node_trans_state_t node_trans_state;
+	mac_node_t2u_state_t  node_t2u_state;
+	mac_node_t2r_state_t node_t2r_state;
+	bool in_cp_period;
+
+} node_states;
+
 
 /******************************************************************************/
 typedef struct iqueuemac {
@@ -116,13 +170,11 @@ typedef struct iqueuemac {
     /* Internal state of MAC layer */
 	iqueuemac_type_t mac_type;
 	iqueuemac_router_state_t router_state;
-	iqueuemac_node_state_t   node_state;
+	node_states   node_states;
 
 	iqueuemac_timeout_t timeouts[IQUEUEMAC_TIMEOUT_COUNT];
 
 	packet_queue_node_t _queue_nodes[IQUEUEMAC_TX_QUEUE_SIZE];
-
-	packet_queue_t iqueue_mac_tx_queue;
 
 	iqueuemac_tx_neighbour_t neighbours[IQUEUEMAC_NEIGHBOUR_COUNT];
 
@@ -137,6 +189,7 @@ typedef struct iqueuemac {
     
     /* Used to calculate wakeup times */
     uint32_t last_wakeup;    
+    bool need_update;
    
 } iqueuemac_t;
 
