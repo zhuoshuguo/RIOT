@@ -50,11 +50,47 @@ extern "C" {
 #define IQUEUEMAC_EVENT_RTT_N_ENTER_CP           (0x4306)
 #define IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP           (0x4307)
 
+#define IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE           (0x4308)
+
 #define IQUEUEMAC_EVENT_TIMEOUT_TYPE        (0x4400)
 
 #define IQUEUEMAC_PHASE_UNINITIALIZED (0)
 
 /******************************************************************************/
+
+/******************************router state machinies**********************************/
+typedef enum {
+/*    UNDEF = -1,
+    STOPPED,
+    START,
+    STOP,
+    RESET,  */
+	/*Basic mode of simple mode*/
+	R_LISTENNING,
+	R_TRANSMITTING
+} mac_router_basic_state_t;
+
+typedef enum {
+	/*Listening states of simple mode*/
+	R_LISTEN_CP_INIT,
+	R_LISTEN_CP_LISTEN,
+	R_LISTEN_CP_END,
+	//R_LISTEN_CREATE_BEACON,
+	R_LISTEN_SEND_BEACON,
+	R_LISTEN_VTDMA_INIT,
+	R_LISTEN_VTDMA,
+	R_LISTEN_VTDMA_END,
+	R_LISTEN_SLEEPING_INIT,
+	R_LISTEN_SLEEPING,
+	R_LISTEN_SLEEPING_END
+} mac_router_listen_state_t;
+
+typedef enum {
+	/*Transmitting states of simple mode*/
+	R_TRANS_TO_UNKOWN,
+	R_TRANS_TO_NODE,
+	R_TRANS_TO_ROUTER
+} mac_router_trans_state_t;
 
 typedef enum {
  /*   UNDEF = -1,
@@ -69,6 +105,7 @@ typedef enum {
    // STATE_COUNT
 } iqueuemac_router_state_t;
 
+/******************************node state machinies**********************************/
 typedef enum {
 /*    UNDEF = -1,
     STOPPED,
@@ -156,8 +193,18 @@ typedef struct {
 	mac_node_t2r_state_t node_t2r_state;
 	bool in_cp_period;
 
-} node_states;
+} node_states_t;
 
+
+typedef struct {
+
+	mac_router_basic_state_t router_basic_state;
+	mac_router_listen_state_t router_listen_state;
+	mac_router_trans_state_t router_trans_state;
+
+	bool router_new_cycle;
+
+} router_states_t;
 
 /******************************************************************************/
 typedef struct iqueuemac {
@@ -170,7 +217,9 @@ typedef struct iqueuemac {
     /* Internal state of MAC layer */
 	iqueuemac_type_t mac_type;
 	iqueuemac_router_state_t router_state;
-	node_states   node_states;
+	node_states_t   node_states;
+	router_states_t router_states;
+
 
 	iqueuemac_timeout_t timeouts[IQUEUEMAC_TIMEOUT_COUNT];
 
