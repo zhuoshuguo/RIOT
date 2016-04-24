@@ -73,6 +73,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	}
 
 	iqueuemac->need_update = false;
+	iqueuemac->duty_cycle_started = false;
 
 }
 static void rtt_cb(void* arg)
@@ -123,27 +124,33 @@ void rtt_handler(uint32_t event)
         rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_ENTER_CP);
       }break;      
 
-
-
-
-
       /*******************************Router RTT management***************************/
       case IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE:{
 
     	  /// Shuguo: 以后每次进这里把RTT的计时器清零？！ 方便于管理和计算！！？？
           alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
           rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
-          iqueuemac.router_states.router_new_cycle = true;
+
+          if(iqueuemac.duty_cycle_started == false){
+        	  iqueuemac.duty_cycle_started = true;
+          }else{
+        	  iqueuemac.router_states.router_new_cycle = true;
+          }
 
           iqueuemac.need_update = true;
+
       }break;
-      
 
       /*******************************Node RTT management***************************/
       case IQUEUEMAC_EVENT_RTT_N_ENTER_CP:{
     	  /// Shuguo: 以后每次进这里把RTT的计时器清零？！ 方便于管理和计算！！？？
     	  alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
     	  rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP);
+
+    	  if(iqueuemac.duty_cycle_started == false){
+    	     iqueuemac.duty_cycle_started = true;
+    	  }
+
     	  iqueuemac.node_states.in_cp_period = true;
 
     	  iqueuemac.need_update = true;
@@ -245,6 +252,7 @@ void iqueue_mac_router_update_old(iqueuemac_t* iqueuemac){
 void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
 	puts("Shuguo: router is now entering CP");
+
 	iqueuemac->router_states.router_new_cycle = false;
 
 	iqueuemac_trun_on_radio(iqueuemac);
@@ -554,9 +562,13 @@ static void *_gnrc_iqueuemac_thread(void *args)
     /***************************************************************************/
 
     iqueuemac.mac_type = MAC_TYPE;
+
     iqueuemac_init(&iqueuemac);
 
+    xtimer_sleep(3);
+
     rtt_handler(IQUEUEMAC_EVENT_RTT_START);
+
 
     /* start the event loop */
     while (1) {
@@ -624,7 +636,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
                 break;
         }
 
-        while(iqueuemac.need_update == true)
+        while((iqueuemac.need_update == true)&&(iqueuemac.duty_cycle_started == true))
         {
         	iqueuemac.need_update = false;
             iqueue_mac_update(&iqueuemac);
