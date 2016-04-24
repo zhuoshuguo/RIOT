@@ -239,6 +239,7 @@ typedef struct iqueuemac {
     /* Used to calculate wakeup times */
     uint32_t last_wakeup;    
     bool need_update;
+    bool duty_cycle_started;
    
 } iqueuemac_t;
 
