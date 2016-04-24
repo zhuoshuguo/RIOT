@@ -123,7 +123,8 @@ static inline bool _addr_match(l2_addr_t* addr1, l2_addr_t* addr2)
 void iqueuemac_trun_on_radio(iqueuemac_t* iqueuemac);
 void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac);
 
-int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, bool csma_enable);
+int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t* csma_enable);
+int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac);
 
 #ifdef __cplusplus
 }

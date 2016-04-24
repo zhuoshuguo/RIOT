@@ -228,12 +228,66 @@ void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac)
 }
 
 
-int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, bool csma_enable)
+int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t* csma_enable)
 {
+	//netopt_enable_t csma_enable_send;
+	//csma_enable_send = csma_enable;
+	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev, NETOPT_CSMA, csma_enable, sizeof(netopt_enable_t));
+
 	iqueuemac->netdev->send(iqueuemac->netdev, pkt);
 	return 1;
 
 }
+
+int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
+{
+	/****** assemble and send the beacon ******/
+	gnrc_pktsnip_t* pkt;
+	gnrc_netif_hdr_t* nethdr_beacon;
+
+	//assert(lwmac->rx.l2_addr.len != 0);
+
+	/* Assemble Beacon packet */
+	iqueuemac_frame_beacon_t iqueuemac_hdr;
+	iqueuemac_hdr.header.type = FRAMETYPE_BEACON;
+    iqueuemac_hdr.next_cp_time = IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_CP_DURATION_US;
+	iqueuemac_hdr.sub_channel_seq = 12;
+	iqueuemac_hdr.schedulelist_size = 0;
+	//lwmac_hdr.dst_addr = lwmac->rx.l2_addr;
+
+	pkt = gnrc_pktbuf_add(NULL, &iqueuemac_hdr, sizeof(iqueuemac_hdr), GNRC_NETTYPE_IQUEUEMAC);
+	if(pkt == NULL) {
+	      ;
+	}
+
+	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
+	if(pkt == NULL) {
+	      ;
+	}
+
+	/* We wouldn't get here if add the NETIF header had failed, so no
+	sanity checks needed */
+	nethdr_beacon = (gnrc_netif_hdr_t*) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+
+   /* Construct NETIF header and insert address for WA packet */
+	gnrc_netif_hdr_init(nethdr_beacon, 0, 0);
+	//gnrc_netif_hdr_set_dst_addr(nethdr_wa, lwmac->rx.l2_addr.addr, lwmac->rx.l2_addr.len);
+
+    /* Send WA as broadcast*/
+    nethdr_beacon->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
+
+    /* Disable Auto ACK */
+    //netopt_enable_t autoack = NETOPT_DISABLE;
+ 	//lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
+
+    netopt_enable_t csma_enable;
+    csma_enable = NETOPT_DISABLE;
+    iqueuemac_send(iqueuemac, pkt, &csma_enable);
+
+	return 1;
+
+}
+
 
 /******************************************************************************/
 

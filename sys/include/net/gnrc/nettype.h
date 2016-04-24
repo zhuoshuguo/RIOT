@@ -56,6 +56,18 @@ typedef enum {
     GNRC_NETTYPE_SIXLOWPAN,     /**< Protocol is 6LoWPAN */
 #endif
 
+	 /**
+	  * @{
+	  * @name Link layer
+	  */
+#ifdef MODULE_GNRC_IQUEUEMAC
+	GNRC_NETTYPE_IQUEUEMAC,         /**< Protocol is lwMAC */
+#endif
+	 /**
+	  * @}
+	  */
+
+
     /**
      * @{
      * @name Network layer
