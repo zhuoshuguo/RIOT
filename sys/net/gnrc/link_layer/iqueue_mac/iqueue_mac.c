@@ -199,7 +199,7 @@ void iqueue_mac_router_update_old(iqueuemac_t* iqueuemac){
 		  {
 			  gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->neighbours[1].queue));
 			  if(pkt != NULL){
-				  iqueuemac_send(iqueuemac, pkt, true);
+				  //iqueuemac_send(iqueuemac, pkt, true);
 			  	puts("Shuguo: we are now sending data in beacon period!");
 			  }
 			  //printf("Shuguo: neighbor-1's queue-length is %d .\n", (int)iqueuemac.neighbours[1].queue.length);
@@ -284,13 +284,12 @@ void iqueue_mac_node_router_cp_end(iqueuemac_t* iqueuemac){
 void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 
 	/****** assemble and send the beacon ******/
-
+	iqueuemac_assemble_and_send_beacon(iqueuemac);
 
 	puts("Shuguo: router is now sending the beacon!!!");
 	/****** router switch to sleep period or vTDMA period ******/
 	iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
 	iqueuemac->need_update = true;
-
 }
 
 void iqueue_mac_router_vtdma_init(iqueuemac_t* iqueuemac){
