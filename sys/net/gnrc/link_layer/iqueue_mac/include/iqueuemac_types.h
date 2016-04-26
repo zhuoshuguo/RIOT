@@ -155,10 +155,6 @@ typedef enum {
 	/*Listening states of simple mode*/
 } mac_node_t2r_state_t;
 
-
-
-
-
 /******************************************************************************/
 
 typedef enum {
@@ -202,9 +198,37 @@ typedef struct {
 	mac_router_listen_state_t router_listen_state;
 	mac_router_trans_state_t router_trans_state;
 
+	bool extend_cp;
 	bool router_new_cycle;
 
 } router_states_t;
+
+
+typedef struct {
+    /* Internal state of reception state machine */
+
+    packet_queue_t queue;
+    packet_queue_node_t _queue_nodes[IQUEUEMAC_RX_QUEUE_SIZE];
+    l2_addr_t l2_addr;
+    gnrc_pktsnip_t* dispatch_buffer[IQUEUEMAC_DISPATCH_BUFFER_SIZE];
+} iqueuemac_rx_t;
+
+
+typedef struct {
+    /* Internal state of reception state machine */
+	packet_queue_node_t _queue_nodes[IQUEUEMAC_TX_QUEUE_SIZE];
+
+	iqueuemac_tx_neighbour_t neighbours[IQUEUEMAC_NEIGHBOUR_COUNT];
+
+	uint32_t preamble_sent;
+	//uint32_t broadcast_seq;
+
+	/* Packet that is currently scheduled to be sent */
+	gnrc_pktsnip_t* packet;
+	/* Queue of destination node to which the current packet will be sent */
+	iqueuemac_tx_neighbour_t* current_neighbour;
+
+} iqueuemac_tx_t;
 
 /******************************************************************************/
 typedef struct iqueuemac {
@@ -217,18 +241,15 @@ typedef struct iqueuemac {
     /* Internal state of MAC layer */
 	iqueuemac_type_t mac_type;
 	iqueuemac_router_state_t router_state;
+
 	node_states_t   node_states;
 	router_states_t router_states;
 
+	iqueuemac_rx_t rx;
+	iqueuemac_tx_t tx;
 
 	iqueuemac_timeout_t timeouts[IQUEUEMAC_TIMEOUT_COUNT];
 
-	packet_queue_node_t _queue_nodes[IQUEUEMAC_TX_QUEUE_SIZE];
-
-	iqueuemac_tx_neighbour_t neighbours[IQUEUEMAC_NEIGHBOUR_COUNT];
-
-    /* Track if a transmission might have corrupted a received packet */
-    bool rx_started;
     /* Own address */
     l2_addr_t own_addr;
     l2_addr_t father_router_addr;
@@ -238,6 +259,11 @@ typedef struct iqueuemac {
     
     /* Used to calculate wakeup times */
     uint32_t last_wakeup;    
+
+    /* Track if a transmission might have corrupted a received packet */
+    bool rx_started;
+    bool packet_received;
+    bool quit_current_cycle;
     bool need_update;
     bool duty_cycle_started;
    
