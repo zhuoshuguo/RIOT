@@ -97,9 +97,16 @@ int _free_neighbour(iqueuemac_t* iqueuemac);
 int _alloc_neighbour(iqueuemac_t* iqueuemac);
 void _init_neighbour(iqueuemac_tx_neighbour_t* neighbour, uint8_t* addr, int len);
 
+/* RTT phase calculation */
+uint32_t _ticks_to_phase(uint32_t ticks);
+//uint32_t _phase_to_ticks(uint32_t phase);
+//uint32_t _phase_now(void);
+//uint32_t _ticks_until_phase(uint32_t phase);
+
+
 static inline iqueuemac_tx_neighbour_t* _get_neighbour(iqueuemac_t* iqueuemac, unsigned int id)
 {
-    return &(iqueuemac->neighbours[id]);
+    return &(iqueuemac->tx.neighbours[id]);
 }
 
 bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt);
@@ -124,7 +131,11 @@ void iqueuemac_trun_on_radio(iqueuemac_t* iqueuemac);
 void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac);
 
 int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t* csma_enable);
+void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* info);
 int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac);
+int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info);
+int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt);
+void iqueue_cp_receive_packet_process(iqueuemac_t* iqueuemac);
 
 #ifdef __cplusplus
 }

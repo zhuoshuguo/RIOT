@@ -72,8 +72,29 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 		iqueuemac->node_states.in_cp_period = false;
 	}
 
+	iqueuemac->own_addr.len = iqueuemac->netdev->dev->driver->get(iqueuemac->netdev->dev, NETOPT_ADDRESS, iqueuemac->own_addr.addr, sizeof(iqueuemac->own_addr.addr));
+	//assert(lwmac.l2_addr.len > 0);
+
+	printf("shuguo: iqueuemac's own addrs is: %d, %d . \n ", iqueuemac->own_addr.addr[1], iqueuemac->own_addr.addr[0]);
+
+	/* Enable RX- and TX-started interrupts  */
+    netopt_enable_t enable = NETOPT_ENABLE;
+    iqueuemac->netdev->dev->driver->set(iqueuemac->netdev->dev, NETOPT_RX_START_IRQ, &enable, sizeof(enable));
+    iqueuemac->netdev->dev->driver->set(iqueuemac->netdev->dev, NETOPT_TX_START_IRQ, &enable, sizeof(enable));
+    iqueuemac->netdev->dev->driver->set(iqueuemac->netdev->dev, NETOPT_TX_END_IRQ, &enable, sizeof(enable));
+
+    /* Initialize receive packet queue */
+    packet_queue_init(&(iqueuemac->rx.queue),
+    		          iqueuemac->rx._queue_nodes,
+                      (sizeof(iqueuemac->rx._queue_nodes) / sizeof(packet_queue_node_t)));
+
+    /* Reset all timeouts just to be sure */
+    iqueuemac_reset_timeouts(iqueuemac);
+
+    iqueuemac->packet_received = false;
 	iqueuemac->need_update = false;
 	iqueuemac->duty_cycle_started = false;
+	iqueuemac->quit_current_cycle = false;
 
 }
 static void rtt_cb(void* arg)
@@ -127,15 +148,17 @@ void rtt_handler(uint32_t event)
       /*******************************Router RTT management***************************/
       case IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE:{
 
-    	  /// Shuguo: 以后每次进这里把RTT的计时器清零？！ 方便于管理和计算！！？？
-          alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-          rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
-
           if(iqueuemac.duty_cycle_started == false){
         	  iqueuemac.duty_cycle_started = true;
           }else{
         	  iqueuemac.router_states.router_new_cycle = true;
           }
+
+          /// Shuguo: 以后每次进这里把RTT的计时器清零？！ 方便于管理和计算！！？？
+          rtt_set_counter(0);
+
+          alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+          rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
 
           iqueuemac.need_update = true;
 
@@ -195,9 +218,9 @@ void iqueue_mac_router_update_old(iqueuemac_t* iqueuemac){
 	  case R_BEACON:{
 		  puts("Shuguo: we are now in BEACON period!");
 
-		  if(iqueuemac->neighbours[1].queue.length>0)
+		  if(iqueuemac->tx.neighbours[1].queue.length>0)
 		  {
-			  gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->neighbours[1].queue));
+			  gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.neighbours[1].queue));
 			  if(pkt != NULL){
 				  //iqueuemac_send(iqueuemac, pkt, true);
 			  	puts("Shuguo: we are now sending data in beacon period!");
@@ -256,6 +279,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->router_states.router_new_cycle = false;
 
 	iqueuemac_trun_on_radio(iqueuemac);
+	iqueuemac->packet_received = false;
 
 	/******set cp timeout ******/
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
@@ -266,6 +290,12 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 }
 
 void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
+/* In CP, a router can receive preamble, beacon, data packet, */
+
+    if(iqueuemac->packet_received == true){
+    	iqueuemac->packet_received = false;
+    	iqueue_cp_receive_packet_process(iqueuemac);
+    }
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END)){
 		puts("Shuguo: Router CP ends!!");
@@ -450,7 +480,8 @@ void iqueue_mac_update(iqueuemac_t* iqueuemac){
 	  iqueue_mac_node_update(iqueuemac);
 	}
 }
-static void _pass_on_packet(gnrc_pktsnip_t *pkt);
+
+///static void _pass_on_packet(gnrc_pktsnip_t *pkt);
 
 /**
  * @brief   Function called by the device driver on device events
@@ -476,16 +507,39 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event, void *data)
     else {
         DEBUG("gnrc_netdev2: event triggered -> %i\n", event);
         switch(event) {
+
+            case NETDEV2_EVENT_RX_STARTED:
+            	iqueuemac.rx_started = true;
+            	break;
+
             case NETDEV2_EVENT_RX_COMPLETE:
                 {
                     gnrc_pktsnip_t *pkt = gnrc_netdev2->recv(gnrc_netdev2);
 
-                    if (pkt) {
-                        _pass_on_packet(pkt);
+                    if(!iqueuemac.rx_started) {
+       				   //LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
+       				   gnrc_pktbuf_release(pkt);
+       				   iqueuemac.rx_started = false;
+                       break;
                     }
 
-                    break;
-                }
+                    iqueuemac.rx_started = false;
+                    iqueuemac.packet_received = true;
+
+                    if(!packet_queue_push(&iqueuemac.rx.queue, pkt, 0))
+                   	{
+                    	//LOG_ERROR("Can't push RX packet @ %p, memory full?\n", pkt);
+                    	gnrc_pktbuf_release(pkt);
+                    	break;
+                    }
+                    iqueuemac.need_update = true;
+                    /*
+                    if (pkt) {
+                        _pass_on_packet(pkt);
+                    }*/
+                }break;
+
+
 #ifdef MODULE_NETSTATS_L2
             case NETDEV2_EVENT_TX_MEDIUM_BUSY:
                 dev->stats.tx_failed++;
@@ -500,15 +554,15 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event, void *data)
     }
 }
 
-static void _pass_on_packet(gnrc_pktsnip_t *pkt)
-{
+//static void _pass_on_packet(gnrc_pktsnip_t *pkt)
+//{
     /* throw away packet if no one is interested */
-    if (!gnrc_netapi_dispatch_receive(pkt->type, GNRC_NETREG_DEMUX_CTX_ALL, pkt)) {
-        DEBUG("gnrc_netdev2: unable to forward packet of type %i\n", pkt->type);
-        gnrc_pktbuf_release(pkt);
-        return;
-    }
-}
+   // if (!gnrc_netapi_dispatch_receive(pkt->type, GNRC_NETREG_DEMUX_CTX_ALL, pkt)) {
+   //     DEBUG("gnrc_netdev2: unable to forward packet of type %i\n", pkt->type);
+    //    gnrc_pktbuf_release(pkt);
+    //    return;
+   // }
+//}
 
 /**
  * @brief   Startup code and event loop of the gnrc_netdev2 layer
@@ -562,9 +616,9 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
     iqueuemac.mac_type = MAC_TYPE;
 
-    iqueuemac_init(&iqueuemac);
-
     xtimer_sleep(3);
+
+    iqueuemac_init(&iqueuemac);
 
     rtt_handler(IQUEUEMAC_EVENT_RTT_START);
 
@@ -578,7 +632,6 @@ static void *_gnrc_iqueuemac_thread(void *args)
             case NETDEV2_MSG_TYPE_EVENT:
                 DEBUG("gnrc_netdev2: GNRC_NETDEV_MSG_TYPE_EVENT received\n");
                 dev->driver->isr(dev);
-                iqueuemac.need_update = true;
                 break;
             case GNRC_NETAPI_MSG_TYPE_SET:
                 /* read incoming options */

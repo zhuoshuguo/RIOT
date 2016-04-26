@@ -67,7 +67,15 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_TX_QUEUE_SIZE
-#define IQUEUEMAC_TX_QUEUE_SIZE             (8U)
+#define IQUEUEMAC_TX_QUEUE_SIZE             (7U)
+#endif
+
+#ifndef IQUEUEMAC_RX_QUEUE_SIZE
+#define IQUEUEMAC_RX_QUEUE_SIZE             (8U)
+#endif
+
+#ifndef IQUEUEMAC_DISPATCH_BUFFER_SIZE
+#define IQUEUEMAC_DISPATCH_BUFFER_SIZE      (4U)
 #endif
 
 #ifndef IQUEUEMAC_MAX_L2_ADDR_LEN
