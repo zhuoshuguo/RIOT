@@ -130,13 +130,13 @@ typedef enum {
 typedef enum {
 	/*Transmitting states of simple mode*/
 	N_TRANS_TO_UNKOWN,
-	N_TRANS_TO_NODE,
-	N_TRANS_TO_ROUTER
+	N_TRANS_TO_ROUTER,
+	N_TRANS_TO_NODE
 } mac_node_trans_state_t;
 
 typedef enum {
-	N_T2U_ASSEMBLE_PREAMBLE = 0,
-	N_T2U_TRANS_PREAMBLE,
+	N_T2U_SEND_PREAMBLE_INIT = 0,
+	N_T2U_SEND_PREAMBLE,
 	N_T2U_WAIT_PREAMBLE_ACK,
 	N_T2U_SEND_DATA,
 	N_T2U_END
@@ -163,7 +163,7 @@ typedef enum {
     TX_FEEDBACK_NOACK,
     TX_FEEDBACK_BUSY
 } iqueuemac_tx_feedback_t;
-#define LWMAC_TX_FEEDBACK_INIT TX_FEEDBACK_UNDEF
+#define IQUEUEMAC_TX_FEEDBACK_INIT TX_FEEDBACK_UNDEF
 
 /******************************************************************************/
 
@@ -221,10 +221,11 @@ typedef struct {
 	iqueuemac_tx_neighbour_t neighbours[IQUEUEMAC_NEIGHBOUR_COUNT];
 
 	uint32_t preamble_sent;
+	bool got_preamble_ack;
 	//uint32_t broadcast_seq;
 
 	/* Packet that is currently scheduled to be sent */
-	gnrc_pktsnip_t* packet;
+	gnrc_pktsnip_t* tx_packet;
 	/* Queue of destination node to which the current packet will be sent */
 	iqueuemac_tx_neighbour_t* current_neighbour;
 

@@ -66,9 +66,10 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	}else{
 		iqueuemac->node_states.node_basic_state = N_LISTENNING;
 		iqueuemac->node_states.node_listen_state = N_LISTEN_CP_INIT;
-		iqueuemac->node_states.node_t2r_state = N_T2R_WAIT_CP_INIT;
-		iqueuemac->node_states.node_t2u_state = N_T2U_ASSEMBLE_PREAMBLE;
 		iqueuemac->node_states.node_trans_state = N_TRANS_TO_UNKOWN;
+		iqueuemac->node_states.node_t2u_state = N_T2U_SEND_PREAMBLE_INIT;
+		iqueuemac->node_states.node_t2r_state = N_T2R_WAIT_CP_INIT;
+
 		iqueuemac->node_states.in_cp_period = false;
 	}
 
@@ -274,7 +275,7 @@ void iqueue_mac_router_update_old(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
-	puts("Shuguo: router is now entering CP");
+	//puts("Shuguo: router is now entering CP");
 
 	iqueuemac->router_states.router_new_cycle = false;
 
@@ -287,6 +288,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_LISTEN;
 	iqueuemac->need_update = true;
 
+	packet_queue_flush(&iqueuemac->rx.queue);
 }
 
 void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
@@ -297,8 +299,12 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
     	iqueue_cp_receive_packet_process(iqueuemac);
     }
 
+    /****** insert codes here for handling quit this cycle when receiving unexpected preamble***/
+    // if(iqueuemac->quit_current_cycle == true)
+    // clear timeout and switch to sleep period
+
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END)){
-		puts("Shuguo: Router CP ends!!");
+		//puts("Shuguo: Router CP ends!!");
 		iqueuemac->router_states.router_listen_state = R_LISTEN_CP_END;
 		iqueuemac->need_update = true;
 	}
@@ -316,7 +322,7 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 	/****** assemble and send the beacon ******/
 	iqueuemac_assemble_and_send_beacon(iqueuemac);
 
-	puts("Shuguo: router is now sending the beacon!!!");
+	//puts("Shuguo: router is now sending the beacon!!!");
 	/****** router switch to sleep period or vTDMA period ******/
 	iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
 	iqueuemac->need_update = true;
@@ -340,7 +346,7 @@ void iqueue_mac_router_sleep_init(iqueuemac_t* iqueuemac){
 	iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING;
 	iqueuemac->need_update = true;
 
-	puts("Shuguo: router is now entering sleeping period");
+	//puts("Shuguo: router is now entering sleeping period");
 }
 
 void iqueue_mac_router_sleep(iqueuemac_t* iqueuemac){
@@ -399,7 +405,9 @@ void iqueue_mac_node_listen_cp_init(iqueuemac_t* iqueuemac){
 
 	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
 	iqueuemac->need_update = true;
-	puts("Shuguo: node is now entering CP");
+
+	packet_queue_flush(&iqueuemac->rx.queue);
+	//puts("Shuguo: node is now entering CP");
 }
 
 void iqueue_mac_node_listen_cp_listen(iqueuemac_t* iqueuemac){
@@ -413,8 +421,21 @@ void iqueue_mac_node_listen_cp_listen(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_node_listen_cp_end(iqueuemac_t* iqueuemac){
 
-	iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING_INIT;
-	iqueuemac->need_update = true;
+	packet_queue_flush(&iqueuemac->rx.queue);
+
+	if(iqueue_mac_find_next_tx_neighbor(iqueuemac)){
+		iqueuemac->node_states.node_basic_state = N_TRANSMITTING;
+		switch(iqueuemac->tx.current_neighbour->mac_type){
+		  case UNKNOWN: iqueuemac->node_states.node_trans_state = N_TRANS_TO_UNKOWN;break;
+		  case ROUTER: iqueuemac->node_states.node_trans_state = N_TRANS_TO_ROUTER;break;
+		  case NODE: iqueuemac->node_states.node_trans_state = N_TRANS_TO_NODE;break;
+		  default:break;
+		}
+		iqueuemac->need_update = true;
+	}else{
+	    iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING_INIT;
+	    iqueuemac->need_update = true;
+	}
 }
 
 void iqueue_mac_node_sleep_init(iqueuemac_t* iqueuemac){
@@ -423,7 +444,7 @@ void iqueue_mac_node_sleep_init(iqueuemac_t* iqueuemac){
 	iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
 	iqueuemac->need_update = true;
 
-	puts("Shuguo: node is now entering sleeping period");
+	//puts("Shuguo: node is now entering sleeping period");
 
 }
 
@@ -456,9 +477,139 @@ void iqueue_mac_node_listen_update(iqueuemac_t* iqueuemac){
 	default: break;
    }
 }
+/**************************transmission handling of simple node *************************************/
+
+void iqueue_mac_node_t2u_send_preamble_init(iqueuemac_t* iqueuemac)
+{
+	iqueuemac_trun_on_radio(iqueuemac);
+	iqueuemac->packet_received = false;
+	iqueuemac->tx.preamble_sent = 0;
+	iqueuemac->tx.got_preamble_ack = false;
+
+	iqueuemac->node_states.node_t2u_state = N_T2U_SEND_PREAMBLE;
+	iqueuemac->need_update = true;
+
+	packet_queue_flush(&iqueuemac->rx.queue);
+	puts("shuguo: node preamble init");
+}
+
+void iqueue_mac_node_t2u_send_preamble(iqueuemac_t* iqueuemac)
+{
+	if(iqueuemac->tx.preamble_sent == 0){
+		iqueue_mac_send_preamble(iqueuemac, NETOPT_ENABLE);
+		iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE_DURATION, IQUEUEMAC_PREAMBLE_DURATION_US);
+	}else{
+		iqueue_mac_send_preamble(iqueuemac, NETOPT_DISABLE);
+	}
+	iqueuemac->tx.preamble_sent ++;
+
+	/******set preamble timeout ******/
+	iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE, IQUEUEMAC_PREAMBLE_INTERVAL_US);
+
+	iqueuemac->node_states.node_t2u_state = N_T2U_WAIT_PREAMBLE_ACK;
+	iqueuemac->need_update = true;
+}
+
+void iqueue_mac_node_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
+{
+	//puts("shuguo: node wait preamble ack");
+
+	if(iqueuemac->packet_received == true){
+    	iqueuemac->packet_received = false;
+    	iqueue_packet_process_in_wait_preamble_ack(iqueuemac);
+    }
+
+    /****** insert codes here for handling quit this cycle when receiving unexpected preamble***/
+    // if(iqueuemac->quit_current_cycle == true)
+    // clear timeout and switch to sleep period
+
+	if(iqueuemac->tx.got_preamble_ack == true){
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
+		iqueuemac->node_states.node_t2u_state = N_T2U_SEND_DATA;
+		iqueuemac->need_update = true;
+		return;
+	}
+
+	if(iqueuemac->rx_started == true){
+		return;
+	}
+
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_PREAMBLE_DURATION)){
+		iqueuemac->node_states.node_t2u_state = N_T2U_END;
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
+		iqueuemac->need_update = true;
+		return;
+	}
+
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_PREAMBLE)){
+		iqueuemac->node_states.node_t2u_state = N_T2U_SEND_PREAMBLE;
+		iqueuemac->need_update = true;
+	}
+}
+
+void iqueue_mac_node_t2u_send_data(iqueuemac_t* iqueuemac)
+{
+	iqueuemac_send_data_packet(iqueuemac, NETOPT_DISABLE);
+	//iqueuemac_send(iqueuemac, iqueuemac->tx.tx_packet, NETOPT_DISABLE);
+	iqueuemac->tx.tx_packet = NULL;
+
+	iqueuemac->node_states.node_t2u_state = N_T2U_END;
+	iqueuemac->need_update = true;
+}
+
+void iqueue_mac_node_t2u_end(iqueuemac_t* iqueuemac)
+{
+	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
+	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
+
+	if(iqueuemac->tx.tx_packet){
+		gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+		iqueuemac->tx.tx_packet = NULL;
+	}
+	iqueuemac->tx.current_neighbour = NULL;
+
+	iqueuemac->node_states.node_t2u_state = N_T2U_SEND_PREAMBLE_INIT;
+
+	/*********** judge and update the states before switch back to CP listening period   ***********/
+	iqueuemac->node_states.node_basic_state = N_LISTENNING;
+	if(iqueuemac->node_states.in_cp_period == true){
+		iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+		//puts("Shuguo: node is in t2u send preamble-end and switch to listen's CP");
+	}else{
+		iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
+		iqueuemac_trun_off_radio(iqueuemac);
+		//puts("Shuguo: node is in t2u send preamble-end and switch to listen's sleep");
+	}
+
+	iqueuemac->need_update = true;
+}
+
+
+void iqueue_mac_node_t2u_update(iqueuemac_t* iqueuemac)
+{
+	switch(iqueuemac->node_states.node_t2u_state)
+	{
+	 case N_T2U_SEND_PREAMBLE_INIT: iqueue_mac_node_t2u_send_preamble_init(iqueuemac);break;
+     case N_T2U_SEND_PREAMBLE: iqueue_mac_node_t2u_send_preamble(iqueuemac); break;
+	 case N_T2U_WAIT_PREAMBLE_ACK: iqueue_mac_node_t2u_wait_preamble_ack(iqueuemac); break;
+	 case N_T2U_SEND_DATA: iqueue_mac_node_t2u_send_data(iqueuemac); break;
+	 case N_T2U_END: iqueue_mac_node_t2u_end(iqueuemac);break;
+	 default: break;
+	}
+}
+
 
 void iqueue_mac_node_transmit_update(iqueuemac_t* iqueuemac){
-;
+
+	switch(iqueuemac->node_states.node_trans_state)
+   {
+	case N_TRANS_TO_UNKOWN: iqueue_mac_node_t2u_update(iqueuemac); break;
+	//case N_TRANS_TO_ROUTER: iqueue_mac_node_t2r_update(iqueuemac); break;
+	//case N_TRANS_TO_NODE: iqueue_mac_node_t2n_update(iqueuemac); break;
+	default: break;
+   }
+
 }
 
 void iqueue_mac_node_update(iqueuemac_t* iqueuemac){
@@ -516,15 +667,20 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event, void *data)
                 {
                     gnrc_pktsnip_t *pkt = gnrc_netdev2->recv(gnrc_netdev2);
 
+                    /*
                     if(!iqueuemac.rx_started) {
        				   //LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
        				   gnrc_pktbuf_release(pkt);
        				   iqueuemac.rx_started = false;
                        break;
-                    }
+                    }*/
 
                     iqueuemac.rx_started = false;
                     iqueuemac.packet_received = true;
+
+                    if(iqueuemac.node_states.node_t2u_state == N_T2U_WAIT_PREAMBLE_ACK){
+                    	puts("shuguo: receive packets in wait preamble ack.");
+                    }
 
                     if(!packet_queue_push(&iqueuemac.rx.queue, pkt, 0))
                    	{
