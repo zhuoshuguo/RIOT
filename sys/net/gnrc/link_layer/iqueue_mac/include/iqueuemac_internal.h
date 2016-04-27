@@ -130,12 +130,16 @@ static inline bool _addr_match(l2_addr_t* addr1, l2_addr_t* addr2)
 void iqueuemac_trun_on_radio(iqueuemac_t* iqueuemac);
 void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac);
 
-int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t* csma_enable);
+int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable);
 void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* info);
 int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac);
 int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info);
 int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt);
 void iqueue_cp_receive_packet_process(iqueuemac_t* iqueuemac);
+void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma);
+void iqueue_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac);
+void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_enable);
+bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac);
 
 #ifdef __cplusplus
 }

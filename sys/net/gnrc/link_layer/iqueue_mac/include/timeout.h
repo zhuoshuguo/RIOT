@@ -38,6 +38,9 @@ typedef struct iqueuemac iqueuemac_t;
 typedef enum {
     TIMEOUT_DISABLED = 0,
 	TIMEOUT_BROADCAST_END,
+
+	TIMEOUT_PREAMBLE,
+	TIMEOUT_PREAMBLE_DURATION,
 	/*****************router******************/
     TIMEOUT_CP_END,
     TIMEOUT_CP_MAX,
