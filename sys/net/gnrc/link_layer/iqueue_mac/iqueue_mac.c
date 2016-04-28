@@ -84,6 +84,10 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
     iqueuemac->netdev->dev->driver->set(iqueuemac->netdev->dev, NETOPT_TX_START_IRQ, &enable, sizeof(enable));
     iqueuemac->netdev->dev->driver->set(iqueuemac->netdev->dev, NETOPT_TX_END_IRQ, &enable, sizeof(enable));
 
+    /* Enable preloading, so packet will only be sent when netdev state will be
+     * set to NETOPT_STATE_TX */
+    //iqueuemac->netdev->dev->driver->set(iqueuemac->netdev->dev, NETOPT_PRELOADING, &enable, sizeof(enable));
+
     /* Initialize receive packet queue */
     packet_queue_init(&(iqueuemac->rx.queue),
     		          iqueuemac->rx._queue_nodes,
@@ -403,6 +407,8 @@ void iqueue_mac_node_listen_cp_init(iqueuemac_t* iqueuemac){
 
 	iqueuemac_trun_on_radio(iqueuemac);
 
+	//iqueue_mac_send_preamble(iqueuemac, NETOPT_ENABLE);
+
 	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
 	iqueuemac->need_update = true;
 
@@ -481,6 +487,7 @@ void iqueue_mac_node_listen_update(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_node_t2u_send_preamble_init(iqueuemac_t* iqueuemac)
 {
+	//iqueuemac_trun_on_radio(iqueuemac);
 	iqueuemac_trun_on_radio(iqueuemac);
 	iqueuemac->packet_received = false;
 	iqueuemac->tx.preamble_sent = 0;
@@ -490,24 +497,28 @@ void iqueue_mac_node_t2u_send_preamble_init(iqueuemac_t* iqueuemac)
 	iqueuemac->need_update = true;
 
 	packet_queue_flush(&iqueuemac->rx.queue);
-	puts("shuguo: node preamble init");
 }
 
 void iqueue_mac_node_t2u_send_preamble(iqueuemac_t* iqueuemac)
 {
+
 	if(iqueuemac->tx.preamble_sent == 0){
 		iqueue_mac_send_preamble(iqueuemac, NETOPT_ENABLE);
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE_DURATION, IQUEUEMAC_PREAMBLE_DURATION_US);
 	}else{
 		iqueue_mac_send_preamble(iqueuemac, NETOPT_DISABLE);
 	}
+
+	iqueuemac_trun_on_radio(iqueuemac);
+
 	iqueuemac->tx.preamble_sent ++;
+
 
 	/******set preamble timeout ******/
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE, IQUEUEMAC_PREAMBLE_INTERVAL_US);
 
 	iqueuemac->node_states.node_t2u_state = N_T2U_WAIT_PREAMBLE_ACK;
-	iqueuemac->need_update = true;
+	iqueuemac->need_update = false;
 }
 
 void iqueue_mac_node_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
@@ -530,10 +541,11 @@ void iqueue_mac_node_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 		iqueuemac->need_update = true;
 		return;
 	}
-
+/*
 	if(iqueuemac->rx_started == true){
+		iqueuemac->need_update = false;
 		return;
-	}
+	}*/
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_PREAMBLE_DURATION)){
 		iqueuemac->node_states.node_t2u_state = N_T2U_END;
@@ -545,7 +557,11 @@ void iqueue_mac_node_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_PREAMBLE)){
 		iqueuemac->node_states.node_t2u_state = N_T2U_SEND_PREAMBLE;
 		iqueuemac->need_update = true;
+		return;
 	}
+
+	iqueuemac->need_update = false;
+
 }
 
 void iqueue_mac_node_t2u_send_data(iqueuemac_t* iqueuemac)
@@ -560,6 +576,7 @@ void iqueue_mac_node_t2u_send_data(iqueuemac_t* iqueuemac)
 
 void iqueue_mac_node_t2u_end(iqueuemac_t* iqueuemac)
 {
+	puts("shuguo: node T2U ends");
 	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
 
@@ -667,20 +684,15 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event, void *data)
                 {
                     gnrc_pktsnip_t *pkt = gnrc_netdev2->recv(gnrc_netdev2);
 
-                    /*
                     if(!iqueuemac.rx_started) {
        				   //LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
        				   gnrc_pktbuf_release(pkt);
        				   iqueuemac.rx_started = false;
                        break;
-                    }*/
+                    }
 
                     iqueuemac.rx_started = false;
                     iqueuemac.packet_received = true;
-
-                    if(iqueuemac.node_states.node_t2u_state == N_T2U_WAIT_PREAMBLE_ACK){
-                    	puts("shuguo: receive packets in wait preamble ack.");
-                    }
 
                     if(!packet_queue_push(&iqueuemac.rx.queue, pkt, 0))
                    	{
