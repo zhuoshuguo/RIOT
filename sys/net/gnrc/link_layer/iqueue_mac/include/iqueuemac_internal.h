@@ -129,6 +129,7 @@ static inline bool _addr_match(l2_addr_t* addr1, l2_addr_t* addr2)
 
 void iqueuemac_trun_on_radio(iqueuemac_t* iqueuemac);
 void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac);
+void iqueuemac_set_raddio_to_listen_mode(iqueuemac_t* iqueuemac);
 
 int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable);
 void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* info);

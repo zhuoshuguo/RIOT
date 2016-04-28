@@ -235,6 +235,10 @@ void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac)
 	                              sizeof(devstate));
 }
 
+void iqueuemac_set_raddio_to_listen_mode(iqueuemac_t* iqueuemac){
+
+	iqueuemac_trun_on_radio(iqueuemac);
+}
 
 int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable)
 {
@@ -242,6 +246,7 @@ int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t 
 	csma_enable_send = csma_enable;
 	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev, NETOPT_CSMA, &csma_enable_send, sizeof(netopt_enable_t));
 
+	iqueuemac->tx.tx_finished = false;
 	iqueuemac->netdev->send(iqueuemac->netdev, pkt);
 
 	/*
@@ -483,7 +488,7 @@ void iqueue_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             case FRAMETYPE_PREAMBLE:{
         	    if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
         	  	  iqueue_send_preamble_ack(iqueuemac, &receive_packet_info);
-        	  	  iqueuemac_trun_on_radio(iqueuemac);
+        	  	  //iqueuemac_trun_on_radio(iqueuemac);
         	    }else{
         		  /****** this means that there is a long preamble period, so quit this cycle and go to sleep.****/
         		  iqueuemac->quit_current_cycle = true;
@@ -498,6 +503,7 @@ void iqueue_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 
             case FRAMETYPE_IQUEUE_DATA:{
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt);
+            	//gnrc_pktbuf_release(pkt);
         	    puts("Shuguo: router receives a data !!");
             }break;
 
@@ -520,7 +526,6 @@ void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 	iqueuemac_frame_preamble_t iqueuemac_preamble_hdr;
 	iqueuemac_preamble_hdr.header.type = FRAMETYPE_PREAMBLE;
 	iqueuemac_preamble_hdr.dst_addr = iqueuemac->tx.current_neighbour->l2_addr;
-
 
 	pkt = gnrc_pktbuf_add(NULL, &iqueuemac_preamble_hdr, sizeof(iqueuemac_preamble_hdr), GNRC_NETTYPE_IQUEUEMAC);
 	if(pkt == NULL) {
