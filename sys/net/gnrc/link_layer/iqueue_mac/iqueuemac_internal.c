@@ -23,6 +23,7 @@
 #include <net/gnrc.h>
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
 #include <net/gnrc/iqueue_mac/packet_queue.h>
+#include <net/gnrc/iqueue_mac/hdr.h>
 
 #include "include/iqueuemac_internal.h"
 #include "include/iqueuemac_types.h"
@@ -242,6 +243,16 @@ int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t 
 	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev, NETOPT_CSMA, &csma_enable_send, sizeof(netopt_enable_t));
 
 	iqueuemac->netdev->send(iqueuemac->netdev, pkt);
+
+	/*
+	netopt_state_t devstate;
+	devstate = NETOPT_STATE_TX;
+	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev,
+	                              NETOPT_STATE,
+	                              &devstate,
+	                              sizeof(devstate));
+	                              */
+
 	return 1;
 
 }
@@ -381,23 +392,16 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
         iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(iqueuemac_frame_preamble_ack_t), GNRC_NETTYPE_IQUEUEMAC);
     }break;
 
-        /*
-    case FRAMETYPE_WA:
-        lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_wa_t), GNRC_NETTYPE_LWMAC);
-        break;
-    case FRAMETYPE_DATA:
-        lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_data_t), GNRC_NETTYPE_LWMAC);
-        break;
-    case FRAMETYPE_BROADCAST:
-        lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_broadcast_t), GNRC_NETTYPE_LWMAC);
-        break;  */
+    case FRAMETYPE_IQUEUE_DATA:{
+            iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(iqueuemac_frame_data_t), GNRC_NETTYPE_IQUEUEMAC);
+    }break;
+
     default:
         return -2;
     }
 
     /* Memory location may have changed while marking */
     iqueuemac_hdr = iqueuemac_snip->data;
-
 
     /****** get the destination address *************/
     switch(iqueuemac_hdr->type){
@@ -414,6 +418,15 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
 
         case FRAMETYPE_PREAMBLE_ACK:{
         	info->dst_addr = ((iqueuemac_frame_preamble_ack_t*)iqueuemac_hdr)->dst_addr;
+        }break;
+
+        case FRAMETYPE_IQUEUE_DATA:{
+             if(netif_hdr->dst_l2addr_len) {
+                info->dst_addr.len = netif_hdr->dst_l2addr_len;
+                memcpy(info->dst_addr.addr,
+                       gnrc_netif_hdr_get_dst_addr(netif_hdr),
+                       netif_hdr->dst_l2addr_len);
+             }
         }break;
 
         default:break;
@@ -468,10 +481,9 @@ void iqueue_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_PREAMBLE:{
-            	puts("shuguo: router receives a preamble");
         	    if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
         	  	  iqueue_send_preamble_ack(iqueuemac, &receive_packet_info);
-        	  	  puts("shuguo: router sends back a preamble_ack");
+        	  	  iqueuemac_trun_on_radio(iqueuemac);
         	    }else{
         		  /****** this means that there is a long preamble period, so quit this cycle and go to sleep.****/
         		  iqueuemac->quit_current_cycle = true;
@@ -484,7 +496,7 @@ void iqueue_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 
             }break;
 
-            case FRAMETYPE_DATA:{
+            case FRAMETYPE_IQUEUE_DATA:{
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt);
         	    puts("Shuguo: router receives a data !!");
             }break;
@@ -530,7 +542,9 @@ void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 	/* Send WA as broadcast*/
 	nethdr_preamble->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
 
-	iqueuemac_send(iqueuemac, pkt, use_csma);
+	netopt_enable_t csma_enable;
+	csma_enable = use_csma;
+	iqueuemac_send(iqueuemac, pkt, csma_enable);
 }
 
 
@@ -538,8 +552,6 @@ void iqueue_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
 	gnrc_pktsnip_t* pkt;
 
 	iqueuemac_packet_info_t receive_packet_info;
-
-	puts("shuguo: node receives a packet after send preamble");
 
     while( (pkt = packet_queue_pop(&iqueuemac->rx.queue)) != NULL ) {
     	/* parse the packet */
@@ -560,7 +572,7 @@ void iqueue_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_PREAMBLE_ACK:{
-            	puts("shuguo: nodes receives a preamble_ack");
+            	//puts("shuguo: nodes receives a preamble_ack");
             	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
             		if(_addr_match(&iqueuemac->tx.current_neighbour->l2_addr, &receive_packet_info.src_addr)){
             			iqueuemac->tx.got_preamble_ack = true;
@@ -569,7 +581,7 @@ void iqueue_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             	gnrc_pktbuf_release(pkt);
             }break;
 
-            case FRAMETYPE_DATA:{
+            case FRAMETYPE_IQUEUE_DATA:{
             	gnrc_pktbuf_release(pkt);
 
             }break;
@@ -589,7 +601,7 @@ void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_ena
 	/*** enable auto-ACK ??? ***/
 	/* Insert iqueuemac header above NETIF header */
 	iqueuemac_frame_data_t iqueuemac_data_hdr;
-	iqueuemac_data_hdr.header.type = FRAMETYPE_DATA;
+	iqueuemac_data_hdr.header.type = FRAMETYPE_IQUEUE_DATA;
 	iqueuemac_data_hdr.queue_indicator = 5;
 
 	pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_data_hdr, sizeof(iqueuemac_data_hdr), GNRC_NETTYPE_IQUEUEMAC);
