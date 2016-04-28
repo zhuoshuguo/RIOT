@@ -316,6 +316,7 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_node_router_cp_end(iqueuemac_t* iqueuemac){
 
+	packet_queue_flush(&iqueuemac->rx.queue);
 	iqueuemac->router_states.router_listen_state = R_LISTEN_SEND_BEACON;
 	iqueuemac->need_update = true;
 }
@@ -509,7 +510,7 @@ void iqueue_mac_node_t2u_send_preamble(iqueuemac_t* iqueuemac)
 		iqueue_mac_send_preamble(iqueuemac, NETOPT_DISABLE);
 	}
 
-	iqueuemac_trun_on_radio(iqueuemac);
+	//iqueuemac_trun_on_radio(iqueuemac);
 
 	iqueuemac->tx.preamble_sent ++;
 
@@ -576,6 +577,13 @@ void iqueue_mac_node_t2u_send_data(iqueuemac_t* iqueuemac)
 
 void iqueue_mac_node_t2u_end(iqueuemac_t* iqueuemac)
 {
+ /***** !!!!!!!!!!!!!!!!!!!!!!!!!!! *****************/
+	/* this line is very important! only switch to sleep after packet transmission has a feedback!
+	namely, after transmission is finished. */
+	if(iqueuemac->tx.tx_finished == false){
+		return;
+	}
+
 	puts("shuguo: node T2U ends");
 	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
@@ -707,6 +715,39 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event, void *data)
                     }*/
                 }break;
 
+            case NETDEV2_EVENT_TX_COMPLETE:{
+            	iqueuemac.tx.tx_feedback = TX_FEEDBACK_SUCCESS;
+            	iqueuemac.tx.tx_finished = true;
+            	iqueuemac_set_raddio_to_listen_mode(&iqueuemac);
+            	if(iqueuemac.tx.got_preamble_ack == true){
+            	  puts("Shuguo: data packet gets a ACK!!");
+            	}
+            	iqueuemac.need_update = true;
+            }break;
+
+           	case NETDEV2_EVENT_TX_NOACK:{
+           		iqueuemac.tx.tx_feedback = TX_FEEDBACK_NOACK;
+           		iqueuemac.tx.tx_finished = true;
+           		iqueuemac_set_raddio_to_listen_mode(&iqueuemac);
+           		puts("Shuguo: data packet has no ACK!!");
+            	iqueuemac.need_update = true;
+           	}break;
+
+           	case NETDEV2_EVENT_TX_MEDIUM_BUSY:{
+           		iqueuemac.tx.tx_feedback = TX_FEEDBACK_BUSY;
+           		iqueuemac.tx.tx_finished = true;
+           		iqueuemac_set_raddio_to_listen_mode(&iqueuemac);
+           		if(iqueuemac.tx.got_preamble_ack == true){
+           		  puts("Shuguo: data packet transmission meets busy channel!");
+           		}
+           		iqueuemac.need_update = true;
+           	}break;
+/*
+        	case NETDEV2_EVENT_TX_STARTED:{
+        		if(iqueuemac.tx.got_preamble_ack == true){
+        		  puts("Shuguo: data packet transmission tx started!");
+        		 }
+        	}break;*/
 
 #ifdef MODULE_NETSTATS_L2
             case NETDEV2_EVENT_TX_MEDIUM_BUSY:
@@ -716,7 +757,8 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event, void *data)
                 dev->stats.tx_success++;
                 break;
 #endif
-            default:
+            default: break;
+
                 DEBUG("gnrc_netdev2: warning: unhandled event %u.\n", event);
         }
     }

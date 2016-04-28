@@ -163,6 +163,7 @@ typedef enum {
     TX_FEEDBACK_NOACK,
     TX_FEEDBACK_BUSY
 } iqueuemac_tx_feedback_t;
+
 #define IQUEUEMAC_TX_FEEDBACK_INIT TX_FEEDBACK_UNDEF
 
 /******************************************************************************/
@@ -229,6 +230,10 @@ typedef struct {
 	/* Queue of destination node to which the current packet will be sent */
 	iqueuemac_tx_neighbour_t* current_neighbour;
 
+	/* Feedback of last packet that was sent */
+	iqueuemac_tx_feedback_t tx_feedback;
+	bool tx_finished;
+
 } iqueuemac_tx_t;
 
 /******************************************************************************/
@@ -254,10 +259,7 @@ typedef struct iqueuemac {
     /* Own address */
     l2_addr_t own_addr;
     l2_addr_t father_router_addr;
-    
-    /* Feedback of last packet that was sent */
-    iqueuemac_tx_feedback_t tx_feedback;
-    
+
     /* Used to calculate wakeup times */
     uint32_t last_wakeup;    
 
