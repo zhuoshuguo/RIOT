@@ -176,7 +176,7 @@ typedef struct {
     /* MAC type of the neighbor*/
     iqueuemac_type_t mac_type;  /* UNKONW when this neighbor is not phase-locked yet*/
     /* Phase relative to iqueuemac: the start of its CP period */
-    uint32_t cp_phase;
+    uint32_t cp_phase;   /* in ticks*/
     /* Indicating that whether this neighbor is within the same cluster*/
     bool in_same_cluster;
 } iqueuemac_tx_neighbour_t;

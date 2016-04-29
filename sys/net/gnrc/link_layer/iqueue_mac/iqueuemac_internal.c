@@ -268,9 +268,11 @@ void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* i
 	/****** assemble and send the beacon ******/
 	gnrc_pktsnip_t* pkt;
 	gnrc_netif_hdr_t* nethdr_preamble_ack;
-	uint32_t next_cp_timing_ticks;
+	uint32_t phase_now_ticks;  //next_cp_timing_ticks;  //next_cp_timing_us; //
 
-	next_cp_timing_ticks = RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US) - rtt_get_counter();
+	phase_now_ticks = rtt_get_counter();
+	//next_cp_timing_ticks = RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US) - rtt_get_counter();
+	//next_cp_timing_us = IQUEUEMAC_SUPERFRAME_DURATION_US - RTT_TICKS_TO_US(rtt_get_counter());
 
 	/* Assemble preamble_ack packet */
 	iqueuemac_frame_preamble_ack_t iqueuemac_preamble_ack_hdr;
@@ -278,7 +280,7 @@ void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* i
 	iqueuemac_preamble_ack_hdr.dst_addr = info->src_addr;
 	iqueuemac_preamble_ack_hdr.device_type = ROUTER;
 	iqueuemac_preamble_ack_hdr.father_router = iqueuemac->own_addr;
-	iqueuemac_preamble_ack_hdr.next_cp_time = next_cp_timing_ticks;
+	iqueuemac_preamble_ack_hdr.phase_in_ticks = phase_now_ticks; // next_cp_timing_ticks; //  next_cp_timing_us; //
 
 	pkt = gnrc_pktbuf_add(NULL, &iqueuemac_preamble_ack_hdr, sizeof(iqueuemac_preamble_ack_hdr), GNRC_NETTYPE_IQUEUEMAC);
 	if(pkt == NULL) {
@@ -552,8 +554,69 @@ void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 	iqueuemac_send(iqueuemac, pkt, csma_enable);
 }
 
+void iqueuemac_node_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info){
 
-void iqueue_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
+	 iqueuemac_frame_preamble_ack_t* iqueuemac_preamble_ack_hdr;
+
+	 iqueuemac_preamble_ack_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_IQUEUEMAC);
+
+	 if(iqueuemac_preamble_ack_hdr == NULL) {
+		 puts("iqueuemac_preamble_ack_hdr is null");
+		 return;
+	 }
+
+	 /**** check if this node has a father router yet, if no, check whether this destination is a router.**/
+
+	 if(iqueuemac->father_router_addr.len == 0){
+		 /*** this node doesn't has a father router yet ***/
+
+		 /*** check whether the receiver is a router type ***/
+		 if(iqueuemac_preamble_ack_hdr->device_type == ROUTER){
+			 /*** the first heard router is selected as father router ***/
+			 iqueuemac->father_router_addr.len = pa_info->src_addr.len;
+			 memcpy(iqueuemac->father_router_addr.addr,
+					pa_info->src_addr.addr,
+					pa_info->src_addr.len);
+		 }
+	 }
+
+	 /***** update all the necessary information to marked as a known neighbor ****/
+	 iqueuemac->tx.current_neighbour->mac_type = iqueuemac_preamble_ack_hdr->device_type;
+
+	 if((iqueuemac->father_router_addr.len != 0)&&(_addr_match(&iqueuemac->father_router_addr,&iqueuemac_preamble_ack_hdr->father_router))){
+	     iqueuemac->tx.current_neighbour->in_same_cluster = true;
+	     iqueuemac->tx.current_neighbour->cp_phase = 0;
+	 }else{
+		 iqueuemac->tx.current_neighbour->in_same_cluster = false;
+		 iqueuemac->tx.current_neighbour->cp_phase = rtt_get_counter();
+	 }
+
+	 /* if this is the father router, get phase-locked!!!!  */
+	 if(_addr_match(&iqueuemac->father_router_addr, &pa_info->src_addr)){
+		 rtt_clear_alarm();
+
+		 uint32_t  phase_ticks;
+		 uint32_t alarm;
+		 //uint32_t  current_timing_us;
+
+		 /**set the rtt counter to be the same as father router*/
+		 phase_ticks = iqueuemac_preamble_ack_hdr->phase_in_ticks;
+		 rtt_set_counter(phase_ticks);
+
+		 /** set set next rtt alarm*/
+		 if(phase_ticks >= RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)){
+			 alarm = RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+			 iqueuemac_set_rtt_alarm(alarm, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_CP);
+			 iqueuemac->node_states.in_cp_period = false;
+		 }else{
+			 alarm = RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
+			 iqueuemac_set_rtt_alarm(alarm, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP);
+			 iqueuemac->node_states.in_cp_period = true;
+		 }
+
+	 }
+}
+void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
 	gnrc_pktsnip_t* pkt;
 
 	iqueuemac_packet_info_t receive_packet_info;
@@ -581,6 +644,7 @@ void iqueue_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
             		if(_addr_match(&iqueuemac->tx.current_neighbour->l2_addr, &receive_packet_info.src_addr)){
             			iqueuemac->tx.got_preamble_ack = true;
+            			iqueuemac_node_process_preamble_ack(iqueuemac, pkt, &receive_packet_info);
             		}
             	}
             	gnrc_pktbuf_release(pkt);
@@ -604,7 +668,9 @@ void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_ena
 	pkt = iqueuemac->tx.tx_packet;
 
 	/*** enable auto-ACK ??? ***/
-	/* Insert iqueuemac header above NETIF header */
+
+	/* Insert iqueue-mac header above NETIF header */
+
 	iqueuemac_frame_data_t iqueuemac_data_hdr;
 	iqueuemac_data_hdr.header.type = FRAMETYPE_IQUEUE_DATA;
 	iqueuemac_data_hdr.queue_indicator = 5;

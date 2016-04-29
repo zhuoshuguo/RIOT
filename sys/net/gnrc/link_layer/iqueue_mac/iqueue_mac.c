@@ -70,6 +70,10 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 		iqueuemac->node_states.node_t2u_state = N_T2U_SEND_PREAMBLE_INIT;
 		iqueuemac->node_states.node_t2r_state = N_T2R_WAIT_CP_INIT;
 
+		iqueuemac->father_router_addr.len = 0;
+		iqueuemac->father_router_addr.addr[0] = 0;
+		iqueuemac->father_router_addr.addr[1] = 0;
+
 		iqueuemac->node_states.in_cp_period = false;
 	}
 
@@ -102,6 +106,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	iqueuemac->quit_current_cycle = false;
 
 }
+
 static void rtt_cb(void* arg)
 {
     msg_t msg;
@@ -112,6 +117,12 @@ static void rtt_cb(void* arg)
     if (sched_context_switch_request) {
         thread_yield();
     }
+}
+
+
+void iqueuemac_set_rtt_alarm(uint32_t alarm, void *arg){
+
+	rtt_set_alarm(alarm, rtt_cb, arg);
 }
 
 void rtt_handler(uint32_t event)
@@ -171,6 +182,9 @@ void rtt_handler(uint32_t event)
 
       /*******************************Node RTT management***************************/
       case IQUEUEMAC_EVENT_RTT_N_ENTER_CP:{
+
+    	  rtt_set_counter(0);
+
     	  /// Shuguo: 以后每次进这里把RTT的计时器清零？！ 方便于管理和计算！！？？
     	  alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
     	  rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP);
@@ -185,7 +199,8 @@ void rtt_handler(uint32_t event)
       }break;
 
       case IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP:{
-    	  alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_CP_DURATION_US);
+    	  //alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_CP_DURATION_US);
+    	  alarm = RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
     	  rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_CP);
     	  iqueuemac.node_states.in_cp_period = false;
 
@@ -419,6 +434,8 @@ void iqueue_mac_node_listen_cp_init(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_node_listen_cp_listen(iqueuemac_t* iqueuemac){
 
+	/*** add packet received process function here to flush the rx_queue, otherwise may overflow!!!  ****/
+
 	if(iqueuemac->node_states.in_cp_period == false)
 	{
 		iqueuemac->node_states.node_listen_state = N_LISTEN_CP_END;
@@ -528,7 +545,7 @@ void iqueue_mac_node_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 
 	if(iqueuemac->packet_received == true){
     	iqueuemac->packet_received = false;
-    	iqueue_packet_process_in_wait_preamble_ack(iqueuemac);
+    	iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac);
     }
 
     /****** insert codes here for handling quit this cycle when receiving unexpected preamble***/
@@ -560,19 +577,19 @@ void iqueue_mac_node_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 		iqueuemac->need_update = true;
 		return;
 	}
-
-	iqueuemac->need_update = false;
-
 }
 
 void iqueue_mac_node_t2u_send_data(iqueuemac_t* iqueuemac)
 {
 	iqueuemac_send_data_packet(iqueuemac, NETOPT_DISABLE);
-	//iqueuemac_send(iqueuemac, iqueuemac->tx.tx_packet, NETOPT_DISABLE);
+
 	iqueuemac->tx.tx_packet = NULL;
 
 	iqueuemac->node_states.node_t2u_state = N_T2U_END;
 	iqueuemac->need_update = true;
+
+
+	/**** add a "wait-for-tx feedback" period to wait for the ending of the tx operation ***/
 }
 
 void iqueue_mac_node_t2u_end(iqueuemac_t* iqueuemac)
@@ -596,8 +613,9 @@ void iqueue_mac_node_t2u_end(iqueuemac_t* iqueuemac)
 
 	iqueuemac->node_states.node_t2u_state = N_T2U_SEND_PREAMBLE_INIT;
 
-	/*********** judge and update the states before switch back to CP listening period   ***********/
+
 	iqueuemac->node_states.node_basic_state = N_LISTENNING;
+	/*********** judge and update the states before switch back to CP listening period   ***********/
 	if(iqueuemac->node_states.in_cp_period == true){
 		iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
 		//puts("Shuguo: node is in t2u send preamble-end and switch to listen's CP");
@@ -719,9 +737,6 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event, void *data)
             	iqueuemac.tx.tx_feedback = TX_FEEDBACK_SUCCESS;
             	iqueuemac.tx.tx_finished = true;
             	iqueuemac_set_raddio_to_listen_mode(&iqueuemac);
-            	if(iqueuemac.tx.got_preamble_ack == true){
-            	  puts("Shuguo: data packet gets a ACK!!");
-            	}
             	iqueuemac.need_update = true;
             }break;
 
@@ -729,7 +744,6 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event, void *data)
            		iqueuemac.tx.tx_feedback = TX_FEEDBACK_NOACK;
            		iqueuemac.tx.tx_finished = true;
            		iqueuemac_set_raddio_to_listen_mode(&iqueuemac);
-           		puts("Shuguo: data packet has no ACK!!");
             	iqueuemac.need_update = true;
            	}break;
 
@@ -737,9 +751,6 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event, void *data)
            		iqueuemac.tx.tx_feedback = TX_FEEDBACK_BUSY;
            		iqueuemac.tx.tx_finished = true;
            		iqueuemac_set_raddio_to_listen_mode(&iqueuemac);
-           		if(iqueuemac.tx.got_preamble_ack == true){
-           		  puts("Shuguo: data packet transmission meets busy channel!");
-           		}
            		iqueuemac.need_update = true;
            	}break;
 /*
