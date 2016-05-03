@@ -586,6 +586,7 @@ void iqueuemac_node_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_t*
 	 if((iqueuemac->father_router_addr.len != 0)&&(_addr_match(&iqueuemac->father_router_addr,&iqueuemac_preamble_ack_hdr->father_router))){
 	     iqueuemac->tx.current_neighbour->in_same_cluster = true;
 	     iqueuemac->tx.current_neighbour->cp_phase = 0;
+	     //puts("shuguo: in the same cluster.");
 	 }else{
 		 iqueuemac->tx.current_neighbour->in_same_cluster = false;
 		 iqueuemac->tx.current_neighbour->cp_phase = rtt_get_counter();
@@ -608,14 +609,17 @@ void iqueuemac_node_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_t*
 			 alarm = RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
 			 iqueuemac_set_rtt_alarm(alarm, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_CP);
 			 iqueuemac->node_states.in_cp_period = false;
+			 //puts("shuguo: node got phase-locked with father in sleep.");
 		 }else{
 			 alarm = RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
 			 iqueuemac_set_rtt_alarm(alarm, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP);
 			 iqueuemac->node_states.in_cp_period = true;
+			 puts("shuguo: node got phase-locked with father in CP.");
 		 }
 
 	 }
 }
+
 void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
 	gnrc_pktsnip_t* pkt;
 
@@ -645,6 +649,9 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             		if(_addr_match(&iqueuemac->tx.current_neighbour->l2_addr, &receive_packet_info.src_addr)){
             			iqueuemac->tx.got_preamble_ack = true;
             			iqueuemac_node_process_preamble_ack(iqueuemac, pkt, &receive_packet_info);
+            			/**got preamble-ack, flush the rx queue***/
+            			packet_queue_flush(&iqueuemac->rx.queue);
+            			return;
             		}
             	}
             	gnrc_pktbuf_release(pkt);
@@ -673,7 +680,7 @@ void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_ena
 
 	iqueuemac_frame_data_t iqueuemac_data_hdr;
 	iqueuemac_data_hdr.header.type = FRAMETYPE_IQUEUE_DATA;
-	iqueuemac_data_hdr.queue_indicator = 5;
+	iqueuemac_data_hdr.queue_indicator = 0;
 
 	pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_data_hdr, sizeof(iqueuemac_data_hdr), GNRC_NETTYPE_IQUEUEMAC);
 
@@ -695,6 +702,18 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac)
 
 }
 
+
+bool iqueuemac_check_has_pending_packet(packet_queue_t* q)
+{
+	gnrc_pktsnip_t* pkt;
+	pkt = packet_queue_head(q);
+
+	if(pkt != NULL){
+		return true;
+	}
+
+	return false;
+}
 
 /******************************************************************************/
 

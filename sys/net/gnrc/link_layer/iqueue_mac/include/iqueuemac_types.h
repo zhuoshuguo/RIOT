@@ -151,6 +151,7 @@ typedef enum {
 	N_T2R_WAIT_BEACON,
 	N_T2R_WAIT_OWN_SLOTS,
 	N_T2R_TRANS_IN_VTDMA,
+	N_T2R_WAIT_VTDMATRANS_FEEDBACK,
 	N_T2R_TRANS_END
 	/*Listening states of simple mode*/
 } mac_node_t2r_state_t;

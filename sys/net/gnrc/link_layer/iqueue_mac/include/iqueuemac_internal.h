@@ -142,6 +142,7 @@ void iqueuemac_node_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_t*
 void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac);
 void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_enable);
 bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac);
+bool iqueuemac_check_has_pending_packet(packet_queue_t* q);
 
 #ifdef __cplusplus
 }
