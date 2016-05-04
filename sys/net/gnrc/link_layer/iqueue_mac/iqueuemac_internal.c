@@ -247,6 +247,7 @@ int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t 
 	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev, NETOPT_CSMA, &csma_enable_send, sizeof(netopt_enable_t));
 
 	iqueuemac->tx.tx_finished = false;
+	iqueuemac->tx.tx_feedback = TX_FEEDBACK_UNDEF;
 	iqueuemac->netdev->send(iqueuemac->netdev, pkt);
 
 	/*

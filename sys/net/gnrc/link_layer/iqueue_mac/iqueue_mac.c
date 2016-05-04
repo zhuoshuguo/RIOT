@@ -294,7 +294,7 @@ void iqueue_mac_router_update_old(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
-	puts("Shuguo: router is now entering CP");
+	//puts("Shuguo: router is now entering CP");
 
 	iqueuemac->router_states.router_new_cycle = false;
 
@@ -428,7 +428,7 @@ void iqueue_mac_node_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->need_update = true;
 
 	packet_queue_flush(&iqueuemac->rx.queue);
-	puts("Shuguo: node is now entering CP");
+	//puts("Shuguo: node is now entering CP");
 }
 
 void iqueue_mac_node_listen_cp_listen(iqueuemac_t* iqueuemac){
@@ -663,7 +663,7 @@ void iqueue_mac_node_t2r_wait_cp(iqueuemac_t* iqueuemac){
 		}
 
 	}else{
-		////if(is_timerout_expired())
+		;////if(is_timerout_expired())
 	}
 
 }
@@ -682,9 +682,12 @@ void iqueue_mac_node_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_node_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 
-	if(iqueuemac.tx.tx_finished == true){
+	if(iqueuemac->tx.tx_finished == true){
 		/*** add another condition here in the furture: the tx-feedback must be ACK-got,
 		 * namely, completed, to ensure router gets the data correctly***/
+		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
+			puts("Shuguo: node success sends a data to father router!!");
+		}
 		if(iqueuemac_check_has_pending_packet(&iqueuemac->tx.current_neighbour->queue)){
 			iqueuemac->node_states.node_t2r_state = N_T2R_WAIT_BEACON;
 			iqueuemac->need_update = true;
