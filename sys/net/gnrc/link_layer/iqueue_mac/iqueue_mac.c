@@ -294,7 +294,7 @@ void iqueue_mac_router_update_old(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
-	//puts("Shuguo: router is now entering CP");
+	puts("Shuguo: router is now entering CP");
 
 	iqueuemac->router_states.router_new_cycle = false;
 
@@ -428,7 +428,7 @@ void iqueue_mac_node_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->need_update = true;
 
 	packet_queue_flush(&iqueuemac->rx.queue);
-	//puts("Shuguo: node is now entering CP");
+	puts("Shuguo: node is now entering CP");
 }
 
 void iqueue_mac_node_listen_cp_listen(iqueuemac_t* iqueuemac){
