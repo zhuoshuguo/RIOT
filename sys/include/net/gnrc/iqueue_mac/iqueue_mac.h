@@ -36,22 +36,22 @@ typedef enum {
     NODE
 } iqueuemac_type_t;
 
-#define MAC_TYPE   ROUTER // NODE //                 NODE //        ROUTER
+#define MAC_TYPE  ROUTER // NODE //                   NODE //        ROUTER
 
 #ifndef IQUEUEMAC_SUPERFRAME_DURATION_US
-#define IQUEUEMAC_SUPERFRAME_DURATION_US        (5000U * 1000)
+#define IQUEUEMAC_SUPERFRAME_DURATION_US        (500U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_CP_DURATION_US
-#define IQUEUEMAC_CP_DURATION_US        (3000U * 1000)
+#define IQUEUEMAC_CP_DURATION_US        (50U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_PREAMBLE_INTERVAL_US
-#define IQUEUEMAC_PREAMBLE_INTERVAL_US        (1000U * 1000)
+#define IQUEUEMAC_PREAMBLE_INTERVAL_US        (6U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_PREAMBLE_DURATION_US
-#define IQUEUEMAC_PREAMBLE_DURATION_US        (6000U * 1000)
+#define IQUEUEMAC_PREAMBLE_DURATION_US        (600U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_SLEEP_DURATION_US
@@ -97,6 +97,13 @@ typedef enum {
 #define IQUEUEMAC_NEIGHBOUR_COUNT           (8U)
 #endif
 
+#ifndef IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT
+#define IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT           (5U)
+#endif
+
+#ifndef IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM
+#define IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM           (7U)
+#endif
 
 void iqueuemac_set_rtt_alarm(uint32_t alarm, void *arg);
 

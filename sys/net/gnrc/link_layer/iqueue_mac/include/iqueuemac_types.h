@@ -168,6 +168,10 @@ typedef enum {
 #define IQUEUEMAC_TX_FEEDBACK_INIT TX_FEEDBACK_UNDEF
 
 /******************************************************************************/
+typedef struct {
+    uint8_t  addr[IQUEUEMAC_MAX_L2_ADDR_LEN];
+} l2_id_t;
+
 
 typedef struct {
     /* Address of neighbour node */
@@ -205,6 +209,11 @@ typedef struct {
 
 } router_states_t;
 
+typedef struct {
+	l2_addr_t node_addr;
+	uint8_t queue_indicator;
+	iqueuemac_type_t mac_type;
+}rx_slots_schedule_unit;
 
 typedef struct {
     /* Internal state of reception state machine */
@@ -213,6 +222,8 @@ typedef struct {
     packet_queue_node_t _queue_nodes[IQUEUEMAC_RX_QUEUE_SIZE];
     l2_addr_t l2_addr;
     gnrc_pktsnip_t* dispatch_buffer[IQUEUEMAC_DISPATCH_BUFFER_SIZE];
+
+    rx_slots_schedule_unit rx_register_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
 } iqueuemac_rx_t;
 
 

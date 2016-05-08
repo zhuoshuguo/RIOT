@@ -294,7 +294,7 @@ void iqueue_mac_router_update_old(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
-	puts("Shuguo: router is now entering CP");
+	//puts("Shuguo: router is now entering CP");
 
 	iqueuemac->router_states.router_new_cycle = false;
 
@@ -315,7 +315,7 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 
     if(iqueuemac->packet_received == true){
     	iqueuemac->packet_received = false;
-    	iqueue_cp_receive_packet_process(iqueuemac);
+    	iqueue_router_cp_receive_packet_process(iqueuemac);
     }
 
     /****** insert codes here for handling quit this cycle when receiving unexpected preamble***/
@@ -428,7 +428,7 @@ void iqueue_mac_node_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->need_update = true;
 
 	packet_queue_flush(&iqueuemac->rx.queue);
-	puts("Shuguo: node is now entering CP");
+	//puts("Shuguo: node is now entering CP");
 }
 
 void iqueue_mac_node_listen_cp_listen(iqueuemac_t* iqueuemac){
@@ -688,13 +688,18 @@ void iqueue_mac_node_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
 			puts("Shuguo: node success sends a data to father router!!");
 		}
+
+		/*
 		if(iqueuemac_check_has_pending_packet(&iqueuemac->tx.current_neighbour->queue)){
 			iqueuemac->node_states.node_t2r_state = N_T2R_WAIT_BEACON;
 			iqueuemac->need_update = true;
 		}else{
 			iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_END;
 			iqueuemac->need_update = true;
-		}
+		}*/
+
+		iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_END;
+		iqueuemac->need_update = true;
 	}
 }
 
