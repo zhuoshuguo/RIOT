@@ -41,6 +41,7 @@ typedef enum {
 
 	TIMEOUT_PREAMBLE,
 	TIMEOUT_PREAMBLE_DURATION,
+	TIMEOUT_WAIT_BEACON,
 	/*****************router******************/
     TIMEOUT_CP_END,
     TIMEOUT_CP_MAX,

@@ -519,7 +519,7 @@ void iqueue_mac_node_t2u_send_preamble(iqueuemac_t* iqueuemac)
 
 	if(iqueuemac->tx.preamble_sent == 0){
 		iqueue_mac_send_preamble(iqueuemac, NETOPT_ENABLE);
-		iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE_DURATION, IQUEUEMAC_PREAMBLE_DURATION_US);
+		iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE_DURATION, IQUEUEMAC_SUPERFRAME_DURATION_US); //IQUEUEMAC_PREAMBLE_DURATION_US
 	}else{
 		iqueue_mac_send_preamble(iqueuemac, NETOPT_DISABLE);
 	}
@@ -689,22 +689,51 @@ void iqueue_mac_node_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 			puts("Shuguo: node success sends a data to father router!!");
 		}
 
-		/*
-		if(iqueuemac_check_has_pending_packet(&iqueuemac->tx.current_neighbour->queue)){
+		if(iqueuemac->tx.current_neighbour->queue.length > 0){
+			iqueuemac->tx.vtdma_para.get_beacon = false;
+			iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_BEACON, IQUEUEMAC_SUPERFRAME_DURATION_US);
+			// need to flush the rx-queue ??
+			packet_queue_flush(&iqueuemac->rx.queue);
+
 			iqueuemac->node_states.node_t2r_state = N_T2R_WAIT_BEACON;
 			iqueuemac->need_update = true;
 		}else{
 			iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_END;
 			iqueuemac->need_update = true;
-		}*/
+		}
 
-		iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_END;
-		iqueuemac->need_update = true;
+		//iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_END;
+		//iqueuemac->need_update = true;
 	}
 }
 
 void iqueue_mac_node_t2r_wait_beacon(iqueuemac_t* iqueuemac){
 
+    if(iqueuemac->packet_received == true){
+    	iqueuemac->packet_received = false;
+    	iqueuemac_node_wait_beacon_packet_process(iqueuemac);
+    }
+
+    if(iqueuemac->tx.vtdma_para.get_beacon == true){
+    	/*
+    	if(iqueuemac->tx.vtdma_para.slots_num > 0){
+    		iqueuemac->node_states.node_t2r_state = N_T2R_WAIT_OWN_SLOTS;
+    		iqueuemac->need_update = true;
+    	}else{
+    		iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_END;
+    		iqueuemac->need_update = true;
+    	}*/
+    	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_BEACON);
+    	iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_END;
+    	iqueuemac->need_update = true;
+
+    }
+
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_BEACON)){
+		puts("Shuguo: No beacon.");
+		iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_END;
+		iqueuemac->need_update = true;
+	}
 }
 
 void iqueue_mac_node_t2r_wait_own_slots(iqueuemac_t* iqueuemac){
@@ -726,6 +755,10 @@ void iqueue_mac_node_t2r_end(iqueuemac_t* iqueuemac){
 		iqueuemac->tx.tx_packet = NULL;
 	}
 	iqueuemac->tx.current_neighbour = NULL;
+
+	/*** clear all timeouts ***/
+	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_BEACON);
+
 	iqueuemac->node_states.node_t2r_state = N_T2R_WAIT_CP_INIT;
 
 	iqueuemac->node_states.node_basic_state = N_LISTENNING;
