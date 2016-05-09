@@ -228,6 +228,14 @@ typedef struct {
 
 
 typedef struct {
+	uint8_t sub_channel_seq;
+	uint8_t slots_position;
+	uint8_t slots_num;
+	bool get_beacon;
+}vtdma_para_t;
+
+
+typedef struct {
     /* Internal state of reception state machine */
 	packet_queue_node_t _queue_nodes[IQUEUEMAC_TX_QUEUE_SIZE];
 
@@ -245,6 +253,8 @@ typedef struct {
 	/* Feedback of last packet that was sent */
 	iqueuemac_tx_feedback_t tx_feedback;
 	bool tx_finished;
+
+	vtdma_para_t vtdma_para;
 
 } iqueuemac_tx_t;
 
