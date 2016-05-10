@@ -36,14 +36,14 @@ typedef enum {
     NODE
 } iqueuemac_type_t;
 
-#define MAC_TYPE  NODE // ROUTER //                     NODE //        ROUTER
+#define MAC_TYPE   NODE //ROUTER //                       NODE //        ROUTER
 
 #ifndef IQUEUEMAC_SUPERFRAME_DURATION_US
 #define IQUEUEMAC_SUPERFRAME_DURATION_US        (10000U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_CP_DURATION_US
-#define IQUEUEMAC_CP_DURATION_US        (50U * 1000)
+#define IQUEUEMAC_CP_DURATION_US        (100U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_PREAMBLE_INTERVAL_US
@@ -70,13 +70,13 @@ typedef enum {
 #define IQUEUEMAC_TIMEOUT_COUNT             (3U)
 #endif
 
-/******* it seems that this should not be larger than 7 !!!!! *******/
+/******* it seems that this should not be larger than 6 !!!!! *******/
 #ifndef IQUEUEMAC_TX_QUEUE_SIZE
-#define IQUEUEMAC_TX_QUEUE_SIZE             (7U)
+#define IQUEUEMAC_TX_QUEUE_SIZE             (6U)
 #endif
 
 #ifndef IQUEUEMAC_RX_QUEUE_SIZE
-#define IQUEUEMAC_RX_QUEUE_SIZE             (7U)
+#define IQUEUEMAC_RX_QUEUE_SIZE             (7U)   /// 试着把这个减小，看看 能不能相应增大 TX_QUEUE_SIZE， 可能这两个在抢内存
 #endif
 
 /******* it seems that this should not be larger than 3 !!!!! *******/
@@ -87,7 +87,6 @@ typedef enum {
 #ifndef IQUEUEMAC_MAX_L2_ADDR_LEN
 #define IQUEUEMAC_MAX_L2_ADDR_LEN           (2U)
 #endif
-
 
 #ifndef IQUEUEMAC_NEIGHBOUR_COUNT
 #define IQUEUEMAC_NEIGHBOUR_COUNT           (8U)
