@@ -381,7 +381,7 @@ void iqueue_mac_router_vtdma(iqueuemac_t* iqueuemac){
 	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_VTDMA)){
-		//puts("Shuguo: Router vTDMA ends!!");
+		puts("Shuguo: Router vTDMA ends!!");
 		iqueuemac->router_states.router_listen_state = R_LISTEN_VTDMA_END;
 		iqueuemac->need_update = true;
 	}
@@ -487,12 +487,17 @@ void iqueue_mac_node_listen_cp_listen(iqueuemac_t* iqueuemac){
 void iqueue_mac_node_listen_cp_end(iqueuemac_t* iqueuemac){
 
 	packet_queue_flush(&iqueuemac->rx.queue);
+	//puts("shuguo: node end of cp, check queue-length ");
 
 	if(iqueue_mac_find_next_tx_neighbor(iqueuemac)){
 		iqueuemac->node_states.node_basic_state = N_TRANSMITTING;
 		switch(iqueuemac->tx.current_neighbour->mac_type){
 		  case UNKNOWN: iqueuemac->node_states.node_trans_state = N_TRANS_TO_UNKOWN;break;
-		  case ROUTER: iqueuemac->node_states.node_trans_state = N_TRANS_TO_ROUTER;break;
+		  case ROUTER: {
+			  iqueuemac->node_states.node_trans_state = N_TRANS_TO_ROUTER;
+			  //puts("shuguo: node turn to send to router ");
+
+		  }break;
 		  case NODE: iqueuemac->node_states.node_trans_state = N_TRANS_TO_NODE;break;
 		  default:break;
 		}
@@ -703,11 +708,9 @@ void iqueue_mac_node_t2r_wait_cp(iqueuemac_t* iqueuemac){
 			iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_IN_CP;
 			iqueuemac->need_update = true;
 		}
-
 	}else{
 		;////if(is_timerout_expired())
 	}
-
 }
 
 void iqueue_mac_node_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
@@ -725,10 +728,11 @@ void iqueue_mac_node_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 void iqueue_mac_node_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac->tx.tx_finished == true){
+
 		/*** add another condition here in the furture: the tx-feedback must be ACK-got,
 		 * namely, completed, to ensure router gets the data correctly***/
 		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
-			puts("Shuguo: node success sends a data to father router!!");
+			;//puts("Shuguo: node success sends a data to father router!!");
 		}
 
 		if(iqueuemac->tx.current_neighbour->queue.length > 0){
@@ -812,6 +816,7 @@ void iqueue_mac_node_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 	if(iqueuemac->tx.vtdma_para.slots_num > 0){
 
 		/**** Delete the pkt no matter the transmission is success or not !!! ****/
+
 		gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.current_neighbour->queue));
 
 		/**** Or, only delete the pkt when the feedback shows good !!! ****/
@@ -839,7 +844,7 @@ void iqueue_mac_node_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 		/*** add another condition here in the furture: the tx-feedback must be ACK-got,
 		 * namely, completed, to ensure router gets the data correctly***/
 		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
-			puts("Shuguo: node success sends a data to father router in vtdma !!");
+			//puts("Shuguo: node success sends a data to father router in vtdma !!");
 
 			/****  if use packt_head previously ****/
 			//gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.current_neighbour.queue));

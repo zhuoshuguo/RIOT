@@ -198,8 +198,8 @@ bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
 
     }
 
-    printf("Shuguo: the current find neighbour_id is %d \n", neighbour_id);
-    printf("Shuguo: the inited addr in the neighbor-list is %d %d \n", iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[1], iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[0]);
+    //printf("Shuguo: the current find neighbour_id is %d \n", neighbour_id);
+    //printf("Shuguo: the inited addr in the neighbor-list is %d %d \n", iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[1], iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[0]);
 
     if(packet_queue_push(&(neighbour->queue), pkt, 0) == NULL) {
     	puts("Shuguo: Cann't push packet into queue, queue is perhaps full! ");
@@ -1061,7 +1061,7 @@ void iqueuemac_router_vtdma_receive_packet_process(iqueuemac_t* iqueuemac){
             case FRAMETYPE_IQUEUE_DATA:{
             	iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt);
-        	    puts("Shuguo: router receives a data in vtdma!!");
+        	    //puts("Shuguo: router receives a data in vtdma!!");
             }break;
 
             default:gnrc_pktbuf_release(pkt);break;
