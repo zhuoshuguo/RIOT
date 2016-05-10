@@ -434,6 +434,10 @@ void iqueue_mac_node_listen_cp_init(iqueuemac_t* iqueuemac){
 void iqueue_mac_node_listen_cp_listen(iqueuemac_t* iqueuemac){
 
 	/**** add packet received process function here to flush the rx_queue, otherwise may overflow!!!  ****/
+	if(iqueuemac->packet_received == true){
+	    	iqueuemac->packet_received = false;
+	    	iqueue_node_cp_receive_packet_process(iqueuemac);
+	}
 
 	if(iqueuemac->node_states.in_cp_period == false)
 	{
@@ -868,6 +872,11 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event, void *data)
        				   iqueuemac.rx_started = false;
                        break;
                     }
+                    /*
+                    gnrc_netif_hdr_t* netif_hdr;
+                    netif_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+                    printf("shuguo: the received packet rssi is: %d .\n", netif_hdr->rssi);
+                    */
 
                     iqueuemac.rx_started = false;
                     iqueuemac.packet_received = true;

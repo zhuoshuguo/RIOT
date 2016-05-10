@@ -39,7 +39,7 @@ typedef enum {
 #define MAC_TYPE  NODE //ROUTER //                     NODE //        ROUTER
 
 #ifndef IQUEUEMAC_SUPERFRAME_DURATION_US
-#define IQUEUEMAC_SUPERFRAME_DURATION_US        (5000U * 1000)
+#define IQUEUEMAC_SUPERFRAME_DURATION_US        (10000U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_CP_DURATION_US
@@ -80,7 +80,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_RX_QUEUE_SIZE
-#define IQUEUEMAC_RX_QUEUE_SIZE             (8U)
+#define IQUEUEMAC_RX_QUEUE_SIZE             (7U)
 #endif
 
 /******* it seems that this should not be larger than 3 !!!!! *******/

@@ -864,7 +864,7 @@ bool iqueuemac_check_has_pending_packet(packet_queue_t* q)
 }*/
 
 
-void iqueuemac_node_beacon_process(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt){
+void iqueuemac_beacon_process(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt){
 	iqueuemac_frame_beacon_t* iqueuemac_beacon_hdr;
 	gnrc_pktsnip_t* iqueuemac_snip;
 
@@ -915,6 +915,8 @@ void iqueuemac_node_beacon_process(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt){
 		for(i=0;i<id_position;i++){
 			slots_position += slots_list[i];
 		}
+		iqueuemac->tx.vtdma_para.slots_position = slots_position;
+
 		printf("Shuguo: the allocated slots-num is %d, id-position is %d .\n", iqueuemac->tx.vtdma_para.slots_num, id_position);
 	}else{
 		iqueuemac->tx.vtdma_para.slots_num = 0;
@@ -942,7 +944,7 @@ void iqueuemac_node_wait_beacon_packet_process(iqueuemac_t* iqueuemac){
             case FRAMETYPE_BEACON:{
             	if(_addr_match(&iqueuemac->tx.current_neighbour->l2_addr, &receive_packet_info.src_addr)){
             		iqueuemac->tx.vtdma_para.get_beacon = true;
-            		iqueuemac_node_beacon_process(iqueuemac, pkt);
+            		iqueuemac_beacon_process(iqueuemac, pkt);
             	}
             	gnrc_pktbuf_release(pkt);
             }break;
@@ -955,12 +957,63 @@ void iqueuemac_node_wait_beacon_packet_process(iqueuemac_t* iqueuemac){
             case FRAMETYPE_PREAMBLE_ACK:{
             	// should we quit this period also??!
             	gnrc_pktbuf_release(pkt);
-
             }break;
 
             case FRAMETYPE_IQUEUE_DATA:{
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt);
             	//gnrc_pktbuf_release(pkt);
+        	    puts("Shuguo: router receives a data !!");
+            }break;
+
+            default:gnrc_pktbuf_release(pkt);break;
+  	    }
+
+    }/* end of while loop */
+}
+
+
+
+void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac){
+	gnrc_pktsnip_t* pkt;
+
+	iqueuemac_packet_info_t receive_packet_info;
+
+    while( (pkt = packet_queue_pop(&iqueuemac->rx.queue)) != NULL ) {
+
+    	/* parse the packet */
+    	int res = _parse_packet(pkt, &receive_packet_info);
+    	if(res != 0) {
+            //LOG_DEBUG("Packet could not be parsed: %i\n", ret);
+            gnrc_pktbuf_release(pkt);
+            continue;
+        }
+
+    	switch(receive_packet_info.header->type){
+            case FRAMETYPE_BEACON:{
+            	gnrc_pktbuf_release(pkt);
+            }break;
+
+            case FRAMETYPE_PREAMBLE:{
+            	/*
+        	    if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
+        	  	  iqueue_send_preamble_ack(iqueuemac, &receive_packet_info);
+        	  	  //iqueuemac_trun_on_radio(iqueuemac);
+        	    }else{
+        		  //this means that there is a long preamble period, so quit this cycle and go to sleep.
+        		  iqueuemac->quit_current_cycle = true;
+        	    }*/
+        	    gnrc_pktbuf_release(pkt);
+            }break;
+
+            case FRAMETYPE_PREAMBLE_ACK:{
+            	gnrc_pktbuf_release(pkt);
+
+            }break;
+
+            case FRAMETYPE_IQUEUE_DATA:{
+            	//iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+        	    //iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt);
+            	gnrc_pktbuf_release(pkt);
         	    puts("Shuguo: router receives a data !!");
             }break;
 
