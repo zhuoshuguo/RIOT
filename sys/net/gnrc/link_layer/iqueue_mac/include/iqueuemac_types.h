@@ -215,6 +215,12 @@ typedef struct {
 	iqueuemac_type_t mac_type;
 }rx_slots_schedule_unit;
 
+
+typedef struct {
+	uint8_t total_slots_num;
+	uint8_t sub_channel_seq;
+}rx_vtdma_mana_t;
+
 typedef struct {
     /* Internal state of reception state machine */
 
@@ -224,6 +230,8 @@ typedef struct {
     gnrc_pktsnip_t* dispatch_buffer[IQUEUEMAC_DISPATCH_BUFFER_SIZE];
 
     rx_slots_schedule_unit rx_register_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
+
+    rx_vtdma_mana_t router_vtdma_mana;
 } iqueuemac_rx_t;
 
 
