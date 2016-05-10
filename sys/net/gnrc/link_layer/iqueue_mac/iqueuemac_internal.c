@@ -924,7 +924,7 @@ void iqueuemac_beacon_process(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt){
 		}
 		iqueuemac->tx.vtdma_para.slots_position = slots_position;
 
-		printf("Shuguo: the allocated slots-num is %d, id-position is %d .\n", iqueuemac->tx.vtdma_para.slots_num, id_position);
+		//printf("Shuguo: the allocated slots-num is %d, id-position is %d .\n", iqueuemac->tx.vtdma_para.slots_num, id_position);
 	}else{
 		iqueuemac->tx.vtdma_para.slots_num = 0;
 		iqueuemac->tx.vtdma_para.slots_position = 0;
