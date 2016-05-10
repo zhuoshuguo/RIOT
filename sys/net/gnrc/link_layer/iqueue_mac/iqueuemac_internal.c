@@ -320,7 +320,7 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 	iqueuemac_frame_beacon_t iqueuemac_hdr;
 	iqueuemac_hdr.header.type = FRAMETYPE_BEACON;
     iqueuemac_hdr.next_cp_time = IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_CP_DURATION_US;
-	iqueuemac_hdr.sub_channel_seq = 12;
+	iqueuemac_hdr.sub_channel_seq = iqueuemac->rx.router_vtdma_mana.sub_channel_seq;
 	//iqueuemac_hdr.schedulelist_size = 0;
 
 	/********* Add the slots schedule list functionality here!!!  *********/
@@ -333,6 +333,8 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 	uint8_t total_tdma_node_num = 0;
 	uint8_t  total_tdma_slot_num = 0;
 	bool slots_full = false;
+
+	iqueuemac->rx.router_vtdma_mana.total_slots_num = 0;
 
 	/**** search router-type first ****/
 	for(i=0;i<IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT;i++)
@@ -353,6 +355,7 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 				uint8_t redueced_slots_num;
 				redueced_slots_num = total_tdma_slot_num - IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM;
 				slots_list[j] -= redueced_slots_num;
+				total_tdma_slot_num -= redueced_slots_num;
 				//j++;
 				slots_full = true;
 				break;
@@ -383,6 +386,7 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 				uint8_t redueced_slots_num;
 				redueced_slots_num = total_tdma_slot_num - IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM;
 				slots_list[j] -= redueced_slots_num;
+				total_tdma_slot_num -= redueced_slots_num;
 				slots_full = true;
 				break;
 			}
@@ -393,29 +397,32 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 	iqueuemac_hdr.schedulelist_size = total_tdma_node_num;
 
 	if(total_tdma_node_num > 0){
+
+		iqueuemac->rx.router_vtdma_mana.total_slots_num = total_tdma_slot_num;
+		printf("Shuguo: the total slots-number this cycle is %d . \n", iqueuemac->rx.router_vtdma_mana.total_slots_num);
+
 		//puts("Shuguo: schedule slots-list");
-	  /**** add the slots list ****/
-	  pkt = gnrc_pktbuf_add(NULL, slots_list, total_tdma_node_num * sizeof(uint8_t), GNRC_NETTYPE_IQUEUEMAC);
-	  if(pkt == NULL) {
-	        ;
-	  }
-	  /**** add the ID list ****/
-	  pkt = gnrc_pktbuf_add(pkt, id_list, total_tdma_node_num * sizeof(l2_id_t), GNRC_NETTYPE_IQUEUEMAC);
-	  if(pkt == NULL) {
-	         ;
-	  }
-	  /**** add the beacon header ****/
-	  pkt = gnrc_pktbuf_add(pkt, &iqueuemac_hdr, sizeof(iqueuemac_hdr), GNRC_NETTYPE_IQUEUEMAC);
-	  if(pkt == NULL) {
-	        ;
-	  }
+	    /**** add the slots list ****/
+	    pkt = gnrc_pktbuf_add(NULL, slots_list, total_tdma_node_num * sizeof(uint8_t), GNRC_NETTYPE_IQUEUEMAC);
+	    if(pkt == NULL) {
+	          ;
+	    }
+	    /**** add the ID list ****/
+	    pkt = gnrc_pktbuf_add(pkt, id_list, total_tdma_node_num * sizeof(l2_id_t), GNRC_NETTYPE_IQUEUEMAC);
+	    if(pkt == NULL) {
+	          ;
+	    }
+	    /**** add the beacon header ****/
+	    pkt = gnrc_pktbuf_add(pkt, &iqueuemac_hdr, sizeof(iqueuemac_hdr), GNRC_NETTYPE_IQUEUEMAC);
+	    if(pkt == NULL) {
+	          ;
+	    }
 	}else{
 		pkt = gnrc_pktbuf_add(NULL, &iqueuemac_hdr, sizeof(iqueuemac_hdr), GNRC_NETTYPE_IQUEUEMAC);
 		if(pkt == NULL) {
 		       ;
 		}
 	}
-
 
 	/********* Add the Netif header  *********/
 	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
@@ -598,10 +605,10 @@ void iqueuemac_router_queue_indicator_update(iqueuemac_t* iqueuemac, gnrc_pktsni
 			extra_mac_type = iqueuemac_data_hdr->queue_indicator & 0x80;
 			if(extra_mac_type == 0x80){
 			    iqueuemac->rx.rx_register_list[i].mac_type = NODE;
-			    puts("shuguo: the registered device is node type.");
+			    //puts("shuguo: the registered device is node type.");
 			}else{
 				iqueuemac->rx.rx_register_list[i].mac_type = ROUTER;
-				puts("shuguo: the registered device is router type.");
+				//puts("shuguo: the registered device is router type.");
 			}
 
 			iqueuemac->rx.rx_register_list[i].queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x7F;
@@ -1022,6 +1029,49 @@ void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 
     }/* end of while loop */
 }
+
+void iqueuemac_router_vtdma_receive_packet_process(iqueuemac_t* iqueuemac){
+	gnrc_pktsnip_t* pkt;
+
+	iqueuemac_packet_info_t receive_packet_info;
+
+    while( (pkt = packet_queue_pop(&iqueuemac->rx.queue)) != NULL ) {
+
+    	/* parse the packet */
+    	int res = _parse_packet(pkt, &receive_packet_info);
+    	if(res != 0) {
+            //LOG_DEBUG("Packet could not be parsed: %i\n", ret);
+            gnrc_pktbuf_release(pkt);
+            continue;
+        }
+
+    	switch(receive_packet_info.header->type){
+            case FRAMETYPE_BEACON:{
+            	gnrc_pktbuf_release(pkt);
+            }break;
+
+            case FRAMETYPE_PREAMBLE:{
+        	    gnrc_pktbuf_release(pkt);
+            }break;
+
+            case FRAMETYPE_PREAMBLE_ACK:{
+            	gnrc_pktbuf_release(pkt);
+            }break;
+
+            case FRAMETYPE_IQUEUE_DATA:{
+            	iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+        	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt);
+        	    puts("Shuguo: router receives a data in vtdma!!");
+            }break;
+
+            default:gnrc_pktbuf_release(pkt);break;
+  	    }
+
+    }/* end of while loop */
+}
+
+
+
 
 /******************************************************************************/
 

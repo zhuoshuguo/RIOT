@@ -61,6 +61,8 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 
 		iqueuemac->router_states.router_new_cycle = false;
 
+		iqueuemac->rx.router_vtdma_mana.sub_channel_seq = 26;
+
 	}else{
 		iqueuemac->node_states.node_basic_state = N_LISTENNING;
 		iqueuemac->node_states.node_listen_state = N_LISTEN_CP_INIT;
@@ -145,9 +147,9 @@ void rtt_handler(uint32_t event)
 
     	puts("Shuguo: setting vTDMA period timeout!");
 
-    	iqueuemac_set_timeout(&iqueuemac, TIMEOUT_VTDMA, IQUEUEMAC_VTDMA_DURATION_US);
-    	iqueuemac_set_timeout(&iqueuemac, TIMEOUT_VTDMA_LONG, IQUEUEMAC_VTDMA_LONG_DURATION_US);
-    	iqueuemac_set_timeout(&iqueuemac, TIMEOUT_VTDMA_LONG_LONG, IQUEUEMAC_VTDMA_LONG_LONG_DURATION_US);
+    	//iqueuemac_set_timeout(&iqueuemac, TIMEOUT_VTDMA, IQUEUEMAC_VTDMA_DURATION_US);
+    	//iqueuemac_set_timeout(&iqueuemac, TIMEOUT_VTDMA_LONG, IQUEUEMAC_VTDMA_LONG_DURATION_US);
+    	//iqueuemac_set_timeout(&iqueuemac, TIMEOUT_VTDMA_LONG_LONG, IQUEUEMAC_VTDMA_LONG_LONG_DURATION_US);
 
         //alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
         //rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_SLEEP);
@@ -271,13 +273,14 @@ void iqueue_mac_router_update_old(iqueuemac_t* iqueuemac){
 			  rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_SLEEP);
 		  }
 
+		  /*
 		  if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_VTDMA_LONG)){
-			  puts("Shuguo: vTDMA_LONG TIMEOUT!!!");
+			  //puts("Shuguo: vTDMA_LONG TIMEOUT!!!");
 		  }
 
 		  if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_VTDMA_LONG_LONG)){
 		 	  puts("Shuguo: vTDMA_LONG_LONG TIMEOUT!!!");
-		  }
+		  }*/
 
 	  }break;
 
@@ -336,7 +339,6 @@ void iqueue_mac_node_router_cp_end(iqueuemac_t* iqueuemac){
 	iqueuemac->need_update = true;
 }
 
-
 void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 
 	/****** assemble and send the beacon ******/
@@ -344,19 +346,55 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 
 	//puts("Shuguo: router is now sending the beacon!!!");
 	/****** router switch to sleep period or vTDMA period ******/
-	iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
-	iqueuemac->need_update = true;
+	if(iqueuemac->rx.router_vtdma_mana.total_slots_num > 0){
+		iqueuemac->router_states.router_listen_state = R_LISTEN_VTDMA_INIT;
+		iqueuemac->need_update = true;
+	}else{
+	    iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
+	    iqueuemac->need_update = true;
+	}
 }
 
 void iqueue_mac_router_vtdma_init(iqueuemac_t* iqueuemac){
+
+	/*** switch the radio to the subchannel ***/
+
+	/*** set the vTDMA period timeout!!! ***/
+	uint32_t vtdma_duration;
+	vtdma_duration = iqueuemac->rx.router_vtdma_mana.total_slots_num * IQUEUEMAC_VTDMA_SLOT_SIZE_US;
+
+	iqueuemac_set_timeout(iqueuemac, TIMEOUT_VTDMA, vtdma_duration);
+
+	iqueuemac->router_states.router_listen_state = R_LISTEN_VTDMA;
+	iqueuemac->need_update = true;
 
 }
 
 void iqueue_mac_router_vtdma(iqueuemac_t* iqueuemac){
 
+	if(iqueuemac->packet_received == true){
+	    iqueuemac->packet_received = false;
+
+	    /*** check whether this packet-process func. can be merged with cp-packet-process func. due to similar functionalities!!! ***/
+	    //iqueue_router_cp_receive_packet_process(iqueuemac);
+	    iqueuemac_router_vtdma_receive_packet_process(iqueuemac);
+	}
+
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_VTDMA)){
+		//puts("Shuguo: Router vTDMA ends!!");
+		iqueuemac->router_states.router_listen_state = R_LISTEN_VTDMA_END;
+		iqueuemac->need_update = true;
+	}
 }
 
 void iqueue_mac_router_vtdma_end(iqueuemac_t* iqueuemac){
+
+	/*** switch the radio to the public-channel!!! ***/
+
+	/*** ensure that the channel-switching is finished before go to sleep to turn it off !!! ***/
+
+	iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
+	iqueuemac->need_update = true;
 
 }
 

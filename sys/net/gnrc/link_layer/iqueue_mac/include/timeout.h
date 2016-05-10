@@ -46,8 +46,6 @@ typedef enum {
     TIMEOUT_CP_END,
     TIMEOUT_CP_MAX,
     TIMEOUT_VTDMA,
-	TIMEOUT_VTDMA_LONG,
-	TIMEOUT_VTDMA_LONG_LONG,
 	/*****************simple-node******************/
 	TIMEOUT_N_CP_DURATION,
 	TIMEOUT_BEACON_END
