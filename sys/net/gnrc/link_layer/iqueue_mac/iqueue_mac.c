@@ -695,6 +695,9 @@ void iqueue_mac_node_t2r_init(iqueuemac_t* iqueuemac){
 		;
 	}
 
+	/*** flush the rx-queue here to reduce possible buffered packet in RIOT!! ***/
+	packet_queue_flush(&iqueuemac->rx.queue);
+
 	iqueuemac->node_states.node_t2r_state = N_T2R_WAIT_CP;
 	iqueuemac->need_update = true;
 }

@@ -399,7 +399,7 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 	if(total_tdma_node_num > 0){
 
 		iqueuemac->rx.router_vtdma_mana.total_slots_num = total_tdma_slot_num;
-		printf("Shuguo: the total slots-number this cycle is %d . \n", iqueuemac->rx.router_vtdma_mana.total_slots_num);
+		//printf("Shuguo: the total slots-number this cycle is %d . \n", iqueuemac->rx.router_vtdma_mana.total_slots_num);
 
 		//puts("Shuguo: schedule slots-list");
 	    /**** add the slots list ****/
