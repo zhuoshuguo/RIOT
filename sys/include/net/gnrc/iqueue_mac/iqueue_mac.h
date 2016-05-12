@@ -51,7 +51,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_PREAMBLE_DURATION_US
-#define IQUEUEMAC_PREAMBLE_DURATION_US        (1000U * 1000)
+#define IQUEUEMAC_PREAMBLE_DURATION_US        IQUEUEMAC_SUPERFRAME_DURATION_US // (1000U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_SLEEP_DURATION_US
@@ -63,7 +63,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_VTDMA_SLOT_SIZE_US
-#define IQUEUEMAC_VTDMA_SLOT_SIZE_US        (7U * 1000)
+#define IQUEUEMAC_VTDMA_SLOT_SIZE_US        (5U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_TIMEOUT_COUNT
@@ -97,7 +97,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM
-#define IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM           (7U)
+#define IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM           (6U)
 #endif
 
 void iqueuemac_set_rtt_alarm(uint32_t alarm, void *arg);

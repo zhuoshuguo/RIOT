@@ -693,7 +693,7 @@ void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 		sanity checks needed */
 	nethdr_preamble = (gnrc_netif_hdr_t*) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
 
-	/* Construct NETIF header and insert address for WA packet */
+	/* Construct NETIF header and initiate address fields */
 	gnrc_netif_hdr_init(nethdr_preamble, 0, 0);
 	//gnrc_netif_hdr_set_dst_addr(nethdr_wa, lwmac->rx.l2_addr.addr, lwmac->rx.l2_addr.len);
 
@@ -705,7 +705,7 @@ void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 	iqueuemac_send(iqueuemac, pkt, csma_enable);
 }
 
-void iqueuemac_node_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info){
+void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info){
 
 	 iqueuemac_frame_preamble_ack_t* iqueuemac_preamble_ack_hdr;
 
@@ -718,7 +718,7 @@ void iqueuemac_node_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_t*
 
 	 /**** check if this node has a father router yet, if no, check whether this destination is a router.**/
 
-	 if(iqueuemac->father_router_addr.len == 0){
+	 if((iqueuemac->father_router_addr.len == 0)&&(iqueuemac->mac_type == NODE)){
 		 /*** this node doesn't has a father router yet ***/
 
 		 /*** check whether the receiver is a router type ***/
@@ -738,13 +738,13 @@ void iqueuemac_node_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_t*
 	     iqueuemac->tx.current_neighbour->in_same_cluster = true;
 	     iqueuemac->tx.current_neighbour->cp_phase = 0;
 	     //puts("shuguo: in the same cluster.");
-	 }else{
+	 }else{//for router type, it will automatically enter here, since father-router are different
 		 iqueuemac->tx.current_neighbour->in_same_cluster = false;
 		 iqueuemac->tx.current_neighbour->cp_phase = rtt_get_counter();
 	 }
 
 	 /* if this is the father router, get phase-locked!!!!  */
-	 if(_addr_match(&iqueuemac->father_router_addr, &pa_info->src_addr)){
+	 if((_addr_match(&iqueuemac->father_router_addr, &pa_info->src_addr))&&(iqueuemac->mac_type == NODE)){
 		 rtt_clear_alarm();
 
 		 uint32_t  phase_ticks;
@@ -799,7 +799,7 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
             		if(_addr_match(&iqueuemac->tx.current_neighbour->l2_addr, &receive_packet_info.src_addr)){
             			iqueuemac->tx.got_preamble_ack = true;
-            			iqueuemac_node_process_preamble_ack(iqueuemac, pkt, &receive_packet_info);
+            			iqueuemac_device_process_preamble_ack(iqueuemac, pkt, &receive_packet_info);
             			/**got preamble-ack, flush the rx queue***/
             			packet_queue_flush(&iqueuemac->rx.queue);
             			return;

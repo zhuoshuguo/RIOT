@@ -88,9 +88,20 @@ typedef enum {
 typedef enum {
 	/*Transmitting states of simple mode*/
 	R_TRANS_TO_UNKOWN,
-	R_TRANS_TO_NODE,
-	R_TRANS_TO_ROUTER
+	R_TRANS_TO_ROUTER,
+	R_TRANS_TO_NODE
 } mac_router_trans_state_t;
+
+typedef enum {
+	R_T2U_SEND_PREAMBLE_INIT = 0,
+	R_T2U_SEND_PREAMBLE,
+	R_T2U_WAIT_PREAMBLE_ACK,
+	R_T2U_SEND_DATA,
+	R_T2U_WAIT_TX_FEEDBACK,
+	R_T2U_END
+} mac_router_t2u_state_t;
+
+/******************************router state machinies**********************************/
 
 typedef enum {
  /*   UNDEF = -1,
@@ -190,7 +201,9 @@ typedef struct {
 
 	mac_node_basic_state_t node_basic_state;
 	mac_node_listen_state_t node_listen_state;
+
 	mac_node_trans_state_t node_trans_state;
+
 	mac_node_t2u_state_t  node_t2u_state;
 	mac_node_t2r_state_t node_t2r_state;
 	bool in_cp_period;
@@ -202,7 +215,10 @@ typedef struct {
 
 	mac_router_basic_state_t router_basic_state;
 	mac_router_listen_state_t router_listen_state;
+
 	mac_router_trans_state_t router_trans_state;
+
+	mac_router_t2u_state_t router_t2u_state;
 
 	bool extend_cp;
 	bool router_new_cycle;
