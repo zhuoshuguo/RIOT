@@ -77,6 +77,7 @@ typedef enum {
 	R_LISTEN_CP_END,
 	//R_LISTEN_CREATE_BEACON,
 	R_LISTEN_SEND_BEACON,
+	R_LISTEN_WAIT_BEACON_FEEDBACK,
 	R_LISTEN_VTDMA_INIT,
 	R_LISTEN_VTDMA,
 	R_LISTEN_VTDMA_END,
@@ -86,7 +87,7 @@ typedef enum {
 } mac_router_listen_state_t;
 
 typedef enum {
-	/*Transmitting states of simple mode*/
+	/*Transmitting states of router*/
 	R_TRANS_TO_UNKOWN,
 	R_TRANS_TO_ROUTER,
 	R_TRANS_TO_NODE
@@ -100,6 +101,19 @@ typedef enum {
 	R_T2U_WAIT_TX_FEEDBACK,
 	R_T2U_END
 } mac_router_t2u_state_t;
+
+typedef enum {
+	/*Transmitting states of router*/
+	R_T2R_WAIT_CP_INIT = 0,
+	R_T2R_WAIT_CP,
+	R_T2R_TRANS_IN_CP,
+	R_T2R_WAIT_CPTRANS_FEEDBACK,
+	R_T2R_WAIT_BEACON,
+	R_T2R_WAIT_OWN_SLOTS,
+	R_T2R_TRANS_IN_VTDMA,
+	R_T2R_WAIT_VTDMATRANS_FEEDBACK,
+	R_T2R_TRANS_END
+} mac_router_t2r_state_t;
 
 /******************************router state machinies**********************************/
 
@@ -219,6 +233,7 @@ typedef struct {
 	mac_router_trans_state_t router_trans_state;
 
 	mac_router_t2u_state_t router_t2u_state;
+	mac_router_t2r_state_t router_t2r_state;
 
 	bool extend_cp;
 	bool router_new_cycle;

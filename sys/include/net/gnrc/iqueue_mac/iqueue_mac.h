@@ -66,6 +66,10 @@ typedef enum {
 #define IQUEUEMAC_VTDMA_SLOT_SIZE_US        (5U * 1000)
 #endif
 
+#ifndef IQUEUEMAC_WAIT_CP_SECUR_GAP_US
+#define IQUEUEMAC_WAIT_CP_SECUR_GAP_US        (5U * 1000)
+#endif
+
 #ifndef IQUEUEMAC_TIMEOUT_COUNT
 #define IQUEUEMAC_TIMEOUT_COUNT             (3U)
 #endif
@@ -76,7 +80,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_RX_QUEUE_SIZE
-#define IQUEUEMAC_RX_QUEUE_SIZE             (7U)   /// 试着把这个减小，看看 能不能相应增大 TX_QUEUE_SIZE， 可能这两个在抢内存
+#define IQUEUEMAC_RX_QUEUE_SIZE             (2U)   /// 试着把这个减小，看看 能不能相应增大 TX_QUEUE_SIZE， 可能这两个在抢内存
 #endif
 
 /******* it seems that this should not be larger than 3 !!!!! *******/
