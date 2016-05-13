@@ -358,9 +358,25 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 	if(iqueuemac->rx.router_vtdma_mana.total_slots_num > 0){
 		iqueuemac->router_states.router_listen_state = R_LISTEN_VTDMA_INIT;
 		iqueuemac->need_update = true;
-	}else{
-	    iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
-	    iqueuemac->need_update = true;
+	}else{ /**** no vTDMA period ****/
+		if(iqueue_mac_find_next_tx_neighbor(iqueuemac)){
+
+			iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
+			iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
+			/*
+			switch(iqueuemac->tx.current_neighbour->mac_type){
+			  case UNKNOWN: iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;break;
+			  case ROUTER: {
+				  iqueuemac->router_states.router_trans_state = R_TRANS_TO_ROUTER;
+			  }break;
+			  case NODE: iqueuemac->node_states.node_trans_state = R_TRANS_TO_NODE;break;
+			  default:break;
+			}*/
+			iqueuemac->need_update = true;
+		}else{
+	        iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
+	        iqueuemac->need_update = true;
+		}
 	}
 }
 
@@ -590,14 +606,14 @@ void iqueuemac_router_t2u_end(iqueuemac_t* iqueuemac){
 
 	iqueuemac->router_states.router_t2u_state = R_T2U_SEND_PREAMBLE_INIT;
 
-	iqueuemac->router_states.router_basic_state = R_LISTENNING;
-
 	/*********** judge and update the states before switch back to CP listening period   ***********/
-
+	iqueuemac->router_states.router_basic_state = R_LISTENNING;
 	iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING;
 	iqueuemac->router_states.router_new_cycle = false;
 
 	iqueuemac_trun_off_radio(iqueuemac);
+
+	puts("Shuguo: router is in t-2-u end, switching back to sleeping period");
 
 	/*
 	if(iqueuemac->node_states.in_cp_period == true){

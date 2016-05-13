@@ -741,6 +741,7 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 	 }else{//for router type, it will automatically enter here, since father-router are different
 		 iqueuemac->tx.current_neighbour->in_same_cluster = false;
 		 iqueuemac->tx.current_neighbour->cp_phase = rtt_get_counter();
+		 puts("shuguo: get phased-locked, not in the same cluster.");
 	 }
 
 	 /* if this is the father router, get phase-locked!!!!  */
@@ -801,6 +802,7 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             			iqueuemac->tx.got_preamble_ack = true;
             			iqueuemac_device_process_preamble_ack(iqueuemac, pkt, &receive_packet_info);
             			/**got preamble-ack, flush the rx queue***/
+            			gnrc_pktbuf_release(pkt);
             			packet_queue_flush(&iqueuemac->rx.queue);
             			return;
             		}
