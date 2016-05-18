@@ -895,6 +895,8 @@ void iqueuemac_beacon_process(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt){
 	iqueuemac->tx.vtdma_para.sub_channel_seq = iqueuemac_beacon_hdr->sub_channel_seq;
 
 	if(schedulelist_size == 0){
+		iqueuemac->tx.vtdma_para.slots_num = 0;
+		iqueuemac->tx.vtdma_para.slots_position = 0;
 		return;
 	}
 
@@ -934,7 +936,7 @@ void iqueuemac_beacon_process(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt){
 }
 
 /****** check whether this function can be merged with router-wait-beacon-packet-process!!! ******/
-void iqueuemac_node_wait_beacon_packet_process(iqueuemac_t* iqueuemac){
+void iqueuemac_wait_beacon_packet_process(iqueuemac_t* iqueuemac){
 	gnrc_pktsnip_t* pkt;
 
 	iqueuemac_packet_info_t receive_packet_info;

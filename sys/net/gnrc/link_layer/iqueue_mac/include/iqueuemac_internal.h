@@ -145,7 +145,7 @@ void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_ena
 bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac);
 //bool iqueuemac_check_has_pending_packet(packet_queue_t* q);
 void iqueuemac_beacon_process(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt);
-void iqueuemac_node_wait_beacon_packet_process(iqueuemac_t* iqueuemac);
+void iqueuemac_wait_beacon_packet_process(iqueuemac_t* iqueuemac);
 void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac);
 void iqueuemac_router_vtdma_receive_packet_process(iqueuemac_t* iqueuemac);
 

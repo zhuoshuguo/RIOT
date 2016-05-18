@@ -603,7 +603,6 @@ void iqueuemac_router_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	}
 }
 
-
 void iqueuemac_router_t2u_end(iqueuemac_t* iqueuemac){
 
 	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
@@ -687,6 +686,7 @@ void iqueuemac_router_t2r_init(iqueuemac_t* iqueuemac){
 
 void iqueuemac_router_t2r_wait_cp(iqueuemac_t* iqueuemac){
 
+	/**** normally, in router-to-router (t2r), it is impossible that two routers are in the same cluster!!! ****/
 	if(iqueuemac->tx.current_neighbour->in_same_cluster == true){
 		/***** wait until it is in the cluster's CP ****/
 		if(iqueuemac->router_states.router_new_cycle == true){
@@ -740,9 +740,108 @@ void iqueuemac_router_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 			iqueuemac->router_states.router_t2r_state = R_T2R_TRANS_END;
 			iqueuemac->need_update = true;
 		}
+	}
+}
 
-		//iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_END;
-		//iqueuemac->need_update = true;
+void iqueuemac_router_t2r_wait_beacon(iqueuemac_t* iqueuemac){
+
+    if(iqueuemac->packet_received == true){
+    	iqueuemac->packet_received = false;
+    	iqueuemac_wait_beacon_packet_process(iqueuemac);
+    }
+
+    if(iqueuemac->tx.vtdma_para.get_beacon == true){
+
+    	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_BEACON);
+
+    	if(iqueuemac->tx.vtdma_para.slots_num > 0){
+
+    		/*** switch the radio to the sub-channel ***/
+    		//iqueuemac_switch_channel(iqueuemac, sub_channel);
+
+    		if(iqueuemac->tx.vtdma_para.slots_position > 0){
+    			/*** wait for the finish of switching channel !!! and then turn off the radio to save power ***/
+    			iqueuemac_trun_off_radio(iqueuemac);
+
+    			uint32_t wait_slots_duration;
+    			wait_slots_duration = iqueuemac->tx.vtdma_para.slots_position * IQUEUEMAC_VTDMA_SLOT_SIZE_US;
+    			iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_OWN_SLOTS, wait_slots_duration);
+
+    			iqueuemac->router_states.router_t2r_state = R_T2R_WAIT_OWN_SLOTS;
+    			iqueuemac->need_update = true;
+    		}else{// be the first sender in vtdma
+    			iqueuemac->router_states.router_t2r_state = R_T2R_TRANS_IN_VTDMA;
+    			iqueuemac->need_update = true;
+    		}
+    	}else{
+    		iqueuemac->router_states.router_t2r_state = R_T2R_TRANS_END;
+    		iqueuemac->need_update = true;
+    	}
+    }
+
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_BEACON)){
+		puts("Shuguo: No beacon.");
+		iqueuemac->router_states.router_t2r_state = R_T2R_TRANS_END;
+		iqueuemac->need_update = true;
+	}
+}
+
+void iqueuemac_router_t2r_wait_own_slots(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_OWN_SLOTS)){
+		iqueuemac_trun_on_radio(iqueuemac);
+		iqueuemac->router_states.router_t2r_state = R_T2R_TRANS_IN_VTDMA;
+		iqueuemac->need_update = true;
+	}
+}
+
+void iqueuemac_router_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac->tx.vtdma_para.slots_num > 0){
+
+		/**** Delete the pkt no matter the transmission is success or not !!! ****/
+
+		gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.current_neighbour->queue));
+
+		/**** Or, only delete the pkt when the feedback shows good !!! ****/
+		//gnrc_pktsnip_t *pkt = packet_queue_head(&(iqueuemac->tx.current_neighbour.queue));
+
+		if(pkt != NULL){
+			iqueuemac->tx.tx_packet = pkt;
+			/******disable CSMA here, and send_packet() will release the pkt itself !!!!******/
+			iqueuemac_send_data_packet(iqueuemac, NETOPT_DISABLE);
+			iqueuemac->tx.vtdma_para.slots_num --;
+			iqueuemac->tx.tx_packet = NULL;
+
+			iqueuemac->router_states.router_t2r_state = R_T2R_WAIT_VTDMATRANS_FEEDBACK;
+			iqueuemac->need_update = true;
+		}
+	}else{/*** here means the slots have been used up !!! ***/
+		iqueuemac->router_states.router_t2r_state = R_T2R_TRANS_END;
+		iqueuemac->need_update = true;
+	}
+}
+
+void iqueuemac_router_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac->tx.tx_finished == true){
+		/*** add another condition here in the furture: the tx-feedback must be ACK-got,
+		 * namely, completed, to ensure router gets the data correctly***/
+		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
+			//puts("Shuguo: node success sends a data to father router in vtdma !!");
+
+			/****  if use packt_head previously ****/
+			//gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.current_neighbour.queue));
+			//gnrc_pktbuf_release(pkt);
+		}
+
+		if(iqueuemac->tx.vtdma_para.slots_num > 0){
+			iqueuemac->router_states.router_t2r_state = R_T2R_TRANS_IN_VTDMA;
+			iqueuemac->need_update = true;
+		}else{
+			iqueuemac->router_states.router_t2r_state = R_T2R_TRANS_END;
+			iqueuemac->need_update = true;
+		}
 	}
 }
 
@@ -792,15 +891,16 @@ void iqueuemac_router_t2r_update(iqueuemac_t* iqueuemac)
      case R_T2R_WAIT_CP: iqueuemac_router_t2r_wait_cp(iqueuemac); break;
 	 case R_T2R_TRANS_IN_CP: iqueuemac_router_t2r_trans_in_cp(iqueuemac); break;
 	 case R_T2R_WAIT_CPTRANS_FEEDBACK: iqueuemac_router_t2r_wait_cp_transfeedback(iqueuemac); break;
-	 //case R_T2R_WAIT_BEACON: iqueuemac_router_t2r_wait_beacon(iqueuemac);break;
-	// case R_T2R_WAIT_OWN_SLOTS:iqueuemac_router_t2r_wait_own_slots(iqueuemac); break;
-	// case R_T2R_TRANS_IN_VTDMA:iqueuemac_router_t2r_trans_in_slots(iqueuemac); break;
-	 //case R_T2R_WAIT_VTDMATRANS_FEEDBACK:iqueuemac_router_t2r_wait_vtdma_transfeedback(iqueuemac);break;
+	 case R_T2R_WAIT_BEACON: iqueuemac_router_t2r_wait_beacon(iqueuemac);break;
+	 case R_T2R_WAIT_OWN_SLOTS:iqueuemac_router_t2r_wait_own_slots(iqueuemac); break;
+	 case R_T2R_TRANS_IN_VTDMA:iqueuemac_router_t2r_trans_in_slots(iqueuemac); break;
+	 case R_T2R_WAIT_VTDMATRANS_FEEDBACK:iqueuemac_router_t2r_wait_vtdma_transfeedback(iqueuemac);break;
 	 case R_T2R_TRANS_END:iqueuemac_router_t2r_end(iqueuemac);break;
 	 default: break;
 	}
 }
 
+//////////////////////////////////////////////////
 void iqueue_mac_router_transmit_update(iqueuemac_t* iqueuemac){
 
 	switch(iqueuemac->router_states.router_trans_state)
@@ -1128,7 +1228,7 @@ void iqueue_mac_node_t2r_wait_beacon(iqueuemac_t* iqueuemac){
 
     if(iqueuemac->packet_received == true){
     	iqueuemac->packet_received = false;
-    	iqueuemac_node_wait_beacon_packet_process(iqueuemac);
+    	iqueuemac_wait_beacon_packet_process(iqueuemac);
     }
 
     if(iqueuemac->tx.vtdma_para.get_beacon == true){
