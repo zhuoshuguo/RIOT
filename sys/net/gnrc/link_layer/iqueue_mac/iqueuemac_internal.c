@@ -279,8 +279,8 @@ void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* i
 	iqueuemac_frame_preamble_ack_t iqueuemac_preamble_ack_hdr;
 	iqueuemac_preamble_ack_hdr.header.type = FRAMETYPE_PREAMBLE_ACK;
 	iqueuemac_preamble_ack_hdr.dst_addr = info->src_addr;
-	iqueuemac_preamble_ack_hdr.device_type = ROUTER;
-	iqueuemac_preamble_ack_hdr.father_router = iqueuemac->own_addr;
+	iqueuemac_preamble_ack_hdr.device_type = iqueuemac->mac_type;
+	iqueuemac_preamble_ack_hdr.father_router = iqueuemac->father_router_addr;
 	iqueuemac_preamble_ack_hdr.phase_in_ticks = phase_now_ticks; // next_cp_timing_ticks; //  next_cp_timing_us; //
 
 	pkt = gnrc_pktbuf_add(NULL, &iqueuemac_preamble_ack_hdr, sizeof(iqueuemac_preamble_ack_hdr), GNRC_NETTYPE_IQUEUEMAC);
@@ -1005,14 +1005,12 @@ void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_PREAMBLE:{
-            	/*
         	    if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
         	  	  iqueue_send_preamble_ack(iqueuemac, &receive_packet_info);
-        	  	  //iqueuemac_trun_on_radio(iqueuemac);
         	    }else{
         		  //this means that there is a long preamble period, so quit this cycle and go to sleep.
         		  iqueuemac->quit_current_cycle = true;
-        	    }*/
+        	    }
         	    gnrc_pktbuf_release(pkt);
             }break;
 

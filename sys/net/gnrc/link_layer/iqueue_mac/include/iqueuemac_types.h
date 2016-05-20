@@ -115,6 +115,15 @@ typedef enum {
 	R_T2R_TRANS_END
 } mac_router_t2r_state_t;
 
+typedef enum {
+	/*Transmitting states of router*/
+	R_T2N_WAIT_CP_INIT = 0,
+	R_T2N_WAIT_CP,
+	R_T2N_TRANS_IN_CP,
+	R_T2N_WAIT_CPTRANS_FEEDBACK,
+	R_T2N_TRANS_END
+} mac_router_t2n_state_t;
+
 /******************************router state machinies**********************************/
 
 typedef enum {
@@ -234,6 +243,7 @@ typedef struct {
 
 	mac_router_t2u_state_t router_t2u_state;
 	mac_router_t2r_state_t router_t2r_state;
+	mac_router_t2n_state_t router_t2n_state;
 
 	bool extend_cp;
 	bool router_new_cycle;
