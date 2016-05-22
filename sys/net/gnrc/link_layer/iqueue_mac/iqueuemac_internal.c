@@ -1052,8 +1052,6 @@ void iqueuemac_wait_beacon_packet_process(iqueuemac_t* iqueuemac){
     }/* end of while loop */
 }
 
-
-
 void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 	gnrc_pktsnip_t* pkt;
 
@@ -1091,8 +1089,8 @@ void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 
             case FRAMETYPE_IQUEUE_DATA:{
             	//iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
-        	    //iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt);
-            	gnrc_pktbuf_release(pkt);
+        	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt);
+            	//gnrc_pktbuf_release(pkt);
         	    puts("Shuguo: router receives a data !!");
             }break;
 
@@ -1142,7 +1140,31 @@ void iqueuemac_router_vtdma_receive_packet_process(iqueuemac_t* iqueuemac){
     }/* end of while loop */
 }
 
+void _dispatch(gnrc_pktsnip_t* buffer[])
+{
+    assert(buffer != NULL);
 
+    for(unsigned i = 0; i < IQUEUEMAC_DISPATCH_BUFFER_SIZE; i++) {
+        if(buffer[i]) {
+
+            /* save pointer to netif header */
+            gnrc_pktsnip_t* netif = buffer[i]->next->next;
+
+            /* remove iqueuemac header */
+            buffer[i]->next->next = NULL;
+            gnrc_pktbuf_release(buffer[i]->next);
+
+            /* make append netif header after payload again */
+            buffer[i]->next = netif;
+
+            if (!gnrc_netapi_dispatch_receive(buffer[i]->type, GNRC_NETREG_DEMUX_CTX_ALL, buffer[i])) {
+                DEBUG("Unable to forward packet of type %i\n", buffer[i]->type);
+                gnrc_pktbuf_release(buffer[i]);
+            }
+            buffer[i] = NULL;
+        }
+    }
+}
 
 
 /******************************************************************************/
