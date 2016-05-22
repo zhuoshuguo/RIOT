@@ -669,17 +669,10 @@ void iqueuemac_router_t2r_init(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac->tx.current_neighbour->in_same_cluster == false){
 		// set timer for the targeted router!
-		uint32_t phase_now;
+
 		uint32_t wait_phase_duration;
 
-		phase_now = rtt_get_counter();
-
-		if(iqueuemac->tx.current_neighbour->cp_phase >= phase_now){
-			wait_phase_duration = iqueuemac->tx.current_neighbour->cp_phase - phase_now;
-		}else{
-			wait_phase_duration = phase_now - iqueuemac->tx.current_neighbour->cp_phase;
-			wait_phase_duration += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-		}
+		wait_phase_duration = _ticks_until_phase(iqueuemac->tx.current_neighbour->cp_phase);
 
 		wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
@@ -917,17 +910,9 @@ void iqueuemac_router_t2n_init(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac->tx.current_neighbour->in_same_cluster == false){
 		// set timer for the targeted node!
-		uint32_t phase_now;
 		uint32_t wait_phase_duration;
 
-		phase_now = rtt_get_counter();
-
-		if(iqueuemac->tx.current_neighbour->cp_phase >= phase_now){
-			wait_phase_duration = iqueuemac->tx.current_neighbour->cp_phase - phase_now;
-		}else{
-			wait_phase_duration = phase_now - iqueuemac->tx.current_neighbour->cp_phase;
-			wait_phase_duration += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-		}
+		wait_phase_duration = _ticks_until_phase(iqueuemac->tx.current_neighbour->cp_phase);
 
 		wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);

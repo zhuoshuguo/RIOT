@@ -104,6 +104,10 @@ typedef enum {
 #define IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM           (6U)
 #endif
 
+#ifndef IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM
+#define IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM           (10U)
+#endif
+
 void iqueuemac_set_rtt_alarm(uint32_t alarm, void *arg);
 
 
