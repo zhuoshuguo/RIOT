@@ -368,6 +368,9 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 void iqueuemac_router_wait_beacon_feedback(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac->tx.tx_finished == true){
+
+		_dispatch(iqueuemac->rx.dispatch_buffer);
+
 		/****** router switch to sleep period or vTDMA period ******/
 		if(iqueuemac->rx.router_vtdma_mana.total_slots_num > 0){
 			iqueuemac->router_states.router_listen_state = R_LISTEN_VTDMA_INIT;
@@ -431,6 +434,9 @@ void iqueue_mac_router_vtdma(iqueuemac_t* iqueuemac){
 }
 
 void iqueue_mac_router_vtdma_end(iqueuemac_t* iqueuemac){
+
+	packet_queue_flush(&iqueuemac->rx.queue);
+	_dispatch(iqueuemac->rx.dispatch_buffer);
 
 	/*** switch the radio to the public-channel!!! ***/
 
@@ -1077,6 +1083,8 @@ void iqueue_mac_node_listen_cp_listen(iqueuemac_t* iqueuemac){
 void iqueue_mac_node_listen_cp_end(iqueuemac_t* iqueuemac){
 
 	packet_queue_flush(&iqueuemac->rx.queue);
+	_dispatch(iqueuemac->rx.dispatch_buffer);
+
 	//puts("shuguo: node end of cp, check queue-length ");
 
 	if(iqueue_mac_find_next_tx_neighbor(iqueuemac)){
