@@ -56,6 +56,8 @@ extern "C" {
 
 #define IQUEUEMAC_PHASE_UNINITIALIZED (0)
 
+#define IQUEUEMAC_PHASE_MAX             (-1)
+
 /******************************************************************************/
 
 /******************************router state machinies**********************************/
@@ -256,6 +258,11 @@ typedef struct {
 	iqueuemac_type_t mac_type;
 }rx_slots_schedule_unit;
 
+/***  only record node-type neighbor ***/
+typedef struct {
+	l2_addr_t node_addr;
+	iqueuemac_type_t mac_type;
+}in_cluster_neighbor_info_t;
 
 typedef struct {
 	uint8_t total_slots_num;
@@ -324,6 +331,8 @@ typedef struct iqueuemac {
 
 	iqueuemac_rx_t rx;
 	iqueuemac_tx_t tx;
+
+	in_cluster_neighbor_info_t in_cluster_node_list[IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM];
 
 	iqueuemac_timeout_t timeouts[IQUEUEMAC_TIMEOUT_COUNT];
 

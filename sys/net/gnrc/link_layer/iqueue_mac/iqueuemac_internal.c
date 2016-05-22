@@ -136,6 +136,32 @@ uint32_t _ticks_to_phase(uint32_t ticks)
 {
     return (ticks % RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US));
 }
+
+
+uint32_t _ticks_until_phase(uint32_t phase)
+{
+	/*
+	uint32_t phase_now;
+	uint32_t wait_phase_duration;
+
+	phase_now = rtt_get_counter();
+
+	if(phase >= phase_now){
+		wait_phase_duration = phase - phase_now;
+	}else{
+		wait_phase_duration = phase_now - phase;
+		wait_phase_duration += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+	}*/
+
+
+    long int tmp = phase - rtt_get_counter();
+    if(tmp < 0) {
+        tmp += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+    }
+
+    return (uint32_t)tmp;
+}
+
 /******************************************************************************/
 
 bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
@@ -705,6 +731,22 @@ void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 	iqueuemac_send(iqueuemac, pkt, csma_enable);
 }
 
+
+void iqueuemac_add_in_cluster_neighbor(iqueuemac_t* iqueuemac, l2_addr_t* addr){
+
+	int i;
+	for(i=0;i<IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM;i++){
+		if(iqueuemac->in_cluster_node_list[i].node_addr.len == 0){
+			iqueuemac->in_cluster_node_list[i].node_addr.len = addr->len;
+			memcpy(iqueuemac->in_cluster_node_list[i].node_addr.addr,
+					addr->addr,
+					addr->len);
+			return;
+		}
+	}
+
+}
+
 void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info){
 
 	 iqueuemac_frame_preamble_ack_t* iqueuemac_preamble_ack_hdr;
@@ -737,6 +779,12 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 	 if((iqueuemac->father_router_addr.len != 0)&&(_addr_match(&iqueuemac->father_router_addr,&iqueuemac_preamble_ack_hdr->father_router))){
 	     iqueuemac->tx.current_neighbour->in_same_cluster = true;
 	     iqueuemac->tx.current_neighbour->cp_phase = 0;
+
+	     /***  add the node type into the in-cluster list if the receiver and the sender share the same father ***/
+	     if(iqueuemac_preamble_ack_hdr->device_type == NODE){
+	    	 iqueuemac_add_in_cluster_neighbor(iqueuemac, &pa_info->src_addr);
+	     }
+
 	     //puts("shuguo: in the same cluster.");
 	 }else{//for router type, it will automatically enter here, since father-router are different
 		 iqueuemac->tx.current_neighbour->in_same_cluster = false;
@@ -847,16 +895,38 @@ void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_ena
 
 bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac)
 {
-    if(iqueuemac->tx.neighbours[1].queue.length > 0){
-    	gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.neighbours[1].queue));
-    	 if(pkt != NULL){
-    		 iqueuemac->tx.tx_packet =  pkt;
-    		 iqueuemac->tx.current_neighbour = &iqueuemac->tx.neighbours[1];
-    		 return true;
-    	 }
+
+//////////////
+    int next = -1;
+    uint32_t phase_check;
+    uint32_t phase_nearest = IQUEUEMAC_PHASE_MAX;
+
+    for(int i = 0; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
+        if(iqueuemac->tx.neighbours[i].queue.length > 0) {
+            /* Unknown destinations are initialized with their phase at the end
+             * of the local interval, so known destinations that still wakeup
+             * in this interval will be preferred. */
+            phase_check = _ticks_until_phase(iqueuemac->tx.neighbours[i].cp_phase);
+
+            if(phase_check <= phase_nearest) {
+                next = i;
+                phase_nearest = phase_check;
+            }
+        }
+    }
+    ////////
+    if(next >= 0){
+       	gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.neighbours[next].queue));
+      	if(pkt != NULL){
+       		iqueuemac->tx.tx_packet =  pkt;
+       		iqueuemac->tx.current_neighbour = &iqueuemac->tx.neighbours[next];
+       		//printf("Shuguo: the find nearest neighbor is %d. \n", next);
+       		return true;
+      	}else{
+      		return false;
+      	}
     }
     return false;
-
 }
 
 /*
