@@ -346,9 +346,12 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 	}
 }
 
-void iqueue_mac_node_router_cp_end(iqueuemac_t* iqueuemac){
+void iqueue_mac_router_cp_end(iqueuemac_t* iqueuemac){
 
 	packet_queue_flush(&iqueuemac->rx.queue);
+
+	_dispatch(iqueuemac->rx.dispatch_buffer);
+
 	iqueuemac->router_states.router_listen_state = R_LISTEN_SEND_BEACON;
 	iqueuemac->need_update = true;
 }
@@ -368,8 +371,6 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 void iqueuemac_router_wait_beacon_feedback(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac->tx.tx_finished == true){
-
-		_dispatch(iqueuemac->rx.dispatch_buffer);
 
 		/****** router switch to sleep period or vTDMA period ******/
 		if(iqueuemac->rx.router_vtdma_mana.total_slots_num > 0){
@@ -477,7 +478,7 @@ void iqueue_mac_router_listen_update(iqueuemac_t* iqueuemac){
    {
 	case R_LISTEN_CP_INIT: iqueue_mac_router_listen_cp_init(iqueuemac); break;
 	case R_LISTEN_CP_LISTEN: iqueue_mac_router_listen_cp_listen(iqueuemac); break;
-	case R_LISTEN_CP_END: iqueue_mac_node_router_cp_end(iqueuemac); break;
+	case R_LISTEN_CP_END: iqueue_mac_router_cp_end(iqueuemac); break;
 	//case R_LISTEN_CREATE_BEACON: iqueue_mac_router_create_beacon(iqueuemac); break;
 	case R_LISTEN_SEND_BEACON: iqueue_mac_router_send_beacon(iqueuemac); break;
 	case R_LISTEN_WAIT_BEACON_FEEDBACK: iqueuemac_router_wait_beacon_feedback(iqueuemac);break;
@@ -977,7 +978,6 @@ void iqueuemac_router_t2n_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 		iqueuemac->need_update = true;
 	}
 }
-
 
 void iqueuemac_router_t2n_end(iqueuemac_t* iqueuemac){
 

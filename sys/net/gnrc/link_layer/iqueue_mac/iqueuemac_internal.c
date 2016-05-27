@@ -893,10 +893,9 @@ void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_ena
 
 }
 
-bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac)
-{
+bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
 
-//////////////
+    //////////////
     int next = -1;
     uint32_t phase_check;
     uint32_t phase_nearest = IQUEUEMAC_PHASE_MAX;
