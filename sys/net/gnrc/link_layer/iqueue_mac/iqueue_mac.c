@@ -85,6 +85,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 		iqueuemac->node_states.node_trans_state = N_TRANS_TO_UNKOWN;
 		iqueuemac->node_states.node_t2u_state = N_T2U_SEND_PREAMBLE_INIT;
 		iqueuemac->node_states.node_t2r_state = N_T2R_WAIT_CP_INIT;
+		iqueuemac->node_states.node_t2n_state = N_T2N_WAIT_CP_INIT;
 
 
 		iqueuemac->father_router_addr.len = 0;
@@ -1508,6 +1509,122 @@ void iqueue_mac_node_t2r_update(iqueuemac_t* iqueuemac)
 	 default: break;
 	}
 }
+///// node: send to node-device procedures
+
+void iqueuemac_node_t2n_init(iqueuemac_t* iqueuemac){
+
+	iqueuemac_trun_off_radio(iqueuemac);
+
+	if(iqueuemac->tx.current_neighbour->in_same_cluster == false){
+		// set timer for the targeted node!
+		uint32_t wait_phase_duration;
+
+		wait_phase_duration = _ticks_until_phase(iqueuemac->tx.current_neighbour->cp_phase);
+
+		wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
+		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
+	}
+
+	/*** flush the rx-queue here to reduce possible buffered packet in RIOT!! ***/
+	packet_queue_flush(&iqueuemac->rx.queue);
+
+	iqueuemac->node_states.node_t2n_state = N_T2N_WAIT_CP;
+	iqueuemac->need_update = true;
+}
+
+void iqueuemac_node_t2n_wait_cp(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac->tx.current_neighbour->in_same_cluster == true){
+		/***** wait until it is in the cluster's CP ****/
+		if(iqueuemac->node_states.in_cp_period == true){
+			iqueuemac_trun_on_radio(iqueuemac);
+			iqueuemac->node_states.node_t2n_state = N_T2N_TRANS_IN_CP;
+			iqueuemac->need_update = true;
+		}
+	}else{
+		if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_CP)){
+			iqueuemac_trun_on_radio(iqueuemac);
+			iqueuemac->node_states.node_t2n_state = N_T2N_TRANS_IN_CP;
+			iqueuemac->need_update = true;
+		}
+	}
+}
+
+void iqueuemac_node_t2n_trans_in_cp(iqueuemac_t* iqueuemac){
+
+	/******Use CSMA here, and send_packet() will release the pkt itself !!!!******/
+	iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
+
+	iqueuemac->tx.tx_packet = NULL;
+
+	iqueuemac->node_states.node_t2n_state = N_T2N_WAIT_CPTRANS_FEEDBACK;
+	iqueuemac->need_update = true;
+}
+
+
+
+void iqueuemac_node_t2n_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac->tx.tx_finished == true){
+
+		/*** add another condition here in the furture: the tx-feedback must be ACK-got,
+		 * namely, completed, to ensure router gets the data correctly***/
+		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
+			;//puts("Shuguo: node success sends a data to father router!!");
+		}
+
+		iqueuemac->node_states.node_t2n_state = N_T2N_TRANS_END;
+		iqueuemac->need_update = true;
+	}
+}
+
+void iqueuemac_node_t2n_end(iqueuemac_t* iqueuemac){
+
+	/*
+	if(iqueuemac->tx.current_neighbour->in_same_cluster == true){
+	    puts("Shuguo: node is in t-2-n end, inner-cluster transmission.");
+	}else{
+		puts("Shuguo: node is in t-2-n end, not in same cluster.");
+	}
+    */
+
+	if(iqueuemac->tx.tx_packet){
+		gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+		iqueuemac->tx.tx_packet = NULL;
+	}
+	iqueuemac->tx.current_neighbour = NULL;
+
+	/*** clear all timeouts ***/
+	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_CP);
+
+	iqueuemac->node_states.node_t2n_state = N_T2N_WAIT_CP_INIT;
+
+	iqueuemac->node_states.node_basic_state = N_LISTENNING;
+	/*********** judge and update the states before switch back to CP listening period   ***********/
+	if(iqueuemac->node_states.in_cp_period == true){
+		iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+		//puts("Shuguo: node is in t2u send preamble-end and switch to listen's CP");
+	}else{
+		iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
+		iqueuemac_trun_off_radio(iqueuemac);
+		//puts("Shuguo: node is in t2u send preamble-end and switch to listen's sleep");
+	}
+
+	iqueuemac->need_update = true;
+}
+
+void iqueuemac_node_t2n_update(iqueuemac_t* iqueuemac)
+{
+	switch(iqueuemac->node_states.node_t2n_state)
+	{
+	 case N_T2N_WAIT_CP_INIT: iqueuemac_node_t2n_init(iqueuemac);break;
+     case N_T2N_WAIT_CP: iqueuemac_node_t2n_wait_cp(iqueuemac); break;
+	 case N_T2N_TRANS_IN_CP: iqueuemac_node_t2n_trans_in_cp(iqueuemac); break;
+	 case N_T2N_WAIT_CPTRANS_FEEDBACK: iqueuemac_node_t2n_wait_cp_transfeedback(iqueuemac); break;
+	 case N_T2N_TRANS_END:iqueuemac_node_t2n_end(iqueuemac);break;
+	 default: break;
+	}
+}
 
 
 void iqueue_mac_node_transmit_update(iqueuemac_t* iqueuemac){
@@ -1516,7 +1633,7 @@ void iqueue_mac_node_transmit_update(iqueuemac_t* iqueuemac){
    {
 	case N_TRANS_TO_UNKOWN: iqueue_mac_node_t2u_update(iqueuemac); break;
 	case N_TRANS_TO_ROUTER: iqueue_mac_node_t2r_update(iqueuemac); break;
-	//case N_TRANS_TO_NODE: iqueue_mac_node_t2n_update(iqueuemac); break;
+	case N_TRANS_TO_NODE: iqueuemac_node_t2n_update(iqueuemac); break;
 	default: break;
    }
 

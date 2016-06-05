@@ -192,6 +192,16 @@ typedef enum {
 	/*Listening states of simple mode*/
 } mac_node_t2r_state_t;
 
+typedef enum {
+	/*Transmitting states of router*/
+	N_T2N_WAIT_CP_INIT = 0,
+	N_T2N_WAIT_CP,
+	N_T2N_TRANS_IN_CP,
+	N_T2N_WAIT_CPTRANS_FEEDBACK,
+	N_T2N_TRANS_END
+} mac_node_t2n_state_t;
+
+
 /******************************************************************************/
 
 typedef enum {
@@ -231,6 +241,8 @@ typedef struct {
 
 	mac_node_t2u_state_t  node_t2u_state;
 	mac_node_t2r_state_t node_t2r_state;
+	mac_node_t2n_state_t node_t2n_state;
+
 	bool in_cp_period;
 
 } node_states_t;
