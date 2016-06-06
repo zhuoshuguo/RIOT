@@ -104,7 +104,7 @@ int _alloc_neighbour(iqueuemac_t* iqueuemac)
 {
     iqueuemac_tx_neighbour_t* neighbours = iqueuemac->tx.neighbours;
 
-    for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
+    for(int i = 0; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
         if(neighbours[i].l2_addr.len == 0) {
         	neighbours[i].mac_type = UNKNOWN;
             packet_queue_init(&(neighbours[i].queue),
@@ -526,6 +526,10 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
             iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(iqueuemac_frame_data_t), GNRC_NETTYPE_IQUEUEMAC);
     }break;
 
+    case FRAMETYPE_BROADCAST:{
+            iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(iqueuemac_frame_broadcast_t), GNRC_NETTYPE_IQUEUEMAC);
+    }break;
+
     default:
         return -2;
     }
@@ -559,6 +563,12 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
              }
         }break;
 
+        case FRAMETYPE_BROADCAST:{
+           	info->dst_addr.len = 2;
+           	info->dst_addr.addr[0] = 0xff;
+           	info->dst_addr.addr[1] = 0xff;
+        }break;
+
         default:break;
 
     }
@@ -579,27 +589,31 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
 /******************************************************************************/
 int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info, iqueuemac_t* iqueuemac)
 {
-
+	iqueuemac_hdr_t* iqueuemac_hdr;
 	iqueuemac_frame_data_t* iqueuemac_data_hdr;
 	uint8_t same_cluster;
 	uint8_t extra_mac_type;
 
-	iqueuemac_data_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_IQUEUEMAC);
+	iqueuemac_hdr = (iqueuemac_hdr_t*) pkt->next->data;
 
-	same_cluster = iqueuemac_data_hdr->queue_indicator & 0x40;
+	if(iqueuemac_hdr->type == FRAMETYPE_IQUEUE_DATA){
 
-	extra_mac_type = iqueuemac_data_hdr->queue_indicator & 0x80;
+		puts("shuguo: push a data");
+		iqueuemac_data_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_IQUEUEMAC);
 
+		same_cluster = iqueuemac_data_hdr->queue_indicator & 0x40;
 
-	/*** if the sender is node type ***/
-	if(extra_mac_type == 0x80){
-		if(same_cluster == 0x40){
-			iqueuemac_add_in_cluster_neighbor(iqueuemac, &pa_info->src_addr);
-		}else{
-			iqueuemac_remove_in_cluster_neighbor(iqueuemac, &pa_info->src_addr);
+		extra_mac_type = iqueuemac_data_hdr->queue_indicator & 0x80;
+
+		/*** if the sender is node type ***/
+		if(extra_mac_type == 0x80){
+			if(same_cluster == 0x40){
+				iqueuemac_add_in_cluster_neighbor(iqueuemac, &pa_info->src_addr);
+			}else{
+				iqueuemac_remove_in_cluster_neighbor(iqueuemac, &pa_info->src_addr);
+			}
 		}
 	}
-
 
 	for(unsigned i = 0; i < IQUEUEMAC_DISPATCH_BUFFER_SIZE; i++) {
 	   /* Buffer will be filled bottom-up and emptied completely so no holes */
@@ -709,6 +723,12 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             	//gnrc_pktbuf_release(pkt);
         	    puts("Shuguo: router receives a data !!");
             }break;
+
+            case FRAMETYPE_BROADCAST:{
+            	iqueuemac->quit_current_cycle = true;
+                iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+                //puts("Shuguo: router receives a broadcast data !!");
+           }break;
 
             default:gnrc_pktbuf_release(pkt);break;
   	    }
@@ -952,18 +972,23 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
     uint32_t phase_check;
     uint32_t phase_nearest = IQUEUEMAC_PHASE_MAX;
 
-    for(int i = 0; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
-        if(iqueuemac->tx.neighbours[i].queue.length > 0) {
-            /* Unknown destinations are initialized with their phase at the end
-             * of the local interval, so known destinations that still wakeup
-             * in this interval will be preferred. */
-            phase_check = _ticks_until_phase(iqueuemac->tx.neighbours[i].cp_phase);
+    if(iqueuemac->tx.neighbours[0].queue.length > 0){
+    	next = 0;
+    }else{
+    	/*** find the nearest neighbor ***/
+    	for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
+        	if(iqueuemac->tx.neighbours[i].queue.length > 0) {
+            	/* Unknown destinations are initialized with their phase at the end
+             	* of the local interval, so known destinations that still wakeup
+       	        * in this interval will be preferred. */
+        	    phase_check = _ticks_until_phase(iqueuemac->tx.neighbours[i].cp_phase);
 
-            if(phase_check <= phase_nearest) {
-                next = i;
-                phase_nearest = phase_check;
-            }
-        }
+       	        if(phase_check <= phase_nearest) {
+        	        next = i;
+        	        phase_nearest = phase_check;
+        	    }
+       	 	}
+    	}
     }
     ////////
     if(next >= 0){
@@ -1145,6 +1170,11 @@ void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac){
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             	//gnrc_pktbuf_release(pkt);
         	    puts("Shuguo: router receives a data !!");
+            }break;
+
+            case FRAMETYPE_BROADCAST:{
+               	iqueuemac->quit_current_cycle = true;
+                iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             }break;
 
             default:gnrc_pktbuf_release(pkt);break;

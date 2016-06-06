@@ -59,7 +59,12 @@ extern "C" {
 #define IQUEUEMAC_PHASE_MAX             (-1)
 
 /******************************************************************************/
-
+typedef enum {
+	DEVICE_BROADCAST_INIT = 0,
+	DEVICE_SEND_BROADCAST,
+	DEVICE_WAIT_BROADCAST_FEEDBACK,
+	DEVICE_BROADCAST_END
+} iqueuemac_device_broadcast_state_t;
 /******************************router state machinies**********************************/
 typedef enum {
 /*    UNDEF = -1,
@@ -92,7 +97,8 @@ typedef enum {
 	/*Transmitting states of router*/
 	R_TRANS_TO_UNKOWN,
 	R_TRANS_TO_ROUTER,
-	R_TRANS_TO_NODE
+	R_TRANS_TO_NODE,
+	R_BROADCAST
 } mac_router_trans_state_t;
 
 typedef enum {
@@ -167,7 +173,8 @@ typedef enum {
 	/*Transmitting states of simple mode*/
 	N_TRANS_TO_UNKOWN,
 	N_TRANS_TO_ROUTER,
-	N_TRANS_TO_NODE
+	N_TRANS_TO_NODE,
+	N_BROADCAST
 } mac_node_trans_state_t;
 
 typedef enum {
@@ -265,6 +272,15 @@ typedef struct {
 } router_states_t;
 
 typedef struct {
+
+	iqueuemac_device_broadcast_state_t device_broadcast_state;
+
+} device_states_t;
+
+
+
+
+typedef struct {
 	l2_addr_t node_addr;
 	uint8_t queue_indicator;
 	iqueuemac_type_t mac_type;
@@ -311,7 +327,7 @@ typedef struct {
 
 	uint32_t preamble_sent;
 	bool got_preamble_ack;
-	//uint32_t broadcast_seq;
+	uint32_t broadcast_seq;
 
 	/* Packet that is currently scheduled to be sent */
 	gnrc_pktsnip_t* tx_packet;
@@ -340,6 +356,7 @@ typedef struct iqueuemac {
 
 	node_states_t   node_states;
 	router_states_t router_states;
+	device_states_t device_states;
 
 	iqueuemac_rx_t rx;
 	iqueuemac_tx_t tx;
