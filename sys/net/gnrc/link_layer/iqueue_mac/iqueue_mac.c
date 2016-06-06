@@ -105,6 +105,18 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
      * set to NETOPT_STATE_TX */
     //iqueuemac->netdev->dev->driver->set(iqueuemac->netdev->dev, NETOPT_PRELOADING, &enable, sizeof(enable));
 
+    /* Initialize broadcast sequence number. This at least differs from board
+         * to board */
+    iqueuemac->tx.broadcast_seq = iqueuemac->own_addr.addr[0];
+
+    /* First neighbour queue is supposed to be broadcast queue */
+    int broadcast_queue_id = _alloc_neighbour(iqueuemac);
+    assert(broadcast_queue_id == 0);
+
+    /* Setup broadcast tx queue */
+    uint8_t broadcast_addr[] = {0xff, 0xff};
+    _init_neighbour(_get_neighbour(iqueuemac, 0), broadcast_addr, sizeof(broadcast_addr));
+
     /* Initialize receive packet queue */
     packet_queue_init(&(iqueuemac->rx.queue),
     		          iqueuemac->rx._queue_nodes,
@@ -306,11 +318,120 @@ void iqueue_mac_router_update_old(iqueuemac_t* iqueuemac){
 
 }
 
+/****************** Device (both router and node) broadcast state machines*****/
+
+void iqueuemac_device_broadcast_init(iqueuemac_t* iqueuemac){
+
+	iqueuemac_trun_on_radio(iqueuemac);
+
+	/*** assemble broadcast packet ***/
+	gnrc_pktsnip_t* pkt = iqueuemac->tx.tx_packet;
+
+	iqueuemac_frame_broadcast_t iqueuemac_broadcast_hdr;
+	iqueuemac_broadcast_hdr.header.type = FRAMETYPE_BROADCAST;
+	iqueuemac_broadcast_hdr.seq_nr = iqueuemac->tx.broadcast_seq;
+
+	pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_broadcast_hdr, sizeof(iqueuemac_broadcast_hdr), GNRC_NETTYPE_IQUEUEMAC);
+
+	//
+	iqueuemac_set_timeout(iqueuemac, TIMEOUT_BROADCAST_FINISH, IQUEUEMAC_SUPERFRAME_DURATION_US);
+
+	iqueuemac->device_states.device_broadcast_state = DEVICE_SEND_BROADCAST;
+	iqueuemac->need_update = true;
+
+	packet_queue_flush(&iqueuemac->rx.queue);
+}
+
+void iqueuemac_device_send_broadcast(iqueuemac_t* iqueuemac){
+
+	gnrc_pktbuf_hold(iqueuemac->tx.tx_packet,1);
+
+	iqueuemac_send(iqueuemac, iqueuemac->tx.tx_packet, NETOPT_DISABLE);
+
+	//iqueue_mac_send_preamble(iqueuemac, NETOPT_ENABLE);
+
+	iqueuemac_set_timeout(iqueuemac, TIMEOUT_BROADCAST_INTERVAL, IQUEUEMAC_BROADCAST_INTERVAL_US);
+
+	iqueuemac->device_states.device_broadcast_state = DEVICE_WAIT_BROADCAST_FEEDBACK;
+	iqueuemac->need_update = true;
+}
+
+void iqueuemac_device_wait_broadcast_feedback(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_BROADCAST_FINISH)){
+
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_BROADCAST_INTERVAL);
+		gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+		iqueuemac->tx.tx_packet = NULL;
+
+		iqueuemac->device_states.device_broadcast_state = DEVICE_BROADCAST_END;
+		iqueuemac->need_update = true;
+		return;
+	}
+
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_BROADCAST_INTERVAL)){
+
+		iqueuemac->device_states.device_broadcast_state = DEVICE_SEND_BROADCAST;
+		iqueuemac->need_update = true;
+	}
+}
+
+
+void iqueuemac_device_broadcast_end(iqueuemac_t* iqueuemac){
+
+	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_BROADCAST_INTERVAL);
+	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_BROADCAST_FINISH);
+
+	if(iqueuemac->tx.tx_packet){
+		gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+		iqueuemac->tx.tx_packet = NULL;
+	}
+	iqueuemac->tx.current_neighbour = NULL;
+
+	iqueuemac->device_states.device_broadcast_state = DEVICE_BROADCAST_INIT;
+
+	if(iqueuemac->mac_type == ROUTER){
+	    /*********** judge and update the states before switch back to CP listening period   ***********/
+	    iqueuemac->router_states.router_basic_state = R_LISTENNING;
+	    iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING;
+	    iqueuemac->router_states.router_new_cycle = false;
+
+	    iqueuemac_trun_off_radio(iqueuemac);
+
+	    puts("Shuguo: router is in broadcast end, switching back to sleeping period");
+	}else{
+
+		iqueuemac->node_states.node_basic_state = N_LISTENNING;
+
+	    if(iqueuemac->node_states.in_cp_period == true){
+		    iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+		    //puts("Shuguo: node is in t2u send preamble-end and switch to listen's CP");
+	    }else{
+		    iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
+		    iqueuemac_trun_off_radio(iqueuemac);
+		    //puts("Shuguo: node is in t2u send preamble-end and switch to listen's sleep");
+	    }
+	}
+	iqueuemac->need_update = true;
+}
+
+
+void iqueuemac_device_broadcast_update(iqueuemac_t* iqueuemac){
+
+	switch(iqueuemac->device_states.device_broadcast_state)
+	{
+	 case DEVICE_BROADCAST_INIT: iqueuemac_device_broadcast_init(iqueuemac);break;
+	 case DEVICE_SEND_BROADCAST: iqueuemac_device_send_broadcast(iqueuemac); break;
+	 case DEVICE_WAIT_BROADCAST_FEEDBACK: iqueuemac_device_wait_broadcast_feedback(iqueuemac); break;
+	 case DEVICE_BROADCAST_END: iqueuemac_device_broadcast_end(iqueuemac);break;
+	 default: break;
+	}
+}
+
+
 /******************new router state machines*****/
 
 void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
-
-
 
 	iqueuemac->router_states.router_new_cycle = false;
 
@@ -324,6 +445,8 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->need_update = true;
 
 	//puts("Shuguo: router is now entering CP");
+
+	iqueuemac->quit_current_cycle = false;
 
 	packet_queue_flush(&iqueuemac->rx.queue);
 }
@@ -340,11 +463,19 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
     // if(iqueuemac->quit_current_cycle == true)
     // clear timeout and switch to sleep period
 
-	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END)){
+	if((iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END))||(iqueuemac->quit_current_cycle == true)){
 		//puts("Shuguo: Router CP ends!!");
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
 		iqueuemac->router_states.router_listen_state = R_LISTEN_CP_END;
 		iqueuemac->need_update = true;
 	}
+
+	/*
+	if(iqueuemac->quit_current_cycle == true){
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
+		iqueuemac->router_states.router_listen_state = R_LISTEN_CP_END;
+		iqueuemac->need_update = true;
+	}*/
 }
 
 void iqueue_mac_router_cp_end(iqueuemac_t* iqueuemac){
@@ -353,7 +484,12 @@ void iqueue_mac_router_cp_end(iqueuemac_t* iqueuemac){
 
 	_dispatch(iqueuemac->rx.dispatch_buffer);
 
-	iqueuemac->router_states.router_listen_state = R_LISTEN_SEND_BEACON;
+	if(iqueuemac->quit_current_cycle == true){
+		iqueuemac->quit_current_cycle = false;
+		iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
+	}else{
+		iqueuemac->router_states.router_listen_state = R_LISTEN_SEND_BEACON;
+	}
 	iqueuemac->need_update = true;
 }
 
@@ -382,17 +518,21 @@ void iqueuemac_router_wait_beacon_feedback(iqueuemac_t* iqueuemac){
 
 				iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
 
-				switch(iqueuemac->tx.current_neighbour->mac_type){
-				  case UNKNOWN: {
-					  iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
-				  }break;
-				  case ROUTER: {
-					  iqueuemac->router_states.router_trans_state = R_TRANS_TO_ROUTER;
-				  }break;
-				  case NODE: {
-					  iqueuemac->router_states.router_trans_state = R_TRANS_TO_NODE;
-				  }break;
-				  default:break;
+				if(iqueuemac->tx.current_neighbour == &iqueuemac->tx.neighbours[0]){
+					iqueuemac->router_states.router_trans_state = R_BROADCAST;
+				}else{
+					switch(iqueuemac->tx.current_neighbour->mac_type){
+					  case UNKNOWN: {
+						  iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
+					  }break;
+					  case ROUTER: {
+						  iqueuemac->router_states.router_trans_state = R_TRANS_TO_ROUTER;
+				 	 }break;
+				 	 case NODE: {
+						  iqueuemac->router_states.router_trans_state = R_TRANS_TO_NODE;
+					  }break;
+					  default:break;
+					}
 				}
 				iqueuemac->need_update = true;
 			}else{
@@ -1037,6 +1177,7 @@ void iqueue_mac_router_transmit_update(iqueuemac_t* iqueuemac){
 	case R_TRANS_TO_UNKOWN: iqueuemac_router_t2u_update(iqueuemac); break;
 	case R_TRANS_TO_ROUTER: iqueuemac_router_t2r_update(iqueuemac); break;
 	case R_TRANS_TO_NODE: iqueuemac_router_t2n_update(iqueuemac); break;
+	case R_BROADCAST: iqueuemac_device_broadcast_update(iqueuemac);break;
 	default: break;
    }
 
@@ -1057,6 +1198,8 @@ void iqueue_mac_node_listen_cp_init(iqueuemac_t* iqueuemac){
 
 	iqueuemac_trun_on_radio(iqueuemac);
 
+	iqueuemac->quit_current_cycle = false;
+
 	//iqueue_mac_send_preamble(iqueuemac, NETOPT_ENABLE);
 
 	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
@@ -1072,6 +1215,11 @@ void iqueue_mac_node_listen_cp_listen(iqueuemac_t* iqueuemac){
 	if(iqueuemac->packet_received == true){
 	    	iqueuemac->packet_received = false;
 	    	iqueue_node_cp_receive_packet_process(iqueuemac);
+
+	    	if(iqueuemac->quit_current_cycle == true){
+	    		iqueuemac_trun_off_radio(iqueuemac);
+	    		puts("shuguo: node quits this CP");
+	    	}
 	}
 
 	if(iqueuemac->node_states.in_cp_period == false)
@@ -1087,6 +1235,12 @@ void iqueue_mac_node_listen_cp_end(iqueuemac_t* iqueuemac){
 	_dispatch(iqueuemac->rx.dispatch_buffer);
 
 	//puts("shuguo: node end of cp, check queue-length ");
+	if(iqueuemac->quit_current_cycle == true){
+		iqueuemac->quit_current_cycle = false;
+		iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING_INIT;
+		iqueuemac->need_update = true;
+		return;
+	}
 
 	if(iqueue_mac_find_next_tx_neighbor(iqueuemac)){
 		iqueuemac->node_states.node_basic_state = N_TRANSMITTING;
