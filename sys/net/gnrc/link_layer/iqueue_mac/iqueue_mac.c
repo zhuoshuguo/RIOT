@@ -95,6 +95,9 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 		iqueuemac->node_states.in_cp_period = false;
 	}
 
+	iqueuemac->device_states.device_broadcast_state = DEVICE_BROADCAST_INIT;
+
+
 	/* Enable RX- and TX-started interrupts  */
     netopt_enable_t enable = NETOPT_ENABLE;
     iqueuemac->netdev->dev->driver->set(iqueuemac->netdev->dev, NETOPT_RX_START_IRQ, &enable, sizeof(enable));
@@ -333,7 +336,6 @@ void iqueuemac_device_broadcast_init(iqueuemac_t* iqueuemac){
 
 	pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_broadcast_hdr, sizeof(iqueuemac_broadcast_hdr), GNRC_NETTYPE_IQUEUEMAC);
 
-	//
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_BROADCAST_FINISH, IQUEUEMAC_SUPERFRAME_DURATION_US);
 
 	iqueuemac->device_states.device_broadcast_state = DEVICE_SEND_BROADCAST;
@@ -401,15 +403,17 @@ void iqueuemac_device_broadcast_end(iqueuemac_t* iqueuemac){
 	    puts("Shuguo: router is in broadcast end, switching back to sleeping period");
 	}else{
 
+		//puts("Shuguo: node is in broadcast end, switching back to listening state");
+
 		iqueuemac->node_states.node_basic_state = N_LISTENNING;
 
 	    if(iqueuemac->node_states.in_cp_period == true){
 		    iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-		    //puts("Shuguo: node is in t2u send preamble-end and switch to listen's CP");
+		    puts("Shuguo: node is in broadcast end and switch to listen's CP");
 	    }else{
 		    iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
 		    iqueuemac_trun_off_radio(iqueuemac);
-		    //puts("Shuguo: node is in t2u send preamble-end and switch to listen's sleep");
+		    puts("Shuguo: node is in broadcast end and switch to listen's sleep");
 	    }
 	}
 	iqueuemac->need_update = true;
@@ -1244,15 +1248,20 @@ void iqueue_mac_node_listen_cp_end(iqueuemac_t* iqueuemac){
 
 	if(iqueue_mac_find_next_tx_neighbor(iqueuemac)){
 		iqueuemac->node_states.node_basic_state = N_TRANSMITTING;
-		switch(iqueuemac->tx.current_neighbour->mac_type){
-		  case UNKNOWN: iqueuemac->node_states.node_trans_state = N_TRANS_TO_UNKOWN;break;
-		  case ROUTER: {
-			  iqueuemac->node_states.node_trans_state = N_TRANS_TO_ROUTER;
-			  //puts("shuguo: node turn to send to router ");
 
-		  }break;
-		  case NODE: iqueuemac->node_states.node_trans_state = N_TRANS_TO_NODE;break;
-		  default:break;
+		if(iqueuemac->tx.current_neighbour == &iqueuemac->tx.neighbours[0]){
+			iqueuemac->node_states.node_trans_state = N_BROADCAST;
+		}else{
+			switch(iqueuemac->tx.current_neighbour->mac_type){
+			  case UNKNOWN: iqueuemac->node_states.node_trans_state = N_TRANS_TO_UNKOWN;break;
+			  case ROUTER: {
+				  iqueuemac->node_states.node_trans_state = N_TRANS_TO_ROUTER;
+				  //puts("shuguo: node turn to send to router ");
+
+		 	 }break;
+		 	 case NODE: iqueuemac->node_states.node_trans_state = N_TRANS_TO_NODE;break;
+		 	 default:break;
+			}
 		}
 		iqueuemac->need_update = true;
 	}else{
@@ -1788,6 +1797,7 @@ void iqueue_mac_node_transmit_update(iqueuemac_t* iqueuemac){
 	case N_TRANS_TO_UNKOWN: iqueue_mac_node_t2u_update(iqueuemac); break;
 	case N_TRANS_TO_ROUTER: iqueue_mac_node_t2r_update(iqueuemac); break;
 	case N_TRANS_TO_NODE: iqueuemac_node_t2n_update(iqueuemac); break;
+	case N_BROADCAST: iqueuemac_device_broadcast_update(iqueuemac);break;
 	default: break;
    }
 
