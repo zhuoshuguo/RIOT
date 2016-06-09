@@ -1454,7 +1454,12 @@ void iqueue_mac_node_t2r_init(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac->tx.current_neighbour->in_same_cluster == false){
 		// set timer for the targetted router!
-		;
+		uint32_t wait_phase_duration;
+
+		wait_phase_duration = _ticks_until_phase(iqueuemac->tx.current_neighbour->cp_phase);
+
+		wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
+		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
 	}
 
 	/*** flush the rx-queue here to reduce possible buffered packet in RIOT!! ***/
@@ -1474,7 +1479,11 @@ void iqueue_mac_node_t2r_wait_cp(iqueuemac_t* iqueuemac){
 			iqueuemac->need_update = true;
 		}
 	}else{
-		;////if(is_timerout_expired())
+		if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_CP)){
+			iqueuemac_trun_on_radio(iqueuemac);
+			iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_IN_CP;
+			iqueuemac->need_update = true;
+		}
 	}
 }
 
@@ -1833,7 +1842,6 @@ void iqueue_mac_update(iqueuemac_t* iqueuemac){
  */
 static void _event_cb(netdev2_t *dev, netdev2_event_t event)
 {
-    //(void) data;
     gnrc_netdev2_t *gnrc_netdev2 = (gnrc_netdev2_t*) dev->context;
 
     if (event == NETDEV2_EVENT_ISR) {
