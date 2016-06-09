@@ -598,7 +598,7 @@ int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_
 
 	if(iqueuemac_hdr->type == FRAMETYPE_IQUEUE_DATA){
 
-		puts("shuguo: push a data");
+		//puts("shuguo: push a data");
 		iqueuemac_data_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_IQUEUEMAC);
 
 		same_cluster = iqueuemac_data_hdr->queue_indicator & 0x40;
