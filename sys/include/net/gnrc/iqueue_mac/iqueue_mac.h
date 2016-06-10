@@ -36,7 +36,7 @@ typedef enum {
     NODE
 } iqueuemac_type_t;
 
-#define MAC_TYPE  NODE //    ROUTER //                                                           NODE //        ROUTER
+#define MAC_TYPE    ROUTER //  NODE //                                                            NODE //        ROUTER
 
 #ifndef IQUEUEMAC_SUPERFRAME_DURATION_US
 #define IQUEUEMAC_SUPERFRAME_DURATION_US        (5000U * 1000)
@@ -89,7 +89,7 @@ typedef enum {
 
 /******* it seems that this should not be larger than 3 !!!!! *******/
 #ifndef IQUEUEMAC_DISPATCH_BUFFER_SIZE
-#define IQUEUEMAC_DISPATCH_BUFFER_SIZE      (5U)
+#define IQUEUEMAC_DISPATCH_BUFFER_SIZE      (3U)
 #endif
 
 #ifndef IQUEUEMAC_MAX_L2_ADDR_LEN
@@ -105,7 +105,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM
-#define IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM           (6U)
+#define IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM           (7U)
 #endif
 
 #ifndef IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM

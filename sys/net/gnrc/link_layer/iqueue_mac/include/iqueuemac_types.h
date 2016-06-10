@@ -370,6 +370,7 @@ typedef struct iqueuemac {
     l2_addr_t father_router_addr;
 
     uint16_t sub_channel_num;
+    uint16_t public_channel_num;
 
     /* Used to calculate wakeup times */
     uint32_t last_wakeup;    

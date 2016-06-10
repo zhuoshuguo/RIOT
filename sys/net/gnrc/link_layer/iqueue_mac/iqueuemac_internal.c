@@ -1045,8 +1045,7 @@ void iqueuemac_beacon_process(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt){
 	}
 
 	schedulelist_size = iqueuemac_beacon_hdr->schedulelist_size;
-	//iqueuemac->tx.vtdma_para.sub_channel_seq = iqueuemac_beacon_hdr->sub_channel_seq;
-	iqueuemac->sub_channel_num = iqueuemac_beacon_hdr->sub_channel_seq;
+	iqueuemac->tx.vtdma_para.sub_channel_seq = iqueuemac_beacon_hdr->sub_channel_seq;
 
 	if(schedulelist_size == 0){
 		iqueuemac->tx.vtdma_para.slots_num = 0;
@@ -1220,6 +1219,8 @@ void iqueuemac_router_vtdma_receive_packet_process(iqueuemac_t* iqueuemac){
             case FRAMETYPE_IQUEUE_DATA:{
             	iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+
+        	    _dispatch(iqueuemac->rx.dispatch_buffer);
         	    //puts("Shuguo: router receives a data in vtdma!!");
             }break;
 
