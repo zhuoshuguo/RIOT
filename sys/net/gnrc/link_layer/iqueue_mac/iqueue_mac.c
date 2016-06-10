@@ -99,6 +99,8 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 		iqueuemac->node_states.in_cp_period = false;
 	}
 
+	iqueuemac->public_channel_num = 26;
+
 	iqueuemac->device_states.device_broadcast_state = DEVICE_BROADCAST_INIT;
 
 
@@ -502,6 +504,8 @@ void iqueue_mac_router_cp_end(iqueuemac_t* iqueuemac){
 }
 
 void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
+    /**** run the sub-channel selection algorithm to select the sub-channel sequence ****/
+	// iqueuemac_select_sub_channel_num(iqueuemac);
 
 	/****** assemble and send the beacon ******/
 	iqueuemac_assemble_and_send_beacon(iqueuemac);
@@ -589,10 +593,8 @@ void iqueue_mac_router_vtdma_end(iqueuemac_t* iqueuemac){
 	packet_queue_flush(&iqueuemac->rx.queue);
 	_dispatch(iqueuemac->rx.dispatch_buffer);
 
-	uint16_t public_channel = 26;
-	iqueuemac_turn_radio_channel(iqueuemac, public_channel);
-
 	/*** switch the radio to the public-channel!!! ***/
+	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
 
 	/*** ensure that the channel-switching is finished before go to sleep to turn it off !!! ***/
 
@@ -918,6 +920,10 @@ void iqueuemac_router_t2r_wait_beacon(iqueuemac_t* iqueuemac){
     	if(iqueuemac->tx.vtdma_para.slots_num > 0){
 
     		/*** switch the radio to the sub-channel ***/
+    		uint16_t tartget_sub_channel_seq;
+    		tartget_sub_channel_seq = (uint16_t)iqueuemac->tx.vtdma_para.sub_channel_seq;
+    		iqueuemac_turn_radio_channel(iqueuemac, tartget_sub_channel_seq);
+
     		//iqueuemac_switch_channel(iqueuemac, sub_channel);
 
     		if(iqueuemac->tx.vtdma_para.slots_position > 0){
@@ -978,8 +984,7 @@ void iqueuemac_router_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 			iqueuemac->need_update = true;
 		}
 	}else{/*** here means the slots have been used up !!! ***/
-		uint16_t public_channel = 26;
-		iqueuemac_turn_radio_channel(iqueuemac, public_channel);
+		iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
 
 		iqueuemac->router_states.router_t2r_state = R_T2R_TRANS_END;
 		iqueuemac->need_update = true;
@@ -1003,8 +1008,7 @@ void iqueuemac_router_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 			iqueuemac->router_states.router_t2r_state = R_T2R_TRANS_IN_VTDMA;
 			iqueuemac->need_update = true;
 		}else{
-			uint16_t public_channel = 26;
-			iqueuemac_turn_radio_channel(iqueuemac, public_channel);
+			iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
 
 			iqueuemac->router_states.router_t2r_state = R_T2R_TRANS_END;
 			iqueuemac->need_update = true;
@@ -1555,8 +1559,9 @@ void iqueue_mac_node_t2r_wait_beacon(iqueuemac_t* iqueuemac){
     	if(iqueuemac->tx.vtdma_para.slots_num > 0){
 
     		/*** switch the radio to the sub-channel ***/
-    		//iqueuemac_switch_channel(iqueuemac, sub_channel);
-    		iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->sub_channel_num);
+    		uint16_t sub_channel_seq;
+    		sub_channel_seq = (uint16_t)iqueuemac->tx.vtdma_para.sub_channel_seq;
+    		iqueuemac_turn_radio_channel(iqueuemac, sub_channel_seq);
 
     		if(iqueuemac->tx.vtdma_para.slots_position > 0){
     			/*** wait for the finish of switching channel !!! and then turn off the radio to save power ***/
@@ -1622,8 +1627,8 @@ void iqueue_mac_node_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 			iqueuemac->need_update = true;
 		}
 	}else{/*** here means the slots have been used up !!! ***/
-		uint16_t public_channel = 26;
-		iqueuemac_turn_radio_channel(iqueuemac, public_channel);
+		/****  switch back to the public channel ****/
+		iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
 
 		iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_END;
 		iqueuemac->need_update = true;
@@ -1647,8 +1652,8 @@ void iqueue_mac_node_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 			iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_IN_VTDMA;
 			iqueuemac->need_update = true;
 		}else{
-			uint16_t public_channel = 26;
-			iqueuemac_turn_radio_channel(iqueuemac, public_channel);
+			/****  switch back to the public channel ****/
+			iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
 
 			iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_END;
 			iqueuemac->need_update = true;
