@@ -261,6 +261,11 @@ void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac)
 	                              sizeof(devstate));
 }
 
+void iqueuemac_turn_radio_channel(iqueuemac_t* iqueuemac, uint16_t channel_num)
+{
+	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev, NETOPT_CHANNEL, &channel_num, sizeof(channel_num));
+}
+
 void iqueuemac_set_raddio_to_listen_mode(iqueuemac_t* iqueuemac){
 
 	iqueuemac_trun_on_radio(iqueuemac);
@@ -346,7 +351,7 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 	iqueuemac_frame_beacon_t iqueuemac_hdr;
 	iqueuemac_hdr.header.type = FRAMETYPE_BEACON;
     iqueuemac_hdr.next_cp_time = IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_CP_DURATION_US;
-	iqueuemac_hdr.sub_channel_seq = iqueuemac->rx.router_vtdma_mana.sub_channel_seq;
+	iqueuemac_hdr.sub_channel_seq = iqueuemac->sub_channel_num; //iqueuemac->rx.router_vtdma_mana.sub_channel_seq;
 	//iqueuemac_hdr.schedulelist_size = 0;
 
 	/********* Add the slots schedule list functionality here!!!  *********/
@@ -1040,7 +1045,8 @@ void iqueuemac_beacon_process(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt){
 	}
 
 	schedulelist_size = iqueuemac_beacon_hdr->schedulelist_size;
-	iqueuemac->tx.vtdma_para.sub_channel_seq = iqueuemac_beacon_hdr->sub_channel_seq;
+	//iqueuemac->tx.vtdma_para.sub_channel_seq = iqueuemac_beacon_hdr->sub_channel_seq;
+	iqueuemac->sub_channel_num = iqueuemac_beacon_hdr->sub_channel_seq;
 
 	if(schedulelist_size == 0){
 		iqueuemac->tx.vtdma_para.slots_num = 0;
