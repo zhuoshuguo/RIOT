@@ -78,6 +78,10 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 		       iqueuemac->own_addr.addr,
 			   iqueuemac->own_addr.len);
 
+		/*** initiate the sub_channel_num  ***/
+		//uint16_t random_channel = iqueuemac->own_addr.addr[0] % 15;
+		//iqueuemac->sub_channel_num = 11 + random_channel;
+		iqueuemac->sub_channel_num = 13;
 
 	}else{
 		iqueuemac->node_states.node_basic_state = N_LISTENNING;
@@ -550,6 +554,7 @@ void iqueuemac_router_wait_beacon_feedback(iqueuemac_t* iqueuemac){
 void iqueue_mac_router_vtdma_init(iqueuemac_t* iqueuemac){
 
 	/*** switch the radio to the subchannel ***/
+	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->sub_channel_num);
 
 	/*** set the vTDMA period timeout!!! ***/
 	uint32_t vtdma_duration;
@@ -583,6 +588,9 @@ void iqueue_mac_router_vtdma_end(iqueuemac_t* iqueuemac){
 
 	packet_queue_flush(&iqueuemac->rx.queue);
 	_dispatch(iqueuemac->rx.dispatch_buffer);
+
+	uint16_t public_channel = 26;
+	iqueuemac_turn_radio_channel(iqueuemac, public_channel);
 
 	/*** switch the radio to the public-channel!!! ***/
 
@@ -970,6 +978,9 @@ void iqueuemac_router_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 			iqueuemac->need_update = true;
 		}
 	}else{/*** here means the slots have been used up !!! ***/
+		uint16_t public_channel = 26;
+		iqueuemac_turn_radio_channel(iqueuemac, public_channel);
+
 		iqueuemac->router_states.router_t2r_state = R_T2R_TRANS_END;
 		iqueuemac->need_update = true;
 	}
@@ -992,6 +1003,9 @@ void iqueuemac_router_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 			iqueuemac->router_states.router_t2r_state = R_T2R_TRANS_IN_VTDMA;
 			iqueuemac->need_update = true;
 		}else{
+			uint16_t public_channel = 26;
+			iqueuemac_turn_radio_channel(iqueuemac, public_channel);
+
 			iqueuemac->router_states.router_t2r_state = R_T2R_TRANS_END;
 			iqueuemac->need_update = true;
 		}
@@ -1542,6 +1556,7 @@ void iqueue_mac_node_t2r_wait_beacon(iqueuemac_t* iqueuemac){
 
     		/*** switch the radio to the sub-channel ***/
     		//iqueuemac_switch_channel(iqueuemac, sub_channel);
+    		iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->sub_channel_num);
 
     		if(iqueuemac->tx.vtdma_para.slots_position > 0){
     			/*** wait for the finish of switching channel !!! and then turn off the radio to save power ***/
@@ -1607,6 +1622,9 @@ void iqueue_mac_node_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 			iqueuemac->need_update = true;
 		}
 	}else{/*** here means the slots have been used up !!! ***/
+		uint16_t public_channel = 26;
+		iqueuemac_turn_radio_channel(iqueuemac, public_channel);
+
 		iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_END;
 		iqueuemac->need_update = true;
 	}
@@ -1629,6 +1647,9 @@ void iqueue_mac_node_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 			iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_IN_VTDMA;
 			iqueuemac->need_update = true;
 		}else{
+			uint16_t public_channel = 26;
+			iqueuemac_turn_radio_channel(iqueuemac, public_channel);
+
 			iqueuemac->node_states.node_t2r_state = N_T2R_TRANS_END;
 			iqueuemac->need_update = true;
 		}
