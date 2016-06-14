@@ -49,6 +49,7 @@
 
 #define NETDEV2_NETAPI_MSG_QUEUE_SIZE 8
 
+#define SHUGUO_SAY(value) printf("Shuguo: the value " #value " is %d. \n", value)
 
 static iqueuemac_t iqueuemac;
 
@@ -455,6 +456,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->need_update = true;
 
 	//puts("Shuguo: router is now entering CP");
+	//SHUGUO_SAY(iqueuemac->public_channel_num);
 
 	iqueuemac->quit_current_cycle = false;
 
