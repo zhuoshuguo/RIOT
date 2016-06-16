@@ -847,8 +847,13 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 	 iqueuemac->tx.current_neighbour->mac_type = iqueuemac_preamble_ack_hdr->device_type;
 
 	 if((iqueuemac->father_router_addr.len != 0)&&(_addr_match(&iqueuemac->father_router_addr,&iqueuemac_preamble_ack_hdr->father_router))){
-	     iqueuemac->tx.current_neighbour->in_same_cluster = true;
-	     iqueuemac->tx.current_neighbour->cp_phase = 0;
+	     //iqueuemac->tx.current_neighbour->in_same_cluster = true;
+	     //iqueuemac->tx.current_neighbour->cp_phase = 0;
+
+		 iqueuemac->tx.current_neighbour->in_same_cluster = false;
+		 iqueuemac->tx.current_neighbour->cp_phase = rtt_get_counter();
+
+		 puts("shuguo: node got phase-locked with father.");
 
 	     /***  add the node type into the in-cluster list if the receiver and the sender share the same father ***/
 	     if(iqueuemac_preamble_ack_hdr->device_type == NODE){
@@ -865,6 +870,7 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 		 //puts("shuguo: get phased-locked, not in the same cluster.");
 	 }
 
+#if 0
 	 /* if this is the father router, get phase-locked!!!!  */
 	 if((_addr_match(&iqueuemac->father_router_addr, &pa_info->src_addr))&&(iqueuemac->mac_type == NODE)){
 		 rtt_clear_alarm();
@@ -891,6 +897,8 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 		 }
 
 	 }
+#endif
+
 }
 
 void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
