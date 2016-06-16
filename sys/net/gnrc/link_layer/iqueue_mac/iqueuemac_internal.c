@@ -311,6 +311,7 @@ void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* i
 	iqueuemac_preamble_ack_hdr.header.type = FRAMETYPE_PREAMBLE_ACK;
 	iqueuemac_preamble_ack_hdr.dst_addr = info->src_addr;
 	iqueuemac_preamble_ack_hdr.device_type = iqueuemac->mac_type;
+	//maybe we don't need this "father_router_addr" parameter anymore
 	iqueuemac_preamble_ack_hdr.father_router = iqueuemac->father_router_addr;
 	iqueuemac_preamble_ack_hdr.phase_in_ticks = phase_now_ticks; // next_cp_timing_ticks; //  next_cp_timing_us; //
 
@@ -846,6 +847,11 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 	 /***** update all the necessary information to marked as a known neighbor ****/
 	 iqueuemac->tx.current_neighbour->mac_type = iqueuemac_preamble_ack_hdr->device_type;
 
+	 iqueuemac->tx.current_neighbour->in_same_cluster = false;
+	 iqueuemac->tx.current_neighbour->cp_phase = rtt_get_counter();
+
+
+#if 0
 	 if((iqueuemac->father_router_addr.len != 0)&&(_addr_match(&iqueuemac->father_router_addr,&iqueuemac_preamble_ack_hdr->father_router))){
 	     //iqueuemac->tx.current_neighbour->in_same_cluster = true;
 	     //iqueuemac->tx.current_neighbour->cp_phase = 0;
@@ -870,7 +876,7 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 		 //puts("shuguo: get phased-locked, not in the same cluster.");
 	 }
 
-#if 0
+
 	 /* if this is the father router, get phase-locked!!!!  */
 	 if((_addr_match(&iqueuemac->father_router_addr, &pa_info->src_addr))&&(iqueuemac->mac_type == NODE)){
 		 rtt_clear_alarm();
