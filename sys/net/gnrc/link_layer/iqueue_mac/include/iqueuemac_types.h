@@ -41,16 +41,15 @@ extern "C" {
 /******************************************************************************/
 
 #define IQUEUEMAC_EVENT_RTT_TYPE            (0x4300)
-#define IQUEUEMAC_EVENT_RTT_R_ENTER_CP          (0x4301)
-#define IQUEUEMAC_EVENT_RTT_ENTER_BEACON           (0x4302)
-#define IQUEUEMAC_EVENT_RTT_ENTER_VTDMA            (0x4303)
-#define IQUEUEMAC_EVENT_RTT_ENTER_SLEEP           (0x4304)
-#define IQUEUEMAC_EVENT_RTT_START           (0x4305)
 
-#define IQUEUEMAC_EVENT_RTT_N_ENTER_CP           (0x4306)
-#define IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP           (0x4307)
+#define IQUEUEMAC_EVENT_RTT_START           (0x4301)
 
-#define IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE           (0x4308)
+/****************************** node RTT event types **********************************/
+#define IQUEUEMAC_EVENT_RTT_N_ENTER_CP           (0x4302)
+#define IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP           (0x4303)
+
+/****************************** router RTT event types **********************************/
+#define IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE           (0x4304)
 
 #define IQUEUEMAC_EVENT_TIMEOUT_TYPE        (0x4400)
 
