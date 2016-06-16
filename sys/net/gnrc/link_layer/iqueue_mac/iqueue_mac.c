@@ -584,7 +584,7 @@ void iqueue_mac_router_vtdma(iqueuemac_t* iqueuemac){
 	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_VTDMA)){
-		puts("Shuguo: Router vTDMA ends!!");
+		//puts("Shuguo: Router vTDMA ends!!");
 		iqueuemac->router_states.router_listen_state = R_LISTEN_VTDMA_END;
 		iqueuemac->need_update = true;
 	}
