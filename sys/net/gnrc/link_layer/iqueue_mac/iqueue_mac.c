@@ -165,37 +165,6 @@ void rtt_handler(uint32_t event)
     uint32_t alarm;
     switch(event & 0xffff)
     {
-      case IQUEUEMAC_EVENT_RTT_R_ENTER_CP:{
-        iqueuemac.router_state = R_CP;
-        alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
-        rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_BEACON);
-      }break;
-      
-      case IQUEUEMAC_EVENT_RTT_ENTER_BEACON:{
-        iqueuemac.router_state = R_BEACON;
-        alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
-        rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_VTDMA);
-      }break;
-      
-      case IQUEUEMAC_EVENT_RTT_ENTER_VTDMA:{
-    	iqueuemac.router_state = R_VTDMA;
-
-    	puts("Shuguo: setting vTDMA period timeout!");
-
-    	//iqueuemac_set_timeout(&iqueuemac, TIMEOUT_VTDMA, IQUEUEMAC_VTDMA_DURATION_US);
-    	//iqueuemac_set_timeout(&iqueuemac, TIMEOUT_VTDMA_LONG, IQUEUEMAC_VTDMA_LONG_DURATION_US);
-    	//iqueuemac_set_timeout(&iqueuemac, TIMEOUT_VTDMA_LONG_LONG, IQUEUEMAC_VTDMA_LONG_LONG_DURATION_US);
-
-        //alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
-        //rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_SLEEP);
-      }break;
-      
-      case IQUEUEMAC_EVENT_RTT_ENTER_SLEEP:{
-        iqueuemac.router_state = R_SLEEPING;
-        alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_SLEEP_DURATION_US);
-        rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_ENTER_CP);
-      }break;      
-
       /*******************************Router RTT management***************************/
       case IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE:{
 
@@ -249,11 +218,13 @@ void rtt_handler(uint32_t event)
     	  puts("shuguo: starting duty cycling.");
     	  if(iqueuemac.mac_type == ROUTER)
     	  {
-    	     alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
-    	     rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
+    		  /*** set a random starting time here in the future, thus to avoid the same phase for neighbor devices. ***/
+    	      alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
+    	      rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
     	  }else{
-     	     alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
-     	     rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_CP);
+    		  /*** set a random starting time here in the future, thus to avoid the same phase for neighbor devices. ***/
+     	      alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
+     	      rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_CP);
     	  }
       }break;
 
@@ -263,70 +234,6 @@ void rtt_handler(uint32_t event)
 
 }
 
-/******************************router state machinies**********************************/
-void iqueue_mac_router_update_old(iqueuemac_t* iqueuemac){
-
-	switch(iqueuemac->router_state)
-	{
-	  case R_CP:{
-		  puts("Shuguo: we are now in CP period!");
-	  }break;
-
-	  case R_BEACON:{
-		  puts("Shuguo: we are now in BEACON period!");
-
-		  if(iqueuemac->tx.neighbours[1].queue.length>0)
-		  {
-			  gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.neighbours[1].queue));
-			  if(pkt != NULL){
-				  //iqueuemac_send(iqueuemac, pkt, true);
-			  	puts("Shuguo: we are now sending data in beacon period!");
-			  }
-			  //printf("Shuguo: neighbor-1's queue-length is %d .\n", (int)iqueuemac.neighbours[1].queue.length);
-		  }
-
-		  /*
-		  gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac.iqueue_mac_tx_queue));
-
-		  if(pkt != NULL){  txtsnd 4 1234 1111
-		    gnrc_netdev2->send(gnrc_netdev2, pkt);
-		    puts("Shuguo: we are now sending data in beacon period!");
-		  }else{
-		    puts("Shuguo: we are now in beacon period with no data to send!");
-		  }
-		  printf("Shuguo: the current queue-length is %d .\n", (int)iqueuemac.iqueue_mac_tx_queue.length);
-          */
-	  }break;
-
-	  case R_VTDMA:{
-		  if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_VTDMA)){
-			 // iqueuemac_clear_timeout(iqueuemac, TIMEOUT_VTDMA);
-			  puts("Shuguo: vTDMA timeout!!  ");
-
-			  uint32_t alarm;
-			  alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
-			  rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_ENTER_SLEEP);
-		  }
-
-		  /*
-		  if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_VTDMA_LONG)){
-			  //puts("Shuguo: vTDMA_LONG TIMEOUT!!!");
-		  }
-
-		  if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_VTDMA_LONG_LONG)){
-		 	  puts("Shuguo: vTDMA_LONG_LONG TIMEOUT!!!");
-		  }*/
-
-	  }break;
-
-	  case R_SLEEPING:{
-		  puts("Shuguo: we are now in SLEEP period!");
-	  }break;
-	  default: break;
-
-	}
-
-}
 
 /****************** Device (both router and node) broadcast state machines*****/
 
@@ -1853,7 +1760,6 @@ void iqueue_mac_node_update(iqueuemac_t* iqueuemac){
 void iqueue_mac_update(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac->mac_type == ROUTER){
-	  //iqueue_mac_router_update_old(iqueuemac);
 	  iqueue_mac_router_update(iqueuemac);
 	}else{
 	  iqueue_mac_node_update(iqueuemac);
