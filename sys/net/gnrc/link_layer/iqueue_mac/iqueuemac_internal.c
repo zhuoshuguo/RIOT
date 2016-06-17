@@ -1188,7 +1188,7 @@ void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             	//iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             	//gnrc_pktbuf_release(pkt);
-        	    puts("Shuguo: router receives a data !!");
+        	    puts("Shuguo: node receives a data !!");
             }break;
 
             case FRAMETYPE_BROADCAST:{

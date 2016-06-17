@@ -64,6 +64,15 @@ typedef enum {
 	DEVICE_WAIT_BROADCAST_FEEDBACK,
 	DEVICE_BROADCAST_END
 } iqueuemac_device_broadcast_state_t;
+
+typedef enum {
+	DEVICE_T2N_WAIT_CP_INIT = 0,
+	DEVICE_T2N_WAIT_CP,
+	DEVICE_T2N_TRANS_IN_CP,
+	DEVICE_T2N_WAIT_CPTRANS_FEEDBACK,
+	DEVICE_T2N_TRANS_END
+} iqueuemac_device_t2n_state_t;
+
 /******************************router state machinies**********************************/
 typedef enum {
 /*    UNDEF = -1,
@@ -273,6 +282,8 @@ typedef struct {
 typedef struct {
 
 	iqueuemac_device_broadcast_state_t device_broadcast_state;
+
+	iqueuemac_device_t2n_state_t iqueuemac_device_t2n_state;
 
 } device_states_t;
 
