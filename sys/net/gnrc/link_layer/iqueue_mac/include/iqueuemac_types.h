@@ -73,6 +73,19 @@ typedef enum {
 	DEVICE_T2N_TRANS_END
 } iqueuemac_device_t2n_state_t;
 
+typedef enum {
+	/*Transmitting states of router*/
+	DEVICE_T2R_WAIT_CP_INIT = 0,
+	DEVICE_T2R_WAIT_CP,
+	DEVICE_T2R_TRANS_IN_CP,
+	DEVICE_T2R_WAIT_CPTRANS_FEEDBACK,
+	DEVICE_T2R_WAIT_BEACON,
+	DEVICE_T2R_WAIT_OWN_SLOTS,
+	DEVICE_T2R_TRANS_IN_VTDMA,
+	DEVICE_T2R_WAIT_VTDMATRANS_FEEDBACK,
+	DEVICE_T2R_TRANS_END
+} iqueuemac_device_t2r_state_t;
+
 /******************************router state machinies**********************************/
 typedef enum {
 /*    UNDEF = -1,
@@ -282,8 +295,8 @@ typedef struct {
 typedef struct {
 
 	iqueuemac_device_broadcast_state_t device_broadcast_state;
-
 	iqueuemac_device_t2n_state_t iqueuemac_device_t2n_state;
+	iqueuemac_device_t2r_state_t iqueuemac_device_t2r_state;
 
 } device_states_t;
 
