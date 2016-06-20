@@ -780,31 +780,34 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	/*** add another condition here in the furture: the tx-feedback must be ACK-got,
 	 * namely, completed, to ensure router gets the data correctly***/
 	    if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
-	  	    ;//puts("Shuguo: node success sends a data to father router!!");
-	    }
 
-	    /*  add this part in the future to support vtdma in sending-to-unkown (to router type)
-	    / *
-	    if(iqueuemac->tx.current_neighbour->queue.length > 0)&&(iqueuemac.tx.current_router.mactype == ROUTER){
-		    iqueuemac->tx.vtdma_para.get_beacon = false;
-		    iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_BEACON, IQUEUEMAC_SUPERFRAME_DURATION_US);
-		    // need to flush the rx-queue ??
-		    packet_queue_flush(&iqueuemac->rx.queue);
+	    	/*** TX_FEEDBACK_SUCCESS means the router has success received the queue-length indicator ***/
+	    	/*  add this part in the future to support vtdma in sending-to-unkown (to router type) */
+	    	if((iqueuemac->tx.current_neighbour->queue.length > 0)&&(iqueuemac->tx.current_neighbour->mac_type == ROUTER)){
 
-		    iqueuemac->router_states.router_t2u_state = R_T2U_SEND_PREAMBLE_INIT;
+	    	    iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_INIT;
+	    		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
+	    		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
 
-		    iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
-		    iqueuemac->router_states.router_trans_state = R_TRANS_TO_ROUTER;
-		    iqueuemac->router_states.router_t2r_state = R_T2R_WAIT_BEACON;
-		    iqueuemac->need_update = true;
+	    		iqueuemac->tx.vtdma_para.get_beacon = false;
+	    		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_BEACON, IQUEUEMAC_SUPERFRAME_DURATION_US);
+	    		// need to flush the rx-queue ??
+	    		packet_queue_flush(&iqueuemac->rx.queue);
 
+	    		if(iqueuemac->mac_type == ROUTER){
+	    			iqueuemac->router_states.router_trans_state = R_TRANS_TO_ROUTER;
+	    		}else{
+	    		   	iqueuemac->node_states.node_trans_state = N_TRANS_TO_ROUTER;
+	    		}
+
+	    		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_BEACON;
+	    	}else{
+	    	   	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+	    	}
 	    }else{
-	   	    iqueuemac->node_states.node_t2r_state = R_T2U_END;
-		    iqueuemac->need_update = true;
+	    	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 	    }
-	    */
 
-	    iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 	    iqueuemac->need_update = true;
 	}
 }
