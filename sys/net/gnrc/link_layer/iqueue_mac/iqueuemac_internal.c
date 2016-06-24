@@ -138,7 +138,24 @@ uint32_t _ticks_to_phase(uint32_t ticks)
 }
 
 
-uint32_t _ticks_until_phase(uint32_t phase)
+uint32_t _phase_now(iqueuemac_t* iqueuemac){
+
+	uint32_t phase_now;
+	phase_now = rtt_get_counter();
+
+	/* in case that rtt overflows */
+	if(phase_now < iqueuemac->last_wakeup){
+		uint32_t gap_to_full;
+		gap_to_full = IQUEUEMAC_PHASE_MAX - iqueuemac->last_wakeup;
+		phase_now += gap_to_full;
+	}else{
+		phase_now = phase_now - iqueuemac->last_wakeup;
+	}
+
+	return phase_now;
+}
+
+uint32_t _ticks_until_phase(iqueuemac_t* iqueuemac, uint32_t phase)  //
 {
 	/*
 	uint32_t phase_now;
@@ -154,7 +171,7 @@ uint32_t _ticks_until_phase(uint32_t phase)
 	}*/
 
 
-    long int tmp = phase - rtt_get_counter();
+    long int tmp = phase - _phase_now(iqueuemac); //rtt_get_counter();
     if(tmp < 0) {
         tmp += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
     }
@@ -848,7 +865,8 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 	 iqueuemac->tx.current_neighbour->mac_type = iqueuemac_preamble_ack_hdr->device_type;
 
 	 iqueuemac->tx.current_neighbour->in_same_cluster = false;
-	 iqueuemac->tx.current_neighbour->cp_phase = rtt_get_counter();
+	 /*** remember to reduce a bit the phase for locking, since there is a hand-shake procedure before ***/
+	 iqueuemac->tx.current_neighbour->cp_phase = _phase_now(iqueuemac); // rtt_get_counter();
 
 
 #if 0
@@ -1000,7 +1018,7 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
             	/* Unknown destinations are initialized with their phase at the end
              	* of the local interval, so known destinations that still wakeup
        	        * in this interval will be preferred. */
-        	    phase_check = _ticks_until_phase(iqueuemac->tx.neighbours[i].cp_phase);
+        	    phase_check = _ticks_until_phase(iqueuemac, iqueuemac->tx.neighbours[i].cp_phase);
 
        	        if(phase_check <= phase_nearest) {
         	        next = i;
@@ -1015,7 +1033,6 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
       	if(pkt != NULL){
        		iqueuemac->tx.tx_packet =  pkt;
        		iqueuemac->tx.current_neighbour = &iqueuemac->tx.neighbours[next];
-
 
        		//printf("Shuguo: the find nearest neighbor is %d. \n", next);
        		return true;

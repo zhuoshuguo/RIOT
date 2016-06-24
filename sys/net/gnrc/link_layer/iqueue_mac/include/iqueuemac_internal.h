@@ -100,8 +100,8 @@ void _init_neighbour(iqueuemac_tx_neighbour_t* neighbour, uint8_t* addr, int len
 /* RTT phase calculation */
 uint32_t _ticks_to_phase(uint32_t ticks);
 //uint32_t _phase_to_ticks(uint32_t phase);
-//uint32_t _phase_now(void);
-uint32_t _ticks_until_phase(uint32_t phase);
+uint32_t _phase_now(iqueuemac_t* iqueuemac);
+uint32_t _ticks_until_phase(iqueuemac_t* iqueuemac, uint32_t phase); //uint32_t _ticks_until_phase(uint32_t phase);
 
 
 static inline iqueuemac_tx_neighbour_t* _get_neighbour(iqueuemac_t* iqueuemac, unsigned int id)
