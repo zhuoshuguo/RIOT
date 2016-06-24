@@ -173,15 +173,20 @@ void rtt_handler(uint32_t event)
 
           if(iqueuemac.duty_cycle_started == false){
         	  iqueuemac.duty_cycle_started = true;
+
+        	  /*** record the starting phase of iQueuemac ***/
+        	  iqueuemac.last_wakeup = rtt_get_counter();
           }else{
         	  iqueuemac.router_states.router_new_cycle = true;
+        	  iqueuemac.last_wakeup = rtt_get_alarm(); //rtt_get_counter();
+        	  // iqueuemac_stop_lpm();
           }
 
           /// Shuguo: 以后每次进这里把RTT的计时器清零？！ 方便于管理和计算！！？？
-          rtt_set_counter(0);
+          ///rtt_set_counter(0);
 
-          //alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-          alarm = RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+          alarm = iqueuemac.last_wakeup + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+          //alarm = RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
           rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
 
           iqueuemac.need_update = true;
@@ -191,6 +196,11 @@ void rtt_handler(uint32_t event)
       /*******************************Node RTT management***************************/
       case IQUEUEMAC_EVENT_RTT_N_ENTER_CP:{
 
+    	  if(iqueuemac.duty_cycle_started == false){
+    	   	  iqueuemac.duty_cycle_started = true;
+    	   	  rtt_set_counter(0);
+    	  }
+
     	  rtt_set_counter(0);
 
     	  /// Shuguo: 以后每次进这里把RTT的计时器清零？！ 方便于管理和计算！！？？
@@ -198,9 +208,7 @@ void rtt_handler(uint32_t event)
     	  alarm = RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
     	  rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP);
 
-    	  if(iqueuemac.duty_cycle_started == false){
-    	     iqueuemac.duty_cycle_started = true;
-    	  }
+
 
     	  iqueuemac.node_states.in_cp_period = true;
 
@@ -359,7 +367,7 @@ void iqueuemac_t2n_init(iqueuemac_t* iqueuemac){
 
 	/*** set timer for the targeted node! ***/
 	uint32_t wait_phase_duration;
-	wait_phase_duration = _ticks_until_phase(iqueuemac->tx.current_neighbour->cp_phase);
+	wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
 
 	wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
@@ -468,7 +476,7 @@ void iqueuemac_t2r_init(iqueuemac_t* iqueuemac){
 	/* set timer for the targeted router! */
 	uint32_t wait_phase_duration;
 
-	wait_phase_duration = _ticks_until_phase(iqueuemac->tx.current_neighbour->cp_phase);
+	wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
 	wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
 
@@ -1258,7 +1266,7 @@ void iqueuemac_router_t2r_init(iqueuemac_t* iqueuemac){
 
 		uint32_t wait_phase_duration;
 
-		wait_phase_duration = _ticks_until_phase(iqueuemac->tx.current_neighbour->cp_phase);
+		wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
 
 		wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
@@ -1506,7 +1514,7 @@ void iqueuemac_router_t2n_init(iqueuemac_t* iqueuemac){
 		// set timer for the targeted node!
 		uint32_t wait_phase_duration;
 
-		wait_phase_duration = _ticks_until_phase(iqueuemac->tx.current_neighbour->cp_phase);
+		wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
 
 		wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
@@ -1893,7 +1901,7 @@ void iqueue_mac_node_t2r_init(iqueuemac_t* iqueuemac){
 		// set timer for the targetted router!
 		uint32_t wait_phase_duration;
 
-		wait_phase_duration = _ticks_until_phase(iqueuemac->tx.current_neighbour->cp_phase);
+		wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
 
 		wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
@@ -2136,7 +2144,7 @@ void iqueuemac_node_t2n_init(iqueuemac_t* iqueuemac){
 		// set timer for the targeted node!
 		uint32_t wait_phase_duration;
 
-		wait_phase_duration = _ticks_until_phase(iqueuemac->tx.current_neighbour->cp_phase);
+		wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
 
 		wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
