@@ -47,9 +47,10 @@ extern "C" {
 /****************************** node RTT event types **********************************/
 #define IQUEUEMAC_EVENT_RTT_N_ENTER_CP           (0x4302)
 #define IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP           (0x4303)
-
+#define IQUEUEMAC_EVENT_RTT_N_NEW_CYCLE           (0x4305)
 /****************************** router RTT event types **********************************/
 #define IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE           (0x4304)
+
 
 #define IQUEUEMAC_EVENT_TIMEOUT_TYPE        (0x4400)
 
@@ -280,6 +281,7 @@ typedef struct {
 	mac_node_t2n_state_t node_t2n_state;
 
 	bool in_cp_period;
+	bool node_new_cycle;
 
 } node_states_t;
 

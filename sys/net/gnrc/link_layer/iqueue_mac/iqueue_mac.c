@@ -98,6 +98,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 		iqueuemac->father_router_addr.addr[1] = 0;
 
 		iqueuemac->node_states.in_cp_period = false;
+		iqueuemac->node_states.node_new_cycle = false;
 	}
 
 	iqueuemac->public_channel_num = 26;
@@ -185,14 +186,34 @@ void rtt_handler(uint32_t event)
           /// Shuguo: 以后每次进这里把RTT的计时器清零？！ 方便于管理和计算！！？？
           ///rtt_set_counter(0);
 
-          alarm = iqueuemac.last_wakeup + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
           //alarm = RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+          alarm = iqueuemac.last_wakeup + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
           rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
 
           iqueuemac.need_update = true;
 
       }break;
 
+      /******************************* Node new RTT management***************************/
+      case IQUEUEMAC_EVENT_RTT_N_NEW_CYCLE:{
+
+         if(iqueuemac.duty_cycle_started == false){
+          	 iqueuemac.duty_cycle_started = true;
+
+             /*** record the starting phase of iQueuemac ***/
+             iqueuemac.last_wakeup = rtt_get_counter();
+         }else{
+             iqueuemac.node_states.node_new_cycle = true;
+             iqueuemac.last_wakeup = rtt_get_alarm(); //rtt_get_counter();
+             // iqueuemac_stop_lpm();
+         }
+
+         alarm = iqueuemac.last_wakeup + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+         rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_NEW_CYCLE);
+
+         iqueuemac.need_update = true;
+
+      }break;
       /*******************************Node RTT management***************************/
       case IQUEUEMAC_EVENT_RTT_N_ENTER_CP:{
 
@@ -207,8 +228,6 @@ void rtt_handler(uint32_t event)
     	  //alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
     	  alarm = RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
     	  rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP);
-
-
 
     	  iqueuemac.node_states.in_cp_period = true;
 
@@ -226,16 +245,18 @@ void rtt_handler(uint32_t event)
 
       /********************************************************/
       case IQUEUEMAC_EVENT_RTT_START:{
-    	  puts("shuguo: starting duty cycling.");
+
     	  if(iqueuemac.mac_type == ROUTER)
     	  {
+    		  puts("shuguo: router starting duty cycling.");
     		  /*** set a random starting time here in the future, thus to avoid the same phase for neighbor devices. ***/
     	      alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
     	      rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
     	  }else{
+    		  puts("shuguo: node starting duty cycling.");
     		  /*** set a random starting time here in the future, thus to avoid the same phase for neighbor devices. ***/
      	      alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
-     	      rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_CP);
+     	      rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_NEW_CYCLE);
     	  }
       }break;
 
@@ -327,12 +348,12 @@ void iqueuemac_device_broadcast_end(iqueuemac_t* iqueuemac){
 
 	    puts("Shuguo: router is in broadcast end, switching back to sleeping period");
 	}else{
-
-		//puts("Shuguo: node is in broadcast end, switching back to listening state");
-
 		iqueuemac->node_states.node_basic_state = N_LISTENNING;
+		/*********** judge and update the states before switch back to CP listening period   ***********/
+		uint32_t current_phase;
+		current_phase = _phase_now(iqueuemac);
 
-	    if(iqueuemac->node_states.in_cp_period == true){
+		if(current_phase < RTT_US_TO_TICKS(IQUEUEMAC_QUIT_CP_MARGIN_US)){   ///iqueuemac->node_states.in_cp_period == true
 		    iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
 		    puts("Shuguo: node is in broadcast end and switch to listen's CP");
 	    }else{
@@ -436,11 +457,13 @@ void iqueuemac_t2n_end(iqueuemac_t* iqueuemac){
 	    iqueuemac_trun_off_radio(iqueuemac);
 	    puts("Shuguo: router (device) is in t-2-n end.");
 	}else{
-
 		iqueuemac->node_states.node_basic_state = N_LISTENNING;
 
 		/*********** judge and update the states before switch back to CP listening period ***********/
-		if(iqueuemac->node_states.in_cp_period == true){
+		uint32_t current_phase;
+		current_phase = _phase_now(iqueuemac);
+
+		if(current_phase < RTT_US_TO_TICKS(IQUEUEMAC_QUIT_CP_MARGIN_US)){   ///iqueuemac->node_states.in_cp_period == true
 			iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
 			puts("Shuguo: node (device) is in t2n end, switch to listen's CP");
 		}else{
@@ -671,7 +694,10 @@ void iqueuemac_t2r_end(iqueuemac_t* iqueuemac){
 	}else{
 		iqueuemac->node_states.node_basic_state = N_LISTENNING;
 		/*********** judge and update the states before switch back to CP listening period ***********/
-		if(iqueuemac->node_states.in_cp_period == true){
+		uint32_t current_phase;
+		current_phase = _phase_now(iqueuemac);
+
+		if(current_phase < RTT_US_TO_TICKS(IQUEUEMAC_QUIT_CP_MARGIN_US)){   ///iqueuemac->node_states.in_cp_period == true
 			iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
 			puts("Shuguo: node (device) is in t-2-r end, turn to listen.");
 		}else{
@@ -844,7 +870,10 @@ void iqueuemac_t2u_end(iqueuemac_t* iqueuemac){
 	}else{
 		iqueuemac->node_states.node_basic_state = N_LISTENNING;
 		/*********** judge and update the states before switch back to CP listening period ***********/
-		if(iqueuemac->node_states.in_cp_period == true){
+		uint32_t current_phase;
+		current_phase = _phase_now(iqueuemac);
+
+		if(current_phase < RTT_US_TO_TICKS(IQUEUEMAC_QUIT_CP_MARGIN_US)){   ///iqueuemac->node_states.in_cp_period == true
 			iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
 			puts("Shuguo: node (device) is in t-2-u end, turn to listen.");
 		}else{
@@ -875,12 +904,13 @@ void iqueuemac_t2u_update(iqueuemac_t* iqueuemac)
 void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
 	iqueuemac->router_states.router_new_cycle = false;
+	/******set cp timeout ******/
+	iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
 
 	iqueuemac_trun_on_radio(iqueuemac);
 	iqueuemac->packet_received = false;
 
-	/******set cp timeout ******/
-	iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
+
 
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_LISTEN;
 	iqueuemac->need_update = true;
@@ -1650,11 +1680,14 @@ void iqueue_mac_router_update(iqueuemac_t* iqueuemac){
 /******************************node state machinies**********************************/
 void iqueue_mac_node_listen_cp_init(iqueuemac_t* iqueuemac){
 
+	iqueuemac->node_states.node_new_cycle = false;
+
+	/******set cp timeout ******/
+	iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
+
 	iqueuemac_trun_on_radio(iqueuemac);
 
 	iqueuemac->quit_current_cycle = false;
-
-	//iqueue_mac_send_preamble(iqueuemac, NETOPT_ENABLE);
 
 	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
 	iqueuemac->need_update = true;
@@ -1667,20 +1700,30 @@ void iqueue_mac_node_listen_cp_listen(iqueuemac_t* iqueuemac){
 
 	/**** add packet received process function here to flush the rx_queue, otherwise may overflow!!!  ****/
 	if(iqueuemac->packet_received == true){
-	    	iqueuemac->packet_received = false;
-	    	iqueue_node_cp_receive_packet_process(iqueuemac);
 
-	    	if(iqueuemac->quit_current_cycle == true){
-	    		iqueuemac_trun_off_radio(iqueuemac);
-	    		puts("shuguo: node quits this CP");
-	    	}
+	    iqueuemac->packet_received = false;
+	    iqueue_node_cp_receive_packet_process(iqueuemac);
+/*
+	    if(iqueuemac->quit_current_cycle == true){
+	    	iqueuemac_trun_off_radio(iqueuemac);
+	    	puts("shuguo: node quits this CP");
+	    }*/
 	}
 
+	/** add a if judgement on rx_started event! don't quit CP if a reception is not completed! **/
+	if((iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END))||(iqueuemac->quit_current_cycle == true)){
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
+		iqueuemac->node_states.node_listen_state = N_LISTEN_CP_END;
+		iqueuemac->need_update = true;
+	}
+
+    /*
 	if(iqueuemac->node_states.in_cp_period == false)
 	{
 		iqueuemac->node_states.node_listen_state = N_LISTEN_CP_END;
 		iqueuemac->need_update = true;
 	}
+	*/
 }
 
 void iqueue_mac_node_listen_cp_end(iqueuemac_t* iqueuemac){
@@ -1732,7 +1775,7 @@ void iqueue_mac_node_sleep_init(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_node_sleep(iqueuemac_t* iqueuemac){
 
-	if(iqueuemac->node_states.in_cp_period == true){
+	if(iqueuemac->node_states.node_new_cycle == true){
 		iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING_END;
 		iqueuemac->need_update = true;
 	}
