@@ -104,8 +104,20 @@ typedef enum {
     RESET,  */
 	/*Basic mode of simple mode*/
 	R_LISTENNING,
-	R_TRANSMITTING
+	R_TRANSMITTING,
+	R_INIT
 } mac_router_basic_state_t;
+
+typedef enum {
+	/*Listening states of simple mode*/
+	R_INIT_PREPARE,
+	R_INIT_COLLECT_BEACONS,
+	R_INIT_WAIT_BUSY_END,
+	//R_INIT_CHOOSE_SUBCHANNEL,
+	R_INIT_ANNOUNCE_SUBCHANNEL,
+	R_INIT_WAIT_ANNOUNCE_FEEDBACK,
+	R_INIT_END
+} mac_router_init_state_t;
 
 typedef enum {
 	/*Listening states of simple mode*/
@@ -289,6 +301,7 @@ typedef struct {
 typedef struct {
 
 	mac_router_basic_state_t router_basic_state;
+	mac_router_init_state_t router_init_state;
 	mac_router_listen_state_t router_listen_state;
 
 	mac_router_trans_state_t router_trans_state;
@@ -299,6 +312,8 @@ typedef struct {
 
 	bool extend_cp;
 	bool router_new_cycle;
+	bool init_retry;
+	uint16_t subchannel_occu_flags;
 
 } router_states_t;
 

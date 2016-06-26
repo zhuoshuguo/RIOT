@@ -549,6 +549,10 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
             iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(iqueuemac_frame_data_t), GNRC_NETTYPE_IQUEUEMAC);
     }break;
 
+    case FRAMETYPE_ANNOUNCE:{
+            iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(iqueuemac_frame_announce_t), GNRC_NETTYPE_IQUEUEMAC);
+    }break;
+
     case FRAMETYPE_BROADCAST:{
             iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(iqueuemac_frame_broadcast_t), GNRC_NETTYPE_IQUEUEMAC);
     }break;
@@ -589,6 +593,12 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
         case FRAMETYPE_BROADCAST:{
            	info->dst_addr.len = 2;
            	info->dst_addr.addr[0] = 0xff;
+           	info->dst_addr.addr[1] = 0xff;
+        }break;
+
+        case FRAMETYPE_ANNOUNCE:{
+          	info->dst_addr.len = 2;
+          	info->dst_addr.addr[0] = 0xff;
            	info->dst_addr.addr[1] = 0xff;
         }break;
 
@@ -760,6 +770,63 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 }
 
 
+
+void iqueuemac_packet_process_in_init(iqueuemac_t* iqueuemac){
+	gnrc_pktsnip_t* pkt;
+
+	iqueuemac_packet_info_t receive_packet_info;
+
+    while( (pkt = packet_queue_pop(&iqueuemac->rx.queue)) != NULL ) {
+
+    	/* parse the packet */
+    	int res = _parse_packet(pkt, &receive_packet_info);
+    	if(res != 0) {
+            //LOG_DEBUG("Packet could not be parsed: %i\n", ret);
+            gnrc_pktbuf_release(pkt);
+            continue;
+        }
+
+    	switch(receive_packet_info.header->type){
+            case FRAMETYPE_BEACON:{
+            	//iqueuemac_update_subchannel_occu_flafs(iqueuemac,receive_packet_info,pkt);
+            	gnrc_pktbuf_release(pkt);
+            }break;
+
+            case FRAMETYPE_PREAMBLE:{
+            	iqueuemac->quit_current_cycle = true;
+        	    gnrc_pktbuf_release(pkt);
+            }break;
+
+            case FRAMETYPE_PREAMBLE_ACK:{
+            	gnrc_pktbuf_release(pkt);
+            }break;
+
+            case FRAMETYPE_IQUEUE_DATA:{
+            	gnrc_pktbuf_release(pkt);
+            }break;
+
+            case FRAMETYPE_BROADCAST:{
+            	iqueuemac->quit_current_cycle = true;
+                iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+                //puts("Shuguo: router receives a broadcast data !!");
+           }break;
+
+            case FRAMETYPE_ANNOUNCE:{
+            	//iqueuemac_update_subchannel_occu_flafs(iqueuemac,receive_packet_info,pkt);
+
+            	/*** it seems that this "init_retry" procedure is unnecessary here!! maybe delete it in the future ***/
+            	//iqueuemac->router_states.init_retry = true;
+               	gnrc_pktbuf_release(pkt);
+            }break;
+
+
+            default:gnrc_pktbuf_release(pkt);break;
+  	    }
+
+    }/* end of while loop */
+}
+
+
 void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 {
 	/****** assemble and send the beacon ******/
@@ -790,6 +857,41 @@ void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 
 	/* Send WA as broadcast*/
 	nethdr_preamble->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
+
+	netopt_enable_t csma_enable;
+	csma_enable = use_csma;
+	iqueuemac_send(iqueuemac, pkt, csma_enable);
+}
+
+void iqueuemac_send_announce(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
+{
+	/****** assemble and send the beacon ******/
+	gnrc_pktsnip_t* pkt;
+	gnrc_netif_hdr_t* nethdr_announce;
+
+	/* Assemble announce packet */
+	iqueuemac_frame_announce_t iqueuemac_announce_hdr;
+	iqueuemac_announce_hdr.header.type = FRAMETYPE_ANNOUNCE;
+	iqueuemac_announce_hdr.subchannel_seq = iqueuemac->sub_channel_num;
+
+	pkt = gnrc_pktbuf_add(NULL, &iqueuemac_announce_hdr, sizeof(iqueuemac_announce_hdr), GNRC_NETTYPE_IQUEUEMAC);
+	if(pkt == NULL) {
+		    ;
+	}
+
+	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
+	if(pkt == NULL) {
+	      ;
+	}
+	/* We wouldn't get here if add the NETIF header had failed, so no
+		sanity checks needed */
+	nethdr_announce = (gnrc_netif_hdr_t*) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+
+	/* Construct NETIF header and initiate address fields */
+	gnrc_netif_hdr_init(nethdr_announce, 0, 0);
+
+	/* Send WA as broadcast*/
+	nethdr_announce->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
 
 	netopt_enable_t csma_enable;
 	csma_enable = use_csma;
