@@ -27,6 +27,7 @@
 #include <lpm.h>
 #include "msg.h"
 #include "thread.h"
+#include "random.h"
 #include <timex.h>
 #include <periph/rtt.h>
 #include "net/gnrc.h"
@@ -62,7 +63,8 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 
 	if(iqueuemac->mac_type == ROUTER)
 	{
-		iqueuemac->router_states.router_basic_state = R_LISTENNING;
+		iqueuemac->router_states.router_basic_state = R_INIT;  //R_LISTENNING;
+
 		iqueuemac->router_states.router_listen_state = R_LISTEN_CP_INIT;
 		iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
 		iqueuemac->router_states.router_t2u_state = R_T2U_SEND_PREAMBLE_INIT;
@@ -72,6 +74,8 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 		iqueuemac->router_states.router_new_cycle = false;
 
 		iqueuemac->rx.router_vtdma_mana.sub_channel_seq = 26;
+
+		iqueuemac->router_states.subchannel_occu_flags = 0;
 
 		/*** set the father-router as itself ***/
 		iqueuemac->father_router_addr.len = iqueuemac->own_addr.len;
@@ -379,6 +383,130 @@ void iqueuemac_device_broadcast_update(iqueuemac_t* iqueuemac){
 }
 
 
+/****************** iQueue-MAC transmission to node state machines *****/
+
+void iqueuemac_init_prepare(iqueuemac_t* iqueuemac){
+
+	uint32_t listen_period;
+
+	listen_period = random_uint32_range(0, IQUEUEMAC_SUPERFRAME_DURATION_US);
+	listen_period = (IQUEUEMAC_SUPERFRAME_DURATION_US*11/10) + listen_period;
+
+	iqueuemac->quit_current_cycle = false;
+	iqueuemac->router_states.init_retry = false;
+	iqueuemac->router_states.subchannel_occu_flags = 0;
+
+	packet_queue_flush(&iqueuemac->rx.queue);
+
+	/******set TIMEOUT_COLLECT_BEACON_END timeout ******/
+	iqueuemac_set_timeout(iqueuemac, TIMEOUT_COLLECT_BEACON_END, listen_period);
+
+	iqueuemac->router_states.router_init_state = R_INIT_COLLECT_BEACONS;
+	iqueuemac->need_update = true;
+
+}
+
+void iqueuemac_init_collec_beacons(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac->packet_received == true){
+	   	iqueuemac->packet_received = false;
+	   	iqueuemac_packet_process_in_init(iqueuemac);
+	}
+
+	if(iqueuemac->quit_current_cycle == true){
+		iqueuemac_trun_off_radio(iqueuemac);
+		iqueuemac_set_timeout(iqueuemac, TIMEOUT_BROADCAST_FINISH, IQUEUEMAC_SUPERFRAME_DURATION_US);
+		iqueuemac->router_states.router_init_state = R_INIT_WAIT_BUSY_END;
+		iqueuemac->need_update = true;
+	}
+
+	/*** it seems that this "init_retry" procedure is unnecessary here!! maybe delete it in the future ***/
+	if(iqueuemac->router_states.init_retry == true){
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_COLLECT_BEACON_END);
+		packet_queue_flush(&iqueuemac->rx.queue);
+		iqueuemac->router_states.router_init_state = R_INIT_PREPARE;
+		iqueuemac->need_update = true;
+	}
+
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_COLLECT_BEACON_END)){
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_COLLECT_BEACON_END);
+		//iqueuemac_choose_subchannel(iqueuemac);
+		iqueuemac->router_states.router_init_state = R_INIT_ANNOUNCE_SUBCHANNEL;
+		iqueuemac->need_update = true;
+	}
+
+}
+
+void iqueuemac_init_wait_busy_end(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_BROADCAST_FINISH)){
+		iqueuemac_trun_on_radio(iqueuemac);
+		iqueuemac->router_states.router_init_state = R_INIT_PREPARE;
+		iqueuemac->need_update = true;
+	}
+}
+
+/*
+void iqueuemac_init_choose_subchannel(iqueuemac_t* iqueuemac){
+
+}*/
+
+void iqueuemac_init_announce_subchannel(iqueuemac_t* iqueuemac){
+
+	//set csma retry number here??
+	iqueuemac_send_announce(iqueuemac);
+
+	iqueuemac->router_states.router_init_state = R_INIT_WAIT_ANNOUNCE_FEEDBACK;
+	iqueuemac->need_update = true;
+}
+
+void iqueuemac_init_wait_announce_feedback(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac->tx.tx_finished == true){
+
+		/*** add another condition here in the furture: the tx-feedback must be ACK-got,
+		 * namely, completed, to ensure router gets the data correctly***/
+		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
+			packet_queue_flush(&iqueuemac->rx.queue);
+			iqueuemac->router_states.router_init_state = R_INIT_END;
+			iqueuemac->need_update = true;
+			return;
+		}
+
+		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_BUSY){
+			iqueuemac->router_states.router_init_state = R_INIT_PREPARE;
+			iqueuemac->need_update = true;
+		}
+	}
+}
+
+void iqueuemac_init_end(iqueuemac_t* iqueuemac){
+
+	iqueuemac->router_states.router_init_state = R_INIT_PREPARE;
+
+	iqueuemac->router_states.router_basic_state = R_LISTENNING;
+	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_INIT;
+
+	/*** start duty-cycle ***/
+	iqueuemac.duty_cycle_started = false;
+	rtt_handler(IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
+	iqueuemac->need_update = true;
+}
+
+void iqueuemac_init_update(iqueuemac_t* iqueuemac){
+
+	switch(iqueuemac->router_states.router_init_state)
+	{
+		case R_INIT_PREPARE: iqueuemac_init_prepare(iqueuemac);break;
+		case R_INIT_COLLECT_BEACONS: iqueuemac_init_collec_beacons(iqueuemac);break;
+		case R_INIT_WAIT_BUSY_END: iqueuemac_init_wait_busy_end(iqueuemac);break;
+		//case R_INIT_CHOOSE_SUBCHANNEL: iqueuemac_init_choose_subchannel(iqueuemac);break;
+		case R_INIT_ANNOUNCE_SUBCHANNEL: iqueuemac_init_announce_subchannel(iqueuemac);break;
+		case R_INIT_WAIT_ANNOUNCE_FEEDBACK: iqueuemac_init_wait_announce_feedback(iqueuemac);break;
+		case R_INIT_END: iqueuemac_init_end(iqueuemac);break;
+		default: break;
+	}
+}
 
 /****************** iQueue-MAC transmission to node state machines *****/
 
@@ -909,8 +1037,6 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
 	iqueuemac_trun_on_radio(iqueuemac);
 	iqueuemac->packet_received = false;
-
-
 
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_LISTEN;
 	iqueuemac->need_update = true;
@@ -1671,6 +1797,7 @@ void iqueue_mac_router_update(iqueuemac_t* iqueuemac){
 
 	switch(iqueuemac->router_states.router_basic_state)
    {
+	case R_INIT: iqueuemac_init_update(iqueuemac);break;
 	case R_LISTENNING: iqueue_mac_router_listen_update(iqueuemac); break;
 	case R_TRANSMITTING: iqueue_mac_router_transmit_update(iqueuemac); break;
 	default: break;
@@ -2496,6 +2623,10 @@ static void *_gnrc_iqueuemac_thread(void *args)
     xtimer_sleep(3);
 
     iqueuemac_init(&iqueuemac);
+
+    uint32_t seed;
+    seed = (uint32_t)iqueuemac->own_addr.addr[0];
+    random_init(seed);
 
     rtt_handler(IQUEUEMAC_EVENT_RTT_START);
 

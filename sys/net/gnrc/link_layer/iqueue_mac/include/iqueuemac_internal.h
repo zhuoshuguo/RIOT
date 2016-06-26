@@ -139,6 +139,7 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info);
 int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info, iqueuemac_t* iqueuemac);
 void iqueuemac_router_queue_indicator_update(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info);
 void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac);
+void iqueuemac_packet_process_in_init(iqueuemac_t* iqueuemac);
 void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma);
 void iqueuemac_add_in_cluster_neighbor(iqueuemac_t* iqueuemac, l2_addr_t* addr);
 void iqueuemac_remove_in_cluster_neighbor(iqueuemac_t* iqueuemac, l2_addr_t* addr);
