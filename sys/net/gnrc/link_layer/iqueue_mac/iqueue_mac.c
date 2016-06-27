@@ -499,7 +499,6 @@ void iqueuemac_init_update(iqueuemac_t* iqueuemac){
 		case R_INIT_PREPARE: iqueuemac_init_prepare(iqueuemac);break;
 		case R_INIT_COLLECT_BEACONS: iqueuemac_init_collec_beacons(iqueuemac);break;
 		case R_INIT_WAIT_BUSY_END: iqueuemac_init_wait_busy_end(iqueuemac);break;
-		//case R_INIT_CHOOSE_SUBCHANNEL: iqueuemac_init_choose_subchannel(iqueuemac);break;
 		case R_INIT_ANNOUNCE_SUBCHANNEL: iqueuemac_init_announce_subchannel(iqueuemac);break;
 		case R_INIT_WAIT_ANNOUNCE_FEEDBACK: iqueuemac_init_wait_announce_feedback(iqueuemac);break;
 		case R_INIT_END: iqueuemac_init_end(iqueuemac);break;
