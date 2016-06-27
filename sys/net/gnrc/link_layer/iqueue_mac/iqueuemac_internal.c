@@ -769,6 +769,46 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
     }/* end of while loop */
 }
 
+void iqueuemac_update_subchannel_occu_flags(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info){
+
+	uint16_t subchannel_seq,flag;
+
+	subchannel_seq = 0;
+
+	switch(pa_info->header->type){
+      case FRAMETYPE_BEACON:{
+    	  iqueuemac_frame_beacon_t* iqueuemac_beacon_hdr;
+    	  iqueuemac_beacon_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_IQUEUEMAC);
+    	  if(iqueuemac_beacon_hdr == NULL){
+    	      puts("iqueuemac_beacon_hdr is null");
+    	      return;
+    	  }
+    	  subchannel_seq = (uint16_t)iqueuemac_beacon_hdr->sub_channel_seq;
+    	  printf("Shuguo: received beacon's subchannel is %d .\n", subchannel_seq);
+
+      }break;
+      case FRAMETYPE_ANNOUNCE:{
+    	  iqueuemac_frame_announce_t* iqueuemac_announce_hdr;
+    	  iqueuemac_announce_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_IQUEUEMAC);
+    	  if(iqueuemac_announce_hdr == NULL){
+    	      puts("iqueuemac_announce_hdr is null");
+    	      return;
+    	  }
+    	  subchannel_seq = (uint16_t)iqueuemac_announce_hdr->subchannel_seq;
+    	  printf("Shuguo: received announce's subchannel is %d .\n", subchannel_seq);
+
+      }break;
+      default:break;
+	}
+
+	subchannel_seq = subchannel_seq - 11;
+
+	flag = (1 << subchannel_seq);
+
+	iqueuemac->router_states.subchannel_occu_flags = iqueuemac->router_states.subchannel_occu_flags | flag;
+	printf("Shuguo: subchannel flag is %d .\n", iqueuemac->router_states.subchannel_occu_flags);
+
+}
 
 
 void iqueuemac_packet_process_in_init(iqueuemac_t* iqueuemac){
@@ -788,7 +828,7 @@ void iqueuemac_packet_process_in_init(iqueuemac_t* iqueuemac){
 
     	switch(receive_packet_info.header->type){
             case FRAMETYPE_BEACON:{
-            	//iqueuemac_update_subchannel_occu_flafs(iqueuemac,receive_packet_info,pkt);
+            	iqueuemac_update_subchannel_occu_flags(iqueuemac,pkt,&receive_packet_info);
             	gnrc_pktbuf_release(pkt);
             }break;
 
@@ -812,7 +852,7 @@ void iqueuemac_packet_process_in_init(iqueuemac_t* iqueuemac){
            }break;
 
             case FRAMETYPE_ANNOUNCE:{
-            	//iqueuemac_update_subchannel_occu_flafs(iqueuemac,receive_packet_info,pkt);
+            	iqueuemac_update_subchannel_occu_flags(iqueuemac,pkt,&receive_packet_info);
 
             	/*** it seems that this "init_retry" procedure is unnecessary here!! maybe delete it in the future ***/
             	//iqueuemac->router_states.init_retry = true;
@@ -826,6 +866,38 @@ void iqueuemac_packet_process_in_init(iqueuemac_t* iqueuemac){
     }/* end of while loop */
 }
 
+void iqueuemac_init_choose_subchannel(iqueuemac_t* iqueuemac){
+
+	uint16_t subchannel_seq, check_seq, own_id;
+
+	memcpy(&own_id,
+	       iqueuemac->own_addr.addr,
+		   iqueuemac->own_addr.len);
+
+	/* range from 12 to 25 */
+	//own_id = 12;
+	subchannel_seq = 12 + (own_id % 14);
+	printf("Shuguo: the random selected subchannel is %d .\n", subchannel_seq);
+	printf("Shuguo: subchannel flag is %d .\n", iqueuemac->router_states.subchannel_occu_flags);
+
+	int i=0;
+	for(i=0;i<14;i++){
+		/* range from 1 to 14, lead to 2nd to 15th bit */
+		check_seq = subchannel_seq - 11;
+		check_seq = (1<<check_seq);
+
+		if(check_seq & iqueuemac->router_states.subchannel_occu_flags){
+			puts("Shuguo: subchannel exist, find next subchannel.");
+			own_id += 1;
+			subchannel_seq = 12 + (own_id % 14);
+		}else{
+			break;
+		}
+	}
+
+	iqueuemac->sub_channel_num = subchannel_seq;
+	printf("Shuguo: the final selected subchannel is %d .\n", subchannel_seq);
+}
 
 void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 {

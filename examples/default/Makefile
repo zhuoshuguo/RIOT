@@ -34,6 +34,7 @@ USEMODULE += ps
 # include and auto-initialize all available sensors
 USEMODULE += saul_default
 
+#USEMODULE += gnrc_random
 USEMODULE += gnrc_iqueuemac
 
 BOARD_PROVIDES_NETIF := airfy-beacon cc2538dk fox iotlab-m3 iotlab-a8-m3 mulle \
