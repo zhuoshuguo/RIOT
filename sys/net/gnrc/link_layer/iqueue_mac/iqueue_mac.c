@@ -64,6 +64,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	if(iqueuemac->mac_type == ROUTER)
 	{
 		iqueuemac->router_states.router_basic_state = R_INIT;  //R_LISTENNING;
+		iqueuemac->router_states.router_init_state = R_INIT_PREPARE;
 
 		iqueuemac->router_states.router_listen_state = R_LISTEN_CP_INIT;
 		iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
@@ -252,10 +253,13 @@ void rtt_handler(uint32_t event)
 
     	  if(iqueuemac.mac_type == ROUTER)
     	  {
+    		  iqueuemac.duty_cycle_started = true;
+    		  iqueuemac.need_update = true;
+    		  /*** set a random starting time here in the future, thus to avoid the same phase for neighbor devices.
     		  puts("shuguo: router starting duty cycling.");
-    		  /*** set a random starting time here in the future, thus to avoid the same phase for neighbor devices. ***/
+
     	      alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
-    	      rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
+    	      rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);  ***/
     	  }else{
     		  puts("shuguo: node starting duty cycling.");
     		  /*** set a random starting time here in the future, thus to avoid the same phase for neighbor devices. ***/
@@ -415,9 +419,11 @@ void iqueuemac_init_collec_beacons(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac->quit_current_cycle == true){
 		iqueuemac_trun_off_radio(iqueuemac);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_COLLECT_BEACON_END);
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_BROADCAST_FINISH, IQUEUEMAC_SUPERFRAME_DURATION_US);
 		iqueuemac->router_states.router_init_state = R_INIT_WAIT_BUSY_END;
 		iqueuemac->need_update = true;
+		return;
 	}
 
 	/*** it seems that this "init_retry" procedure is unnecessary here!! maybe delete it in the future ***/
@@ -429,12 +435,10 @@ void iqueuemac_init_collec_beacons(iqueuemac_t* iqueuemac){
 	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_COLLECT_BEACON_END)){
-		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_COLLECT_BEACON_END);
-		//iqueuemac_choose_subchannel(iqueuemac);
+		iqueuemac_init_choose_subchannel(iqueuemac);
 		iqueuemac->router_states.router_init_state = R_INIT_ANNOUNCE_SUBCHANNEL;
 		iqueuemac->need_update = true;
 	}
-
 }
 
 void iqueuemac_init_wait_busy_end(iqueuemac_t* iqueuemac){
@@ -446,15 +450,10 @@ void iqueuemac_init_wait_busy_end(iqueuemac_t* iqueuemac){
 	}
 }
 
-/*
-void iqueuemac_init_choose_subchannel(iqueuemac_t* iqueuemac){
-
-}*/
-
 void iqueuemac_init_announce_subchannel(iqueuemac_t* iqueuemac){
 
 	//set csma retry number here??
-	iqueuemac_send_announce(iqueuemac);
+	iqueuemac_send_announce(iqueuemac,NETOPT_ENABLE);
 
 	iqueuemac->router_states.router_init_state = R_INIT_WAIT_ANNOUNCE_FEEDBACK;
 	iqueuemac->need_update = true;
@@ -471,9 +470,7 @@ void iqueuemac_init_wait_announce_feedback(iqueuemac_t* iqueuemac){
 			iqueuemac->router_states.router_init_state = R_INIT_END;
 			iqueuemac->need_update = true;
 			return;
-		}
-
-		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_BUSY){
+		}else{ //if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_BUSY)
 			iqueuemac->router_states.router_init_state = R_INIT_PREPARE;
 			iqueuemac->need_update = true;
 		}
@@ -482,13 +479,15 @@ void iqueuemac_init_wait_announce_feedback(iqueuemac_t* iqueuemac){
 
 void iqueuemac_init_end(iqueuemac_t* iqueuemac){
 
-	iqueuemac->router_states.router_init_state = R_INIT_PREPARE;
+	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_COLLECT_BEACON_END);
 
+	iqueuemac->router_states.router_init_state = R_INIT_PREPARE;
+	/*** switch to duty-cycle operation ***/
 	iqueuemac->router_states.router_basic_state = R_LISTENNING;
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_INIT;
 
 	/*** start duty-cycle ***/
-	iqueuemac.duty_cycle_started = false;
+	iqueuemac->duty_cycle_started = false;
 	rtt_handler(IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
 	iqueuemac->need_update = true;
 }
@@ -2625,7 +2624,8 @@ static void *_gnrc_iqueuemac_thread(void *args)
     iqueuemac_init(&iqueuemac);
 
     uint32_t seed;
-    seed = (uint32_t)iqueuemac->own_addr.addr[0];
+    seed = (uint32_t)iqueuemac.own_addr.addr[0];
+
     random_init(seed);
 
     rtt_handler(IQUEUEMAC_EVENT_RTT_START);
