@@ -197,8 +197,16 @@ typedef enum {
     RESET,  */
 	/*Basic mode of simple mode*/
 	N_LISTENNING,
-	N_TRANSMITTING
+	N_TRANSMITTING,
+	N_INIT,
 } mac_node_basic_state_t;
+
+typedef enum {
+	/*Listening states of simple mode*/
+	N_INIT_PREPARE,
+	N_INIT_WAIT_TIMEOUT,
+	N_INIT_END
+} mac_node_init_state_t;
 
 typedef enum {
 	/*Listening states of simple mode*/
@@ -283,6 +291,7 @@ typedef struct {
 typedef struct {
 
 	mac_node_basic_state_t node_basic_state;
+	mac_node_init_state_t node_init_state;
 	mac_node_listen_state_t node_listen_state;
 
 	mac_node_trans_state_t node_trans_state;

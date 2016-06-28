@@ -90,7 +90,9 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 		iqueuemac->sub_channel_num = 13;
 
 	}else{
-		iqueuemac->node_states.node_basic_state = N_LISTENNING;
+		iqueuemac->node_states.node_basic_state = N_INIT; //N_LISTENNING;
+		iqueuemac->node_states.node_init_state = N_INIT_PREPARE;
+
 		iqueuemac->node_states.node_listen_state = N_LISTEN_CP_INIT;
 		iqueuemac->node_states.node_trans_state = N_TRANS_TO_UNKOWN;
 		iqueuemac->node_states.node_t2u_state = N_T2U_SEND_PREAMBLE_INIT;
@@ -505,6 +507,63 @@ void iqueuemac_init_update(iqueuemac_t* iqueuemac){
 		default: break;
 	}
 }
+
+
+void iqueuemac_node_init_prepare(iqueuemac_t* iqueuemac){
+
+	uint32_t random_wait_period;
+
+	random_wait_period = random_uint32_range(0, IQUEUEMAC_SUPERFRAME_DURATION_US);
+
+	iqueuemac_trun_off_radio(iqueuemac);
+
+	packet_queue_flush(&iqueuemac->rx.queue);
+
+	/******set TIMEOUT_COLLECT_BEACON_END timeout ******/
+	iqueuemac_set_timeout(iqueuemac, TIMEOUT_COLLECT_BEACON_END, random_wait_period);
+
+	iqueuemac->node_states.node_init_state = N_INIT_WAIT_TIMEOUT;
+	iqueuemac->need_update = true;
+	puts("shuguo: node init start.");
+}
+
+void iqueuemac_node_init_wait_timeout(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_COLLECT_BEACON_END)){
+
+		iqueuemac->node_states.node_init_state = N_INIT_END;
+		iqueuemac->need_update = true;
+	}
+}
+
+
+void iqueuemac_node_init_end(iqueuemac_t* iqueuemac){
+
+	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_COLLECT_BEACON_END);
+
+	iqueuemac->node_states.node_init_state = N_INIT_PREPARE;
+	/*** switch to duty-cycle operation ***/
+	iqueuemac->node_states.node_basic_state = N_LISTENNING;
+	iqueuemac->node_states.node_init_state = N_LISTEN_CP_INIT;
+
+	/*** start duty-cycle ***/
+	iqueuemac->duty_cycle_started = false;
+	rtt_handler(IQUEUEMAC_EVENT_RTT_N_NEW_CYCLE);
+	iqueuemac->need_update = true;
+	puts("shuguo: node init end.");
+}
+
+void iqueuemac_node_init_update(iqueuemac_t* iqueuemac){
+
+	switch(iqueuemac->node_states.node_init_state)
+	{
+		case N_INIT_PREPARE: iqueuemac_node_init_prepare(iqueuemac);break;
+		case N_INIT_WAIT_TIMEOUT: iqueuemac_node_init_wait_timeout(iqueuemac);break;
+		case N_INIT_END: iqueuemac_node_init_end(iqueuemac);break;
+		default: break;
+	}
+}
+
 
 /****************** iQueue-MAC transmission to node state machines *****/
 
@@ -1818,7 +1877,7 @@ void iqueue_mac_node_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->need_update = true;
 
 	packet_queue_flush(&iqueuemac->rx.queue);
-	//puts("Shuguo: node is now entering CP");
+	puts("Shuguo: node is now entering CP");
 }
 
 void iqueue_mac_node_listen_cp_listen(iqueuemac_t* iqueuemac){
@@ -2437,6 +2496,7 @@ void iqueue_mac_node_update(iqueuemac_t* iqueuemac){
 
 	switch(iqueuemac->node_states.node_basic_state)
    {
+	case N_INIT: iqueuemac_node_init_update(iqueuemac);break;
 	case N_LISTENNING: iqueue_mac_node_listen_update(iqueuemac); break;
 	case N_TRANSMITTING: iqueue_mac_node_transmit_update(iqueuemac); break;
 	default: break;
@@ -2627,8 +2687,9 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
     random_init(seed);
 
-    rtt_handler(IQUEUEMAC_EVENT_RTT_START);
+    //rtt_handler(IQUEUEMAC_EVENT_RTT_START);
 
+    iqueuemac.need_update = true;
 
     /* start the event loop */
     while (1) {
@@ -2695,7 +2756,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
                 break;
         }
 
-        while((iqueuemac.need_update == true)&&(iqueuemac.duty_cycle_started == true))
+        while(iqueuemac.need_update == true)  //&&(iqueuemac.duty_cycle_started == true)
         {
         	iqueuemac.need_update = false;
             iqueue_mac_update(&iqueuemac);
