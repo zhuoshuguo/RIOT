@@ -250,7 +250,7 @@ bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
         return false;
     }
 
-    printf("Shuguo: the current find neighbour %d 's queue-length is %d. \n", neighbour_id, (int)iqueuemac->tx.neighbours[neighbour_id].queue.length);
+    //printf("Shuguo: the current find neighbour %d 's queue-length is %d. \n", neighbour_id, (int)iqueuemac->tx.neighbours[neighbour_id].queue.length);
 
     DEBUG("[iqueuemac-int] Queuing pkt to neighbour #%d\n", neighbour_id);
 
@@ -1040,7 +1040,7 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 
 	 iqueuemac->tx.current_neighbour->in_same_cluster = false;
 	 /*** remember to reduce a bit the phase for locking, since there is a hand-shake procedure before ***/
-	 iqueuemac->tx.current_neighbour->cp_phase = _phase_now(iqueuemac); // rtt_get_counter();
+	 iqueuemac->tx.current_neighbour->cp_phase = _phase_now(iqueuemac) - RTT_US_TO_TICKS(IQUEUEMAC_WAIT_CP_SECUR_GAP_US); // rtt_get_counter();
 
 
 #if 0
@@ -1157,6 +1157,12 @@ void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_ena
 	/*** enable auto-ACK ??? ***/
 
 	/* Insert iqueue-mac header above NETIF header */
+
+	/*
+	iqueuemac_frame_data_t* iqueuemac_data_hdr;
+	iqueuemac_data_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_IQUEUEMAC);
+	if(iqueuemac_data_hdr != NULL){
+	*/
 
 	iqueuemac_frame_data_t iqueuemac_data_hdr;
 	iqueuemac_data_hdr.header.type = FRAMETYPE_IQUEUE_DATA;
