@@ -36,7 +36,7 @@ typedef enum {
     NODE
 } iqueuemac_type_t;
 
-#define MAC_TYPE  ROUTER // NODE //                                                                      NODE //        ROUTER
+#define MAC_TYPE  NODE // ROUTER //                                                                      NODE //        ROUTER
 
 #ifndef IQUEUEMAC_SUPERFRAME_DURATION_US
 #define IQUEUEMAC_SUPERFRAME_DURATION_US        (3000U * 1000)
@@ -115,8 +115,6 @@ typedef enum {
 #ifndef IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM
 #define IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM           (10U)
 #endif
-
-void iqueuemac_set_rtt_alarm(uint32_t alarm, void *arg);
 
 
 #define IQUEUEMAC_LPM_MASK					(1 << 17)
