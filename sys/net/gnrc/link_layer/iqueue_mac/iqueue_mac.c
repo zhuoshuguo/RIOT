@@ -190,6 +190,8 @@ void rtt_handler(uint32_t event)
         	  // iqueuemac_stop_lpm();
           }
 
+          lpm_prevent_sleep |= IQUEUEMAC_LPM_MASK;
+
           /// Shuguo: 以后每次进这里把RTT的计时器清零？！ 方便于管理和计算！！？？
           ///rtt_set_counter(0);
 
@@ -214,6 +216,8 @@ void rtt_handler(uint32_t event)
              iqueuemac.last_wakeup = rtt_get_alarm(); //rtt_get_counter();
              // iqueuemac_stop_lpm();
          }
+
+         lpm_prevent_sleep |= IQUEUEMAC_LPM_MASK;
 
          alarm = iqueuemac.last_wakeup + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
          rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_NEW_CYCLE);
@@ -359,13 +363,36 @@ void iqueuemac_device_broadcast_end(iqueuemac_t* iqueuemac){
 	    puts("Shuguo: router is in broadcast end, switching back to sleeping period");
 	}else{
 		iqueuemac->node_states.node_basic_state = N_LISTENNING;
+
+		iqueuemac->node_states.node_new_cycle = false;
+
 		/*********** judge and update the states before switch back to CP listening period   ***********/
 		uint32_t current_phase;
 		current_phase = _phase_now(iqueuemac);
 
 		if(current_phase < RTT_US_TO_TICKS(IQUEUEMAC_QUIT_CP_MARGIN_US)){   ///iqueuemac->node_states.in_cp_period == true
-		    iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-		    puts("Shuguo: node is in broadcast end and switch to listen's CP");
+			/** if there is no buffered packet to send, then we are sure to go to listen state!! **/
+			if(iqueue_mac_find_next_tx_neighbor(iqueuemac) == false){
+			    iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+			    //puts("Shuguo: node (device) is in t-2-u end, turn to listen.");
+			}else{/** if there is buffered packet to send, then judge the receiver's phase.
+                      if the phase is too far from now, then still go to listen state, otherwise, go to transmit state **/
+				if(iqueuemac->tx.current_neighbour->mac_type == UNKNOWN){
+					iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+				}else{/** if the receiver is not unknown type, check how far its phase from now! **/
+				    uint32_t wait_phase_duration;
+				    wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
+				    wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
+
+				    if(wait_phase_duration > (2*IQUEUEMAC_CP_DURATION_US)){
+				    	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+				    }else{
+				    	iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
+				    }
+				}
+			}
+			//iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+		    //puts("Shuguo: node is in broadcast end and switch to listen's CP");
 	    }else{
 		    iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
 		    iqueuemac_trun_off_radio(iqueuemac);
@@ -579,11 +606,11 @@ void iqueuemac_t2n_init(iqueuemac_t* iqueuemac){
 
 	wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
-
+/*
 	printf("shuguo: the wait phase time is %lu us .\n" , wait_phase_duration);
 	wait_phase_duration = RTT_TICKS_TO_US(iqueuemac->tx.current_neighbour->cp_phase);
 	printf("shuguo: the dest's phase is %lu us .\n" , wait_phase_duration);
-
+*/
 	/*** flush the rx-queue here to reduce possible buffered packet in RIOT!! ***/
 	packet_queue_flush(&iqueuemac->rx.queue);
 
@@ -650,12 +677,34 @@ void iqueuemac_t2n_end(iqueuemac_t* iqueuemac){
 	}else{
 		iqueuemac->node_states.node_basic_state = N_LISTENNING;
 
+		iqueuemac->node_states.node_new_cycle = false;
+
 		/*********** judge and update the states before switch back to CP listening period ***********/
 		uint32_t current_phase;
 		current_phase = _phase_now(iqueuemac);
 
 		if(current_phase < RTT_US_TO_TICKS(IQUEUEMAC_QUIT_CP_MARGIN_US)){   ///iqueuemac->node_states.in_cp_period == true
-			iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+			/** if there is no buffered packet to send, then we are sure to go to listen state!! **/
+			if(iqueue_mac_find_next_tx_neighbor(iqueuemac) == false){
+			    iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+			    //puts("Shuguo: node (device) is in t-2-u end, turn to listen.");
+			}else{/** if there is buffered packet to send, then judge the receiver's phase.
+                      if the phase is too far from now, then still go to listen state, otherwise, go to transmit state **/
+				if(iqueuemac->tx.current_neighbour->mac_type == UNKNOWN){
+					iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+				}else{/** if the receiver is not unknown type, check how far its phase from now! **/
+				    uint32_t wait_phase_duration;
+				    wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
+				    wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
+
+				    if(wait_phase_duration > (2*IQUEUEMAC_CP_DURATION_US)){
+				    	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+				    }else{
+				    	iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
+				    }
+				}
+			}
+			//iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
 			//puts("Shuguo: node (device) is in t2n end, switch to listen's CP");
 		}else{
 			iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
@@ -884,12 +933,35 @@ void iqueuemac_t2r_end(iqueuemac_t* iqueuemac){
 		//puts("Shuguo: router (device) is in t-2-r end.");
 	}else{
 		iqueuemac->node_states.node_basic_state = N_LISTENNING;
+
+		iqueuemac->node_states.node_new_cycle = false;
+
 		/*********** judge and update the states before switch back to CP listening period ***********/
 		uint32_t current_phase;
 		current_phase = _phase_now(iqueuemac);
 
 		if(current_phase < RTT_US_TO_TICKS(IQUEUEMAC_QUIT_CP_MARGIN_US)){   ///iqueuemac->node_states.in_cp_period == true
-			iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+			/** if there is no buffered packet to send, then we are sure to go to listen state!! **/
+			if(iqueue_mac_find_next_tx_neighbor(iqueuemac) == false){
+			    iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+			    //puts("Shuguo: node (device) is in t-2-u end, turn to listen.");
+			}else{/** if there is buffered packet to send, then judge the receiver's phase.
+                      if the phase is too far from now, then still go to listen state, otherwise, go to transmit state **/
+				if(iqueuemac->tx.current_neighbour->mac_type == UNKNOWN){
+					iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+				}else{/** if the receiver is not unknown type, check how far its phase from now! **/
+				    uint32_t wait_phase_duration;
+				    wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
+				    wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
+
+				    if(wait_phase_duration > (2*IQUEUEMAC_CP_DURATION_US)){
+				    	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+				    }else{
+				    	iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
+				    }
+				}
+			}
+			//iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
 			//puts("Shuguo: node (device) is in t-2-r end, turn to listen.");
 		}else{
 			iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
@@ -1060,13 +1132,34 @@ void iqueuemac_t2u_end(iqueuemac_t* iqueuemac){
 		//puts("Shuguo: router (device) is in t-2-u end.");
 	}else{
 		iqueuemac->node_states.node_basic_state = N_LISTENNING;
+
+		iqueuemac->node_states.node_new_cycle = false;
+
 		/*********** judge and update the states before switch back to CP listening period ***********/
 		uint32_t current_phase;
 		current_phase = _phase_now(iqueuemac);
 
 		if(current_phase < RTT_US_TO_TICKS(IQUEUEMAC_QUIT_CP_MARGIN_US)){   ///iqueuemac->node_states.in_cp_period == true
-			iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-			//puts("Shuguo: node (device) is in t-2-u end, turn to listen.");
+			/** if there is no buffered packet to send, then we are sure to go to listen state!! **/
+			if(iqueue_mac_find_next_tx_neighbor(iqueuemac) == false){
+			    iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+			    //puts("Shuguo: node (device) is in t-2-u end, turn to listen.");
+			}else{/** if there is buffered packet to send, then judge the receiver's phase.
+                      if the phase is too far from now, then still go to listen state, otherwise, go to transmit state **/
+				if(iqueuemac->tx.current_neighbour->mac_type == UNKNOWN){
+					iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+				}else{/** if the receiver is not unknown type, check how far its phase from now! **/
+				    uint32_t wait_phase_duration;
+				    wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
+				    wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
+
+				    if(wait_phase_duration > (2*IQUEUEMAC_CP_DURATION_US)){
+				    	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
+				    }else{
+				    	iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
+				    }
+				}
+			}
 		}else{
 			iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
 			iqueuemac_trun_off_radio(iqueuemac);
@@ -1264,6 +1357,38 @@ void iqueue_mac_router_sleep_init(iqueuemac_t* iqueuemac){
 }
 
 void iqueue_mac_router_sleep(iqueuemac_t* iqueuemac){
+
+	if(iqueue_mac_find_next_tx_neighbor(iqueuemac)){
+
+		/*  stop lpm mode */
+		lpm_prevent_sleep |= IQUEUEMAC_LPM_MASK;
+
+		iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
+
+		if(iqueuemac->tx.current_neighbour == &iqueuemac->tx.neighbours[0]){
+			iqueuemac->router_states.router_trans_state = R_BROADCAST;
+		}else{
+			switch(iqueuemac->tx.current_neighbour->mac_type){
+			  case UNKNOWN: {
+				  iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
+			  }break;
+			  case ROUTER: {
+				  iqueuemac->router_states.router_trans_state = R_TRANS_TO_ROUTER;
+		 	 }break;
+		 	 case NODE: {
+				  iqueuemac->router_states.router_trans_state = R_TRANS_TO_NODE;
+			  }break;
+			  default:break;
+			}
+		}
+		iqueuemac->need_update = true;
+		//puts("shuguo: router sends in sleep");
+	}else{
+		if(iqueuemac->router_states.router_new_cycle == false){
+		    /*  enable lpm mode, enter the sleep mode */
+		    lpm_prevent_sleep &= ~(IQUEUEMAC_LPM_MASK);
+		}
+	}
 
 	if(iqueuemac->router_states.router_new_cycle == true){
 
@@ -1964,6 +2089,32 @@ void iqueue_mac_node_sleep_init(iqueuemac_t* iqueuemac){
 }
 
 void iqueue_mac_node_sleep(iqueuemac_t* iqueuemac){
+
+	if(iqueue_mac_find_next_tx_neighbor(iqueuemac)){
+		/*  stop lpm mode */
+		lpm_prevent_sleep |= IQUEUEMAC_LPM_MASK;
+
+		iqueuemac->node_states.node_basic_state = N_TRANSMITTING;
+
+		if(iqueuemac->tx.current_neighbour == &iqueuemac->tx.neighbours[0]){
+			iqueuemac->node_states.node_trans_state = N_BROADCAST;
+		}else{
+			switch(iqueuemac->tx.current_neighbour->mac_type){
+			  case UNKNOWN: iqueuemac->node_states.node_trans_state = N_TRANS_TO_UNKOWN;break;
+			  case ROUTER:  iqueuemac->node_states.node_trans_state = N_TRANS_TO_ROUTER;break;
+		 	  case NODE: iqueuemac->node_states.node_trans_state = N_TRANS_TO_NODE;break;
+		 	 default:break;
+			}
+		}
+		iqueuemac->need_update = true;
+		//puts("Shuguo: node start sending in sleep.");
+	}else{
+		if(iqueuemac->node_states.node_new_cycle == false){
+			/*  enable lpm mode, now enter the sleep mode */
+			lpm_prevent_sleep &= ~(IQUEUEMAC_LPM_MASK);
+			//puts("Shuguo: enter real sleep.");
+		} /** No need_update!! **/
+	}
 
 	if(iqueuemac->node_states.node_new_cycle == true){
 		iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING_END;
