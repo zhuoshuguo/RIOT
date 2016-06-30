@@ -1040,7 +1040,7 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 
 	 iqueuemac->tx.current_neighbour->in_same_cluster = false;
 	 /*** remember to reduce a bit the phase for locking, since there is a hand-shake procedure before ***/
-	 iqueuemac->tx.current_neighbour->cp_phase = _phase_now(iqueuemac) - RTT_US_TO_TICKS(IQUEUEMAC_WAIT_CP_SECUR_GAP_US); // rtt_get_counter();
+	 iqueuemac->tx.current_neighbour->cp_phase = _phase_now(iqueuemac); //- RTT_US_TO_TICKS(IQUEUEMAC_WAIT_CP_SECUR_GAP_US); rtt_get_counter();
 
 
 #if 0
