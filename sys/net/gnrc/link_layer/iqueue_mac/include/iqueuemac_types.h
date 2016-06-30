@@ -292,13 +292,9 @@ typedef struct {
 
 	mac_node_basic_state_t node_basic_state;
 	mac_node_init_state_t node_init_state;
+
 	mac_node_listen_state_t node_listen_state;
-
 	mac_node_trans_state_t node_trans_state;
-
-	mac_node_t2u_state_t  node_t2u_state;
-	mac_node_t2r_state_t node_t2r_state;
-	mac_node_t2n_state_t node_t2n_state;
 
 	bool in_cp_period;
 	bool node_new_cycle;
@@ -310,13 +306,9 @@ typedef struct {
 
 	mac_router_basic_state_t router_basic_state;
 	mac_router_init_state_t router_init_state;
+
 	mac_router_listen_state_t router_listen_state;
-
 	mac_router_trans_state_t router_trans_state;
-
-	mac_router_t2u_state_t router_t2u_state;
-	mac_router_t2r_state_t router_t2r_state;
-	mac_router_t2n_state_t router_t2n_state;
 
 	bool extend_cp;
 	bool router_new_cycle;
