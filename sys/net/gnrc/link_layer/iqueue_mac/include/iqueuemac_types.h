@@ -389,6 +389,8 @@ typedef struct {
 
 	vtdma_para_t vtdma_para;
 
+	uint8_t cp_retries;
+
 } iqueuemac_tx_t;
 
 /******************************************************************************/

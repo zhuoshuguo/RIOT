@@ -936,46 +936,6 @@ void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 }
 
 
-void iqueuemac_send_busytone(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
-{
-	/****** assemble and send the beacon ******/
-	gnrc_pktsnip_t* pkt;
-	gnrc_netif_hdr_t* nethdr_preamble;
-
-	/* Assemble preamble packet */
-	iqueuemac_frame_preamble_t iqueuemac_preamble_hdr;
-	iqueuemac_preamble_hdr.header.type = FRAMETYPE_BUSYTONE;
-	//iqueuemac_preamble_hdr.dst_addr = iqueuemac->tx.current_neighbour->l2_addr;
-
-	//uint8_t data[110];
-
-	// = gnrc_pktbuf_add(NULL, data, sizeof(data), GNRC_NETTYPE_UNDEF);
-
-	pkt = gnrc_pktbuf_add(NULL, &iqueuemac_preamble_hdr, sizeof(iqueuemac_preamble_hdr), GNRC_NETTYPE_IQUEUEMAC);
-	if(pkt == NULL) {
-		    ;
-	}
-
-	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
-	if(pkt == NULL) {
-	      ;
-	}
-	/* We wouldn't get here if add the NETIF header had failed, so no
-		sanity checks needed */
-	nethdr_preamble = (gnrc_netif_hdr_t*) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
-
-	/* Construct NETIF header and initiate address fields */
-	gnrc_netif_hdr_init(nethdr_preamble, 0, 0);
-	//gnrc_netif_hdr_set_dst_addr(nethdr_wa, lwmac->rx.l2_addr.addr, lwmac->rx.l2_addr.len);
-
-	/* Send WA as broadcast*/
-	nethdr_preamble->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
-
-	netopt_enable_t csma_enable;
-	csma_enable = use_csma;
-	iqueuemac_send(iqueuemac, pkt, csma_enable);
-}
-
 void iqueuemac_send_announce(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 {
 	/****** assemble and send the beacon ******/
@@ -1198,26 +1158,26 @@ void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_ena
 	/*** enable auto-ACK ??? ***/
 
 	/* Insert iqueue-mac header above NETIF header */
+	iqueuemac_frame_data_t* iqueuemac_data_hdr_pointer;
+	iqueuemac_data_hdr_pointer = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_IQUEUEMAC);
 
-	/*
-	iqueuemac_frame_data_t* iqueuemac_data_hdr;
-	iqueuemac_data_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_IQUEUEMAC);
-	if(iqueuemac_data_hdr != NULL){
-	*/
+	if(iqueuemac_data_hdr_pointer == NULL){
 
-	iqueuemac_frame_data_t iqueuemac_data_hdr;
-	iqueuemac_data_hdr.header.type = FRAMETYPE_IQUEUE_DATA;
-	iqueuemac_data_hdr.queue_indicator = iqueuemac->tx.current_neighbour->queue.length;
+		iqueuemac_frame_data_t iqueuemac_data_hdr;
+		iqueuemac_data_hdr.header.type = FRAMETYPE_IQUEUE_DATA;
+		iqueuemac_data_hdr.queue_indicator = iqueuemac->tx.current_neighbour->queue.length;
 
-	if(iqueuemac->mac_type == NODE){
-		iqueuemac_data_hdr.queue_indicator = iqueuemac_data_hdr.queue_indicator | 0x80;
+		if(iqueuemac->mac_type == NODE){
+			iqueuemac_data_hdr.queue_indicator = iqueuemac_data_hdr.queue_indicator | 0x80;
+		}
+
+		if(iqueuemac->tx.current_neighbour->in_same_cluster == true){
+			iqueuemac_data_hdr.queue_indicator = iqueuemac_data_hdr.queue_indicator | 0x40;
+		}
+
+		pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_data_hdr, sizeof(iqueuemac_data_hdr), GNRC_NETTYPE_IQUEUEMAC);
+
 	}
-
-	if(iqueuemac->tx.current_neighbour->in_same_cluster == true){
-		iqueuemac_data_hdr.queue_indicator = iqueuemac_data_hdr.queue_indicator | 0x40;
-	}
-
-	pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_data_hdr, sizeof(iqueuemac_data_hdr), GNRC_NETTYPE_IQUEUEMAC);
 
 	iqueuemac_send(iqueuemac, pkt, csma_enable);
 
@@ -1439,6 +1399,8 @@ void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 
     }/* end of while loop */
 }
+
+
 
 void iqueuemac_router_vtdma_receive_packet_process(iqueuemac_t* iqueuemac){
 	gnrc_pktsnip_t* pkt;
