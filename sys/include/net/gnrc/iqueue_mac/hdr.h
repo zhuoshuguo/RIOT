@@ -44,7 +44,8 @@ typedef enum {
     FRAMETYPE_PREAMBLE,
 	FRAMETYPE_PREAMBLE_ACK,
     FRAMETYPE_BROADCAST,
-	FRAMETYPE_ANNOUNCE
+	FRAMETYPE_ANNOUNCE,
+	FRAMETYPE_BUSYTONE
 } iqueuemac_frame_type_t;
 
 /******************************************************************************/

@@ -42,6 +42,10 @@ typedef enum {
 #define IQUEUEMAC_SUPERFRAME_DURATION_US        (3000U * 1000)
 #endif
 
+#ifndef IQUEUEMAC_BUSYTONE_DURATION_US
+#define IQUEUEMAC_BUSYTONE_DURATION_US        (20000U * 1000)
+#endif
+
 #ifndef IQUEUEMAC_CP_DURATION_US
 #define IQUEUEMAC_CP_DURATION_US        (15U * 1000)
 #endif
