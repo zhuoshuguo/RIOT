@@ -935,6 +935,47 @@ void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 	iqueuemac_send(iqueuemac, pkt, csma_enable);
 }
 
+
+void iqueuemac_send_busytone(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
+{
+	/****** assemble and send the beacon ******/
+	gnrc_pktsnip_t* pkt;
+	gnrc_netif_hdr_t* nethdr_preamble;
+
+	/* Assemble preamble packet */
+	iqueuemac_frame_preamble_t iqueuemac_preamble_hdr;
+	iqueuemac_preamble_hdr.header.type = FRAMETYPE_BUSYTONE;
+	//iqueuemac_preamble_hdr.dst_addr = iqueuemac->tx.current_neighbour->l2_addr;
+
+	//uint8_t data[110];
+
+	// = gnrc_pktbuf_add(NULL, data, sizeof(data), GNRC_NETTYPE_UNDEF);
+
+	pkt = gnrc_pktbuf_add(NULL, &iqueuemac_preamble_hdr, sizeof(iqueuemac_preamble_hdr), GNRC_NETTYPE_IQUEUEMAC);
+	if(pkt == NULL) {
+		    ;
+	}
+
+	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
+	if(pkt == NULL) {
+	      ;
+	}
+	/* We wouldn't get here if add the NETIF header had failed, so no
+		sanity checks needed */
+	nethdr_preamble = (gnrc_netif_hdr_t*) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+
+	/* Construct NETIF header and initiate address fields */
+	gnrc_netif_hdr_init(nethdr_preamble, 0, 0);
+	//gnrc_netif_hdr_set_dst_addr(nethdr_wa, lwmac->rx.l2_addr.addr, lwmac->rx.l2_addr.len);
+
+	/* Send WA as broadcast*/
+	nethdr_preamble->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
+
+	netopt_enable_t csma_enable;
+	csma_enable = use_csma;
+	iqueuemac_send(iqueuemac, pkt, csma_enable);
+}
+
 void iqueuemac_send_announce(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 {
 	/****** assemble and send the beacon ******/

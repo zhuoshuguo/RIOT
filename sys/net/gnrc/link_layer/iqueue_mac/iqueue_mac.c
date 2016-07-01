@@ -531,25 +531,33 @@ void iqueuemac_node_init_prepare(iqueuemac_t* iqueuemac){
 
 	rtt_clear_alarm();
 
-	uint32_t random_wait_period;
+	//uint32_t random_wait_period;
 
-	random_wait_period = random_uint32_range(0, IQUEUEMAC_SUPERFRAME_DURATION_US);
+	//random_wait_period = random_uint32_range(0, IQUEUEMAC_SUPERFRAME_DURATION_US);
 
 	iqueuemac_trun_off_radio(iqueuemac);
 
 	packet_queue_flush(&iqueuemac->rx.queue);
 
 	/******set TIMEOUT_COLLECT_BEACON_END timeout ******/
-	iqueuemac_set_timeout(iqueuemac, TIMEOUT_COLLECT_BEACON_END, random_wait_period);
+	//iqueuemac_set_timeout(iqueuemac, TIMEOUT_COLLECT_BEACON_END, random_wait_period); // IQUEUEMAC_BUSYTONE_DURATION_US
+	iqueuemac_set_timeout(iqueuemac, TIMEOUT_COLLECT_BEACON_END, IQUEUEMAC_BUSYTONE_DURATION_US); //
 
 	iqueuemac->node_states.node_init_state = N_INIT_WAIT_TIMEOUT;
 	iqueuemac->need_update = true;
+
+	iqueuemac_send_busytone(iqueuemac, NETOPT_DISABLE);
 }
 
 void iqueuemac_node_init_wait_timeout(iqueuemac_t* iqueuemac){
 
+	if(iqueuemac->tx.tx_finished == true){
+		iqueuemac_send_busytone(iqueuemac, NETOPT_DISABLE);
+	}
+
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_COLLECT_BEACON_END)){
 
+		puts("shuguo: random ends.");
 		iqueuemac->node_states.node_init_state = N_INIT_END;
 		iqueuemac->need_update = true;
 	}
@@ -610,6 +618,8 @@ void iqueuemac_t2n_init(iqueuemac_t* iqueuemac){
 void iqueuemac_t2n_wait_cp(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_CP)){
+		iqueuemac->rx_started = false;
+		iqueuemac->packet_received = true;
 		iqueuemac_trun_on_radio(iqueuemac);
 		iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_TRANS_IN_CP;
 		iqueuemac->need_update = true;
@@ -625,6 +635,15 @@ void iqueuemac_t2n_trans_in_cp(iqueuemac_t* iqueuemac){
 
 	iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_WAIT_CPTRANS_FEEDBACK;
 	iqueuemac->need_update = true;
+
+	if(iqueuemac->rx_started == true){
+		puts("Shuguo: receive started in sending in cp.");
+	}
+
+	if(iqueuemac->packet_received == true){
+		puts("Shuguo: receive packet in sending in cp.");
+	}
+
 }
 
 void iqueuemac_t2n_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
@@ -634,7 +653,15 @@ void iqueuemac_t2n_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 		/*** add another condition here in the furture: the tx-feedback must be ACK-got,
 		 * namely, completed, to ensure router gets the data correctly***/
 		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
-			;//puts("Shuguo: node success sends a data to father router!!");
+			puts("Shuguo: t-2-n trans feedback is SUCESS.");
+		}else{
+			if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_NOACK){
+				puts("Shuguo: t-2-n trans feedback is NO_ACK.");
+			}else{
+				if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_BUSY){
+					puts("Shuguo: t-2-n trans feedback is BUSY.");
+				}
+			}
 		}
 
 		iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_TRANS_END;
