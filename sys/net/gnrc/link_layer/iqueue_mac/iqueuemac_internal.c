@@ -319,7 +319,7 @@ void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* i
 	gnrc_netif_hdr_t* nethdr_preamble_ack;
 	uint32_t phase_now_ticks;  //next_cp_timing_ticks;  //next_cp_timing_us; //
 
-	phase_now_ticks = rtt_get_counter();
+
 	//next_cp_timing_ticks = RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US) - rtt_get_counter();
 	//next_cp_timing_us = IQUEUEMAC_SUPERFRAME_DURATION_US - RTT_TICKS_TO_US(rtt_get_counter());
 
@@ -330,6 +330,9 @@ void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* i
 	iqueuemac_preamble_ack_hdr.device_type = iqueuemac->mac_type;
 	//maybe we don't need this "father_router_addr" parameter anymore
 	iqueuemac_preamble_ack_hdr.father_router = iqueuemac->father_router_addr;
+
+	phase_now_ticks = _phase_now(iqueuemac); //rtt_get_counter();
+
 	iqueuemac_preamble_ack_hdr.phase_in_ticks = phase_now_ticks; // next_cp_timing_ticks; //  next_cp_timing_us; //
 
 	pkt = gnrc_pktbuf_add(NULL, &iqueuemac_preamble_ack_hdr, sizeof(iqueuemac_preamble_ack_hdr), GNRC_NETTYPE_IQUEUEMAC);
@@ -1040,8 +1043,20 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 	 iqueuemac->tx.current_neighbour->mac_type = iqueuemac_preamble_ack_hdr->device_type;
 
 	 iqueuemac->tx.current_neighbour->in_same_cluster = false;
+
+
 	 /*** remember to reduce a bit the phase for locking, since there is a hand-shake procedure before ***/
-	 iqueuemac->tx.current_neighbour->cp_phase = _phase_now(iqueuemac); //- RTT_US_TO_TICKS(IQUEUEMAC_WAIT_CP_SECUR_GAP_US); rtt_get_counter();
+	 //uint32_t  phase_ticks;
+	 /*** adjust the phase of the receiver ***/
+	 long int phase_ticks = _phase_now(iqueuemac) - iqueuemac_preamble_ack_hdr->phase_in_ticks; //rtt_get_counter();
+	 if(phase_ticks < 0) {
+		 phase_ticks += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+	 }
+
+     /*** move 1/3 CP duration to give some time redundancy for sender the has forward timer-drift!!! ***/
+	 phase_ticks = (phase_ticks + (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)/3)) % RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+
+	 iqueuemac->tx.current_neighbour->cp_phase = (uint32_t)phase_ticks;//_phase_now(iqueuemac); //- RTT_US_TO_TICKS(IQUEUEMAC_WAIT_CP_SECUR_GAP_US); rtt_get_counter();
 
 
 #if 0
@@ -1386,7 +1401,9 @@ void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             	//iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             	//gnrc_pktbuf_release(pkt);
-        	    puts("Shuguo: node receives a data !!");
+
+        	    printf("phase in CP is %lu. \n", RTT_TICKS_TO_US(_phase_now(iqueuemac)));
+        	    //puts("Shuguo: node receives a data !!");
             }break;
 
             case FRAMETYPE_BROADCAST:{
