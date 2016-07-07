@@ -1048,13 +1048,13 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 	 /*** remember to reduce a bit the phase for locking, since there is a hand-shake procedure before ***/
 	 //uint32_t  phase_ticks;
 	 /*** adjust the phase of the receiver ***/
-	 long int phase_ticks = _phase_now(iqueuemac) - iqueuemac_preamble_ack_hdr->phase_in_ticks; //rtt_get_counter();
+	 long int phase_ticks = _phase_now(iqueuemac) - (iqueuemac_preamble_ack_hdr->phase_in_ticks/2); //rtt_get_counter();
 	 if(phase_ticks < 0) {
 		 phase_ticks += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
 	 }
 
      /*** move 1/3 CP duration to give some time redundancy for sender the has forward timer-drift!!! ***/
-	 phase_ticks = (phase_ticks + (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)/3)) % RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+	 //phase_ticks = (phase_ticks + (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)/3)) % RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
 
 	 iqueuemac->tx.current_neighbour->cp_phase = (uint32_t)phase_ticks;//_phase_now(iqueuemac); //- RTT_US_TO_TICKS(IQUEUEMAC_WAIT_CP_SECUR_GAP_US); rtt_get_counter();
 
@@ -1193,6 +1193,8 @@ void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_ena
 		pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_data_hdr, sizeof(iqueuemac_data_hdr), GNRC_NETTYPE_IQUEUEMAC);
 
 	}
+
+	gnrc_pktbuf_hold(iqueuemac->tx.tx_packet,1);
 
 	iqueuemac_send(iqueuemac, pkt, csma_enable);
 
@@ -1398,11 +1400,12 @@ void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_IQUEUE_DATA:{
+            	printf("%lu. \n", RTT_TICKS_TO_US(_phase_now(iqueuemac)));
             	//iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             	//gnrc_pktbuf_release(pkt);
 
-        	    printf("phase in CP is %lu. \n", RTT_TICKS_TO_US(_phase_now(iqueuemac)));
+
         	    //puts("Shuguo: node receives a data !!");
             }break;
 
