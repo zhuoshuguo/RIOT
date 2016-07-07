@@ -688,7 +688,6 @@ void iqueuemac_t2n_re_phase_lock_prepare(iqueuemac_t* iqueuemac){
 
 		iqueuemac->need_update = true;
 	}
-
 }
 
 
@@ -806,7 +805,7 @@ void iqueuemac_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 	/******Use CSMA here, and send_packet() will release the pkt itself !!!!******/
 	iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
 
-	iqueuemac->tx.tx_packet = NULL;
+	//iqueuemac->tx.tx_packet = NULL;
 
 	iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CPTRANS_FEEDBACK;
 	iqueuemac->need_update = true;
@@ -816,26 +815,78 @@ void iqueuemac_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac->tx.tx_finished == true){
-
 		/*** add another condition here in the furture: the tx-feedback must be ACK-got,
-		 * namely, completed, to ensure router gets the data correctly***/
-		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
-			;//puts("Shuguo: node success sends a data to father router!!");
-		}
+				 * namely, completed, to ensure router gets the data correctly***/
+		switch(iqueuemac->tx.tx_feedback){
 
-		if(iqueuemac->tx.current_neighbour->queue.length > 0){
-			iqueuemac->tx.vtdma_para.get_beacon = false;
-			iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_BEACON, IQUEUEMAC_SUPERFRAME_DURATION_US);
-			// need to flush the rx-queue ??
-			packet_queue_flush(&iqueuemac->rx.queue);
+			case TX_FEEDBACK_SUCCESS:{
+				/*** first release the pkt ***/
+				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+				iqueuemac->tx.tx_packet = NULL;
 
-			iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_BEACON;
-			iqueuemac->need_update = true;
-		}else{
-			iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
-			iqueuemac->need_update = true;
+				/*** if has pending pkt, join the vTDMA period, first wait receiver's beacon ***/
+				if(iqueuemac->tx.current_neighbour->queue.length > 0){
+					iqueuemac->tx.vtdma_para.get_beacon = false;
+					iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_BEACON, IQUEUEMAC_SUPERFRAME_DURATION_US);
+					// need to flush the rx-queue ??
+					packet_queue_flush(&iqueuemac->rx.queue);
+
+					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_BEACON;
+					iqueuemac->need_update = true;
+				}else{
+					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+					iqueuemac->need_update = true;
+				}
+			}break;
+
+			/*** if NOACK, regards it as phase-lock failed ***/
+			case TX_FEEDBACK_NOACK:{
+
+				/*** pkt trans failed, don't release the pkt here, retry to transmit in t-2-u procedure. ***/
+				puts("phase-lock failed.");
+				iqueuemac->tx.current_neighbour->mac_type = UNKNOWN;
+
+				iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RE_PHASE_LOCK, (IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_RE_PHASE_LOCK_ADVANCE_US));
+				iqueuemac_trun_off_radio(iqueuemac);
+				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_RE_PHASE_LOCK_PREPARE;
+			}break;
+
+			/*** if BUSY, regards it as channel busy ***/
+			case TX_FEEDBACK_BUSY:{
+				/*** first release the pkt ***/
+				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+				iqueuemac->tx.tx_packet = NULL;
+
+				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2N_TRANS_END;
+			}break;
+
+			default:{
+				/*** first release the pkt ***/
+				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+				iqueuemac->tx.tx_packet = NULL;
+
+				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2N_TRANS_END;
+			}break;
+
 		}
 	}
+}
+
+void iqueuemac_t2r_re_phase_lock_prepare(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_RE_PHASE_LOCK)){
+		/*** leaving t-2-n, so initiate the state ***/
+		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CP_INIT;
+
+		if(iqueuemac->mac_type == ROUTER){
+			iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
+		}else{
+			iqueuemac->node_states.node_trans_state = N_TRANS_TO_UNKOWN;
+		}
+
+		iqueuemac->need_update = true;
+	}
+
 }
 
 void iqueuemac_t2r_wait_beacon(iqueuemac_t* iqueuemac){
@@ -1023,6 +1074,7 @@ void iqueuemac_t2r_update(iqueuemac_t* iqueuemac)
      case DEVICE_T2R_WAIT_CP: iqueuemac_t2r_wait_cp(iqueuemac); break;
 	 case DEVICE_T2R_TRANS_IN_CP: iqueuemac_t2r_trans_in_cp(iqueuemac); break;
 	 case DEVICE_T2R_WAIT_CPTRANS_FEEDBACK: iqueuemac_t2r_wait_cp_transfeedback(iqueuemac); break;
+	 case DEVICE_T2R_RE_PHASE_LOCK_PREPARE: iqueuemac_t2r_re_phase_lock_prepare(iqueuemac); break;
 	 case DEVICE_T2R_WAIT_BEACON: iqueuemac_t2r_wait_beacon(iqueuemac);break;
 	 case DEVICE_T2R_WAIT_OWN_SLOTS:iqueuemac_t2r_wait_own_slots(iqueuemac); break;
 	 case DEVICE_T2R_TRANS_IN_VTDMA:iqueuemac_t2r_trans_in_slots(iqueuemac); break;
