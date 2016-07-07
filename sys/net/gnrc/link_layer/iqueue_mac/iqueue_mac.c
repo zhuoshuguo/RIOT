@@ -625,7 +625,7 @@ void iqueuemac_t2n_trans_in_cp(iqueuemac_t* iqueuemac){
 	iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
 
 	/*** here, must set to NULL!! don't know why!!  ***/
-	iqueuemac->tx.tx_packet = NULL;
+	//iqueuemac->tx.tx_packet = NULL;
 
 	iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_WAIT_CPTRANS_FEEDBACK;
 	iqueuemac->need_update = true;
@@ -640,24 +640,57 @@ void iqueuemac_t2n_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 
 		switch(iqueuemac->tx.tx_feedback){
 			case TX_FEEDBACK_SUCCESS:{
-				;
+				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+				iqueuemac->tx.tx_packet = NULL;
+
+				iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_TRANS_END;
 			}break;
 
+			/*** if NOACK, regards it as phase-lock failed ***/
 			case TX_FEEDBACK_NOACK:{
-				;
+				puts("phase-lock failed.");
+				iqueuemac->tx.current_neighbour->mac_type = UNKNOWN;
+
+				iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RE_PHASE_LOCK, (IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_RE_PHASE_LOCK_ADVANCE_US));
+				iqueuemac_trun_off_radio(iqueuemac);
+				iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_RE_PHASE_LOCK_PREPARE;
 			}break;
 
+			/*** if BUSY, regards it as channel busy ***/
 			case TX_FEEDBACK_BUSY:{
-				;
+				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+				iqueuemac->tx.tx_packet = NULL;
+
+				iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_TRANS_END;
 			}break;
 
-			default: break;
+			default:{
+				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+				iqueuemac->tx.tx_packet = NULL;
+				iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_TRANS_END;
+			}break;
 		}
-
-		iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_TRANS_END;
 		iqueuemac->need_update = true;
 	}
 }
+
+void iqueuemac_t2n_re_phase_lock_prepare(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_RE_PHASE_LOCK)){
+		/*** leaving t-2-n, so initiate the state ***/
+		iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_WAIT_CP_INIT;
+
+		if(iqueuemac->mac_type == ROUTER){
+			iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
+		}else{
+			iqueuemac->node_states.node_trans_state = N_TRANS_TO_UNKOWN;
+		}
+
+		iqueuemac->need_update = true;
+	}
+
+}
+
 
 void iqueuemac_t2n_end(iqueuemac_t* iqueuemac){
 
@@ -670,6 +703,7 @@ void iqueuemac_t2n_end(iqueuemac_t* iqueuemac){
 
 	/*** clear all timeouts ***/
 	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_CP);
+	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RE_PHASE_LOCK);
 
 	iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_WAIT_CP_INIT;
 
@@ -732,6 +766,7 @@ void iqueuemac_t2n_update(iqueuemac_t* iqueuemac)
      case DEVICE_T2N_WAIT_CP: iqueuemac_t2n_wait_cp(iqueuemac); break;
 	 case DEVICE_T2N_TRANS_IN_CP: iqueuemac_t2n_trans_in_cp(iqueuemac); break;
 	 case DEVICE_T2N_WAIT_CPTRANS_FEEDBACK: iqueuemac_t2n_wait_cp_transfeedback(iqueuemac); break;
+	 case DEVICE_T2N_RE_PHASE_LOCK_PREPARE: iqueuemac_t2n_re_phase_lock_prepare(iqueuemac); break;
 	 case DEVICE_T2N_TRANS_END:iqueuemac_t2n_end(iqueuemac);break;
 	 default: break;
 	}
@@ -1067,7 +1102,7 @@ void iqueuemac_t2u_send_data(iqueuemac_t* iqueuemac){
 
 	iqueuemac_send_data_packet(iqueuemac, NETOPT_DISABLE);
 
-	iqueuemac->tx.tx_packet = NULL;
+	//iqueuemac->tx.tx_packet = NULL;
 
 	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_WAIT_TX_FEEDBACK;
 	iqueuemac->need_update = true;
@@ -1084,6 +1119,9 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	/*** add another condition here in the furture: the tx-feedback must be ACK-got,
 	 * namely, completed, to ensure router gets the data correctly***/
 	    if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
+
+	    	gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+	    	iqueuemac->tx.tx_packet = NULL;
 
 	    	/*** TX_FEEDBACK_SUCCESS means the router has success received the queue-length indicator ***/
 	    	/*  add this part in the future to support vtdma in sending-to-unkown (to router type) */
@@ -1109,6 +1147,9 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	    	   	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 	    	}
 	    }else{
+	    	gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+	    	iqueuemac->tx.tx_packet = NULL;
+
 	    	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 	    }
 
@@ -1552,6 +1593,7 @@ void iqueue_mac_node_sleep_init(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_node_sleep(iqueuemac_t* iqueuemac){
 
+#if 0
 	if(iqueue_mac_find_next_tx_neighbor(iqueuemac)){
 		/*  stop lpm mode */
 		lpm_prevent_sleep |= IQUEUEMAC_LPM_MASK;
@@ -1577,6 +1619,7 @@ void iqueue_mac_node_sleep(iqueuemac_t* iqueuemac){
 			//puts("Shuguo: enter real sleep.");
 		} /** No need_update!! **/
 	}
+#endif
 
 	if(iqueuemac->node_states.node_new_cycle == true){
 		iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING_END;
