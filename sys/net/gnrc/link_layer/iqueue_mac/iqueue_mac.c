@@ -506,6 +506,7 @@ void iqueuemac_init_end(iqueuemac_t* iqueuemac){
 	iqueuemac->router_states.router_basic_state = R_LISTENNING;
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_INIT;
 
+	puts("router random ends.");
 	/*** start duty-cycle ***/
 	iqueuemac->duty_cycle_started = false;
 	rtt_handler(IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
@@ -875,7 +876,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 void iqueuemac_t2r_re_phase_lock_prepare(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_RE_PHASE_LOCK)){
-		/*** leaving t-2-n, so initiate the state ***/
+		/*** leaving t-2-r, so initiate the state ***/
 		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CP_INIT;
 
 		if(iqueuemac->mac_type == ROUTER){
@@ -918,13 +919,24 @@ void iqueuemac_t2r_wait_beacon(iqueuemac_t* iqueuemac){
     			iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_OWN_SLOTS;
     			iqueuemac->need_update = true;
     		}else{// be the first sender in vtdma
-    			iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
+
+    			gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.current_neighbour->queue));
+
+    			if(pkt != NULL){
+    				iqueuemac->tx.tx_packet = pkt;
+    				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
+    			}else{
+    				puts("iqueueMAC-Error: NUll pktbuf!");
+    				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+    			}
+
     			iqueuemac->need_update = true;
     		}
-    	}else{
+    	}else{/*** no slots get allocated, go to t-2-r end ***/
     		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
     		iqueuemac->need_update = true;
     	}
+    	return;
     }
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_BEACON)){
@@ -937,8 +949,18 @@ void iqueuemac_t2r_wait_beacon(iqueuemac_t* iqueuemac){
 void iqueuemac_t2r_wait_own_slots(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_OWN_SLOTS)){
+
 		iqueuemac_trun_on_radio(iqueuemac);
-		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
+
+		gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.current_neighbour->queue));
+
+		if(pkt != NULL){
+			iqueuemac->tx.tx_packet = pkt;
+			iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
+		}else{
+			puts("iqueueMAC-Error: NUll pktbuf!");
+			iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+		}
 		iqueuemac->need_update = true;
 	}
 }
@@ -948,24 +970,17 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 	if(iqueuemac->tx.vtdma_para.slots_num > 0){
 
 		/**** Delete the pkt no matter the transmission is success or not !!! ****/
-
-		gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.current_neighbour->queue));
-
 		/**** Or, only delete the pkt when the feedback shows good !!! ****/
 		//gnrc_pktsnip_t *pkt = packet_queue_head(&(iqueuemac->tx.current_neighbour.queue));
 
-		if(pkt != NULL){
-			iqueuemac->tx.tx_packet = pkt;
-			/******disable CSMA here, and iqueuemac_send_data_packet() will release the pkt itself !!!!******/
-			iqueuemac_send_data_packet(iqueuemac, NETOPT_DISABLE);
-			iqueuemac->tx.vtdma_para.slots_num --;
-			iqueuemac->tx.tx_packet = NULL;
+		/******disable CSMA here, and iqueuemac_send_data_packet() will release the pkt itself !!!!******/
+		iqueuemac_send_data_packet(iqueuemac, NETOPT_DISABLE);
+		iqueuemac->tx.vtdma_para.slots_num --;
+		//iqueuemac->tx.tx_packet = NULL;
 
-			iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_VTDMATRANS_FEEDBACK;
-			iqueuemac->need_update = true;
-		}else{
-			puts("iqueueMAC-Error: NUll pktbuf!");
-		}
+		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_VTDMATRANS_FEEDBACK;
+		iqueuemac->need_update = true;
+
 	}else{/*** here means the slots have been used up !!! ***/
 		/****  switch back to the public channel ****/
 		iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
@@ -980,23 +995,75 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 	if(iqueuemac->tx.tx_finished == true){
 		/*** add another condition here in the furture: the tx-feedback must be ACK-got,
 		 * namely, completed, to ensure router gets the data correctly***/
-		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
-			//puts("Shuguo: node success sends a data to father router in vtdma !!");
 
-			/****  if use packt_head previously ****/
-			//gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.current_neighbour.queue));
-			//gnrc_pktbuf_release(pkt);
-		}
+		switch(iqueuemac->tx.tx_feedback){
 
-		if(iqueuemac->tx.vtdma_para.slots_num > 0){
-			iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
-			iqueuemac->need_update = true;
-		}else{
-			/****  switch back to the public channel ****/
-			iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
+			case TX_FEEDBACK_SUCCESS:{
+				/*** first release the pkt ***/
+				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+				iqueuemac->tx.tx_packet = NULL;
 
-			iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
-			iqueuemac->need_update = true;
+				/*** if the sender has pending pkt, continue vTDMA transmission ***/
+				if((iqueuemac->tx.vtdma_para.slots_num > 0)&&(iqueuemac->tx.current_neighbour->queue.length>0)){
+					gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.current_neighbour->queue));
+
+					if(pkt != NULL){
+						iqueuemac->tx.tx_packet = pkt;
+						iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
+					}else{
+						puts("iqueueMAC-Error: NUll pktbuf!");
+						iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+					}
+				}else{
+					/****  vtdma period ends, switch back to the public channel ****/
+					iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
+
+					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+				}
+				iqueuemac->need_update = true;
+			}break;
+
+			/*** if BUSY and NOACK, regards it as busy channel ***/
+			case TX_FEEDBACK_BUSY:
+			case TX_FEEDBACK_NOACK:{
+				/*** do not release the pkt here, continue sending the same pkt ***/
+				if(iqueuemac->tx.vtdma_para.slots_num > 0){
+
+					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
+
+				}else{ /* if no slots for sending, queue the pkt for retry in next cycle */
+
+					puts("failed in vTDMA, re-queue pkt.");
+		           /* save payload pointer */
+		            gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next->next;
+
+		            /* remove iqueuemac header */
+		            iqueuemac->tx.tx_packet->next->next = NULL;
+		            gnrc_pktbuf_release(iqueuemac->tx.tx_packet->next);
+
+		            /* make append payload after netif header again */
+		            iqueuemac->tx.tx_packet->next = payload;
+
+		            /* queue the pkt for transmission in next cycle */
+		            _queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet);
+		            iqueuemac->tx.tx_packet = NULL;
+
+		            /****  vtdma period ends, switch back to the public channel ****/
+					iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
+					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+				}
+				iqueuemac->need_update = true;
+
+			}break;
+
+			default:{
+				/*** first release the pkt ***/
+				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+				iqueuemac->tx.tx_packet = NULL;
+
+				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2N_TRANS_END;
+				iqueuemac->need_update = true;
+			}break;
 		}
 	}
 }
