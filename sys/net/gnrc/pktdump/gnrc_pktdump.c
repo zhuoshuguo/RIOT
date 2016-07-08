@@ -27,12 +27,14 @@
 #include "msg.h"
 #include "net/gnrc/pktdump.h"
 #include "net/gnrc.h"
-#include "net/ipv6/addr.h"
-#include "net/ipv6/hdr.h"
+//#include "net/ipv6/addr.h"
+//#include "net/ipv6/hdr.h"
 #include "net/udp.h"
-#include "net/sixlowpan.h"
+//#include "net/sixlowpan.h"
 #include "od.h"
-
+#include "net/gnrc/netif.h"
+#include "net/gnrc/netapi.h"
+#include "net/netstats.h"
 /**
  * @brief   PID of the pktdump thread
  */
@@ -42,7 +44,7 @@ kernel_pid_t gnrc_pktdump_pid = KERNEL_PID_UNDEF;
  * @brief   Stack for the pktdump thread
  */
 static char _stack[GNRC_PKTDUMP_STACKSIZE];
-
+#if 0
 static void _dump_snip(gnrc_pktsnip_t *pkt)
 {
     switch (pkt->type) {
@@ -96,12 +98,15 @@ static void _dump_snip(gnrc_pktsnip_t *pkt)
             break;
     }
 }
+#endif
 
 static void _dump(gnrc_pktsnip_t *pkt)
 {
+#if 0
     int snips = 0;
     int size = 0;
     gnrc_pktsnip_t *snip = pkt;
+
 
     while (snip != NULL) {
         printf("~~ SNIP %2i - size: %3u byte, type: ", snips,
@@ -111,9 +116,39 @@ static void _dump(gnrc_pktsnip_t *pkt)
         size += snip->size;
         snip = snip->next;
     }
-
     printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
     gnrc_pktbuf_release(pkt);
+#endif
+
+    kernel_pid_t dev;
+    uint8_t addr[2];
+    size_t addr_len;
+    gnrc_pktsnip_t *hdr;
+    //char __nptr = "4";
+
+
+    /* parse interface */
+    dev = (kernel_pid_t)4;
+
+    /*if (!_is_iface(dev)) {
+            puts("error: invalid interface given");
+
+        }*/
+
+    addr_len = 2;
+    addr[0] = 0x44;
+    addr[1] = 0x7e;
+
+    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
+
+    gnrc_pktbuf_release(pkt->next);
+
+    LL_PREPEND(pkt, hdr);
+
+    gnrc_netapi_send(dev, pkt);
+
+    puts("shuguo: relay pkt.");
+
 }
 
 static void *_eventloop(void *arg)
