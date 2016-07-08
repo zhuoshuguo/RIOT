@@ -44,7 +44,7 @@ kernel_pid_t gnrc_pktdump_pid = KERNEL_PID_UNDEF;
  * @brief   Stack for the pktdump thread
  */
 static char _stack[GNRC_PKTDUMP_STACKSIZE];
-#if 0
+
 static void _dump_snip(gnrc_pktsnip_t *pkt)
 {
     switch (pkt->type) {
@@ -98,11 +98,11 @@ static void _dump_snip(gnrc_pktsnip_t *pkt)
             break;
     }
 }
-#endif
+
 
 static void _dump(gnrc_pktsnip_t *pkt)
 {
-/*
+
     int snips = 0;
     int size = 0;
     gnrc_pktsnip_t *snip = pkt;
@@ -119,9 +119,9 @@ static void _dump(gnrc_pktsnip_t *pkt)
 
     printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
     gnrc_pktbuf_release(pkt);
-*/
 
 
+#if 0
     kernel_pid_t dev;
     uint8_t addr[2];
     size_t addr_len;
@@ -152,7 +152,7 @@ static void _dump(gnrc_pktsnip_t *pkt)
     gnrc_netapi_send(dev, pkt);
 
     puts("shuguo: relay pkt.");
-
+#endif
 }
 
 static void *_eventloop(void *arg)

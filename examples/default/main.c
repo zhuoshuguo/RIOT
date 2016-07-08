@@ -28,6 +28,11 @@
 #include "thread.h"
 #include "shell.h"
 #include "shell_commands.h"
+#include "timex.h"
+#include "net/gnrc.h"
+#include "net/gnrc/netif.h"
+#include "net/gnrc/netapi.h"
+#include "xtimer.h"
 
 /*
 #if FEATURE_PERIPH_RTC
@@ -43,6 +48,59 @@
 #include "net/gnrc/pktdump.h"
 #include "net/gnrc.h"
 #endif
+
+static void generate_and_send_pkt(void){
+
+	   kernel_pid_t dev;
+	    uint8_t addr[2];
+	    size_t addr_len;
+	    gnrc_pktsnip_t *hdr;
+	    int16_t dev2;
+
+	    gnrc_pktsnip_t* pkt;
+	    uint8_t payload[4] ={'1','2','3','4'};
+
+	    dev2 = 4;
+	    /* parse interface */
+	    dev = (kernel_pid_t)dev2;
+
+	    addr_len = 2;
+	    addr[0] = 0x61;
+	    addr[1] = 0x42;
+
+	    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
+
+		/****** assemble and send the beacon ******/
+		pkt = gnrc_pktbuf_add(NULL, payload, sizeof(payload), GNRC_NETTYPE_NETIF);
+		if(pkt == NULL) {
+			    ;
+		}
+
+	    LL_PREPEND(pkt, hdr);
+
+	    gnrc_netapi_send(dev, pkt);
+}
+
+
+void *sender_thread(void *arg)
+{
+    (void) arg;
+
+    printf("shuguo-app thread started, pid: %" PRIkernel_pid "\n", thread_getpid());
+
+    xtimer_sleep(10);
+
+    while (1) {
+
+    	xtimer_sleep(5);
+    	generate_and_send_pkt();
+    }
+
+    return NULL;
+}
+
+char second_thread_stack[THREAD_STACKSIZE_MAIN];
+
 
 int main(void)
 {
@@ -63,6 +121,11 @@ int main(void)
     dump.demux_ctx = GNRC_NETREG_DEMUX_CTX_ALL;
     gnrc_netreg_register(GNRC_NETTYPE_UNDEF, &dump);
 #endif
+//kernel_pid_t pid =
+    thread_create(second_thread_stack, sizeof(second_thread_stack),
+                            THREAD_PRIORITY_MAIN - 1, THREAD_CREATE_STACKTEST,
+                            sender_thread, NULL, "shuguo_app");
+
 
     (void) puts("Welcome to RIOT!");
 
