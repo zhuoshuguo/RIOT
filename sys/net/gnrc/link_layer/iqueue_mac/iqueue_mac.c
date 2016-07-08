@@ -1155,7 +1155,7 @@ void iqueuemac_t2r_update(iqueuemac_t* iqueuemac)
 /****************** device state machines - Transmit to Unknown *****/
 void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 
-	puts("shuguo: preamble init");
+	//puts("shuguo: preamble init");
 	iqueuemac_trun_on_radio(iqueuemac);
 	iqueuemac->packet_received = false;
 	iqueuemac->tx.preamble_sent = 0;
@@ -1240,7 +1240,7 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	/*** add another condition here in the furture: the tx-feedback must be ACK-got,
 	 * namely, completed, to ensure router gets the data correctly***/
 	    if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
-	    	puts("shuguo: preamble packet success.");
+	    	//puts("shuguo: preamble packet success.");
 
 	    	gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 	    	iqueuemac->tx.tx_packet = NULL;
@@ -1285,11 +1285,10 @@ void iqueuemac_t2u_end(iqueuemac_t* iqueuemac){
 	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
 
 	if(iqueuemac->tx.tx_packet){
-		puts("shuguo: start realse packet.");
+		//puts("shuguo: start realse packet.");
 		gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 		iqueuemac->tx.tx_packet = NULL;
 	}
-
 
 	iqueuemac->tx.current_neighbour = NULL;
 

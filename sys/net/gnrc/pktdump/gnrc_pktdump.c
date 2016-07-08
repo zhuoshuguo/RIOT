@@ -151,7 +151,7 @@ static void _dump(gnrc_pktsnip_t *pkt)
 
     gnrc_netapi_send(dev, pkt);
 
-    puts("shuguo: relay pkt.");
+    //puts("shuguo: relay pkt.");
 
 }
 
