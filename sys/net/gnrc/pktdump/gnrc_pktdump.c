@@ -102,7 +102,7 @@ static void _dump_snip(gnrc_pktsnip_t *pkt)
 
 static void _dump(gnrc_pktsnip_t *pkt)
 {
-#if 0
+/*
     int snips = 0;
     int size = 0;
     gnrc_pktsnip_t *snip = pkt;
@@ -116,19 +116,22 @@ static void _dump(gnrc_pktsnip_t *pkt)
         size += snip->size;
         snip = snip->next;
     }
+
     printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
     gnrc_pktbuf_release(pkt);
-#endif
+*/
+
 
     kernel_pid_t dev;
     uint8_t addr[2];
     size_t addr_len;
     gnrc_pktsnip_t *hdr;
     //char __nptr = "4";
+    int16_t dev2;
 
-
+    dev2 = 4;
     /* parse interface */
-    dev = (kernel_pid_t)4;
+    dev = (kernel_pid_t)dev2;
 
     /*if (!_is_iface(dev)) {
             puts("error: invalid interface given");
@@ -136,12 +139,13 @@ static void _dump(gnrc_pktsnip_t *pkt)
         }*/
 
     addr_len = 2;
-    addr[0] = 0x44;
-    addr[1] = 0x7e;
+    addr[0] = 0xe2;
+    addr[1] = 0x1a;
 
     hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
 
     gnrc_pktbuf_release(pkt->next);
+    pkt->next= NULL;
 
     LL_PREPEND(pkt, hdr);
 

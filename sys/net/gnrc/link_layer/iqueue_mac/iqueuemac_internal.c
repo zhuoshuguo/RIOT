@@ -183,6 +183,7 @@ uint32_t _ticks_until_phase(iqueuemac_t* iqueuemac, uint32_t phase)  //
 
 bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
 {
+	puts("shuguo: queueing pkt");
 
     iqueuemac_tx_neighbour_t* neighbour;
     int neighbour_id;
@@ -242,7 +243,7 @@ bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
     }
 
     //printf("Shuguo: the current find neighbour_id is %d \n", neighbour_id);
-    //printf("Shuguo: the inited addr in the neighbor-list is %d %d \n", iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[1], iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[0]);
+    printf("Shuguo: the inited addr in the neighbor-list is %d %d \n", iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[1], iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[0]);
 
     if(packet_queue_push(&(neighbour->queue), pkt, 0) == NULL) {
     	puts("Shuguo: Cann't push packet into queue, queue is perhaps full! ");
