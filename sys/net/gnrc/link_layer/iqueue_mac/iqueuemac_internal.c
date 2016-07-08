@@ -183,7 +183,7 @@ uint32_t _ticks_until_phase(iqueuemac_t* iqueuemac, uint32_t phase)  //
 
 bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
 {
-	puts("shuguo: queueing pkt");
+	//puts("shuguo: queueing pkt");
 
     iqueuemac_tx_neighbour_t* neighbour;
     int neighbour_id;

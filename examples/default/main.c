@@ -92,7 +92,7 @@ void *sender_thread(void *arg)
 
     while (1) {
 
-    	xtimer_sleep(5);
+    	xtimer_sleep(15);
     	generate_and_send_pkt();
     }
 
