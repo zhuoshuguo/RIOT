@@ -1208,6 +1208,11 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
     uint32_t phase_check;
     uint32_t phase_nearest = IQUEUEMAC_PHASE_MAX;
 
+    /*** if no_ack_contuer is larger than 0, means a receiver has been loaded. ***/
+    if(iqueuemac->tx.no_ack_contuer > 0){
+       return true;
+    }
+
     if(iqueuemac->tx.neighbours[0].queue.length > 0){
     	next = 0;
     }else{

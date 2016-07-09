@@ -109,6 +109,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CP_INIT;
 	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_INIT;
 
+	iqueuemac->tx.no_ack_contuer = 0;
 
 	/* Enable RX-start and TX-started and TX-END interrupts  */
     netopt_enable_t enable = NETOPT_ENABLE;
@@ -833,23 +834,33 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 					packet_queue_flush(&iqueuemac->rx.queue);
 
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_BEACON;
-					iqueuemac->need_update = true;
 				}else{
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
-					iqueuemac->need_update = true;
 				}
+				iqueuemac->need_update = true;
 			}break;
 
 			/*** if NOACK, regards it as phase-lock failed ***/
 			case TX_FEEDBACK_NOACK:{
 
-				/*** pkt trans failed, don't release the pkt here, retry to transmit in t-2-u procedure. ***/
-				puts("phase-lock failed.");
-				iqueuemac->tx.current_neighbour->mac_type = UNKNOWN;
+				iqueuemac->tx.no_ack_contuer ++;
 
-				iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RE_PHASE_LOCK, (IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_RE_PHASE_LOCK_ADVANCE_US));
-				iqueuemac_trun_off_radio(iqueuemac);
-				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_RE_PHASE_LOCK_PREPARE;
+				if(iqueuemac->tx.no_ack_contuer >= IQUEUEMAC_REPHASELOCK_THRESHOLD){
+					iqueuemac->tx.no_ack_contuer = 0;
+
+					//puts("phase-lock failed.");
+					iqueuemac->tx.current_neighbour->mac_type = UNKNOWN;
+
+					iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RE_PHASE_LOCK, (IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_RE_PHASE_LOCK_ADVANCE_US));
+					iqueuemac_trun_off_radio(iqueuemac);
+					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_RE_PHASE_LOCK_PREPARE;
+
+				}else{
+					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2N_TRANS_END;
+				}
+				iqueuemac->need_update = true;
+				/*** pkt trans failed, don't release the pkt here, retry to transmit in t-2-u procedure. ***/
+
 			}break;
 
 			/*** if BUSY, regards it as channel busy ***/
@@ -859,6 +870,8 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				iqueuemac->tx.tx_packet = NULL;
 
 				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2N_TRANS_END;
+				iqueuemac->need_update = true;
+
 			}break;
 
 			default:{
@@ -867,6 +880,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				iqueuemac->tx.tx_packet = NULL;
 
 				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2N_TRANS_END;
+				iqueuemac->need_update = true;
 			}break;
 
 		}
@@ -1033,7 +1047,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 
 				}else{ /* if no slots for sending, queue the pkt for retry in next cycle */
 
-					puts("failed in vTDMA, re-queue pkt.");
+					//puts("failed in vTDMA, re-queue pkt.");
 		           /* save payload pointer */
 		            gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next->next;
 
@@ -1070,11 +1084,13 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2r_end(iqueuemac_t* iqueuemac){
 
-	if(iqueuemac->tx.tx_packet){
+	if((iqueuemac->tx.tx_packet)&&(iqueuemac->tx.no_ack_contuer == 0)){
 		gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 		iqueuemac->tx.tx_packet = NULL;
 	}
-	iqueuemac->tx.current_neighbour = NULL;
+	if(iqueuemac->tx.no_ack_contuer == 0){
+		iqueuemac->tx.current_neighbour = NULL;
+	}
 
 	/*** clear all timeouts ***/
 	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_CP);
