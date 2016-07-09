@@ -1391,9 +1391,17 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 /* In CP, a router can receive preamble, beacon, data packet, */
 
+	if(iqueuemac->rx_started == true){
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
+		iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, 2*IQUEUEMAC_CP_DURATION_US);
+	}
+
     if(iqueuemac->packet_received == true){
     	iqueuemac->packet_received = false;
     	iqueue_router_cp_receive_packet_process(iqueuemac);
+
+    	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
+    	iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, 2*IQUEUEMAC_CP_DURATION_US);
     }
 
     /****** insert codes here for handling quit this cycle when receiving unexpected preamble***/
