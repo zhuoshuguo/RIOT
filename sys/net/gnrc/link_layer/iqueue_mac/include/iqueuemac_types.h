@@ -393,6 +393,9 @@ typedef struct {
 
 	uint8_t cp_retries;
 
+	uint8_t no_ack_contuer;
+
+
 } iqueuemac_tx_t;
 
 /******************************************************************************/

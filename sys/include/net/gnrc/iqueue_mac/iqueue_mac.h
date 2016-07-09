@@ -116,9 +116,15 @@ typedef enum {
 #define IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM           (7U)
 #endif
 
+#ifndef IQUEUEMAC_REPHASELOCK_THRESHOLD
+#define IQUEUEMAC_REPHASELOCK_THRESHOLD      (2U)
+#endif
+
 #ifndef IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM
 #define IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM           (10U)
 #endif
+
+
 
 
 #define IQUEUEMAC_LPM_MASK					(1 << 17)
