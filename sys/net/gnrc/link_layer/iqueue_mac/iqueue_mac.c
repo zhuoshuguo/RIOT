@@ -1525,7 +1525,32 @@ void iqueue_mac_router_vtdma_end(iqueuemac_t* iqueuemac){
 
 	/*** ensure that the channel-switching is finished before go to sleep to turn it off !!! ***/
 
-	iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
+
+	/*** see if there is pkt to send ***/
+	if(iqueue_mac_find_next_tx_neighbor(iqueuemac)){
+
+		iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
+
+		if(iqueuemac->tx.current_neighbour == &iqueuemac->tx.neighbours[0]){
+			iqueuemac->router_states.router_trans_state = R_BROADCAST;
+		}else{
+			switch(iqueuemac->tx.current_neighbour->mac_type){
+			  case UNKNOWN: {
+				  iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
+			  }break;
+			  case ROUTER: {
+				  iqueuemac->router_states.router_trans_state = R_TRANS_TO_ROUTER;
+		 	 }break;
+		 	 case NODE: {
+				  iqueuemac->router_states.router_trans_state = R_TRANS_TO_NODE;
+			  }break;
+			  default:break;
+			}
+		}
+	}else{
+        iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
+	}
+
 	iqueuemac->need_update = true;
 
 }
