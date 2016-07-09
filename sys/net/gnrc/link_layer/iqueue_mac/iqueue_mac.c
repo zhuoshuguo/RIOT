@@ -1525,6 +1525,7 @@ void iqueue_mac_router_sleep_init(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_router_sleep(iqueuemac_t* iqueuemac){
 
+#if 0
 	if(iqueue_mac_find_next_tx_neighbor(iqueuemac)){
 
 		/*  stop lpm mode */
@@ -1556,7 +1557,7 @@ void iqueue_mac_router_sleep(iqueuemac_t* iqueuemac){
 		    lpm_prevent_sleep &= ~(IQUEUEMAC_LPM_MASK);
 		}
 	}
-
+#endif
 	if(iqueuemac->router_states.router_new_cycle == true){
 
 		iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_END;
