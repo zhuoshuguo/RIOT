@@ -81,6 +81,8 @@ static void generate_and_send_pkt(uint32_t send_counter){
 	    LL_PREPEND(pkt, hdr);
 
 	    gnrc_netapi_send(dev, pkt);
+
+	    printf("p: %lu.\n", send_counter);
 }
 
 
@@ -93,13 +95,15 @@ void *sender_thread(void *arg)
     uint32_t send_counter;
     send_counter =0;
 
-    xtimer_sleep(10);
+    xtimer_sleep(20);
 
     while (1) {
 
     	xtimer_sleep(1);
-    	send_counter++;
-    	generate_and_send_pkt(send_counter);
+    	if(send_counter <3600){
+    		send_counter++;
+    		generate_and_send_pkt(send_counter);
+    	}
 
     }
 
