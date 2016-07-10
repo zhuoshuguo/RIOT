@@ -1393,15 +1393,12 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac->rx_started == true){
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
-		iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, 2*IQUEUEMAC_CP_DURATION_US);
+		iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
 	}
 
     if(iqueuemac->packet_received == true){
     	iqueuemac->packet_received = false;
     	iqueue_router_cp_receive_packet_process(iqueuemac);
-
-    	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
-    	iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, 2*IQUEUEMAC_CP_DURATION_US);
     }
 
     /****** insert codes here for handling quit this cycle when receiving unexpected preamble***/
@@ -1409,7 +1406,6 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
     // clear timeout and switch to sleep period
 
 	if((iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END))||(iqueuemac->quit_current_cycle == true)){
-		//puts("Shuguo: Router CP ends!!");
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
 		iqueuemac->router_states.router_listen_state = R_LISTEN_CP_END;
 		iqueuemac->need_update = true;
@@ -1878,6 +1874,8 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
 
             case NETDEV2_EVENT_RX_STARTED:
             	iqueuemac.rx_started = true;
+            	//puts("shuguo: rx-started event triggered.");
+            	iqueuemac.need_update = true;
             	break;
 
             case NETDEV2_EVENT_RX_COMPLETE:
