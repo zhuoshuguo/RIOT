@@ -42,7 +42,7 @@ kernel_pid_t gnrc_pktdump_pid = KERNEL_PID_UNDEF;
  * @brief   Stack for the pktdump thread
  */
 static char _stack[GNRC_PKTDUMP_STACKSIZE];
-
+#if 0
 static void _dump_snip(gnrc_pktsnip_t *pkt)
 {
     switch (pkt->type) {
@@ -96,9 +96,11 @@ static void _dump_snip(gnrc_pktsnip_t *pkt)
             break;
     }
 }
+#endif
 
 static void _dump(gnrc_pktsnip_t *pkt)
 {
+	/*
     int snips = 0;
     int size = 0;
     gnrc_pktsnip_t *snip = pkt;
@@ -114,6 +116,34 @@ static void _dump(gnrc_pktsnip_t *pkt)
 
     printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
     gnrc_pktbuf_release(pkt);
+
+    */
+
+    kernel_pid_t dev;
+    uint8_t addr[2];
+    size_t addr_len;
+    gnrc_pktsnip_t *hdr;
+
+    int16_t dev2;
+
+    dev2 = 4;
+    /* parse interface */
+    dev = (kernel_pid_t)dev2;
+
+    addr_len = 2;
+    addr[0] = 0x76;
+    addr[1] = 0xb6;
+
+    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
+
+    gnrc_pktbuf_release(pkt->next);
+    pkt->next= NULL;
+
+    LL_PREPEND(pkt, hdr);
+
+    gnrc_netapi_send(dev, pkt);
+
+
 }
 
 static void *_eventloop(void *arg)
@@ -133,7 +163,7 @@ static void *_eventloop(void *arg)
 
         switch (msg.type) {
             case GNRC_NETAPI_MSG_TYPE_RCV:
-                puts("PKTDUMP: data received:");
+                //puts("PKTDUMP: data received:");
                 _dump(msg.content.ptr);
                 break;
             case GNRC_NETAPI_MSG_TYPE_SND:
