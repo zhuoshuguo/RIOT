@@ -58,7 +58,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 {
 
 	iqueuemac->own_addr.len = iqueuemac->netdev->dev->driver->get(iqueuemac->netdev->dev, NETOPT_ADDRESS, iqueuemac->own_addr.addr, sizeof(iqueuemac->own_addr.addr));
-	//assert(lwmac.l2_addr.len > 0);
+
 	printf("shuguo: iqueuemac's own addrs is: %d, %d . \n ", iqueuemac->own_addr.addr[1], iqueuemac->own_addr.addr[0]);
 
 	if(iqueuemac->mac_type == ROUTER)

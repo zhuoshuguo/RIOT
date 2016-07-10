@@ -7,7 +7,7 @@
  */
 
 /**
- * @defgroup    net_iqueue_mac traffic adaptive  MAC layer
+ * @defgroup    net_iqueue_mac traffic adaptive  MAC
  * @ingroup     net
  * @brief       Traffic adaptive MAC protocol that allows for duty cycling to save
  *              energy.
