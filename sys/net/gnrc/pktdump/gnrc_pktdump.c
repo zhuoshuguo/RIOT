@@ -124,7 +124,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
     payload = pkt->data;
 
-    printf("payload: %lu, r_counter: %lu.\n", payload[0], received_pkt_counter);
+    printf("pd: %lu, t_r: %lu.\n", payload[0], received_pkt_counter);
 
     gnrc_pktbuf_release(pkt);
 }
