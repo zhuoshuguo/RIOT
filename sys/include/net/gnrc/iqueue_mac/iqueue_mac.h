@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Shuguo Zhuo
+ * Copyright (C) 2016 INRIA
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -7,14 +7,14 @@
  */
 
 /**
- * @defgroup    net_iqueue_mac traffic adaptive  MAC
+ * @defgroup    net_iqueue_mac traffic adaptive MAC
  * @ingroup     net
  * @brief       Traffic adaptive MAC protocol that allows for duty cycling to save
  *              energy.
  * @{
  *
  * @file
- * @brief       Interface definition for the IQUEUE_MAC protocol
+ * @brief       Interface definition for the iqueue_mac protocol
  *
  * @author      Shuguo Zhuo <shuguo.zhuo@inria.fr>
  */

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Daniel Krebs
+ * Copyright (C) 2016 INRIA
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -7,13 +7,13 @@
  */
 
 /**
- * @defgroup    net_iQueueMAC Simplest possible MAC layer
+ * @defgroup    net_iqueue_mac traffic adaptive MAC
  * @ingroup     net
- * @brief       Internal functions if iQueueMAC
+ * @brief       Internal functions if iqueue_mac
  * @{
  *
  * @file
- * @brief       Interface definition for internal functions of iQueueMAC protocol
+ * @brief       Interface definition for internal functions of iqueue_mac protocol
  *
  * @author      Daniel Krebs <github@daniel-krebs.net>
  * @author      Shuguo Zhuo <shuguo.zhuo@inria.fr>
