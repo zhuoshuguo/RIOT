@@ -1193,6 +1193,9 @@ void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_ena
 
 		pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_data_hdr, sizeof(iqueuemac_data_hdr), GNRC_NETTYPE_IQUEUEMAC);
 
+	}else{
+		/*** update queue-indicator ***/
+		iqueuemac_data_hdr_pointer->queue_indicator = iqueuemac->tx.current_neighbour->queue.length;
 	}
 
 	gnrc_pktbuf_hold(iqueuemac->tx.tx_packet,1);
