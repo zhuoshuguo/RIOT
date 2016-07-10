@@ -826,6 +826,8 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 				iqueuemac->tx.tx_packet = NULL;
 
+				iqueuemac->tx.no_ack_contuer = 0;
+
 				/*** if has pending pkt, join the vTDMA period, first wait receiver's beacon ***/
 				if(iqueuemac->tx.current_neighbour->queue.length > 0){
 					iqueuemac->tx.vtdma_para.get_beacon = false;
@@ -869,6 +871,8 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 				iqueuemac->tx.tx_packet = NULL;
 
+				iqueuemac->tx.no_ack_contuer = 0;
+
 				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2N_TRANS_END;
 				iqueuemac->need_update = true;
 
@@ -878,6 +882,8 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				/*** first release the pkt ***/
 				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 				iqueuemac->tx.tx_packet = NULL;
+
+				iqueuemac->tx.no_ack_contuer = 0;
 
 				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2N_TRANS_END;
 				iqueuemac->need_update = true;
