@@ -39,11 +39,11 @@ typedef enum {
 #define MAC_TYPE  ROUTER // NODE //                                                                      NODE //        ROUTER
 
 #ifndef IQUEUEMAC_SUPERFRAME_DURATION_US
-#define IQUEUEMAC_SUPERFRAME_DURATION_US        (1000U * 1000)
+#define IQUEUEMAC_SUPERFRAME_DURATION_US        (500U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_CP_DURATION_US
-#define IQUEUEMAC_CP_DURATION_US        (15U * 1000)
+#define IQUEUEMAC_CP_DURATION_US        (14U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_PREAMBLE_INTERVAL_US
