@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Shuguo Zhuo
+ * Copyright (C) 2016 INRIA
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -7,12 +7,12 @@
  */
 
 /**
- * @defgroup    net_iqueue_mac traffic adaptive  MAC layer
+ * @defgroup    net_iqueue_mac traffic adaptive MAC layer
  * @ingroup     net
  * @{
  *
  * @file
- * @brief       Header definition of IQUEUE_MAC protocol
+ * @brief       Header definition of iqueue_mac protocol
  *
  * @author      Shuguo Zhuo <shuguo.zhuo@inria.fr>
  */

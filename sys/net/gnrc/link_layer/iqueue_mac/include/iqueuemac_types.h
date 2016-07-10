@@ -9,11 +9,11 @@
 /**
  * @defgroup    net_iqueue_mac
  * @ingroup     net
- * @brief       Internal types of IQUEUEMAC
+ * @brief       Internal types of iqueue_mac
  * @{
  *
  * @file
- * @brief       Internal types used by the IQUEUEMAC protocol
+ * @brief       Internal types used by the iqueue_mac protocol
  *
  * @author      Shuguo Zhuo <shuguo.zhuo@inria.fr>
  */
