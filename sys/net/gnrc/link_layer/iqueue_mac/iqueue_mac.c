@@ -853,9 +853,23 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 					//puts("phase-lock failed.");
 					iqueuemac->tx.current_neighbour->mac_type = UNKNOWN;
 
-					iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RE_PHASE_LOCK, (IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_RE_PHASE_LOCK_ADVANCE_US));
-					iqueuemac_trun_off_radio(iqueuemac);
-					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_RE_PHASE_LOCK_PREPARE;
+			           /* save payload pointer */
+			        gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next->next;
+
+			            /* remove iqueuemac header */
+			        iqueuemac->tx.tx_packet->next->next = NULL;
+			        gnrc_pktbuf_release(iqueuemac->tx.tx_packet->next);
+
+			            /* make append payload after netif header again */
+			        iqueuemac->tx.tx_packet->next = payload;
+
+			        /* queue the pkt for transmission in next cycle */
+			        _queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet);
+			        iqueuemac->tx.tx_packet = NULL;
+
+					//iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RE_PHASE_LOCK, (IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_RE_PHASE_LOCK_ADVANCE_US));
+					//iqueuemac_trun_off_radio(iqueuemac);
+					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END; //DEVICE_T2R_RE_PHASE_LOCK_PREPARE;
 
 				}else{
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2N_TRANS_END;
