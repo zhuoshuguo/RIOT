@@ -8,12 +8,12 @@
 
 /**
  * @{
- * @ingroup     net_iqueueMAC
+ * @ingroup     net_iqueuemac
  * @file
  * @brief       Internal functions of iqueue_mac
  *
  * @author      Daniel Krebs <github@daniel-krebs.net>
- * @author      Shuguo Zhuo <shuguo.zhuo@inria.fr>
+ * @author      shuguo Zhuo <shuguo.zhuo@inria.fr>
  * @}
  */
 
@@ -225,7 +225,7 @@ bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
                 /* All queues are in use, so reject */
                 if(neighbour_id < 0) {
                     DEBUG("[iqueuemac-int] Couldn't allocate tx queue for packet\n");
-                    puts("Shuguo: there is no free neighbor for caching packet! ");
+                    //puts("iqueuemac: there is no free neighbor for caching packet! ");
                     gnrc_pktbuf_release(pkt);
                     return false;
                 }
@@ -240,18 +240,18 @@ bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
 
     }
 
-    //printf("Shuguo: the current find neighbour_id is %d \n", neighbour_id);
-    //printf("Shuguo: the inited addr in the neighbor-list is %d %d \n", iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[1], iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[0]);
+    //printf("iqueuemac: the current find neighbour_id is %d \n", neighbour_id);
+    //printf("iqueuemac: the inited addr in the neighbor-list is %d %d \n", iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[1], iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[0]);
 
     if(packet_queue_push(&(neighbour->queue), pkt, 0) == NULL) {
-    	puts("Shuguo: Cann't push packet into queue, queue is perhaps full! ");
+    	puts("iqueuemac: Cann't push packet into queue, queue is perhaps full! ");
         gnrc_pktbuf_release(pkt);
         return false;
     }
 
-    //printf("Shuguo: the current find neighbour %d 's queue-length is %d. \n", neighbour_id, (int)iqueuemac->tx.neighbours[neighbour_id].queue.length);
+    //printf("iqueuemac: the current find neighbour %d 's queue-length is %d. \n", neighbour_id, (int)iqueuemac->tx.neighbours[neighbour_id].queue.length);
 
-    DEBUG("[iqueuemac-int] Queuing pkt to neighbour #%d\n", neighbour_id);
+    //DEBUG("[iqueuemac-int] Queuing pkt to neighbour #%d\n", neighbour_id);
 
     return true;
 }
@@ -450,9 +450,9 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 	if(total_tdma_node_num > 0){
 
 		iqueuemac->rx.router_vtdma_mana.total_slots_num = total_tdma_slot_num;
-		//printf("Shuguo: the total slots-number this cycle is %d . \n", iqueuemac->rx.router_vtdma_mana.total_slots_num);
+		//printf("iqueuemac: the total slots-number this cycle is %d . \n", iqueuemac->rx.router_vtdma_mana.total_slots_num);
 
-		//puts("Shuguo: schedule slots-list");
+		//puts("iqueuemac: schedule slots-list");
 	    /**** add the slots list ****/
 	    pkt = gnrc_pktbuf_add(NULL, slots_list, total_tdma_node_num * sizeof(uint8_t), GNRC_NETTYPE_IQUEUEMAC);
 	    if(pkt == NULL) {
@@ -633,7 +633,7 @@ int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_
 
 	if(iqueuemac_hdr->type == FRAMETYPE_IQUEUE_DATA){
 
-		//puts("shuguo: push a data");
+		//puts("iqueuemac: push a data");
 		iqueuemac_data_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_IQUEUEMAC);
 
 		same_cluster = iqueuemac_data_hdr->queue_indicator & 0x40;
@@ -682,7 +682,7 @@ void iqueuemac_router_queue_indicator_update(iqueuemac_t* iqueuemac, gnrc_pktsni
 			//iqueuemac_data_hdr->queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x7F;
 
 			iqueuemac->rx.rx_register_list[i].queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x3F;
-			//printf("shuguo: the registered queue-indicator is %d. \n", iqueuemac_data_hdr->queue_indicator);
+			//printf("iqueuemac: the registered queue-indicator is %d. \n", iqueuemac_data_hdr->queue_indicator);
 			return;
 		}
 	}
@@ -702,14 +702,14 @@ void iqueuemac_router_queue_indicator_update(iqueuemac_t* iqueuemac, gnrc_pktsni
 			extra_mac_type = iqueuemac_data_hdr->queue_indicator & 0x80;
 			if(extra_mac_type == 0x80){
 			    iqueuemac->rx.rx_register_list[i].mac_type = NODE;
-			    //puts("shuguo: the registered device is node type.");
+			    //puts("iqueuemac: the registered device is node type.");
 			}else{
 				iqueuemac->rx.rx_register_list[i].mac_type = ROUTER;
-				//puts("shuguo: the registered device is router type.");
+				//puts("iqueuemac: the registered device is router type.");
 			}
 
 			iqueuemac->rx.rx_register_list[i].queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x3F;
-			//printf("shuguo: the registered queue-indicator is %d. \n", iqueuemac_data_hdr->queue_indicator);
+			//printf("iqueuemac: the registered queue-indicator is %d. \n", iqueuemac_data_hdr->queue_indicator);
 			return;
 		}
 	}
@@ -757,13 +757,13 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             	//gnrc_pktbuf_release(pkt);
             	//printf("%lu. \n", RTT_TICKS_TO_US(_phase_now(iqueuemac)));
-        	    //puts("Shuguo: router receives a data !!");
+        	    //puts("iqueuemac: router receives a data !!");
             }break;
 
             case FRAMETYPE_BROADCAST:{
             	iqueuemac->quit_current_cycle = true;
                 iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
-                //puts("Shuguo: router receives a broadcast data !!");
+                //puts("iqueuemac: router receives a broadcast data !!");
            }break;
 
             default:gnrc_pktbuf_release(pkt);break;
@@ -787,7 +787,7 @@ void iqueuemac_update_subchannel_occu_flags(iqueuemac_t* iqueuemac, gnrc_pktsnip
     	      return;
     	  }
     	  subchannel_seq = (uint16_t)iqueuemac_beacon_hdr->sub_channel_seq;
-    	  //printf("Shuguo: received beacon's subchannel is %d .\n", subchannel_seq);
+    	  //printf("iqueuemac: received beacon's subchannel is %d .\n", subchannel_seq);
 
       }break;
       case FRAMETYPE_ANNOUNCE:{
@@ -798,7 +798,7 @@ void iqueuemac_update_subchannel_occu_flags(iqueuemac_t* iqueuemac, gnrc_pktsnip
     	      return;
     	  }
     	  subchannel_seq = (uint16_t)iqueuemac_announce_hdr->subchannel_seq;
-    	  //printf("Shuguo: received announce's subchannel is %d .\n", subchannel_seq);
+    	  //printf("iqueuemac: received announce's subchannel is %d .\n", subchannel_seq);
 
       }break;
       default:break;
@@ -809,7 +809,7 @@ void iqueuemac_update_subchannel_occu_flags(iqueuemac_t* iqueuemac, gnrc_pktsnip
 	flag = (1 << subchannel_seq);
 
 	iqueuemac->router_states.subchannel_occu_flags = iqueuemac->router_states.subchannel_occu_flags | flag;
-	//printf("Shuguo: subchannel flag is %d .\n", iqueuemac->router_states.subchannel_occu_flags);
+	//printf("iqueuemac: subchannel flag is %d .\n", iqueuemac->router_states.subchannel_occu_flags);
 
 }
 
@@ -851,7 +851,7 @@ void iqueuemac_packet_process_in_init(iqueuemac_t* iqueuemac){
             case FRAMETYPE_BROADCAST:{
             	iqueuemac->quit_current_cycle = true;
                 iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
-                //puts("Shuguo: router receives a broadcast data !!");
+                //puts("iqueuemac: router receives a broadcast data !!");
            }break;
 
             case FRAMETYPE_ANNOUNCE:{
@@ -880,8 +880,8 @@ void iqueuemac_init_choose_subchannel(iqueuemac_t* iqueuemac){
 	/* range from 12 to 25 */
 	//own_id = 12;
 	subchannel_seq = 12 + (own_id % 14);
-	//printf("Shuguo: the random selected subchannel is %d .\n", subchannel_seq);
-	//printf("Shuguo: subchannel flag is %d .\n", iqueuemac->router_states.subchannel_occu_flags);
+	//printf("iqueuemac: the random selected subchannel is %d .\n", subchannel_seq);
+	//printf("iqueuemac: subchannel flag is %d .\n", iqueuemac->router_states.subchannel_occu_flags);
 
 	int i=0;
 	for(i=0;i<14;i++){
@@ -890,7 +890,7 @@ void iqueuemac_init_choose_subchannel(iqueuemac_t* iqueuemac){
 		check_seq = (1<<check_seq);
 
 		if(check_seq & iqueuemac->router_states.subchannel_occu_flags){
-			puts("Shuguo: subchannel exist, find next subchannel.");
+			//puts("iqueuemac: subchannel exist, find next subchannel.");
 			own_id += 1;
 			subchannel_seq = 12 + (own_id % 14);
 		}else{
@@ -899,7 +899,7 @@ void iqueuemac_init_choose_subchannel(iqueuemac_t* iqueuemac){
 	}
 
 	iqueuemac->sub_channel_num = subchannel_seq;
-	//printf("Shuguo: the final selected subchannel is %d .\n", subchannel_seq);
+	//printf("iqueuemac: the final selected subchannel is %d .\n", subchannel_seq);
 }
 
 void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
@@ -1067,13 +1067,13 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 		 iqueuemac->tx.current_neighbour->in_same_cluster = false;
 		 iqueuemac->tx.current_neighbour->cp_phase = rtt_get_counter();
 
-		 puts("shuguo: node got phase-locked with father.");
+		 puts("iqueuemac: node got phase-locked with father.");
 
 	     /***  add the node type into the in-cluster list if the receiver and the sender share the same father ***/
 	     if(iqueuemac_preamble_ack_hdr->device_type == NODE){
 	    	 iqueuemac_add_in_cluster_neighbor(iqueuemac, &pa_info->src_addr);
 	     }
-	     //puts("shuguo: get phased-locked, in the same cluster.");
+	     //puts("iqueuemac: get phased-locked, in the same cluster.");
 	 }else{//for router type, it will automatically enter here, since father-router are different
 		 iqueuemac->tx.current_neighbour->in_same_cluster = false;
 		 iqueuemac->tx.current_neighbour->cp_phase = rtt_get_counter();
@@ -1081,7 +1081,7 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 		 if(iqueuemac_preamble_ack_hdr->device_type == NODE){
 			 iqueuemac_remove_in_cluster_neighbor(iqueuemac, &pa_info->src_addr);
 	     }
-		 //puts("shuguo: get phased-locked, not in the same cluster.");
+		 //puts("iqueuemac: get phased-locked, not in the same cluster.");
 	 }
 
 
@@ -1102,12 +1102,12 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 			 alarm = RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
 			 iqueuemac_set_rtt_alarm(alarm, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_CP);
 			 iqueuemac->node_states.in_cp_period = false;
-			 //puts("shuguo: node got phase-locked with father in sleep.");
+			 //puts("iqueuemac: node got phase-locked with father in sleep.");
 		 }else{
 			 alarm = RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
 			 iqueuemac_set_rtt_alarm(alarm, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP);
 			 iqueuemac->node_states.in_cp_period = true;
-			 puts("shuguo: node got phase-locked with father in CP.");
+			 puts("iqueuemac: node got phase-locked with father in CP.");
 		 }
 
 	 }
@@ -1139,7 +1139,7 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_PREAMBLE_ACK:{
-            	//puts("shuguo: nodes receives a preamble_ack");
+            	//puts("iqueuemac: nodes receives a preamble_ack");
             	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
             		if(_addr_match(&iqueuemac->tx.current_neighbour->l2_addr, &receive_packet_info.src_addr)){
             			iqueuemac->tx.got_preamble_ack = true;
@@ -1240,7 +1240,7 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
        		iqueuemac->tx.tx_packet =  pkt;
        		iqueuemac->tx.current_neighbour = &iqueuemac->tx.neighbours[next];
 
-       		//printf("Shuguo: the find nearest neighbor is %d. \n", next);
+       		//printf("iqueuemac: the find nearest neighbor is %d. \n", next);
        		return true;
       	}else{
       		return false;
@@ -1318,7 +1318,7 @@ void iqueuemac_beacon_process(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt){
 		}
 		iqueuemac->tx.vtdma_para.slots_position = slots_position;
 
-		//printf("Shuguo: the allocated slots-num is %d, id-position is %d .\n", iqueuemac->tx.vtdma_para.slots_num, id_position);
+		//printf("iqueuemac: the allocated slots-num is %d, id-position is %d .\n", iqueuemac->tx.vtdma_para.slots_num, id_position);
 	}else{
 		iqueuemac->tx.vtdma_para.slots_num = 0;
 		iqueuemac->tx.vtdma_para.slots_position = 0;
@@ -1363,7 +1363,7 @@ void iqueuemac_wait_beacon_packet_process(iqueuemac_t* iqueuemac){
             case FRAMETYPE_IQUEUE_DATA:{
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             	//gnrc_pktbuf_release(pkt);
-        	    puts("Shuguo: router receives a data !!");
+        	    //puts("iqueuemac: router receives a data !!");
             }break;
 
             default:gnrc_pktbuf_release(pkt);break;
@@ -1408,13 +1408,13 @@ void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_IQUEUE_DATA:{
-            	printf("%lu. \n", RTT_TICKS_TO_US(_phase_now(iqueuemac)));
+            	//printf("%lu. \n", RTT_TICKS_TO_US(_phase_now(iqueuemac)));
             	//iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             	//gnrc_pktbuf_release(pkt);
 
 
-        	    //puts("Shuguo: node receives a data !!");
+        	    //puts("iqueuemac: node receives a data !!");
             }break;
 
             case FRAMETYPE_BROADCAST:{
@@ -1463,7 +1463,7 @@ void iqueuemac_router_vtdma_receive_packet_process(iqueuemac_t* iqueuemac){
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
 
         	    _dispatch(iqueuemac->rx.dispatch_buffer);
-        	    //puts("Shuguo: router receives a data in vtdma!!");
+        	    //puts("iqueuemac: router receives a data in vtdma!!");
             }break;
 
             default:gnrc_pktbuf_release(pkt);break;
