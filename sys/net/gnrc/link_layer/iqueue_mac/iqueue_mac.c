@@ -1201,7 +1201,7 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac->tx.preamble_sent == 0){
 		iqueue_mac_send_preamble(iqueuemac, NETOPT_ENABLE);
-		iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE_DURATION, IQUEUEMAC_SUPERFRAME_DURATION_US);
+		iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE_DURATION, IQUEUEMAC_PREAMBLE_DURATION_US);
 	}else{
 		iqueue_mac_send_preamble(iqueuemac, NETOPT_DISABLE);
 	}

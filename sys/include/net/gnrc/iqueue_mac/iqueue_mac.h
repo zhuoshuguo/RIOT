@@ -55,7 +55,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_PREAMBLE_DURATION_US
-#define IQUEUEMAC_PREAMBLE_DURATION_US        IQUEUEMAC_SUPERFRAME_DURATION_US // (1000U * 1000)
+#define IQUEUEMAC_PREAMBLE_DURATION_US        (12*IQUEUEMAC_SUPERFRAME_DURATION_US/10)
 #endif
 
 #ifndef IQUEUEMAC_RE_PHASE_LOCK_ADVANCE_US
@@ -86,18 +86,18 @@ typedef enum {
 #define IQUEUEMAC_TIMEOUT_COUNT             (3U)
 #endif
 
-/******* it seems that this should not be larger than 5 !!!!! *******/
+/******* it seems that this should not be larger than 5 *******/
 #ifndef IQUEUEMAC_TX_QUEUE_SIZE
-#define IQUEUEMAC_TX_QUEUE_SIZE             (5U)
+#define IQUEUEMAC_TX_QUEUE_SIZE             (8U)
 #endif
 
 #ifndef IQUEUEMAC_RX_QUEUE_SIZE
-#define IQUEUEMAC_RX_QUEUE_SIZE             (2U)   /// 试着把这个减小，看看 能不能相应增大 TX_QUEUE_SIZE， 可能这两个在抢内存
+#define IQUEUEMAC_RX_QUEUE_SIZE             (8U)
 #endif
 
-/******* it seems that this should not be larger than 3 !!!!! *******/
+/******* it seems that this should not be larger than 3 *******/
 #ifndef IQUEUEMAC_DISPATCH_BUFFER_SIZE
-#define IQUEUEMAC_DISPATCH_BUFFER_SIZE      (3U)
+#define IQUEUEMAC_DISPATCH_BUFFER_SIZE      (8U)
 #endif
 
 #ifndef IQUEUEMAC_MAX_L2_ADDR_LEN
@@ -123,9 +123,6 @@ typedef enum {
 #ifndef IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM
 #define IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM           (10U)
 #endif
-
-
-
 
 #define IQUEUEMAC_LPM_MASK					(1 << 17)
 
