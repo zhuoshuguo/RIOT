@@ -1250,7 +1250,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2u_send_data(iqueuemac_t* iqueuemac){
 
-	iqueuemac_send_data_packet(iqueuemac, NETOPT_DISABLE);
+	iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
 
 	//iqueuemac->tx.tx_packet = NULL;
 
