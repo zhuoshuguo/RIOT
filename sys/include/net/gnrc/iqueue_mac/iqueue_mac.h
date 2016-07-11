@@ -92,11 +92,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_RX_QUEUE_SIZE
-<<<<<<< HEAD
 #define IQUEUEMAC_RX_QUEUE_SIZE             (8U)
-=======
-#define IQUEUEMAC_RX_QUEUE_SIZE             (8U)   /// 试着把这个减小，看看 能不能相应增大 TX_QUEUE_SIZE， 可能这两个在抢内存
->>>>>>> add burst transmit func, revise tx-queue length etc. parameters, and add man-made timer drift for test
 #endif
 
 /******* it seems that this should not be larger than 3 *******/
