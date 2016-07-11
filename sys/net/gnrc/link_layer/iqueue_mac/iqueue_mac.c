@@ -47,7 +47,7 @@
 #include "od.h"
 #endif
 
-#define NETDEV2_NETAPI_MSG_QUEUE_SIZE 8
+#define NETDEV2_NETAPI_MSG_QUEUE_SIZE 16
 
 
 static iqueuemac_t iqueuemac;
@@ -778,7 +778,7 @@ void iqueuemac_t2r_init(iqueuemac_t* iqueuemac){
 	uint32_t wait_phase_duration;
 
 	wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
-	wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
+	wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration) - 2*IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
 
 	/*** flush the rx-queue here to reduce possible buffered packet in RIOT!! ***/

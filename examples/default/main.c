@@ -67,8 +67,8 @@ static void generate_and_send_pkt(uint32_t send_counter){
 	    dev = (kernel_pid_t)dev2;
 
 	    addr_len = 2;
-	    addr[0] = 0x52;
-	    addr[1] = 0xd2;
+	    addr[0] = 0x76;
+	    addr[1] = 0xb6;
 
 	    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
 
@@ -95,14 +95,17 @@ void *sender_thread(void *arg)
     uint32_t send_counter;
     send_counter =0;
 
-    xtimer_sleep(20);
+    xtimer_sleep(3);
 
     while (1) {
 
-    	xtimer_sleep(1);
+    	xtimer_sleep(2);
     	if(send_counter <3600){
-    		send_counter++;
-    		generate_and_send_pkt(send_counter);
+
+    		for(int i=0; i<1; i++){
+    			send_counter++;
+    			generate_and_send_pkt(send_counter);
+    		}
     	}
 
     }
@@ -130,7 +133,7 @@ int main(void)
 
 //kernel_pid_t pid =
     thread_create(second_thread_stack, sizeof(second_thread_stack),
-                            THREAD_PRIORITY_MAIN - 1, THREAD_CREATE_STACKTEST,
+                            THREAD_PRIORITY_MAIN + 1, THREAD_CREATE_STACKTEST,
                             sender_thread, NULL, "shuguo_app");
 
 
