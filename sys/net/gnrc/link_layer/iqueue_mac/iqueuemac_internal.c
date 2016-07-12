@@ -243,6 +243,7 @@ bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
     //printf("iqueuemac: the current find neighbour_id is %d \n", neighbour_id);
     //printf("iqueuemac: the inited addr in the neighbor-list is %d %d \n", iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[1], iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[0]);
 
+    puts("get data.");
     if(packet_queue_push(&(neighbour->queue), pkt, 0) == NULL) {
     	puts("iqueuemac: Cann't push packet into queue, queue is perhaps full! ");
         gnrc_pktbuf_release(pkt);
@@ -475,10 +476,12 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 		}
 	}
 
+	puts("start s beacon!!!");
+
 	/********* Add the Netif header  *********/
 	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
 	if(pkt == NULL) {
-	      ;
+		puts("error!");
 	}
 
 	/* We wouldn't get here if add the NETIF header had failed, so no
@@ -920,7 +923,7 @@ void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 
 	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
 	if(pkt == NULL) {
-	      ;
+	     puts("error_ preamble") ;
 	}
 	/* We wouldn't get here if add the NETIF header had failed, so no
 		sanity checks needed */

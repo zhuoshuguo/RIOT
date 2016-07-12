@@ -511,6 +511,8 @@ void iqueuemac_init_end(iqueuemac_t* iqueuemac){
 
 void iqueuemac_init_update(iqueuemac_t* iqueuemac){
 
+
+
 	switch(iqueuemac->router_states.router_init_state)
 	{
 		case R_INIT_PREPARE: iqueuemac_init_prepare(iqueuemac);break;
@@ -1195,6 +1197,7 @@ void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 	iqueuemac->need_update = true;
 
 	packet_queue_flush(&iqueuemac->rx.queue);
+	puts("preamble init.");
 }
 
 void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac){
@@ -1395,7 +1398,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_LISTEN;
 	iqueuemac->need_update = true;
 
-	//puts("iqueuemac: router is now entering CP");
+	puts("iqueuemac: router is now entering CP");
 
 	iqueuemac->quit_current_cycle = false;
 
@@ -1453,12 +1456,13 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 	// iqueuemac_select_sub_channel_num(iqueuemac);
 
 	/****** assemble and send the beacon ******/
+
 	iqueuemac_assemble_and_send_beacon(iqueuemac);
 
 	iqueuemac->router_states.router_listen_state = R_LISTEN_WAIT_BEACON_FEEDBACK;
 	iqueuemac->need_update = true;
 
-	//puts("iqueuemac: router is now sending the beacon!!!");
+	puts("sent beacon!!!");
 
 }
 
@@ -1631,6 +1635,8 @@ void iqueue_mac_router_sleep_end(iqueuemac_t* iqueuemac){
 }
 
 void iqueue_mac_router_listen_update(iqueuemac_t* iqueuemac){
+
+	printf("l-s: %d \n", iqueuemac->router_states.router_listen_state);
 
 	switch(iqueuemac->router_states.router_listen_state)
    {
@@ -1927,6 +1933,7 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
             case NETDEV2_EVENT_TX_COMPLETE:{
             	iqueuemac.tx.tx_feedback = TX_FEEDBACK_SUCCESS;
             	iqueuemac.tx.tx_finished = true;
+            	puts("txf");
             	iqueuemac_set_raddio_to_listen_mode(&iqueuemac);
             	iqueuemac.need_update = true;
             }break;
@@ -1935,6 +1942,7 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
            		iqueuemac.tx.tx_feedback = TX_FEEDBACK_NOACK;
            		iqueuemac.tx.tx_finished = true;
            		iqueuemac_set_raddio_to_listen_mode(&iqueuemac);
+           		puts("txf");
             	iqueuemac.need_update = true;
            	}break;
 
@@ -1942,6 +1950,7 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
            		iqueuemac.tx.tx_feedback = TX_FEEDBACK_BUSY;
            		iqueuemac.tx.tx_finished = true;
            		iqueuemac_set_raddio_to_listen_mode(&iqueuemac);
+           		puts("txf");
            		iqueuemac.need_update = true;
            	}break;
 /*
@@ -2096,18 +2105,20 @@ static void *_gnrc_iqueuemac_thread(void *args)
               //gnrc_netdev2->send(gnrc_netdev2, pkt);
 
               _queue_tx_packet(&iqueuemac,  pkt);
-              iqueuemac.need_update = true;
+              //iqueuemac.need_update = true;
 
             }break;
             /**************************************iqueue-mac********************************************/
 
             default:
-                DEBUG("gnrc_netdev2: Unknown command %" PRIu16 "\n", msg.type);
+
+                printf("gnrc_netdev2: Unknown command %" PRIu16 "\n", msg.type);
                 break;
         }
 
         while(iqueuemac.need_update == true)  //&&(iqueuemac.duty_cycle_started == true)
         {
+        	//puts("iq update");
         	iqueuemac.need_update = false;
             iqueue_mac_update(&iqueuemac);
         }

@@ -75,7 +75,7 @@ static void generate_and_send_pkt(uint32_t send_counter){
 		/****** assemble and send the beacon ******/
 		pkt = gnrc_pktbuf_add(NULL, payload, sizeof(payload), GNRC_NETTYPE_UNDEF);
 		if(pkt == NULL) {
-			    ;
+			puts("app: buf null!")    ;
 		}
 
 	    LL_PREPEND(pkt, hdr);
@@ -95,14 +95,14 @@ void *sender_thread(void *arg)
     uint32_t send_counter;
     send_counter =0;
 
-    xtimer_sleep(3);
+    xtimer_sleep(5);
 
     while (1) {
 
-    	xtimer_sleep(2);
-    	if(send_counter <3600){
+    	xtimer_sleep(10);
+    	if(send_counter <10){
 
-    		for(int i=0; i<1; i++){
+    		for(int i=0; i<3; i++){
     			send_counter++;
     			generate_and_send_pkt(send_counter);
     		}

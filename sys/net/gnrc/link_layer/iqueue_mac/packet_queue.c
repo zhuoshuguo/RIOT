@@ -17,6 +17,31 @@
  * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  * @}
  */
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+#include <kernel_types.h>
+#include <lpm.h>
+#include "msg.h"
+#include "thread.h"
+#include "random.h"
+#include <timex.h>
+#include <periph/rtt.h>
+#include "net/gnrc.h"
+#include "net/gnrc/nettype.h"
+#include "net/netdev2.h"
+#include "net/gnrc/netdev2.h"
+#include "net/gnrc/iqueue_mac/iqueue_mac.h"
+#include <net/gnrc/iqueue_mac/packet_queue.h>
 
 #include <net/gnrc.h>
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
@@ -102,6 +127,7 @@ packet_queue_push(packet_queue_t* q, gnrc_pktsnip_t* snip, uint32_t priority)
         node->priority = priority;
         priority_queue_add(&(q->queue), node);
         q->length++;
+        puts("puts a pkt.");
     }
     return node;
 }
