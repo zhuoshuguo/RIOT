@@ -336,12 +336,14 @@ void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* i
 
 	pkt = gnrc_pktbuf_add(NULL, &iqueuemac_preamble_ack_hdr, sizeof(iqueuemac_preamble_ack_hdr), GNRC_NETTYPE_IQUEUEMAC);
 	if(pkt == NULL) {
-		    ;
+		puts("iqueuemac: pktbuf add failed in iqueue_send_preamble_ack().");
+		//need further control codes for handling this error.
 	}
 
 	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
 	if(pkt == NULL) {
-	      ;
+		puts("iqueuemac: pktbuf add failed in iqueue_send_preamble_ack().");
+		//need further control codes for handling this error.
 	}
 	/* We wouldn't get here if add the NETIF header had failed, so no
 		sanity checks needed */
@@ -456,29 +458,29 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 	    /**** add the slots list ****/
 	    pkt = gnrc_pktbuf_add(NULL, slots_list, total_tdma_node_num * sizeof(uint8_t), GNRC_NETTYPE_IQUEUEMAC);
 	    if(pkt == NULL) {
-	          ;
+	    	puts("iqueuemac: pktbuf add failed in iqueuemac_assemble_and_send_beacon().");
 	    }
 	    /**** add the ID list ****/
 	    pkt = gnrc_pktbuf_add(pkt, id_list, total_tdma_node_num * sizeof(l2_id_t), GNRC_NETTYPE_IQUEUEMAC);
 	    if(pkt == NULL) {
-	          ;
+	    	puts("iqueuemac: pktbuf add failed in iqueuemac_assemble_and_send_beacon().");
 	    }
 	    /**** add the beacon header ****/
 	    pkt = gnrc_pktbuf_add(pkt, &iqueuemac_hdr, sizeof(iqueuemac_hdr), GNRC_NETTYPE_IQUEUEMAC);
 	    if(pkt == NULL) {
-	          ;
+	    	puts("iqueuemac: pktbuf add failed in iqueuemac_assemble_and_send_beacon().");
 	    }
 	}else{
 		pkt = gnrc_pktbuf_add(NULL, &iqueuemac_hdr, sizeof(iqueuemac_hdr), GNRC_NETTYPE_IQUEUEMAC);
 		if(pkt == NULL) {
-		       ;
+			puts("iqueuemac: pktbuf add failed in iqueuemac_assemble_and_send_beacon().");
 		}
 	}
 
 	/********* Add the Netif header  *********/
 	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
 	if(pkt == NULL) {
-	      ;
+		puts("iqueuemac: pktbuf add failed in iqueuemac_assemble_and_send_beacon().");
 	}
 
 	/* We wouldn't get here if add the NETIF header had failed, so no
@@ -915,12 +917,12 @@ void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 
 	pkt = gnrc_pktbuf_add(NULL, &iqueuemac_preamble_hdr, sizeof(iqueuemac_preamble_hdr), GNRC_NETTYPE_IQUEUEMAC);
 	if(pkt == NULL) {
-		    ;
+		puts("iqueuemac: pktbuf add failed in iqueue_mac_send_preamble().");
 	}
 
 	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
 	if(pkt == NULL) {
-	      ;
+		puts("iqueuemac: pktbuf add failed in iqueue_mac_send_preamble().");
 	}
 	/* We wouldn't get here if add the NETIF header had failed, so no
 		sanity checks needed */
@@ -952,12 +954,12 @@ void iqueuemac_send_announce(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 
 	pkt = gnrc_pktbuf_add(NULL, &iqueuemac_announce_hdr, sizeof(iqueuemac_announce_hdr), GNRC_NETTYPE_IQUEUEMAC);
 	if(pkt == NULL) {
-		    ;
+		puts("iqueuemac: pktbuf add failed in iqueuemac_send_announce().");
 	}
 
 	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
 	if(pkt == NULL) {
-	      ;
+		puts("iqueuemac: pktbuf add failed in iqueuemac_send_announce().");
 	}
 	/* We wouldn't get here if add the NETIF header had failed, so no
 		sanity checks needed */
@@ -1191,6 +1193,9 @@ void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_ena
 		}
 
 		pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_data_hdr, sizeof(iqueuemac_data_hdr), GNRC_NETTYPE_IQUEUEMAC);
+		if(pkt == NULL) {
+			puts("iqueuemac: pktbuf add failed in iqueuemac_send_data_packet().");
+		}
 
 	}else{
 		/*** update queue-indicator ***/
