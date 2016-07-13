@@ -97,6 +97,8 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
     if(!lwmac)
         return reschedule;
 
+    printf("tx is %d.\n ", lwmac->tx.state);
+
     switch(lwmac->tx.state)
     {
     case TX_STATE_INIT:
@@ -190,13 +192,13 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
 
         pkt = gnrc_pktbuf_add(NULL, &wr_hdr, sizeof(wr_hdr), GNRC_NETTYPE_LWMAC);
         if(pkt == NULL) {
-            LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_LWMAC\n");
+            puts("sg: Cannot allocate pktbuf of type GNRC_NETTYPE_LWMAC.");
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
         pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t) + addr_len, GNRC_NETTYPE_NETIF);
         if(pkt == NULL) {
-            LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_NETIF\n");
+            puts("sg: Cannot allocate pktbuf of type GNRC_NETTYPE_NETIF.");
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 

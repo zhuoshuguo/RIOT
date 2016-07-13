@@ -186,6 +186,8 @@ bool lwmac_update(void)
 {
     lwmac.needs_rescheduling = false;
 
+    printf("ls is %d.\n ", lwmac.state);
+
     switch(lwmac.state)
     {
     case SLEEPING:

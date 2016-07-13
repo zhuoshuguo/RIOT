@@ -32,7 +32,7 @@ extern "C" {
 /* Time between consecutive wakeups. This parameter governs power consumption,
  * latency and throughput! */
 #ifndef LWMAC_WAKEUP_INTERVAL_US
-#define LWMAC_WAKEUP_INTERVAL_US        (100U * 1000)
+#define LWMAC_WAKEUP_INTERVAL_US        (5000U * 1000)
 #endif
 
 /* Timeout to send the next WR in case no WA has been received during that
@@ -54,7 +54,7 @@ extern "C" {
  * as a sensible default here. Otherwise the duration of WRs as well as longest
  * possible data broadcasts need to be taken into account. */
 #ifndef LWMAC_WAKEUP_DURATION_US
-#define LWMAC_WAKEUP_DURATION_US        (LWMAC_TIME_BETWEEN_WR_US * 2)
+#define LWMAC_WAKEUP_DURATION_US        (LWMAC_TIME_BETWEEN_WR_US * 20)
 #endif
 
 /* Start sending earlier then known phase. Therefore advance to beginning edge
@@ -117,7 +117,7 @@ extern "C" {
  * @brief   Set the default message queue size for LWMAC layer
  */
 #ifndef LWMAC_IPC_MSG_QUEUE_SIZE
-#define LWMAC_IPC_MSG_QUEUE_SIZE        (8U)
+#define LWMAC_IPC_MSG_QUEUE_SIZE        (16U)
 #endif
 
 /**
