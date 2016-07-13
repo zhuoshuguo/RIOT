@@ -1896,6 +1896,13 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                 {
                     gnrc_pktsnip_t *pkt = gnrc_netdev2->recv(gnrc_netdev2);
 
+                    if(pkt == NULL){
+                    	puts("rx: pkt is NULL, memory full?");
+                    	iqueuemac.rx_started = false;
+                    	iqueuemac.packet_received = false;
+                    	break;
+                    }
+
                     if(!iqueuemac.rx_started) {
        				   //LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
        				   gnrc_pktbuf_release(pkt);
@@ -1909,13 +1916,15 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                     */
 
                     iqueuemac.rx_started = false;
-                    iqueuemac.packet_received = true;
 
                     if(!packet_queue_push(&iqueuemac.rx.queue, pkt, 0))
                    	{
                     	//LOG_ERROR("Can't push RX packet @ %p, memory full?\n", pkt);
                     	gnrc_pktbuf_release(pkt);
+                    	iqueuemac.packet_received = false;
                     	break;
+                    }else{
+                    	iqueuemac.packet_received = true;
                     }
                     iqueuemac.need_update = true;
                     /*
