@@ -280,7 +280,10 @@ void iqueuemac_device_broadcast_init(iqueuemac_t* iqueuemac){
 	iqueuemac_broadcast_hdr.seq_nr = iqueuemac->tx.broadcast_seq;
 
 	pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_broadcast_hdr, sizeof(iqueuemac_broadcast_hdr), GNRC_NETTYPE_IQUEUEMAC);
-
+	if(pkt == NULL) {
+		puts("iqueuemac: pktbuf add failed in iqueuemac_device_broadcast_init.");
+		//relase the broadcast pkt and go to listen state??.
+	}
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_BROADCAST_FINISH, IQUEUEMAC_SUPERFRAME_DURATION_US);
 
 	iqueuemac->device_states.device_broadcast_state = DEVICE_SEND_BROADCAST;
