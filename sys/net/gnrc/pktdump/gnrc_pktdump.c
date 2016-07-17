@@ -103,7 +103,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 	/*
     int snips = 0;
     int size = 0;
-    //gnrc_pktsnip_t *snip = pkt;
+    gnrc_pktsnip_t *snip = pkt;
 
 
 
@@ -121,10 +121,27 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     //printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
 
 	uint32_t *payload;
+	//gnrc_pktsnip_t *snip = pkt;
 
     payload = pkt->data;
 
-    printf("pd: %lu, t_r: %lu.\n", payload[0], received_pkt_counter);
+    gnrc_netif_hdr_t *hdr;
+    uint8_t* addr;
+
+    hdr = pkt->next->data;
+
+    addr = gnrc_netif_hdr_get_src_addr(hdr);
+
+    printf("pd: %lu, t_r: %lu. src: %d. \n", payload[0], received_pkt_counter, addr[7]);
+/*
+    if (hdr->src_l2addr_len > 0) {
+            printf("src_l2addr: %s\n",
+                   gnrc_netif_addr_to_str(addr_str, sizeof(addr_str),
+                                          gnrc_netif_hdr_get_src_addr(hdr),
+                                          (size_t)hdr->src_l2addr_len));
+    }*/
+
+
 
     gnrc_pktbuf_release(pkt);
 }
