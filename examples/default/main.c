@@ -85,13 +85,14 @@ static void generate_and_send_pkt(uint32_t send_counter){
 		pkt = gnrc_pktbuf_add(NULL, payload, sizeof(payload), GNRC_NETTYPE_UNDEF);
 		if(pkt == NULL) {
 			puts("app: buf null!")    ;
+		}else{
+
+			LL_PREPEND(pkt, hdr);
+
+			gnrc_netapi_send(dev, pkt);
+
+			printf("p: %lu.\n", send_counter);
 		}
-
-	    LL_PREPEND(pkt, hdr);
-
-	    gnrc_netapi_send(dev, pkt);
-
-	    printf("p: %lu.\n", send_counter);
 }
 
 
@@ -109,8 +110,7 @@ void *sender_thread(void *arg)
     while (1) {
 
     	xtimer_sleep(1);
-    	if(send_counter <100){
-
+    	if(send_counter <5000){
     		for(int i=0; i<1; i++){
     			send_counter++;
     			generate_and_send_pkt(send_counter);
