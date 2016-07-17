@@ -81,6 +81,7 @@ void lwmac_tx_stop(lwmac_t* lwmac)
 
     /* Release packet in case of failure */
     if(lwmac->tx.packet) {
+    	puts("sg: release pkt.");
         gnrc_pktbuf_release(lwmac->tx.packet);
         lwmac->tx.packet = NULL;
     }
@@ -290,6 +291,7 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
 
         if(lwmac_timeout_is_expired(lwmac, TIMEOUT_NO_RESPONSE)) {
             LOG_DEBUG("No response from destination\n");
+            puts("sg: WR no response.");
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
