@@ -63,21 +63,21 @@ static void generate_and_send_pkt(uint32_t send_counter){
 	    payload[0] = send_counter;
 
 	    dev2 = 4;
-	    /* parse interface */
+	    /* parse interface */  //5a:44:1e:68:a0:03:61:42
 	    dev = (kernel_pid_t)dev2;
 
 	    addr_len = 8;
 	    addr[0] = 0x5a;
-	    addr[1] = 0x55;
+	    addr[1] = 0x44;
 
-	    addr[2] = 0x6d;
-	    addr[3] = 0x78;
+	    addr[2] = 0x1e;
+	    addr[3] = 0x68;
 
-	    addr[4] = 0x89;
-	    addr[5] = 0xd6;
+	    addr[4] = 0xa0;
+	    addr[5] = 0x03;
 
-	    addr[6] = 0x76;
-	    addr[7] = 0xb6;
+	    addr[6] = 0x61;
+	    addr[7] = 0x42;
 
 	    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
 
@@ -104,12 +104,12 @@ void *sender_thread(void *arg)
     uint32_t send_counter;
     send_counter =0;
 
-    xtimer_sleep(7);
+    xtimer_sleep(5);
 
     while (1) {
 
-    	xtimer_sleep(10);
-    	if(send_counter <7){
+    	xtimer_sleep(1);
+    	if(send_counter <100){
 
     		for(int i=0; i<1; i++){
     			send_counter++;
