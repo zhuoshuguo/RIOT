@@ -33,6 +33,10 @@
 #include "net/sixlowpan.h"
 #include "od.h"
 
+
+uint8_t idlist[5];
+uint32_t reception_list[5];
+
 /**
  * @brief   PID of the pktdump thread
  */
@@ -106,9 +110,6 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     gnrc_pktsnip_t *snip = pkt;
 
 
-
-
-
     while (snip != NULL) {
         printf("~~ SNIP %2i - size: %3u byte, type: ", snips,
                (unsigned int)snip->size);
@@ -127,12 +128,35 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
     gnrc_netif_hdr_t *hdr;
     uint8_t* addr;
+    bool found_id;
 
     hdr = pkt->next->data;
 
     addr = gnrc_netif_hdr_get_src_addr(hdr);
 
-    printf("pd: %lu, t_r: %lu. src: %d. \n", payload[0], received_pkt_counter, addr[7]);
+    found_id = false;
+
+    int i=0;
+    /* find id exist or not */
+    for(i=0;i<5;i++){
+    	if(idlist[i] == addr[7]){
+    		found_id = true;
+    		reception_list[i] ++;
+    		break;
+    	}
+    }
+
+    if(found_id == false){
+    	for(i=0;i<5;i++){
+    		if(idlist[i] == 0){
+    			idlist[i] = addr[7];
+    			reception_list[i] ++;
+    			break;
+    		}
+    	}
+    }
+
+    printf("src: %d, g: %lu, rev: %lu, total: %lu. \n", addr[7], payload[0], reception_list[i], received_pkt_counter);
 /*
     if (hdr->src_l2addr_len > 0) {
             printf("src_l2addr: %s\n",
@@ -152,6 +176,8 @@ static void *_eventloop(void *arg)
     msg_t msg, reply;
     msg_t msg_queue[GNRC_PKTDUMP_MSG_QUEUE_SIZE];
 
+
+
     uint32_t received_pkt_counter;
     received_pkt_counter = 0;
 
@@ -160,6 +186,11 @@ static void *_eventloop(void *arg)
 
     reply.content.value = (uint32_t)(-ENOTSUP);
     reply.type = GNRC_NETAPI_MSG_TYPE_ACK;
+
+    for(int i=0;i<5;i++){
+    	idlist[i] =0;
+    	reception_list[i] =0;
+    }
 
     while (1) {
         msg_receive(&msg);
