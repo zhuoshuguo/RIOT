@@ -40,7 +40,7 @@
 #include "include/lwmac_types.h"
 #include "include/timeout.h"
 
-#define ENABLE_DEBUG    (1)
+#define ENABLE_DEBUG    (0)
 #include "debug.h"
 
 #define LOG_LEVEL LOG_WARNING
