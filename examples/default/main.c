@@ -110,7 +110,7 @@ void *sender_thread(void *arg)
     while (1) {
 
     	xtimer_sleep(1);
-    	if(send_counter <5000){
+    	if(send_counter <3000){
     		for(int i=0; i<1; i++){
     			send_counter++;
     			generate_and_send_pkt(send_counter);
