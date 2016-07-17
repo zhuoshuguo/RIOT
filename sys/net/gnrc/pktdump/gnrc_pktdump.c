@@ -31,7 +31,6 @@
 #include "net/ipv6/hdr.h"
 #include "net/udp.h"
 #include "net/sixlowpan.h"
-#include "net/gnrc/lwmac/hdr.h"
 #include "od.h"
 
 /**
@@ -43,7 +42,7 @@ kernel_pid_t gnrc_pktdump_pid = KERNEL_PID_UNDEF;
  * @brief   Stack for the pktdump thread
  */
 static char _stack[GNRC_PKTDUMP_STACKSIZE];
-
+#if 0
 static void _dump_snip(gnrc_pktsnip_t *pkt)
 {
     switch (pkt->type) {
@@ -55,12 +54,6 @@ static void _dump_snip(gnrc_pktsnip_t *pkt)
         case GNRC_NETTYPE_NETIF:
             printf("NETTYPE_NETIF (%i)\n", pkt->type);
             gnrc_netif_hdr_print(pkt->data);
-            break;
-#endif
-#ifdef MODULE_GNRC_LWMAC
-        case GNRC_NETTYPE_LWMAC:
-            printf("GNRC_NETTYPE_LWMAC (%i)\n", pkt->type);
-            lwmac_print_hdr(pkt->data);
             break;
 #endif
 #ifdef MODULE_GNRC_SIXLOWPAN
@@ -103,12 +96,18 @@ static void _dump_snip(gnrc_pktsnip_t *pkt)
             break;
     }
 }
+#endif
 
-static void _dump(gnrc_pktsnip_t *pkt)
+static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 {
+	/*
     int snips = 0;
     int size = 0;
-    gnrc_pktsnip_t *snip = pkt;
+    //gnrc_pktsnip_t *snip = pkt;
+
+
+
+
 
     while (snip != NULL) {
         printf("~~ SNIP %2i - size: %3u byte, type: ", snips,
@@ -117,9 +116,16 @@ static void _dump(gnrc_pktsnip_t *pkt)
         ++snips;
         size += snip->size;
         snip = snip->next;
-    }
+    }*/
 
-    printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
+    //printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
+
+	uint32_t *payload;
+
+    payload = pkt->data;
+
+    printf("pd: %lu, t_r: %lu.\n", payload[0], received_pkt_counter);
+
     gnrc_pktbuf_release(pkt);
 }
 
@@ -128,6 +134,9 @@ static void *_eventloop(void *arg)
     (void)arg;
     msg_t msg, reply;
     msg_t msg_queue[GNRC_PKTDUMP_MSG_QUEUE_SIZE];
+
+    uint32_t received_pkt_counter;
+    received_pkt_counter = 0;
 
     /* setup the message queue */
     msg_init_queue(msg_queue, GNRC_PKTDUMP_MSG_QUEUE_SIZE);
@@ -140,12 +149,13 @@ static void *_eventloop(void *arg)
 
         switch (msg.type) {
             case GNRC_NETAPI_MSG_TYPE_RCV:
-                puts("PKTDUMP: data received:");
-                _dump(msg.content.ptr);
+                //puts("PKTDUMP: data received:");
+            	received_pkt_counter ++;
+                _dump(msg.content.ptr, received_pkt_counter);
                 break;
             case GNRC_NETAPI_MSG_TYPE_SND:
                 puts("PKTDUMP: data to send:");
-                _dump(msg.content.ptr);
+                _dump(msg.content.ptr, received_pkt_counter);
                 break;
             case GNRC_NETAPI_MSG_TYPE_GET:
             case GNRC_NETAPI_MSG_TYPE_SET:
