@@ -51,7 +51,7 @@
 
 uint32_t send_counter;
 
-static void generate_and_send_pkt(uint32_t send_counter){
+static void generate_and_send_pkt(void){
 
 	   kernel_pid_t dev;
 	    uint8_t addr[2];
@@ -60,7 +60,9 @@ static void generate_and_send_pkt(uint32_t send_counter){
 	    int16_t dev2;
 
 	    gnrc_pktsnip_t* pkt;
-	    uint32_t payload[25];
+	    uint32_t payload[1];
+
+	    send_counter++;
 
 	    payload[0] = send_counter;
 
@@ -75,17 +77,18 @@ static void generate_and_send_pkt(uint32_t send_counter){
 	    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
 	    if(hdr == NULL){
 	    	puts("app: netif buf null!");
+	    	send_counter --;
 	    	return;
 	    }
 
 		/****** assemble and send the beacon ******/
 		pkt = gnrc_pktbuf_add(NULL, payload, sizeof(payload), GNRC_NETTYPE_UNDEF);
 		if(pkt == NULL) {
+			send_counter --;
 			puts("app: data buf null!");
 		}else{
 		    LL_PREPEND(pkt, hdr);
 
-		    send_counter++;
 		    gnrc_netapi_send(dev, pkt);
 
 		    printf("p: %lu.\n", send_counter);
@@ -100,17 +103,17 @@ void *sender_thread(void *arg)
 
     //printf("shuguo-app thread started, pid: %" PRIkernel_pid "\n", thread_getpid());
 
-    send_counter =0;
+    send_counter = 0;
 
-    xtimer_sleep(5);
+    xtimer_sleep(10);
 
     while (1) {
 
-    	xtimer_sleep(5);
+    	xtimer_sleep(2);
 
-    	if(send_counter <10){
-    		for(int i=0; i<3; i++){
-    			generate_and_send_pkt(send_counter);
+    	if(send_counter <60){
+    		for(int i=0; i<2; i++){
+    			generate_and_send_pkt();
     		}
     	}
 
