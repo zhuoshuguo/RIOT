@@ -71,6 +71,10 @@ static void generate_and_send_pkt(uint32_t send_counter){
 	    addr[1] = 0xb6;
 
 	    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
+	    if(hdr == NULL){
+	    	puts("app: netif null.");
+	    	return;
+	    }
 
 		/****** assemble and send the beacon ******/
 		pkt = gnrc_pktbuf_add(NULL, payload, sizeof(payload), GNRC_NETTYPE_UNDEF);

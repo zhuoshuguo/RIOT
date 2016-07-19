@@ -209,6 +209,7 @@ static int _send(gnrc_netdev2_t *gnrc_netdev2, gnrc_pktsnip_t *pkt)
         res = netdev->driver->send(netdev, vector, n);
     }
     else {
+    	puts("dev: error, no buf.");
         return -ENOBUFS;
     }
     /* release old data */
