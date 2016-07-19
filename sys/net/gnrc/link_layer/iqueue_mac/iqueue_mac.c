@@ -1241,6 +1241,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac){
 	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_PREAMBLE_DURATION)){
+		puts("preamble failed.");
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac->need_update = true;
@@ -1319,6 +1320,7 @@ void iqueuemac_t2u_end(iqueuemac_t* iqueuemac){
 	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
 
 	if(iqueuemac->tx.tx_packet){
+		puts("realse pkt in t-2-u.");
 		gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 		iqueuemac->tx.tx_packet = NULL;
 	}
@@ -1460,7 +1462,22 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 
 	/****** assemble and send the beacon ******/
 
-	iqueuemac_assemble_and_send_beacon(iqueuemac);
+	int res = iqueuemac_assemble_and_send_beacon(iqueuemac);
+	if(res == -ENOBUFS){
+		puts("iq: ENOBUFS");
+
+		iqueue_mac_find_next_tx_neighbor(iqueuemac);
+
+		if(iqueuemac->tx.tx_packet){
+			puts("iq: release tx pkt.");
+			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+			iqueuemac->tx.tx_packet = NULL;
+		}
+		iqueuemac->tx.current_neighbour = NULL;
+        iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
+        iqueuemac->need_update = true;
+        return;
+	}
 
 	iqueuemac->router_states.router_listen_state = R_LISTEN_WAIT_BEACON_FEEDBACK;
 	iqueuemac->need_update = true;
@@ -1945,7 +1962,7 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
             case NETDEV2_EVENT_TX_COMPLETE:{
             	iqueuemac.tx.tx_feedback = TX_FEEDBACK_SUCCESS;
             	iqueuemac.tx.tx_finished = true;
-            	puts("txf");
+            	//puts("txf");
             	iqueuemac_set_raddio_to_listen_mode(&iqueuemac);
             	iqueuemac.need_update = true;
             }break;
@@ -1954,7 +1971,7 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
            		iqueuemac.tx.tx_feedback = TX_FEEDBACK_NOACK;
            		iqueuemac.tx.tx_finished = true;
            		iqueuemac_set_raddio_to_listen_mode(&iqueuemac);
-           		puts("txf");
+           		//puts("txf");
             	iqueuemac.need_update = true;
            	}break;
 
@@ -1962,7 +1979,7 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
            		iqueuemac.tx.tx_feedback = TX_FEEDBACK_BUSY;
            		iqueuemac.tx.tx_finished = true;
            		iqueuemac_set_raddio_to_listen_mode(&iqueuemac);
-           		puts("txf");
+           		//puts("txf");
            		iqueuemac.need_update = true;
            	}break;
 /*

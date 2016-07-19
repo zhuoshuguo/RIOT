@@ -103,8 +103,8 @@ void *sender_thread(void *arg)
 
     while (1) {
 
-    	xtimer_sleep(10);
-    	if(send_counter <10){
+    	xtimer_sleep(5);
+    	if(send_counter <2){
 
     		for(int i=0; i<3; i++){
     			send_counter++;

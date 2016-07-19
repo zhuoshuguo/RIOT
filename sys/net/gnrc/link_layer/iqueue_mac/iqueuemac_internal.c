@@ -296,8 +296,12 @@ int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t 
 
 	iqueuemac->tx.tx_finished = false;
 	iqueuemac->tx.tx_feedback = TX_FEEDBACK_UNDEF;
-	iqueuemac->netdev->send(iqueuemac->netdev, pkt);
 
+	int res = iqueuemac->netdev->send(iqueuemac->netdev, pkt);
+	if(res == -ENOBUFS){
+		//puts("ENOBUFS");
+		return -ENOBUFS;
+	}
 	/*
 	netopt_state_t devstate;
 	devstate = NETOPT_STATE_TX;
@@ -503,7 +507,12 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 
     netopt_enable_t csma_enable;
     csma_enable = NETOPT_DISABLE;
-    iqueuemac_send(iqueuemac, pkt, csma_enable);
+    int res1 = iqueuemac_send(iqueuemac, pkt, csma_enable);
+
+	if(res1 == -ENOBUFS){
+		puts("sg: send fail due to no buf.");
+		return -ENOBUFS;
+	}
 
 	return 1;
 
