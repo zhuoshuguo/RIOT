@@ -81,6 +81,7 @@ void lwmac_tx_stop(lwmac_t* lwmac)
 
     /* Release packet in case of failure */
     if(lwmac->tx.packet) {
+    	puts("release tx pkt.");
         gnrc_pktbuf_release(lwmac->tx.packet);
         lwmac->tx.packet = NULL;
     }
@@ -216,7 +217,13 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
 
         /* Prepare WR, this will discard any frame in the transceiver that has
          * possibly arrived in the meantime but we don't care at this point. */
-		lwmac->netdev->send(lwmac->netdev, pkt);
+		int res = lwmac->netdev->send(lwmac->netdev, pkt);
+
+		if(res == -ENOBUFS){
+			puts("error: no buf when sending.");
+			printf("sg: neigh's queue length is : %lu.\n", lwmac->tx.current_neighbour->queue.length);
+			GOTO_TX_STATE(TX_STATE_FAILED, true);
+		}
 
         /* First WR, try to catch wakeup phase */
         if(lwmac->tx.wr_sent == 0) {

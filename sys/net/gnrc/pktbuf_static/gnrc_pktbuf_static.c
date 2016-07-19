@@ -280,6 +280,7 @@ gnrc_pktsnip_t *gnrc_pktbuf_get_iovec(gnrc_pktsnip_t *pkt, size_t *len)
     head = gnrc_pktbuf_add(pkt, NULL, (length * sizeof(struct iovec)),
                            GNRC_NETTYPE_IOVEC);
     if (head == NULL) {
+    	puts("head is NULL.");
         *len = 0;
         return NULL;
     }

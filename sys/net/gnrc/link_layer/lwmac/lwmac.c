@@ -40,7 +40,7 @@
 #include "include/lwmac_types.h"
 #include "include/timeout.h"
 
-#define ENABLE_DEBUG    (1)
+#define ENABLE_DEBUG    (0)
 #include "debug.h"
 
 #define LOG_LEVEL LOG_WARNING
@@ -491,6 +491,7 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event, void *data)
 		case NETDEV2_EVENT_TX_STARTED:
 			lwmac.tx_feedback = TX_FEEDBACK_UNDEF;
 			lwmac.rx_started = false;
+			puts("tx start.");
 	//        lwmac_schedule_update();
 			break;
 		case NETDEV2_EVENT_TX_COMPLETE:
