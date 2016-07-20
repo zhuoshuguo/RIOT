@@ -81,7 +81,7 @@ void lwmac_tx_stop(lwmac_t* lwmac)
 
     /* Release packet in case of failure */
     if(lwmac->tx.packet) {
-    	puts("release tx pkt.");
+    	puts("tx-stop: release tx pkt.");
         gnrc_pktbuf_release(lwmac->tx.packet);
         lwmac->tx.packet = NULL;
     }
@@ -180,6 +180,8 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
         uint8_t* dst_addr = NULL;
         int addr_len;
 
+        gnrc_pktsnip_t* pkt_lwmac;
+
         /* Get destination address */
         addr_len = _get_dest_address(lwmac->tx.packet, &dst_addr);
         if(addr_len <= 0 || addr_len > 8) {
@@ -197,8 +199,12 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
+        pkt_lwmac = pkt;
+
         pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t) + addr_len, GNRC_NETTYPE_NETIF);
         if(pkt == NULL) {
+        	gnrc_pktbuf_release(pkt_lwmac);
+        	puts("sg: release pkt_lwmac");
             puts("sg: Cannot allocate pktbuf of type GNRC_NETTYPE_NETIF.");
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }

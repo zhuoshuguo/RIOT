@@ -104,11 +104,11 @@ void *sender_thread(void *arg)
     uint32_t send_counter;
     send_counter =0;
 
-    xtimer_sleep(7);
+    xtimer_sleep(1);
 
     while (1) {
 
-    	xtimer_sleep(10);
+    	xtimer_sleep(5);
     	if(send_counter <7){
 
     		for(int i=0; i<7; i++){
