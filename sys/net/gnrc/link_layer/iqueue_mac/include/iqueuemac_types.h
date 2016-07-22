@@ -127,12 +127,12 @@ typedef enum {
 	R_LISTEN_CP_END,
 	//R_LISTEN_CREATE_BEACON,
 	R_LISTEN_SEND_BEACON,
-	R_LISTEN_WAIT_BEACON_FEEDBACK,
+	R_LISTEN_WAIT_BEACON_FEEDBACK, //4
 	R_LISTEN_VTDMA_INIT,
 	R_LISTEN_VTDMA,
 	R_LISTEN_VTDMA_END,
-	R_LISTEN_SLEEPING_INIT,
-	R_LISTEN_SLEEPING,
+	R_LISTEN_SLEEPING_INIT, //8
+	R_LISTEN_SLEEPING, //9
 	R_LISTEN_SLEEPING_END
 } mac_router_listen_state_t;
 
@@ -439,6 +439,8 @@ typedef struct iqueuemac {
     bool duty_cycle_started;
 
     bool send_beacon_fail;
+
+    bool debug_rxfull;
    
 } iqueuemac_t;
 

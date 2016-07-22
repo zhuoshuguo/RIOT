@@ -279,6 +279,8 @@ gnrc_pktsnip_t *gnrc_pktbuf_get_iovec(gnrc_pktsnip_t *pkt, size_t *len)
     length = gnrc_pkt_count(pkt);
     head = gnrc_pktbuf_add(pkt, NULL, (length * sizeof(struct iovec)),
                            GNRC_NETTYPE_IOVEC);
+    /*SG: should we release the former pktsnip here??!!! */
+
     if (head == NULL) {
         *len = 0;
         return NULL;

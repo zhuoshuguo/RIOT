@@ -145,6 +145,9 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	iqueuemac->quit_current_cycle = false;
 	iqueuemac->send_beacon_fail = false;
 
+	iqueuemac->debug_rxfull = false;
+
+
 }
 
 static void rtt_cb(void* arg)
@@ -1454,11 +1457,13 @@ void iqueue_mac_router_cp_end(iqueuemac_t* iqueuemac){
 }
 
 void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
+
     /**** run the sub-channel selection algorithm to select the sub-channel sequence ****/
 	// iqueuemac_select_sub_channel_num(iqueuemac);
 
 	/****** assemble and send the beacon ******/
 	int res;
+
 	res = iqueuemac_assemble_and_send_beacon(iqueuemac);
 	if(res == -ENOBUFS){
 		puts("iq: nobuf for beacon, send beacon failed.");
@@ -1641,6 +1646,10 @@ void iqueue_mac_router_sleep_end(iqueuemac_t* iqueuemac){
 }
 
 void iqueue_mac_router_listen_update(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac->debug_rxfull == true){
+		printf("ls is: %d\n", iqueuemac->router_states.router_listen_state);  //
+	}
 
 	switch(iqueuemac->router_states.router_listen_state)
    {
@@ -1907,6 +1916,7 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                     gnrc_pktsnip_t *pkt = gnrc_netdev2->recv(gnrc_netdev2);
 
                     if(pkt == NULL){
+                    	iqueuemac.debug_rxfull = true;
                     	puts("rx: pkt is NULL, memory full?");
                     	iqueuemac.rx_started = false;
                     	iqueuemac.packet_received = false;

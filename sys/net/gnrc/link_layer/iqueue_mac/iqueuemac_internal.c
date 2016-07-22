@@ -292,6 +292,7 @@ int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t 
 	netopt_enable_t csma_enable_send;
 	int res;
 	csma_enable_send = csma_enable;
+	int res;
 	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev, NETOPT_CSMA, &csma_enable_send, sizeof(netopt_enable_t));
 
 	iqueuemac->tx.tx_finished = false;
@@ -364,6 +365,7 @@ void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* i
 
 int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 {
+	int res;
 	/****** assemble and send the beacon ******/
 	gnrc_pktsnip_t* pkt;
 	gnrc_pktsnip_t* pkt_iqmac;
@@ -518,12 +520,14 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 
     netopt_enable_t csma_enable;
     csma_enable = NETOPT_ENABLE;
+
     int res;
     res = iqueuemac_send(iqueuemac, pkt, csma_enable);
     if(res == -ENOBUFS){
 		puts("iqueuemac: pktbuf add failed in iqueuemac_assemble_and_send_beacon().");
     	gnrc_pktbuf_release(pkt_iqmac);
     }
+
 	return res;
 
 }
@@ -1519,7 +1523,7 @@ void _dispatch(gnrc_pktsnip_t* buffer[])
             buffer[i]->next = netif;
 
             if (!gnrc_netapi_dispatch_receive(buffer[i]->type, GNRC_NETREG_DEMUX_CTX_ALL, buffer[i])) {
-                DEBUG("Unable to forward packet of type %i\n", buffer[i]->type);
+                printf("Unable to forward packet of type %i\n", buffer[i]->type);
                 gnrc_pktbuf_release(buffer[i]);
             }
             buffer[i] = NULL;
