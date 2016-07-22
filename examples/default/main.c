@@ -60,7 +60,7 @@ static void generate_and_send_pkt(void){
 	    int16_t dev2;
 
 	    gnrc_pktsnip_t* pkt;
-	    uint32_t payload[1];
+	    uint32_t payload[2];
 
 	    send_counter++;
 
@@ -111,7 +111,7 @@ void *sender_thread(void *arg)
 
     	xtimer_sleep(2);
 
-    	if(send_counter <60){
+    	if(send_counter <100){
     		for(int i=0; i<2; i++){
     			generate_and_send_pkt();
     		}
