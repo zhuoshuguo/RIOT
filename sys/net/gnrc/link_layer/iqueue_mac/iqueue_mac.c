@@ -1402,7 +1402,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_LISTEN;
 	iqueuemac->need_update = true;
 
-	//puts("iqueuemac: router is now entering CP");
+	puts("ic.");
 
 	iqueuemac->quit_current_cycle = false;
 	iqueuemac->send_beacon_fail = false;

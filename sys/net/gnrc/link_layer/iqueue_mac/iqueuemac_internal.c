@@ -765,6 +765,7 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_PREAMBLE:{
+            	puts("pream");
         	    if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
         	  	  iqueue_send_preamble_ack(iqueuemac, &receive_packet_info);
         	  	  //iqueuemac_trun_on_radio(iqueuemac);
