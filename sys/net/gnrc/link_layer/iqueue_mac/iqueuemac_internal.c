@@ -292,7 +292,6 @@ int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t 
 	netopt_enable_t csma_enable_send;
 	int res;
 	csma_enable_send = csma_enable;
-	int res;
 	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev, NETOPT_CSMA, &csma_enable_send, sizeof(netopt_enable_t));
 
 	iqueuemac->tx.tx_finished = false;
@@ -365,12 +364,10 @@ void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* i
 
 int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 {
-	int res;
 	/****** assemble and send the beacon ******/
 	gnrc_pktsnip_t* pkt;
 	gnrc_pktsnip_t* pkt_iqmac;
 	gnrc_netif_hdr_t* nethdr_beacon;
-	gnrc_pktsnip_t* pkt_iqmac;
 
 	//assert(lwmac->rx.l2_addr.len != 0);
 
