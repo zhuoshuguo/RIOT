@@ -143,6 +143,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	iqueuemac->need_update = false;
 	iqueuemac->duty_cycle_started = false;
 	iqueuemac->quit_current_cycle = false;
+	iqueuemac->send_beacon_fail = false;
 
 }
 
@@ -1401,6 +1402,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	//puts("iqueuemac: router is now entering CP");
 
 	iqueuemac->quit_current_cycle = false;
+	iqueuemac->send_beacon_fail = false;
 
 	packet_queue_flush(&iqueuemac->rx.queue);
 }
@@ -1456,21 +1458,26 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 	// iqueuemac_select_sub_channel_num(iqueuemac);
 
 	/****** assemble and send the beacon ******/
-	iqueuemac_assemble_and_send_beacon(iqueuemac);
+	int res;
+	res = iqueuemac_assemble_and_send_beacon(iqueuemac);
+	if(res == -ENOBUFS){
+		puts("iq: nobuf for beacon, send beacon failed.");
+		iqueuemac->send_beacon_fail = true;
+		iqueuemac->need_update = true;
+	}else{
+		iqueuemac->need_update = false;
+	}
 
 	iqueuemac->router_states.router_listen_state = R_LISTEN_WAIT_BEACON_FEEDBACK;
-	iqueuemac->need_update = true;
-
 	//puts("iqueuemac: router is now sending the beacon!!!");
-
 }
 
 void iqueuemac_router_wait_beacon_feedback(iqueuemac_t* iqueuemac){
 
-	if(iqueuemac->tx.tx_finished == true){
+	if((iqueuemac->tx.tx_finished == true)||(iqueuemac->send_beacon_fail == true)){
 
 		/****** router switch to sleep period or vTDMA period ******/
-		if(iqueuemac->rx.router_vtdma_mana.total_slots_num > 0){
+		if((iqueuemac->rx.router_vtdma_mana.total_slots_num > 0)&&(iqueuemac->send_beacon_fail == false)){
 			iqueuemac->router_states.router_listen_state = R_LISTEN_VTDMA_INIT;
 			iqueuemac->need_update = true;
 		}else{ /**** no vTDMA period ****/

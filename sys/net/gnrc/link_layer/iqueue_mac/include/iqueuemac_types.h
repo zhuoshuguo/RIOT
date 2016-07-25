@@ -437,6 +437,8 @@ typedef struct iqueuemac {
     bool quit_current_cycle;
     bool need_update;
     bool duty_cycle_started;
+
+    bool send_beacon_fail;
    
 } iqueuemac_t;
 

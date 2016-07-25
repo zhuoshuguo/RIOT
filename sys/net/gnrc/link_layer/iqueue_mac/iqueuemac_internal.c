@@ -290,12 +290,13 @@ void iqueuemac_set_raddio_to_listen_mode(iqueuemac_t* iqueuemac){
 int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable)
 {
 	netopt_enable_t csma_enable_send;
+	int res;
 	csma_enable_send = csma_enable;
 	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev, NETOPT_CSMA, &csma_enable_send, sizeof(netopt_enable_t));
 
 	iqueuemac->tx.tx_finished = false;
 	iqueuemac->tx.tx_feedback = TX_FEEDBACK_UNDEF;
-	iqueuemac->netdev->send(iqueuemac->netdev, pkt);
+	res = iqueuemac->netdev->send(iqueuemac->netdev, pkt);
 
 	/*
 	netopt_state_t devstate;
@@ -306,7 +307,7 @@ int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t 
 	                              sizeof(devstate));
 	                              */
 
-	return 1;
+	return res;
 
 }
 
@@ -365,6 +366,7 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 {
 	/****** assemble and send the beacon ******/
 	gnrc_pktsnip_t* pkt;
+	gnrc_pktsnip_t* pkt_iqmac;
 	gnrc_netif_hdr_t* nethdr_beacon;
 
 	//assert(lwmac->rx.l2_addr.len != 0);
@@ -459,29 +461,45 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 	    pkt = gnrc_pktbuf_add(NULL, slots_list, total_tdma_node_num * sizeof(uint8_t), GNRC_NETTYPE_IQUEUEMAC);
 	    if(pkt == NULL) {
 	    	puts("iqueuemac: pktbuf add failed in iqueuemac_assemble_and_send_beacon().");
+	    	return -ENOBUFS;
 	    }
+	    pkt_iqmac = pkt;
+
 	    /**** add the ID list ****/
 	    pkt = gnrc_pktbuf_add(pkt, id_list, total_tdma_node_num * sizeof(l2_id_t), GNRC_NETTYPE_IQUEUEMAC);
 	    if(pkt == NULL) {
 	    	puts("iqueuemac: pktbuf add failed in iqueuemac_assemble_and_send_beacon().");
+	    	gnrc_pktbuf_release(pkt_iqmac);
+	    	return -ENOBUFS;
 	    }
+	    pkt_iqmac = pkt;
+
 	    /**** add the beacon header ****/
 	    pkt = gnrc_pktbuf_add(pkt, &iqueuemac_hdr, sizeof(iqueuemac_hdr), GNRC_NETTYPE_IQUEUEMAC);
 	    if(pkt == NULL) {
 	    	puts("iqueuemac: pktbuf add failed in iqueuemac_assemble_and_send_beacon().");
+	    	gnrc_pktbuf_release(pkt_iqmac);
+	    	return -ENOBUFS;
 	    }
+	    pkt_iqmac = pkt;
+
 	}else{
 		pkt = gnrc_pktbuf_add(NULL, &iqueuemac_hdr, sizeof(iqueuemac_hdr), GNRC_NETTYPE_IQUEUEMAC);
 		if(pkt == NULL) {
 			puts("iqueuemac: pktbuf add failed in iqueuemac_assemble_and_send_beacon().");
+			return -ENOBUFS;
 		}
+		pkt_iqmac = pkt;
 	}
 
 	/********* Add the Netif header  *********/
 	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
 	if(pkt == NULL) {
 		puts("iqueuemac: pktbuf add failed in iqueuemac_assemble_and_send_beacon().");
+    	gnrc_pktbuf_release(pkt_iqmac);
+    	return -ENOBUFS;
 	}
+	pkt_iqmac = pkt;
 
 	/* We wouldn't get here if add the NETIF header had failed, so no
 	sanity checks needed */
@@ -499,10 +517,14 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
  	//lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
 
     netopt_enable_t csma_enable;
-    csma_enable = NETOPT_DISABLE;
-    iqueuemac_send(iqueuemac, pkt, csma_enable);
-
-	return 1;
+    csma_enable = NETOPT_ENABLE;
+    int res;
+    res = iqueuemac_send(iqueuemac, pkt, csma_enable);
+    if(res == -ENOBUFS){
+		puts("iqueuemac: pktbuf add failed in iqueuemac_assemble_and_send_beacon().");
+    	gnrc_pktbuf_release(pkt_iqmac);
+    }
+	return res;
 
 }
 
