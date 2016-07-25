@@ -779,6 +779,8 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             case FRAMETYPE_IQUEUE_DATA:{
             	iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+        	    _dispatch(iqueuemac->rx.dispatch_buffer);
+
             	//gnrc_pktbuf_release(pkt);
             	//printf("%lu. \n", RTT_TICKS_TO_US(_phase_now(iqueuemac)));
         	    //puts("iqueuemac: router receives a data !!");
