@@ -1466,6 +1466,7 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 
 	res = iqueuemac_assemble_and_send_beacon(iqueuemac);
 	if(res == -ENOBUFS){
+		//printf("rx q-length is: %lu.\n", iqueuemac->rx.queue.length);
 		puts("iq: nobuf for beacon, send beacon failed.");
 		iqueuemac->send_beacon_fail = true;
 		iqueuemac->need_update = true;
@@ -1648,7 +1649,7 @@ void iqueue_mac_router_sleep_end(iqueuemac_t* iqueuemac){
 void iqueue_mac_router_listen_update(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac->debug_rxfull == true){
-		printf("ls is: %d\n", iqueuemac->router_states.router_listen_state);  //
+		;//;printf("ls is: %d\n", iqueuemac->router_states.router_listen_state);  //
 	}
 
 	switch(iqueuemac->router_states.router_listen_state)
@@ -1922,6 +1923,8 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                     	iqueuemac.packet_received = false;
                     	break;
                     }
+
+                    puts("r");
 
                     if(!iqueuemac.rx_started) {
        				   //LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");

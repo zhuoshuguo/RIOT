@@ -370,6 +370,7 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 	gnrc_pktsnip_t* pkt;
 	gnrc_pktsnip_t* pkt_iqmac;
 	gnrc_netif_hdr_t* nethdr_beacon;
+	gnrc_pktsnip_t* pkt_iqmac;
 
 	//assert(lwmac->rx.l2_addr.len != 0);
 
