@@ -47,6 +47,21 @@
 #include "od.h"
 #endif
 
+
+#define LOG_LEVEL LOG_DEBUG
+#include "log.h"
+
+#undef LOG_ERROR
+#undef LOG_WARNING
+#undef LOG_INFO
+#undef LOG_DEBUG
+
+#define LOG_ERROR(...) LOG(LOG_ERROR, "ERROR: [iqmac] " __VA_ARGS__)
+#define LOG_WARNING(...) LOG(LOG_WARNING, "WARNING: [iqmac] " __VA_ARGS__)
+#define LOG_INFO(...) LOG(LOG_INFO, "INFO: [iqmac] " __VA_ARGS__)
+#define LOG_DEBUG(...) LOG(LOG_DEBUG, "DEBUG: [iqmac] " __VA_ARGS__)
+
+
 #define NETDEV2_NETAPI_MSG_QUEUE_SIZE 8
 
 
@@ -2059,6 +2074,12 @@ static void *_gnrc_iqueuemac_thread(void *args)
     //rtt_handler(IQUEUEMAC_EVENT_RTT_START);
 
     iqueuemac.need_update = true;
+/*
+    LOG_ERROR("error event. \n");
+    LOG_WARNING("warning event.\n");
+    LOG_INFO("info event.\n");
+    LOG_DEBUG("debug event.\n");
+*/
 
     /* start the event loop */
     while (1) {
