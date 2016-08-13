@@ -71,8 +71,8 @@ static void generate_and_send_pkt(void){
 	    dev = (kernel_pid_t)dev2;
 
 	    addr_len = 2;
-	    addr[0] = 0x44;
-	    addr[1] = 0x7e;
+	    addr[0] = 0x10;
+	    addr[1] = 0x3e;
 
 	    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
 	    if(hdr == NULL){
@@ -108,13 +108,13 @@ void *sender_thread(void *arg)
 
     send_counter = 0;
 
-    xtimer_sleep(5);
+    xtimer_sleep(10);
 
     while (1) {
 
-    	xtimer_sleep(2);
+    	xtimer_sleep(1);
 
-    	if(send_counter <100){
+    	if(send_counter <3000){
     		for(int i=0; i<1; i++){
     			generate_and_send_pkt();
     		}
