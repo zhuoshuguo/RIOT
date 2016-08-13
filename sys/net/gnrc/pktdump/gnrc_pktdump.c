@@ -131,8 +131,8 @@ static void _dump(gnrc_pktsnip_t *pkt)
     dev = (kernel_pid_t)dev2;
 
     addr_len = 2;
-    addr[0] = 0x76;
-    addr[1] = 0xb6;
+    addr[0] = 0xa3;
+    addr[1] = 0x12;
 
     /** release old netif header **/
     gnrc_pktbuf_release(pkt->next);

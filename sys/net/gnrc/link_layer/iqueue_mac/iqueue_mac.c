@@ -1353,6 +1353,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac){
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac->need_update = true;
+		puts("no preamble-ack, drop pkt.");
 		return;
 	}
 
@@ -1428,6 +1429,7 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	    	   	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 	    	}
 	    }else{
+	    	puts("t-2-u failed, drop pkt.");
 	    	gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 	    	iqueuemac->tx.tx_packet = NULL;
 
@@ -2192,6 +2194,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
     iqueuemac.mac_type = MAC_TYPE;
 
     xtimer_sleep(3);
+    puts("relay node.");
 
     iqueuemac_init(&iqueuemac);
 
