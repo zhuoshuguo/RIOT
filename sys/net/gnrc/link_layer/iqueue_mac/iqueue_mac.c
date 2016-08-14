@@ -1425,10 +1425,11 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 /* In CP, a router can receive preamble, beacon, data packet, */
 
+    /*
 	if(iqueuemac->rx_started == true){
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
-	}
+	}*/
 
     if(iqueuemac->packet_received == true){
     	iqueuemac->packet_received = false;
@@ -1490,6 +1491,12 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 void iqueuemac_router_wait_beacon_feedback(iqueuemac_t* iqueuemac){
 
 	if((iqueuemac->tx.tx_finished == true)||(iqueuemac->send_beacon_fail == true)){
+
+	    if(iqueuemac->packet_received == true){
+	    	iqueuemac->packet_received = false;
+	    	iqueue_router_cp_receive_packet_process(iqueuemac);
+	    	puts("rb");
+	    }
 
 		/****** router switch to sleep period or vTDMA period ******/
 		if((iqueuemac->rx.router_vtdma_mana.total_slots_num > 0)&&(iqueuemac->send_beacon_fail == false)){
