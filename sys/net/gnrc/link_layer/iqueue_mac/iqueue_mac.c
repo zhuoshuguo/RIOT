@@ -1538,7 +1538,7 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 /* In CP, a router can receive preamble, beacon, data packet, */
 
 
-    /*
+    /*shuguo
 	if(iqueuemac->rx_started == true){
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
