@@ -1440,11 +1440,16 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
     // if(iqueuemac->quit_current_cycle == true)
     // clear timeout and switch to sleep period
 
-	if((iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END))||(iqueuemac->quit_current_cycle == true)){
-		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
-		iqueuemac->router_states.router_listen_state = R_LISTEN_CP_END;
-		iqueuemac->need_update = true;
-	}
+
+    /**  ensure that don't break the reception **/
+    if(iqueuemac->rx_started == false){
+
+    	if((iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END))||(iqueuemac->quit_current_cycle == true)){
+    		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
+    		iqueuemac->router_states.router_listen_state = R_LISTEN_CP_END;
+    		iqueuemac->need_update = true;
+    	}
+    }
 
 	/*
 	if(iqueuemac->quit_current_cycle == true){
@@ -1928,6 +1933,8 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
 
             case NETDEV2_EVENT_RX_COMPLETE:
                 {
+                	iqueuemac.need_update = true;
+
                     gnrc_pktsnip_t *pkt = gnrc_netdev2->recv(gnrc_netdev2);
 
                     if(pkt == NULL){
@@ -1960,7 +1967,8 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                     }else{
                     	iqueuemac.packet_received = true;
                     }
-                    iqueuemac.need_update = true;
+
+                    //iqueuemac.need_update = true;
                     /*
                     if (pkt) {
                         _pass_on_packet(pkt);
