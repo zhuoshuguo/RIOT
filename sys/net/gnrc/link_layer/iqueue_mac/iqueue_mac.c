@@ -1473,6 +1473,10 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
     /**** run the sub-channel selection algorithm to select the sub-channel sequence ****/
 	// iqueuemac_select_sub_channel_num(iqueuemac);
 
+	/***  diable auto-ack ***/
+	netopt_enable_t autoack = NETOPT_DISABLE;
+	iqueuemac_set_autoack(iqueuemac, autoack);
+
 	/****** assemble and send the beacon ******/
 	int res;
 	res = iqueuemac_assemble_and_send_beacon(iqueuemac);
@@ -1484,6 +1488,10 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 		iqueuemac->need_update = false;
 	}
 
+	/***  nable auto-ack ***/
+	autoack = NETOPT_ENABLE;
+	iqueuemac_set_autoack(iqueuemac, autoack);
+
 	iqueuemac->router_states.router_listen_state = R_LISTEN_WAIT_BEACON_FEEDBACK;
 	//puts("iqueuemac: router is now sending the beacon!!!");
 }
@@ -1491,12 +1499,6 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 void iqueuemac_router_wait_beacon_feedback(iqueuemac_t* iqueuemac){
 
 	if((iqueuemac->tx.tx_finished == true)||(iqueuemac->send_beacon_fail == true)){
-
-	    if(iqueuemac->packet_received == true){
-	    	iqueuemac->packet_received = false;
-	    	iqueue_router_cp_receive_packet_process(iqueuemac);
-	    	puts("rb");
-	    }
 
 		/****** router switch to sleep period or vTDMA period ******/
 		if((iqueuemac->rx.router_vtdma_mana.total_slots_num > 0)&&(iqueuemac->send_beacon_fail == false)){

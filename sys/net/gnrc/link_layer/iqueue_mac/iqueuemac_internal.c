@@ -277,6 +277,17 @@ void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac)
 	                              sizeof(devstate));
 }
 
+
+void iqueuemac_set_autoack(iqueuemac_t* iqueuemac, netopt_enable_t autoack)
+{
+	netopt_enable_t setautoack = autoack;
+
+	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev,
+								  NETOPT_AUTOACK,
+	                              &setautoack,
+	                              sizeof(setautoack));
+}
+
 void iqueuemac_turn_radio_channel(iqueuemac_t* iqueuemac, uint16_t channel_num)
 {
 	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev, NETOPT_CHANNEL, &channel_num, sizeof(channel_num));
