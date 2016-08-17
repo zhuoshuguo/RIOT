@@ -310,11 +310,25 @@ void iqueuemac_device_broadcast_init(iqueuemac_t* iqueuemac){
 
 void iqueuemac_device_send_broadcast(iqueuemac_t* iqueuemac){
 
+	/* if rx start, wait until rx is completed. */
+	if(iqueuemac->rx_started == true){
+		return;
+	}
+
+	/* when rx completed, will reach here */
+	if(iqueuemac->packet_received == true){
+		;//iqueue_router_broadcast_receive_packet_process(iqueuemac);; /// to be filt in!!
+	}
+
+	/***  disable auto-ack ***/
+	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
+
 	gnrc_pktbuf_hold(iqueuemac->tx.tx_packet,1);
 
 	iqueuemac_send(iqueuemac, iqueuemac->tx.tx_packet, NETOPT_DISABLE);
 
-	//iqueue_mac_send_preamble(iqueuemac, NETOPT_ENABLE);
+	/***  enable auto-ack ***/
+	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_BROADCAST_INTERVAL, IQUEUEMAC_BROADCAST_INTERVAL_US);
 
@@ -323,6 +337,16 @@ void iqueuemac_device_send_broadcast(iqueuemac_t* iqueuemac){
 }
 
 void iqueuemac_device_wait_broadcast_feedback(iqueuemac_t* iqueuemac){
+
+	/* if rx start, wait until rx is completed. */
+	if(iqueuemac->rx_started == true){
+		return;
+	}
+
+	/* when rx completed, will reach here */
+	if(iqueuemac->packet_received == true){
+		;//iqueue_router_broadcast_receive_packet_process(iqueuemac);; /// to be filt in!!
+	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_BROADCAST_FINISH)){
 
@@ -818,8 +842,30 @@ void iqueuemac_t2r_wait_cp(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 
+	//to-do: should we add a rx-start security check as following?
+	/* if rx start, wait until rx is completed.
+	if(iqueuemac->rx_started == true){
+		return;
+	}
+
+	if(iqueuemac->packet_received == true){
+	   	iqueuemac->packet_received = false;
+	   	iqueuemac_packet_process_in_t-2-r(iqueuemac);
+	}
+
+	// to be filt in! for example, add receive other's broadcast and preamble handle codes here!!!
+	if(iqueuemac->quit_current_cycle == true){
+		; //return;
+	}*/
+
+	/***  disable auto-ack ***/
+	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
+
 	/******Use CSMA here, and send_packet() will release the pkt itself !!!!******/
 	iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
+
+	/***  enable auto-ack ***/
+	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	//iqueuemac->tx.tx_packet = NULL;
 
@@ -829,6 +875,8 @@ void iqueuemac_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 }
 
 void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
+
+	/* it seems that we don't need a rx-start security check here, since radio can't receive pkt when it is being in transmitting*/
 
 	if(iqueuemac->tx.tx_finished == true){
 		/*** add another condition here in the furture: the tx-feedback must be ACK-got,
@@ -940,6 +988,11 @@ void iqueuemac_t2r_re_phase_lock_prepare(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2r_wait_beacon(iqueuemac_t* iqueuemac){
 
+	/* if rx start, wait until rx is completed. */
+	if(iqueuemac->rx_started == true){
+		return;
+	}
+
     if(iqueuemac->packet_received == true){
     	iqueuemac->packet_received = false;
     	iqueuemac_wait_beacon_packet_process(iqueuemac);
@@ -1020,6 +1073,12 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 		/**** Delete the pkt no matter the transmission is success or not !!! ****/
 		/**** Or, only delete the pkt when the feedback shows good !!! ****/
 		//gnrc_pktsnip_t *pkt = packet_queue_head(&(iqueuemac->tx.current_neighbour.queue));
+
+
+		/* since it is now on sub-channel, so there is possibility that this sender will receive a broadcast, preamble or data pkt towards it.
+		 * so, no rx security check needed here. and no need to disable autoack here.
+		 *  */
+
 
 		/******disable CSMA here, and iqueuemac_send_data_packet() will release the pkt itself !!!!******/
 		iqueuemac_send_data_packet(iqueuemac, NETOPT_DISABLE);
@@ -1218,12 +1277,36 @@ void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac){
 
+	/* if rx start, wait until rx is completed. */
+	if(iqueuemac->rx_started == true){
+		return;
+	}
+
+	/* when rx completed, will reach here */
+	if(iqueuemac->packet_received == true){
+		iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac);
+	}
+
+	// to be filt in! for example, add receive other's broadcast and preamble handle codes here!!!
+	if(iqueuemac->quit_current_cycle == true){
+		; //return;
+	}
+
+
+	//if every thing goes fine, continue to send preamble.
+
+	/***  disable auto-ack ***/
+	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
+
 	if(iqueuemac->tx.preamble_sent == 0){
 		iqueue_mac_send_preamble(iqueuemac, NETOPT_ENABLE);
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE_DURATION, IQUEUEMAC_PREAMBLE_DURATION_US);
 	}else{
 		iqueue_mac_send_preamble(iqueuemac, NETOPT_DISABLE);
 	}
+
+	/***  enable auto-ack ***/
+	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	iqueuemac->tx.preamble_sent ++;
 
@@ -1236,20 +1319,35 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac){
 
+	/* if rx start, wait until rx is completed. */
+	if(iqueuemac->rx_started == true){
+		return;
+	}
+
 	if(iqueuemac->packet_received == true){
 	   	iqueuemac->packet_received = false;
 	   	iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac);
+	}
+
+	// to be filt in! for example, add receive other's broadcast and preamble handle codes here!!!
+	if(iqueuemac->quit_current_cycle == true){
+		; //return;
 	}
 
 	/****** insert codes here for handling quit this cycle when receiving unexpected preamble***/
 	// if(iqueuemac->quit_current_cycle == true)
 	// clear timeout and switch to sleep period
 
-	if(iqueuemac->tx.got_preamble_ack == true){
-		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
-		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
-		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_DATA;
-		iqueuemac->need_update = true;
+	/* ensure that no rx event is going on */
+	if(iqueuemac->rx_started == false){
+		if(iqueuemac->tx.got_preamble_ack == true){
+			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
+			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
+			iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_DATA;
+			iqueuemac->need_update = true;
+			return;
+		}
+	}else{
 		return;
 	}
 
@@ -1269,7 +1367,28 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2u_send_data(iqueuemac_t* iqueuemac){
 
+	/* if rx start, wait until rx is completed. */
+	if(iqueuemac->rx_started == true){
+		return;
+	}
+
+	if(iqueuemac->packet_received == true){
+	   	iqueuemac->packet_received = false;
+	   	iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac);
+	}
+
+	// to be filt in! for example, add receive other's broadcast and preamble handle codes here!!!
+	if(iqueuemac->quit_current_cycle == true){
+		; //return;
+	}
+
+	/***  disable auto-ack ***/
+	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
+
 	iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
+
+	/***  enable auto-ack ***/
+	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	//iqueuemac->tx.tx_packet = NULL;
 
@@ -1478,7 +1597,7 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
     /**** run the sub-channel selection algorithm to select the sub-channel sequence ****/
 	// iqueuemac_select_sub_channel_num(iqueuemac);
 
-	/***  diable auto-ack ***/
+	/***  disable auto-ack ***/
 	netopt_enable_t autoack = NETOPT_DISABLE;
 	iqueuemac_set_autoack(iqueuemac, autoack);
 
@@ -1493,7 +1612,7 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 		iqueuemac->need_update = false;
 	}
 
-	/***  nable auto-ack ***/
+	/***  enable auto-ack ***/
 	autoack = NETOPT_ENABLE;
 	iqueuemac_set_autoack(iqueuemac, autoack);
 
