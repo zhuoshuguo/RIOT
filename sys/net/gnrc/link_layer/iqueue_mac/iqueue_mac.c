@@ -327,7 +327,7 @@ void iqueuemac_device_send_broadcast(iqueuemac_t* iqueuemac){
 
 	iqueuemac_send(iqueuemac, iqueuemac->tx.tx_packet, NETOPT_DISABLE);
 
-	/***  enable auto-ack ***/
+	/* Enable Auto ACK again for data reception */
 	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_BROADCAST_INTERVAL, IQUEUEMAC_BROADCAST_INTERVAL_US);
@@ -858,14 +858,11 @@ void iqueuemac_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 		; //return;
 	}*/
 
-	/***  disable auto-ack ***/
-	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
 
+	/***  do not disable auto-ack here, we need auto-ack for data transmission and possible retransmission ***/
 	/******Use CSMA here, and send_packet() will release the pkt itself !!!!******/
 	iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
 
-	/***  enable auto-ack ***/
-	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	//iqueuemac->tx.tx_packet = NULL;
 
@@ -1080,6 +1077,7 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 		 *  */
 
 
+		/***  do not disable auto-ack here, we need auto-ack for data transmission and possible retransmission ***/
 		/******disable CSMA here, and iqueuemac_send_data_packet() will release the pkt itself !!!!******/
 		iqueuemac_send_data_packet(iqueuemac, NETOPT_DISABLE);
 		iqueuemac->tx.vtdma_para.slots_num --;
@@ -1295,7 +1293,7 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac){
 
 	//if every thing goes fine, continue to send preamble.
 
-	/***  disable auto-ack ***/
+	/***  disable auto-ack, namely disable pkt reception. ***/
 	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
 
 	if(iqueuemac->tx.preamble_sent == 0){
@@ -1305,7 +1303,7 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac){
 		iqueue_mac_send_preamble(iqueuemac, NETOPT_DISABLE);
 	}
 
-	/***  enable auto-ack ***/
+	/* Enable Auto ACK again for data reception */
 	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	iqueuemac->tx.preamble_sent ++;
@@ -1382,13 +1380,8 @@ void iqueuemac_t2u_send_data(iqueuemac_t* iqueuemac){
 		; //return;
 	}
 
-	/***  disable auto-ack ***/
-	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
-
+	/***  do not disable auto-ack here, we need auto-ack for data transmission and possible retransmission ***/
 	iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
-
-	/***  enable auto-ack ***/
-	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	//iqueuemac->tx.tx_packet = NULL;
 
@@ -1598,8 +1591,7 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 	// iqueuemac_select_sub_channel_num(iqueuemac);
 
 	/***  disable auto-ack ***/
-	netopt_enable_t autoack = NETOPT_DISABLE;
-	iqueuemac_set_autoack(iqueuemac, autoack);
+	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
 
 	/****** assemble and send the beacon ******/
 	int res;
@@ -1612,9 +1604,8 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 		iqueuemac->need_update = false;
 	}
 
-	/***  enable auto-ack ***/
-	autoack = NETOPT_ENABLE;
-	iqueuemac_set_autoack(iqueuemac, autoack);
+	/* Enable Auto ACK again for data reception */
+	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	iqueuemac->router_states.router_listen_state = R_LISTEN_WAIT_BEACON_FEEDBACK;
 	//puts("iqueuemac: router is now sending the beacon!!!");
