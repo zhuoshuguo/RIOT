@@ -773,8 +773,16 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 
             case FRAMETYPE_PREAMBLE:{
         	    if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
-        	  	  iqueue_send_preamble_ack(iqueuemac, &receive_packet_info);
-        	  	  //iqueuemac_trun_on_radio(iqueuemac);
+        	    	/** if reception is not going on, reply preamble-ack **/
+        	    	if(iqueuemac->rx_started == false){
+        	    		/***  disable auto-ack ***/
+        	    		iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
+
+        	    		iqueue_send_preamble_ack(iqueuemac, &receive_packet_info);
+
+        	    		/* Enable Auto ACK again for data reception */
+        	    		iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
+        	    	}
         	    }else{
         		  /****** this means that there is a long preamble period, so quit this cycle and go to sleep.****/
         		  iqueuemac->quit_current_cycle = true;
