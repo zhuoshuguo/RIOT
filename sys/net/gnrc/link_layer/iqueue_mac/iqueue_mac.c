@@ -901,7 +901,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				iqueuemac->need_update = true;
 			}break;
 
-			/*** if NOACK, regards it as phase-lock failed ***/
+			/*** if NOACK, regards it as phase-lock failed, mark the destination as unknown will try t-2-u next time. ***/
 			case TX_FEEDBACK_NOACK:{
 
 				iqueuemac->tx.no_ack_contuer ++;
@@ -930,8 +930,10 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 					//iqueuemac_trun_off_radio(iqueuemac);
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END; //DEVICE_T2R_RE_PHASE_LOCK_PREPARE;
 
-				}else{
-					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2N_TRANS_END;
+				}else
+				{
+					/* go to t-2-r end and try t-2-r again. */
+					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 				}
 				iqueuemac->need_update = true;
 				/*** pkt trans failed, don't release the pkt here, retry to transmit in t-2-u procedure. ***/
@@ -1175,11 +1177,18 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2r_end(iqueuemac_t* iqueuemac){
 
+	/* if t-2-r success or IQUEUEMAC_REPHASELOCK_THRESHOLD has been reached,
+	 * clean the tx current_neighbour address. */
 	if((iqueuemac->tx.tx_packet)&&(iqueuemac->tx.no_ack_contuer == 0)){
 		gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 		iqueuemac->tx.tx_packet = NULL;
 	}
-	if(iqueuemac->tx.no_ack_contuer == 0){
+
+	/* if IQUEUEMAC_REPHASELOCK_THRESHOLD hasn't been reached yet,
+	 * don't clean the tx current_neighbour address. The node will try t-2-r again.
+	 * otherwise, if no_ack_contuer is 0, clean current_neighbour. Prepare for t-2-u. */
+	if(iqueuemac->tx.no_ack_contuer == 0)
+	{
 		iqueuemac->tx.current_neighbour = NULL;
 	}
 

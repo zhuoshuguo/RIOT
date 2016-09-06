@@ -1258,8 +1258,10 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
     uint32_t phase_check;
     uint32_t phase_nearest = IQUEUEMAC_PHASE_MAX;
 
-    /*** if no_ack_contuer is larger than 0, means a receiver has been loaded. ***/
-    if(iqueuemac->tx.no_ack_contuer > 0){
+    /*** If current_neighbour is not NULL, means last t-2-r failed, will continue try t-2-r again for the same neighbor
+     * which has not been released in last t-2-r. ***/
+    if(iqueuemac->tx.current_neighbour != NULL)
+    {
        return true;
     }
 
