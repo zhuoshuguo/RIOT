@@ -288,6 +288,19 @@ void iqueuemac_set_autoack(iqueuemac_t* iqueuemac, netopt_enable_t autoack)
 	                              sizeof(setautoack));
 }
 
+void iqueuemac_set_promiscuousmode(iqueuemac_t* iqueuemac, netopt_enable_t enable)
+{
+	netopt_enable_t set_enable = enable;
+
+	//iqueuemac->netdev->dev->driver->set(iqueuemac->netdev->dev, NETOPT_PROMISCUOUSMODE, &enable, sizeof(enable));
+
+	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev,
+								  NETOPT_PROMISCUOUSMODE,
+	                              &set_enable,
+	                              sizeof(set_enable));
+}
+
+
 void iqueuemac_turn_radio_channel(iqueuemac_t* iqueuemac, uint16_t channel_num)
 {
 	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev, NETOPT_CHANNEL, &channel_num, sizeof(channel_num));
@@ -769,6 +782,8 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
     	switch(receive_packet_info.header->type){
             case FRAMETYPE_BEACON:{
             	gnrc_pktbuf_release(pkt);
+            	/* in the future, take CP overlape collision measurements after receive ohter's beacon!! */
+
             }break;
 
             case FRAMETYPE_PREAMBLE:{
@@ -784,8 +799,9 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
         	    		iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
         	    	}
         	    }else{
-        		  /****** this means that there is a long preamble period, so quit this cycle and go to sleep.****/
-        		  iqueuemac->quit_current_cycle = true;
+        		    //iqueuemac->quit_current_cycle = true;
+        	    	/* if receives unintended preamble, don't send beacon and quit the following vTDMA period. */
+        	    	iqueuemac->quit_beacon = true;
         	    }
         	    gnrc_pktbuf_release(pkt);
             }break;
@@ -796,10 +812,16 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_IQUEUE_DATA:{
-            	iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
-        	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
-        	    _dispatch(iqueuemac->rx.dispatch_buffer);
-
+            	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr))
+            	{
+            		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+            		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+            		_dispatch(iqueuemac->rx.dispatch_buffer);
+            	}else/* if the data is not for the node, release it.  */
+            	{
+            		/* it is very unlikely that we will receive not-intended data here, since CP will not overlape! */
+            		gnrc_pktbuf_release(pkt);
+            	}
             	//gnrc_pktbuf_release(pkt);
             	//printf("%lu. \n", RTT_TICKS_TO_US(_phase_now(iqueuemac)));
         	    //puts("iqueuemac: router receives a data !!");
