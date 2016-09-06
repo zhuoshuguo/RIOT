@@ -1529,8 +1529,17 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	/******set cp timeout ******/
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
 
-	iqueuemac_trun_on_radio(iqueuemac);
+	/* since rx_start has to be checked in CP for tackling the packet broken issue at the end of CP,
+	 * we need to turn on promiscuous mode here to ensure we have rx_complete event for every packet that
+	 * triggers rx_start event, otherwise, OS will stuck in CP.
+	 */
+	iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_ENABLE);
+
+	iqueuemac->rx_started = false;
 	iqueuemac->packet_received = false;
+	iqueuemac_trun_on_radio(iqueuemac);
+
+
 
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_LISTEN;
 	iqueuemac->need_update = true;
@@ -1538,29 +1547,34 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	//puts("iqueuemac: router is now entering CP");
 
 	iqueuemac->quit_current_cycle = false;
+	iqueuemac->quit_beacon = false;
 	iqueuemac->send_beacon_fail = false;
 
 	packet_queue_flush(&iqueuemac->rx.queue);
 }
 
 void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
-/* In CP, a router can receive preamble, beacon, data packet, */
 
-    /*
-	if(iqueuemac->rx_started == true){
-		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
-		iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
-	}*/
+
+	/* in the future, we will add CP extension func. And we should remember to disable CP extension when
+	 * iqueuemac->quit_beacon is true occurs!!!
+	 */
+
+	if(iqueuemac->rx_started == true)
+	{
+		return;
+	}
 
     if(iqueuemac->packet_received == true){
     	iqueuemac->packet_received = false;
     	iqueue_router_cp_receive_packet_process(iqueuemac);
     }
 
-    /****** insert codes here for handling quit this cycle when receiving unexpected preamble***/
-    // if(iqueuemac->quit_current_cycle == true)
-    // clear timeout and switch to sleep period
-
+    /*  here is the CP extension func.
+	if((iqueuemac->packet_received == true)&&(iqueuemac->quit_beacon == false)){
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
+		iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
+	}*/
 
     /**  ensure that don't break the reception **/
     if(iqueuemac->rx_started == false){
@@ -1582,14 +1596,18 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_router_cp_end(iqueuemac_t* iqueuemac){
 
+	/* turn off the promiscuous mode. */
+	iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_DISABLE);
+
 	packet_queue_flush(&iqueuemac->rx.queue);
 
 	_dispatch(iqueuemac->rx.dispatch_buffer);
 
-	if(iqueuemac->quit_current_cycle == true){
-		iqueuemac->quit_current_cycle = false;
+	if((iqueuemac->quit_current_cycle == true)||(iqueuemac->quit_beacon == true))
+	{
 		iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
-	}else{
+	}else
+	{
 		iqueuemac->router_states.router_listen_state = R_LISTEN_SEND_BEACON;
 	}
 	iqueuemac->need_update = true;
