@@ -815,7 +815,11 @@ void iqueuemac_t2n_update(iqueuemac_t* iqueuemac)
 /****************** iQueuemac: Transmit to router *****/
 void iqueuemac_t2r_init(iqueuemac_t* iqueuemac){
 
+	/* Currently, we don't need to set up promiscuous mode here for T-2-R. */
+
 	iqueuemac_trun_off_radio(iqueuemac);
+
+	iqueuemac->quit_current_cycle = false;
 
 	/* set timer for the targeted router! */
 	uint32_t wait_phase_duration;
@@ -987,14 +991,25 @@ void iqueuemac_t2r_re_phase_lock_prepare(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2r_wait_beacon(iqueuemac_t* iqueuemac){
 
-	/* if rx start, wait until rx is completed. */
+	/* since we don't set up the promiscuous mode in t-2-r, so don't check rx_start here.
 	if(iqueuemac->rx_started == true){
 		return;
-	}
+	}*/
 
     if(iqueuemac->packet_received == true){
     	iqueuemac->packet_received = false;
     	iqueuemac_wait_beacon_packet_process(iqueuemac);
+    }
+
+    if(iqueuemac->quit_current_cycle == true)
+    {
+    	/* if we are here, means tx_packet is NULL, so just need to release neighbor also. */
+    	iqueuemac->tx.current_neighbour = NULL;
+
+    	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_BEACON);
+		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+		iqueuemac->need_update = true;
+		return;
     }
 
     if(iqueuemac->tx.vtdma_para.get_beacon == true){
@@ -1176,6 +1191,9 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 }
 
 void iqueuemac_t2r_end(iqueuemac_t* iqueuemac){
+
+	/* note that, if the node reach here from t-2-U, then, no_ack_contuer must be 0,
+	 * since t-2-r will set it to 0 only when it totally ends.*/
 
 	/* if t-2-r success or IQUEUEMAC_REPHASELOCK_THRESHOLD has been reached,
 	 * clean the tx current_neighbour address. */
