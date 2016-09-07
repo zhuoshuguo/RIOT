@@ -1271,7 +1271,15 @@ void iqueuemac_t2r_update(iqueuemac_t* iqueuemac)
 /****************** device state machines - Transmit to Unknown *****/
 void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 
-	iqueuemac_trun_on_radio(iqueuemac);
+	iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_ENABLE);
+
+	/* in case that rx_started was left as true during last t-2-u ending, so set it to false. */
+	iqueuemac->rx_started = false;
+
+	/** since t-2-u is right following beacon, so the radio is still on, so we don't need to turn on it again. **/
+	//iqueuemac_trun_on_radio(iqueuemac);
+
+	iqueuemac->quit_current_cycle = false;
 	iqueuemac->packet_received = false;
 	iqueuemac->tx.preamble_sent = 0;
 	iqueuemac->tx.got_preamble_ack = false;
@@ -1296,9 +1304,14 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac){
 
 	// to be filt in! for example, add receive other's broadcast and preamble handle codes here!!!
 	if(iqueuemac->quit_current_cycle == true){
-		; //return;
-	}
+		iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_DISABLE);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
 
+		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+		iqueuemac->need_update = true;
+		return;
+	}
 
 	//if every thing goes fine, continue to send preamble.
 
@@ -1338,7 +1351,13 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac){
 
 	// to be filt in! for example, add receive other's broadcast and preamble handle codes here!!!
 	if(iqueuemac->quit_current_cycle == true){
-		; //return;
+		iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_DISABLE);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
+
+		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+		iqueuemac->need_update = true;
+		return;
 	}
 
 	/****** insert codes here for handling quit this cycle when receiving unexpected preamble***/
@@ -1348,6 +1367,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac){
 	/* ensure that no rx event is going on */
 	if(iqueuemac->rx_started == false){
 		if(iqueuemac->tx.got_preamble_ack == true){
+			iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_DISABLE);
 			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
 			iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_DATA;
@@ -1359,6 +1379,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac){
 	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_PREAMBLE_DURATION)){
+		iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_DISABLE);
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac->need_update = true;
@@ -1373,21 +1394,6 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac){
 }
 
 void iqueuemac_t2u_send_data(iqueuemac_t* iqueuemac){
-
-	/* if rx start, wait until rx is completed. */
-	if(iqueuemac->rx_started == true){
-		return;
-	}
-
-	if(iqueuemac->packet_received == true){
-	   	iqueuemac->packet_received = false;
-	   	iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac);
-	}
-
-	// to be filt in! for example, add receive other's broadcast and preamble handle codes here!!!
-	if(iqueuemac->quit_current_cycle == true){
-		; //return;
-	}
 
 	/***  do not disable auto-ack here, we need auto-ack for data transmission and possible retransmission ***/
 	iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
@@ -1452,11 +1458,15 @@ void iqueuemac_t2u_end(iqueuemac_t* iqueuemac){
 	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
 
-	if(iqueuemac->tx.tx_packet){
-		gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
-		iqueuemac->tx.tx_packet = NULL;
+	/* in case of quit_current_cycle is true, don't release tx-pkt and tx-neighbor, will try immediately next cycle.*/
+	if(iqueuemac->quit_current_cycle == false)
+	{
+		if(iqueuemac->tx.tx_packet){
+			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+			iqueuemac->tx.tx_packet = NULL;
+		}
+		iqueuemac->tx.current_neighbour = NULL;
 	}
-	iqueuemac->tx.current_neighbour = NULL;
 
 	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_INIT;
 

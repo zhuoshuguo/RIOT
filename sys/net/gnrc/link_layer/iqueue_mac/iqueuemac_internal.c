@@ -1198,11 +1198,16 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
 
     	switch(receive_packet_info.header->type){
             case FRAMETYPE_BEACON:{
+            	/* it is very unlikely that we will receive beacon here.  */
             	gnrc_pktbuf_release(pkt);
             }break;
 
             case FRAMETYPE_PREAMBLE:{
+            	/* Due to non-overlap CP rule, it is very unlikely that we will receive preamble here.
+            	 * But, in case it happens, quit this t-2-u for collision avoidance.
+            	 * Release all received preamle here to reduce complexity. Only reply preamble in CP.*/
             	gnrc_pktbuf_release(pkt);
+            	iqueuemac->quit_current_cycle = true;
             }break;
 
             case FRAMETYPE_PREAMBLE_ACK:{
@@ -1221,8 +1226,23 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_IQUEUE_DATA:{
-            	gnrc_pktbuf_release(pkt);
+            	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr))
+            	{
+            		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+            		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+            		_dispatch(iqueuemac->rx.dispatch_buffer);
+            	}else/* if the data is not for the node, release it.  */
+            	{
+            		gnrc_pktbuf_release(pkt);
+            	}
+            }break;
 
+            case FRAMETYPE_BROADCAST:{
+            	/* Due to non-overlap CP rule, it is very unlikely that we will receive broadcast here.
+            	 * But, in case it happens, quit this t-2-u for collision avoidance.
+            	 * Release the broadcast pkt, and receive it in CP, thus to reduce complexity.*/
+            	iqueuemac->quit_current_cycle = true;
+            	gnrc_pktbuf_release(pkt);
             }break;
 
             default:gnrc_pktbuf_release(pkt);break;
@@ -1280,8 +1300,8 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
     uint32_t phase_check;
     uint32_t phase_nearest = IQUEUEMAC_PHASE_MAX;
 
-    /*** If current_neighbour is not NULL, means last t-2-r failed, will continue try t-2-r again for the same neighbor
-     * which has not been released in last t-2-r. ***/
+    /*** If current_neighbour is not NULL, means last t-2-r or t-2-u failed, will continue try t-2-r/t-2-u
+     * again for the same neighbor, which has not been released in last t-2-r/t-2-u. ***/
     if(iqueuemac->tx.current_neighbour != NULL)
     {
        return true;
