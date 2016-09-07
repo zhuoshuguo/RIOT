@@ -1443,7 +1443,8 @@ void iqueuemac_wait_beacon_packet_process(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_PREAMBLE:{
-            	// should we quit this period also??!
+            	/* Release preamble pkt no matter the preamble is for it or not, and quit the t-2-r. */
+            	iqueuemac->quit_current_cycle = true;
         	    gnrc_pktbuf_release(pkt);
             }break;
 
@@ -1453,9 +1454,23 @@ void iqueuemac_wait_beacon_packet_process(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_IQUEUE_DATA:{
-        	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
-            	//gnrc_pktbuf_release(pkt);
-        	    //puts("iqueuemac: router receives a data !!");
+            	/* It is unlikely that we will received a data for us here. This means the nodes' CP is close with its
+            	 * destination's. */
+            	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr))
+            	{
+            		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+            		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+            		_dispatch(iqueuemac->rx.dispatch_buffer);
+            	}else/* if the data is not for the node, release it.  */
+            	{
+            		/* it is very unlikely that we will receive not-intended data here, since CP will not overlape! */
+            		gnrc_pktbuf_release(pkt);
+            	}
+            }break;
+
+            case FRAMETYPE_BROADCAST:{
+            	iqueuemac->quit_current_cycle = true;
+            	gnrc_pktbuf_release(pkt);
             }break;
 
             default:gnrc_pktbuf_release(pkt);break;
