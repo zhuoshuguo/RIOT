@@ -1557,17 +1557,9 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	/******set cp timeout ******/
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
 
-	/* since rx_start has to be checked in CP for tackling the packet broken issue at the end of CP,
-	 * we need to turn on promiscuous mode here to ensure we have rx_complete event for every packet that
-	 * triggers rx_start event, otherwise, OS will stuck in CP.
-	 */
-	iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_ENABLE);
-
 	iqueuemac->rx_started = false;
 	iqueuemac->packet_received = false;
 	iqueuemac_trun_on_radio(iqueuemac);
-
-
 
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_LISTEN;
 	iqueuemac->need_update = true;
@@ -1577,6 +1569,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->quit_current_cycle = false;
 	iqueuemac->quit_beacon = false;
 	iqueuemac->send_beacon_fail = false;
+	iqueuemac->cp_end = false;
 
 	packet_queue_flush(&iqueuemac->rx.queue);
 }
@@ -1587,11 +1580,6 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 	/* in the future, we will add CP extension func. And we should remember to disable CP extension when
 	 * iqueuemac->quit_beacon is true occurs!!!
 	 */
-
-	if(iqueuemac->rx_started == true)
-	{
-		return;
-	}
 
     if(iqueuemac->packet_received == true){
     	iqueuemac->packet_received = false;
@@ -1604,7 +1592,26 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
 	}*/
 
-    /**  ensure that don't break the reception **/
+
+	if((iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END))){
+		iqueuemac->cp_end = true;
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
+	}
+
+	if((iqueuemac->cp_end == true)||(iqueuemac->quit_current_cycle == true))
+	{
+		if(_get_netdev_state(iqueuemac) == NETOPT_STATE_RX)
+		{
+			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
+			iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
+		}else{
+			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
+			iqueuemac->router_states.router_listen_state = R_LISTEN_CP_END;
+			iqueuemac->need_update = true;
+		}
+	}
+
+    /**  ensure that don't break the reception
     if(iqueuemac->rx_started == false){
 
     	if((iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END))||(iqueuemac->quit_current_cycle == true)){
@@ -1612,7 +1619,7 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
     		iqueuemac->router_states.router_listen_state = R_LISTEN_CP_END;
     		iqueuemac->need_update = true;
     	}
-    }
+    }**/
 
 	/*
 	if(iqueuemac->quit_current_cycle == true){
@@ -1623,10 +1630,6 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 }
 
 void iqueue_mac_router_cp_end(iqueuemac_t* iqueuemac){
-
-	puts("c-e");
-	/* turn off the promiscuous mode. */
-	iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_DISABLE);
 
 	packet_queue_flush(&iqueuemac->rx.queue);
 

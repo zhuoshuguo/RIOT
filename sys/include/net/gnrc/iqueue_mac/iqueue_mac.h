@@ -46,6 +46,10 @@ typedef enum {
 #define IQUEUEMAC_CP_DURATION_US        (14U * 1000)
 #endif
 
+#ifndef IQUEUEMAC_WAIT_RX_END_US
+#define IQUEUEMAC_WAIT_RX_END_US        (5U * 1000)
+#endif
+
 #ifndef IQUEUEMAC_PREAMBLE_INTERVAL_US
 #define IQUEUEMAC_PREAMBLE_INTERVAL_US        (6U * 1000)
 #endif
