@@ -288,6 +288,21 @@ void iqueuemac_set_autoack(iqueuemac_t* iqueuemac, netopt_enable_t autoack)
 	                              sizeof(setautoack));
 }
 
+
+netopt_state_t _get_netdev_state(iqueuemac_t* iqueuemac)
+{
+    netopt_state_t state;
+
+	if (0 < iqueuemac->netdev2_driver->get(iqueuemac->netdev->dev,
+                                       NETOPT_STATE,
+                                       &state,
+                                       sizeof(state)))
+	{
+        return state;
+    }
+    return -1;
+}
+
 void iqueuemac_set_promiscuousmode(iqueuemac_t* iqueuemac, netopt_enable_t enable)
 {
 	netopt_enable_t set_enable = enable;
