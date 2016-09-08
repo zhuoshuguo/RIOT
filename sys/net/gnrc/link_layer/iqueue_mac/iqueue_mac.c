@@ -1561,7 +1561,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	 * we need to turn on promiscuous mode here to ensure we have rx_complete event for every packet that
 	 * triggers rx_start event, otherwise, OS will stuck in CP.
 	 */
-	iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_ENABLE);
+	//iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_ENABLE);
 
 	iqueuemac->rx_started = false;
 	iqueuemac->packet_received = false;
@@ -1625,7 +1625,7 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 void iqueue_mac_router_cp_end(iqueuemac_t* iqueuemac){
 
 	/* turn off the promiscuous mode. */
-	iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_DISABLE);
+	//iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_DISABLE);
 
 	packet_queue_flush(&iqueuemac->rx.queue);
 
