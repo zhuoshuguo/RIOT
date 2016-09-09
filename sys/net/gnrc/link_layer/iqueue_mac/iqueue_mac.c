@@ -916,14 +916,14 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 					//puts("phase-lock failed.");
 					iqueuemac->tx.current_neighbour->mac_type = UNKNOWN;
 
-			           /* save payload pointer */
+			        /* save payload pointer */
 			        gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next->next;
 
-			            /* remove iqueuemac header */
+			        /* remove iqueuemac header */
 			        iqueuemac->tx.tx_packet->next->next = NULL;
 			        gnrc_pktbuf_release(iqueuemac->tx.tx_packet->next);
 
-			            /* make append payload after netif header again */
+			        /* make append payload after netif header again */
 			        iqueuemac->tx.tx_packet->next = payload;
 
 			        /* queue the pkt for transmission in next cycle */
@@ -1426,7 +1426,14 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac){
 void iqueuemac_t2u_send_data(iqueuemac_t* iqueuemac){
 
 	/***  do not disable auto-ack here, we need auto-ack for data transmission and possible retransmission ***/
-	iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
+	int res;
+	res = iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
+	if(res == -ENOBUFS){
+		puts("iq: nobuf for sending data.");
+		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+		iqueuemac->need_update = true;
+		return;
+	}
 
 	//iqueuemac->tx.tx_packet = NULL;
 

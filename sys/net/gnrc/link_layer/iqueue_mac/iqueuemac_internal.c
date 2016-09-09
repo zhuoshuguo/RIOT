@@ -1028,7 +1028,7 @@ int iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 
 	res = iqueuemac_send(iqueuemac, pkt, csma_enable);
     if(res == -ENOBUFS){
-		puts("iqueuemac: send preamble_hdr failed in iqueuemac_assemble_and_send_beacon().");
+		puts("iqueuemac: send preamble failed in iqueue_mac_send_preamble().");
     	gnrc_pktbuf_release(pkt_iqmac);
     }
 	return res;
@@ -1281,7 +1281,7 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
 
 }
 
-void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_enable)
+int iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_enable)
 {
 	gnrc_pktsnip_t* pkt;
 	pkt = iqueuemac->tx.tx_packet;
@@ -1306,9 +1306,15 @@ void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_ena
 			iqueuemac_data_hdr.queue_indicator = iqueuemac_data_hdr.queue_indicator | 0x40;
 		}
 
+		/* save payload pointer */
+		gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next;
+
 		pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_data_hdr, sizeof(iqueuemac_data_hdr), GNRC_NETTYPE_IQUEUEMAC);
-		if(pkt == NULL) {
+		if(pkt->next == NULL) {
 			puts("iqueuemac: pktbuf add failed in iqueuemac_send_data_packet().");
+			/* make append payload after netif header again */
+			iqueuemac->tx.tx_packet->next = payload;
+			return -ENOBUFS;
 		}
 
 	}else{
@@ -1318,7 +1324,14 @@ void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_ena
 
 	gnrc_pktbuf_hold(iqueuemac->tx.tx_packet,1);
 
-	iqueuemac_send(iqueuemac, pkt, csma_enable);
+	int res;
+	res = iqueuemac_send(iqueuemac, pkt, csma_enable);
+    if(res == -ENOBUFS){
+        /* If res is ENOBUFS, then, the old pkt will not be released in send(). so need to release old data once */
+        gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+		puts("iqueuemac: send data failed in iqueuemac_send_data_packet().");
+    }
+	return res;
 
 }
 
