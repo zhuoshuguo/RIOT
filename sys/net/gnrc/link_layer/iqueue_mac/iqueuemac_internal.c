@@ -984,11 +984,12 @@ void iqueuemac_init_choose_subchannel(iqueuemac_t* iqueuemac){
 	//printf("iqueuemac: the final selected subchannel is %d .\n", subchannel_seq);
 }
 
-void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
+int iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 {
 	/****** assemble and send the beacon ******/
 	gnrc_pktsnip_t* pkt;
 	gnrc_netif_hdr_t* nethdr_preamble;
+	gnrc_pktsnip_t* pkt_iqmac;
 
 	/* Assemble preamble packet */
 	iqueuemac_frame_preamble_t iqueuemac_preamble_hdr;
@@ -997,13 +998,19 @@ void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 
 	pkt = gnrc_pktbuf_add(NULL, &iqueuemac_preamble_hdr, sizeof(iqueuemac_preamble_hdr), GNRC_NETTYPE_IQUEUEMAC);
 	if(pkt == NULL) {
-		puts("iqueuemac: pktbuf add failed in iqueue_mac_send_preamble().");
+		puts("iqueuemac: preamble_hdr buf add failed in iqueue_mac_send_preamble().");
+		return -ENOBUFS;
 	}
+	pkt_iqmac = pkt;
 
 	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
 	if(pkt == NULL) {
-		puts("iqueuemac: pktbuf add failed in iqueue_mac_send_preamble().");
+		puts("iqueuemac: preamble_hdr netif add failed in iqueue_mac_send_preamble().");
+		gnrc_pktbuf_release(pkt_iqmac);
+		return -ENOBUFS;
 	}
+	pkt_iqmac = pkt;
+
 	/* We wouldn't get here if add the NETIF header had failed, so no
 		sanity checks needed */
 	nethdr_preamble = (gnrc_netif_hdr_t*) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
@@ -1017,7 +1024,14 @@ void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 
 	netopt_enable_t csma_enable;
 	csma_enable = use_csma;
-	iqueuemac_send(iqueuemac, pkt, csma_enable);
+	int res;
+
+	res = iqueuemac_send(iqueuemac, pkt, csma_enable);
+    if(res == -ENOBUFS){
+		puts("iqueuemac: send preamble_hdr failed in iqueuemac_assemble_and_send_beacon().");
+    	gnrc_pktbuf_release(pkt_iqmac);
+    }
+	return res;
 }
 
 
