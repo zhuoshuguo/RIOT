@@ -351,9 +351,10 @@ int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t 
 }
 
 
-void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* info)
+int iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* info)
 {
 	/****** assemble and send the beacon ******/
+	gnrc_pktsnip_t* pkt_iqmac;
 	gnrc_pktsnip_t* pkt;
 	gnrc_netif_hdr_t* nethdr_preamble_ack;
 	uint32_t phase_now_ticks;  //next_cp_timing_ticks;  //next_cp_timing_us; //
@@ -376,15 +377,19 @@ void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* i
 
 	pkt = gnrc_pktbuf_add(NULL, &iqueuemac_preamble_ack_hdr, sizeof(iqueuemac_preamble_ack_hdr), GNRC_NETTYPE_IQUEUEMAC);
 	if(pkt == NULL) {
-		puts("iqueuemac: pktbuf add failed in iqueue_send_preamble_ack().");
-		//need further control codes for handling this error.
+		puts("iqueuemac: payload buf add failed in iqueue_send_preamble_ack().");
+		return -ENOBUFS;
 	}
+	pkt_iqmac = pkt;
 
 	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
 	if(pkt == NULL) {
-		puts("iqueuemac: pktbuf add failed in iqueue_send_preamble_ack().");
-		//need further control codes for handling this error.
+		puts("iqueuemac: netif_hdr add failed in iqueue_send_preamble_ack().");
+		gnrc_pktbuf_release(pkt_iqmac);
+		return -ENOBUFS;
 	}
+	pkt_iqmac = pkt;
+
 	/* We wouldn't get here if add the NETIF header had failed, so no
 		sanity checks needed */
 	nethdr_preamble_ack = (gnrc_netif_hdr_t*) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
@@ -398,7 +403,14 @@ void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* i
 
 	netopt_enable_t csma_enable;
 	csma_enable = NETOPT_DISABLE;
-	iqueuemac_send(iqueuemac, pkt, csma_enable);
+	int res;
+	res = iqueuemac_send(iqueuemac, pkt, csma_enable);
+    if(res == -ENOBUFS){
+		puts("iqueuemac: send preamble-ack failed in iqueue_send_preamble_ack().");
+    	gnrc_pktbuf_release(pkt_iqmac);
+    }
+	return res;
+
 }
 
 int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
@@ -808,7 +820,11 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
         	    		/***  disable auto-ack ***/
         	    		iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
 
-        	    		iqueue_send_preamble_ack(iqueuemac, &receive_packet_info);
+        	    		int res;
+        	    		res = iqueue_send_preamble_ack(iqueuemac, &receive_packet_info);
+        	    		if(res == -ENOBUFS){
+        	    			puts("iq: nobuf for preamble-ack.");
+        	    		}
 
         	    		/* Enable Auto ACK again for data reception */
         	    		iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
