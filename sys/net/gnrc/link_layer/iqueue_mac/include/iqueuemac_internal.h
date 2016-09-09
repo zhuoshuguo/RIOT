@@ -151,7 +151,7 @@ void iqueuemac_add_in_cluster_neighbor(iqueuemac_t* iqueuemac, l2_addr_t* addr);
 void iqueuemac_remove_in_cluster_neighbor(iqueuemac_t* iqueuemac, l2_addr_t* addr);
 void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info);
 void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac);
-void iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_enable);
+int iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_enable);
 bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac);
 //bool iqueuemac_check_has_pending_packet(packet_queue_t* q);
 void iqueuemac_beacon_process(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt);
