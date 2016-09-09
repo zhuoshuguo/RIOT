@@ -865,8 +865,19 @@ void iqueuemac_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 
 	/***  do not disable auto-ack here, we need auto-ack for data transmission and possible retransmission ***/
 	/******Use CSMA here, and send_packet() will release the pkt itself !!!!******/
-	iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
+	int res;
+	res = iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
+	if(res == -ENOBUFS){
+		puts("iq: nobuf for sending data in t-2-r, release the pkt.");
 
+		iqueuemac->tx.no_ack_contuer = 0;
+		gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+		iqueuemac->tx.tx_packet = NULL;
+		iqueuemac->tx.current_neighbour = NULL;
+		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2R_TRANS_END;
+		iqueuemac->need_update = true;
+		return;
+	}
 
 	//iqueuemac->tx.tx_packet = NULL;
 
@@ -1096,7 +1107,19 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 
 		/***  do not disable auto-ack here, we need auto-ack for data transmission and possible retransmission ***/
 		/******disable CSMA here, and iqueuemac_send_data_packet() will release the pkt itself !!!!******/
-		iqueuemac_send_data_packet(iqueuemac, NETOPT_DISABLE);
+		int res;
+		res = iqueuemac_send_data_packet(iqueuemac, NETOPT_DISABLE);
+		if(res == -ENOBUFS){
+			puts("iq: nobuf for sending data in vtdma, release the pkt.");
+
+			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+			iqueuemac->tx.tx_packet = NULL;
+			iqueuemac->tx.current_neighbour = NULL;
+			iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2R_TRANS_END;
+			iqueuemac->need_update = true;
+			return;
+		}
+
 		iqueuemac->tx.vtdma_para.slots_num --;
 		//iqueuemac->tx.tx_packet = NULL;
 
