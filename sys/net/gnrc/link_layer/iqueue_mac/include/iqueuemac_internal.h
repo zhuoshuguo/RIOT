@@ -136,7 +136,7 @@ void iqueuemac_turn_radio_channel(iqueuemac_t* iqueuemac, uint16_t channel_num);
 void iqueuemac_set_raddio_to_listen_mode(iqueuemac_t* iqueuemac);
 
 int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable);
-void iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* info);
+int iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* info);
 int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac);
 int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info);
 int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info, iqueuemac_t* iqueuemac);
