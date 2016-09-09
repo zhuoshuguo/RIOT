@@ -146,7 +146,7 @@ void iqueuemac_update_subchannel_occu_flags(iqueuemac_t* iqueuemac, gnrc_pktsnip
 void iqueuemac_packet_process_in_init(iqueuemac_t* iqueuemac);
 void iqueuemac_init_choose_subchannel(iqueuemac_t* iqueuemac);
 void iqueuemac_send_announce(iqueuemac_t* iqueuemac, netopt_enable_t use_csma);
-void iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma);
+int iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma);
 void iqueuemac_add_in_cluster_neighbor(iqueuemac_t* iqueuemac, l2_addr_t* addr);
 void iqueuemac_remove_in_cluster_neighbor(iqueuemac_t* iqueuemac, l2_addr_t* addr);
 void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info);

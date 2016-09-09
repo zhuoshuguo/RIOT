@@ -1336,17 +1336,29 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac){
 	/***  disable auto-ack, namely disable pkt reception. ***/
 	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
 
+	int res;
 	if(iqueuemac->tx.preamble_sent == 0){
-		iqueue_mac_send_preamble(iqueuemac, NETOPT_ENABLE);
+		res = iqueue_mac_send_preamble(iqueuemac, NETOPT_ENABLE);
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE_DURATION, IQUEUEMAC_PREAMBLE_DURATION_US);
 	}else{
-		iqueue_mac_send_preamble(iqueuemac, NETOPT_DISABLE);
+		res = iqueue_mac_send_preamble(iqueuemac, NETOPT_DISABLE);
 	}
 
 	/* Enable Auto ACK again for data reception */
 	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	iqueuemac->tx.preamble_sent ++;
+
+	if(res == -ENOBUFS){
+		puts("iq: nobuf for preamble, send preamble failed.");
+		iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_DISABLE);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
+
+		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+		iqueuemac->need_update = true;
+		return;
+	}
 
 	/******set preamble timeout ******/
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE, IQUEUEMAC_PREAMBLE_INTERVAL_US);
