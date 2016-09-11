@@ -1626,14 +1626,13 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
     if(iqueuemac->packet_received == true){
     	iqueuemac->packet_received = false;
     	iqueue_router_cp_receive_packet_process(iqueuemac);
+
+        /*  here is the CP extension func.*/
+    	if((iqueuemac->quit_beacon == false)&&(iqueuemac->cp_end == false)&&(iqueuemac->quit_current_cycle == false)){
+    		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
+    		iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
+    	}
     }
-
-    /*  here is the CP extension func.
-	if((iqueuemac->packet_received == true)&&(iqueuemac->quit_beacon == false)){
-		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
-		iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
-	}*/
-
 
 	if((iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END))){
 		iqueuemac->cp_end = true;
@@ -1647,7 +1646,9 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
 			iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
 		}else{
+			/** only timeout event and rx_complete event will reach here! **/
 			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
+			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
 			iqueuemac->router_states.router_listen_state = R_LISTEN_CP_END;
 			iqueuemac->need_update = true;
 		}
