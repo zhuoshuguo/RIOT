@@ -817,7 +817,7 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
         	    if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
         	    	/** if reception is not going on, reply preamble-ack,
         	    	 * also, don't send preamble-ACK if CP ends. **/
-        	    	if((_get_netdev_state(iqueuemac) == NETOPT_STATE_RX)&&(iqueuemac->cp_end == false)){
+        	    	if((_get_netdev_state(iqueuemac) == NETOPT_STATE_IDLE)&&(iqueuemac->cp_end == false)){
         	    		/***  disable auto-ack ***/
         	    		iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
 
