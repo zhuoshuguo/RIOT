@@ -1312,8 +1312,6 @@ void iqueuemac_t2r_update(iqueuemac_t* iqueuemac)
 /****************** device state machines - Transmit to Unknown *****/
 void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 
-	iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_ENABLE);
-
 	/* in case that rx_started was left as true during last t-2-u ending, so set it to false. */
 	iqueuemac->rx_started = false;
 
@@ -1331,21 +1329,28 @@ void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 	packet_queue_flush(&iqueuemac->rx.queue);
 }
 
-void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac){
+void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
+{
 
-	/* if rx start, wait until rx is completed. */
-	if(iqueuemac->rx_started == true){
+	/* if rx is going, wait until rx is completed. */
+	if(_get_netdev_state(iqueuemac) == NETOPT_STATE_RX){
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
+		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
 		return;
+	}
+
+	if(iqueuemac_timeout_is_running(iqueuemac,TIMEOUT_WAIT_RX_END)){
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
 	}
 
 	/* when rx completed, will reach here */
 	if(iqueuemac->packet_received == true){
+		iqueuemac->packet_received = false;
 		iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac);
 	}
 
 	// to be filt in! for example, add receive other's broadcast and preamble handle codes here!!!
 	if(iqueuemac->quit_current_cycle == true){
-		iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_DISABLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
 
@@ -1372,9 +1377,9 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac){
 
 	iqueuemac->tx.preamble_sent ++;
 
+	/* in case that memery is full, quit t-2-u and release pkt. */
 	if(res == -ENOBUFS){
 		puts("iq: nobuf for preamble, send preamble failed.");
-		iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_DISABLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
 
@@ -1390,11 +1395,18 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac){
 	iqueuemac->need_update = false;
 }
 
-void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac){
+void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
+{
 
 	/* if rx start, wait until rx is completed. */
-	if(iqueuemac->rx_started == true){
+	if(_get_netdev_state(iqueuemac) == NETOPT_STATE_RX){
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
+		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
 		return;
+	}
+
+	if(iqueuemac_timeout_is_running(iqueuemac,TIMEOUT_WAIT_RX_END)){
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
 	}
 
 	if(iqueuemac->packet_received == true){
@@ -1404,7 +1416,6 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac){
 
 	// to be filt in! for example, add receive other's broadcast and preamble handle codes here!!!
 	if(iqueuemac->quit_current_cycle == true){
-		iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_DISABLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
 
@@ -1413,26 +1424,15 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac){
 		return;
 	}
 
-	/****** insert codes here for handling quit this cycle when receiving unexpected preamble***/
-	// if(iqueuemac->quit_current_cycle == true)
-	// clear timeout and switch to sleep period
-
-	/* ensure that no rx event is going on */
-	if(iqueuemac->rx_started == false){
-		if(iqueuemac->tx.got_preamble_ack == true){
-			iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_DISABLE);
-			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
-			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
-			iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_DATA;
-			iqueuemac->need_update = true;
-			return;
-		}
-	}else{
+	if(iqueuemac->tx.got_preamble_ack == true){
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
+		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_DATA;
+		iqueuemac->need_update = true;
 		return;
 	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_PREAMBLE_DURATION)){
-		iqueuemac_set_promiscuousmode(iqueuemac, NETOPT_DISABLE);
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac->need_update = true;
