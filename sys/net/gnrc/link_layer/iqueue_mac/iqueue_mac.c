@@ -815,8 +815,6 @@ void iqueuemac_t2n_update(iqueuemac_t* iqueuemac)
 /****************** iQueuemac: Transmit to router *****/
 void iqueuemac_t2r_init(iqueuemac_t* iqueuemac){
 
-	/* Currently, we don't need to set up promiscuous mode here for T-2-R. */
-
 	iqueuemac_trun_off_radio(iqueuemac);
 
 	iqueuemac->quit_current_cycle = false;
@@ -945,8 +943,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 					//iqueuemac_trun_off_radio(iqueuemac);
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END; //DEVICE_T2R_RE_PHASE_LOCK_PREPARE;
 
-				}else
-				{
+				}else{
 					/* go to t-2-r end and try t-2-r again. */
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 				}
@@ -1002,10 +999,6 @@ void iqueuemac_t2r_re_phase_lock_prepare(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2r_wait_beacon(iqueuemac_t* iqueuemac){
 
-	/* since we don't set up the promiscuous mode in t-2-r, so don't check rx_start here.
-	if(iqueuemac->rx_started == true){
-		return;
-	}*/
 
     if(iqueuemac->packet_received == true){
     	iqueuemac->packet_received = false;
