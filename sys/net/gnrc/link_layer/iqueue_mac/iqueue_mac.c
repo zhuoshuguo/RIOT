@@ -1612,6 +1612,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->quit_beacon = false;
 	iqueuemac->send_beacon_fail = false;
 	iqueuemac->cp_end = false;
+	iqueuemac->got_preamble = false;
 
 	packet_queue_flush(&iqueuemac->rx.queue);
 }
@@ -1627,10 +1628,22 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
     	iqueuemac->packet_received = false;
     	iqueue_router_cp_receive_packet_process(iqueuemac);
 
-        /*  here is the CP extension func.*/
-    	if((iqueuemac->quit_beacon == false)&&(iqueuemac->cp_end == false)&&(iqueuemac->quit_current_cycle == false)){
+        /*  here is the CP extension func.
+         * Add a CP maximum limit in the future. */
+
+    	/* if sent preamble-ACK, must wait for data. */
+    	if(iqueuemac->got_preamble == true){
+    		iqueuemac->got_preamble = false;
+    		iqueuemac->cp_end = false;
     		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
     		iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
+    	}else{
+    		if((iqueuemac->quit_beacon == false)&&(iqueuemac->cp_end == false)&&(iqueuemac->quit_current_cycle == false)){
+        		iqueuemac->got_preamble = false;
+        		iqueuemac->cp_end = false;
+        		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
+        		iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
+    		}
     	}
     }
 
