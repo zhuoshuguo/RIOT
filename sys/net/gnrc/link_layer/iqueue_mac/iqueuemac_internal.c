@@ -815,8 +815,9 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 
             case FRAMETYPE_PREAMBLE:{
         	    if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
-        	    	/** if reception is not going on, reply preamble-ack **/
-        	    	if(iqueuemac->rx_started == false){
+        	    	/** if reception is not going on, reply preamble-ack,
+        	    	 * also, don't send preamble-ACK if CP ends. **/
+        	    	if((_get_netdev_state(iqueuemac) == NETOPT_STATE_RX)&&(iqueuemac->cp_end == false)){
         	    		/***  disable auto-ack ***/
         	    		iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
 
@@ -824,6 +825,8 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
         	    		res = iqueue_send_preamble_ack(iqueuemac, &receive_packet_info);
         	    		if(res == -ENOBUFS){
         	    			puts("iq: nobuf for preamble-ack.");
+        	    		}else{
+        	    			iqueuemac->got_preamble = true;
         	    		}
 
         	    		/* Enable Auto ACK again for data reception */
