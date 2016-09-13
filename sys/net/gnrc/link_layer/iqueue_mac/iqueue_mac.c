@@ -2297,7 +2297,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
     iqueuemac.mac_type = MAC_TYPE;
 
-    xtimer_sleep(3);
+    //xtimer_sleep(3);
 
     iqueuemac_init(&iqueuemac);
 
