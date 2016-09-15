@@ -2158,21 +2158,23 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                 {
                 	iqueuemac.need_update = true;
 
-                	iqueuemac.rx_started = false;
-
                     gnrc_pktsnip_t *pkt = gnrc_netdev2->recv(gnrc_netdev2);
 
                     if(pkt == NULL){
                     	puts("rx: pkt is NULL, memory full?");
                     	iqueuemac.packet_received = false;
+                    	iqueuemac.rx_started = false;
                     	break;
                     }
 
                     if(!iqueuemac.rx_started) {
        				   //LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
        				   gnrc_pktbuf_release(pkt);
+       				iqueuemac.rx_started = false;
                        break;
                     }
+
+                    iqueuemac.rx_started = false;
 
                     /* update the seq to avoid duplicate pkt.
                     gnrc_netif_hdr_t* netif_hdr;
