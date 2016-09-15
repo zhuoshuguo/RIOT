@@ -35,6 +35,7 @@ typedef struct {
 	iqueuemac_hdr_t* header;    /**< iqueuemac header of packet */
     l2_addr_t  src_addr;    /**< copied source address of packet  */
     l2_addr_t  dst_addr;    /**< copied destination address of packet */
+    uint8_t seq;			/**< seq of the received packet */
 } iqueuemac_packet_info_t;
 
 /* @brief   Next RTT event must be at least this far in the future
@@ -135,6 +136,7 @@ void iqueuemac_set_promiscuousmode(iqueuemac_t* iqueuemac, netopt_enable_t enabl
 void iqueuemac_turn_radio_channel(iqueuemac_t* iqueuemac, uint16_t channel_num);
 void iqueuemac_set_raddio_to_listen_mode(iqueuemac_t* iqueuemac);
 
+bool iqueuemac_check_duplicate(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* pa_info);
 int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable);
 int iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* info);
 int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac);
