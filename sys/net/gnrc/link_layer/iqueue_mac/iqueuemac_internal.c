@@ -692,6 +692,8 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
 
     info->header = iqueuemac_hdr;
 
+    info->seq = netif_hdr->seq;
+
     return 0;
 }
 
@@ -791,6 +793,29 @@ void iqueuemac_router_queue_indicator_update(iqueuemac_t* iqueuemac, gnrc_pktsni
 
 }
 
+
+bool iqueuemac_check_duplicate(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* pa_info)
+{
+	if(_addr_match(&iqueuemac->rx.last_seq_info.node_addr, &pa_info->src_addr)){
+		if(iqueuemac->rx.last_seq_info.seq == pa_info->seq){
+			return true;
+		}else{
+			iqueuemac->rx.last_seq_info.seq = pa_info->seq;
+			return false;
+		}
+	}
+
+	/*** update the last seq ***/
+	iqueuemac->rx.last_seq_info.node_addr.len = pa_info->src_addr.len;
+	memcpy(iqueuemac->rx.last_seq_info.node_addr.addr,
+			pa_info->src_addr.addr,
+			pa_info->src_addr.len);
+
+	iqueuemac->rx.last_seq_info.seq = pa_info->seq;
+
+	return false;
+}
+
 void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 	gnrc_pktsnip_t* pkt;
 
@@ -845,7 +870,15 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 
             }break;
 
+
+            // iqueuemac.rx.last_seq_info.seq = netif_hdr->seq;
             case FRAMETYPE_IQUEUE_DATA:{
+            	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
+            		gnrc_pktbuf_release(pkt);
+            		puts("dup pkt.");
+            		return;
+            	}
+
             	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr))
             	{
             		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
@@ -1353,6 +1386,7 @@ int iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_enab
 	return res;
 
 }
+
 
 bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
 

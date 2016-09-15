@@ -1588,6 +1588,11 @@ void iqueuemac_t2u_update(iqueuemac_t* iqueuemac)
 
 void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
+	/* reset last_seq_info. important! need to do every cycle.*/
+	iqueuemac->rx.last_seq_info.node_addr.addr[0] =0;
+	iqueuemac->rx.last_seq_info.node_addr.addr[1] =0;
+	iqueuemac->rx.last_seq_info.seq = 0;
+
 	iqueuemac->router_states.router_new_cycle = false;
 	/******set cp timeout ******/
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
@@ -2153,11 +2158,12 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                 {
                 	iqueuemac.need_update = true;
 
+                	iqueuemac.rx_started = false;
+
                     gnrc_pktsnip_t *pkt = gnrc_netdev2->recv(gnrc_netdev2);
 
                     if(pkt == NULL){
                     	puts("rx: pkt is NULL, memory full?");
-                    	iqueuemac.rx_started = false;
                     	iqueuemac.packet_received = false;
                     	break;
                     }
@@ -2165,16 +2171,15 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                     if(!iqueuemac.rx_started) {
        				   //LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
        				   gnrc_pktbuf_release(pkt);
-       				   iqueuemac.rx_started = false;
                        break;
                     }
-                    /*
+
+                    /* update the seq to avoid duplicate pkt.
                     gnrc_netif_hdr_t* netif_hdr;
                     netif_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
-                    printf("iqueuemac: the received packet rssi is: %d .\n", netif_hdr->rssi);
+                    //printf("iqueuemac: the received packet rssi is: %d .\n", netif_hdr->rssi);
+                    iqueuemac.rx.last_seq_info.seq = netif_hdr->seq;
                     */
-
-                    iqueuemac.rx_started = false;
 
                     if(!packet_queue_push(&iqueuemac.rx.queue, pkt, 0))
                    	{
