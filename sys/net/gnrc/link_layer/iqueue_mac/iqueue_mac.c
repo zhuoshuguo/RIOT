@@ -1738,6 +1738,13 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 	/* Enable Auto ACK again for data reception */
 	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
+	/* if phase has been changed, reset all tx-neighbor to unkown. */
+	if(iqueuemac->phase_changed == true){
+    	for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++){
+    		iqueuemac->tx.neighbours[i].mac_type = UNKNOWN;
+    	}
+	}
+
 	iqueuemac->router_states.router_listen_state = R_LISTEN_WAIT_BEACON_FEEDBACK;
 	//puts("iqueuemac: router is now sending the beacon!!!");
 }
