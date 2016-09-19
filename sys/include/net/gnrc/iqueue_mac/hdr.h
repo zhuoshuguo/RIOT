@@ -62,7 +62,7 @@ typedef struct __attribute__((packed)) {
  */
 typedef struct __attribute__((packed)) {
 	iqueuemac_hdr_t header;
-	uint32_t next_cp_time;     /* phase of this device*/
+	uint32_t current_phase;     /* phase of this device*/
 	uint8_t sub_channel_seq;
 	uint8_t schedulelist_size;
 } iqueuemac_frame_beacon_t;

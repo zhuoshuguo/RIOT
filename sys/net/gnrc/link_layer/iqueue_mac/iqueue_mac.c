@@ -185,7 +185,7 @@ void rtt_handler(uint32_t event)
 
           if(iqueuemac.duty_cycle_started == false){
         	  iqueuemac.duty_cycle_started = true;
-
+        	  rtt_clear_alarm();
         	  /*** record the starting phase of iQueuemac ***/
         	  iqueuemac.last_wakeup = rtt_get_counter();
           }else{
@@ -453,7 +453,7 @@ void iqueuemac_init_prepare(iqueuemac_t* iqueuemac){
 	uint32_t listen_period;
 
 	listen_period = random_uint32_range(0, IQUEUEMAC_SUPERFRAME_DURATION_US);
-	listen_period = (IQUEUEMAC_SUPERFRAME_DURATION_US*11/10) + listen_period;
+	listen_period = (IQUEUEMAC_SUPERFRAME_DURATION_US*11/10) + listen_period + IQUEUEMAC_WAIT_RTT_STABLE_US;
 
 	iqueuemac->quit_current_cycle = false;
 	iqueuemac->router_states.init_retry = false;
@@ -1595,7 +1595,10 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
 	iqueuemac->router_states.router_new_cycle = false;
 	/******set cp timeout ******/
-	iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
+	uint32_t listen_period;
+	listen_period = random_uint32_range(0, IQUEUEMAC_CP_RANDOM_END_US) + IQUEUEMAC_CP_DURATION_US;
+
+	iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, listen_period);
 
 	iqueuemac->rx_started = false;
 	iqueuemac->packet_received = false;
@@ -1604,13 +1607,16 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_LISTEN;
 	iqueuemac->need_update = true;
 
-	//puts("iqueuemac: router is now entering CP");
+	//puts("CP");
 
 	iqueuemac->quit_current_cycle = false;
 	iqueuemac->quit_beacon = false;
 	iqueuemac->send_beacon_fail = false;
 	iqueuemac->cp_end = false;
 	iqueuemac->got_preamble = false;
+
+	iqueuemac->phase_backoff = false;
+	iqueuemac->phase_changed = false;
 
 	packet_queue_flush(&iqueuemac->rx.queue);
 }
@@ -1644,6 +1650,18 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
     		}
     	}
     }
+
+	if(iqueuemac->phase_backoff == true){
+		iqueuemac->phase_backoff = false;
+		uint32_t alarm;
+    	/*** execute phase backoff for avoiding CP overlap. ***/
+		rtt_clear_alarm();
+        alarm = iqueuemac->last_wakeup + RTT_US_TO_TICKS((IQUEUEMAC_SUPERFRAME_DURATION_US + iqueuemac->backoff_phase_gap));
+        rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
+        iqueuemac->phase_changed = true;
+        //printf("bp: %lu. \n", iqueuemac->backoff_phase_gap);
+        puts("bp");
+	}
 
 	if((iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END))){
 		iqueuemac->cp_end = true;
@@ -2304,7 +2322,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
     iqueuemac.mac_type = MAC_TYPE;
 
-    //xtimer_sleep(3);
+    //xtimer_sleep(5);
 
     iqueuemac_init(&iqueuemac);
 

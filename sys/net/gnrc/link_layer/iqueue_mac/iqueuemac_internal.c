@@ -30,6 +30,7 @@
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
+
 /******************************************************************************/
 
 int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[])
@@ -425,7 +426,11 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 	/* Assemble Beacon packet */
 	iqueuemac_frame_beacon_t iqueuemac_hdr;
 	iqueuemac_hdr.header.type = FRAMETYPE_BEACON;
-    iqueuemac_hdr.next_cp_time = IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_CP_DURATION_US;
+	if(iqueuemac->phase_changed == false){
+		iqueuemac_hdr.current_phase = _phase_now(iqueuemac);
+	}else{
+		iqueuemac_hdr.current_phase = 0;
+	}
 	iqueuemac_hdr.sub_channel_seq = iqueuemac->sub_channel_num; //iqueuemac->rx.router_vtdma_mana.sub_channel_seq;
 	//iqueuemac_hdr.schedulelist_size = 0;
 
@@ -568,7 +573,7 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
  	//lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
 
     netopt_enable_t csma_enable;
-    csma_enable = NETOPT_ENABLE;
+    csma_enable = NETOPT_DISABLE;  // NETOPT_ENABLE
     int res;
     res = iqueuemac_send(iqueuemac, pkt, csma_enable);
     if(res == -ENOBUFS){
@@ -833,6 +838,35 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 
     	switch(receive_packet_info.header->type){
             case FRAMETYPE_BEACON:{
+            	uint32_t own_phase;
+            	uint32_t phase_gap_us;
+            	uint32_t sender_phase;
+
+            	own_phase = _phase_now(iqueuemac);
+
+            	iqueuemac_frame_beacon_t* iqueuemac_beacon_hdr;
+            	iqueuemac_beacon_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_IQUEUEMAC);
+
+            	/* this means that the beacon sender will change its phase, so meaningless to deal with this received beacon */
+            	if(iqueuemac_beacon_hdr->current_phase == 0){
+            		gnrc_pktbuf_release(pkt);
+            		return;
+            	}
+
+            	sender_phase = iqueuemac_beacon_hdr->current_phase + RTT_US_TO_TICKS(IQUEUEMAC_RECEPTION_MAGIN_US);
+
+            	/* in case the sender's phase is larger */
+            	if(sender_phase >= own_phase){
+            		/* calculate the gap in us */
+            		phase_gap_us = RTT_TICKS_TO_US((sender_phase - own_phase));
+            		if(phase_gap_us < IQUEUEMAC_CP_MIN_GAP_US){
+            			iqueuemac->phase_backoff = true;
+            			iqueuemac->backoff_phase_gap = (IQUEUEMAC_CP_MIN_GAP_US - phase_gap_us) + IQUEUEMAC_RECEPTION_MAGIN_US;
+            		}
+            	}else{
+            		;/* currently, we don't deal with the case the sender's phase is smaller */
+            	}
+
             	gnrc_pktbuf_release(pkt);
             	/* in the future, take CP overlape collision measurements after receive ohter's beacon!! */
 

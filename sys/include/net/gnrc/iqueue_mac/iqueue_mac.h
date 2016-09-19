@@ -38,16 +38,32 @@ typedef enum {
 
 #define MAC_TYPE  ROUTER // NODE //                                                                      NODE //        ROUTER
 
+#ifndef IQUEUEMAC_WAIT_RTT_STABLE_US
+#define IQUEUEMAC_WAIT_RTT_STABLE_US        (3000U * 1000)
+#endif
+
 #ifndef IQUEUEMAC_SUPERFRAME_DURATION_US
 #define IQUEUEMAC_SUPERFRAME_DURATION_US        (300U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_CP_DURATION_US
-#define IQUEUEMAC_CP_DURATION_US        (14U * 1000)
+#define IQUEUEMAC_CP_DURATION_US        (13U * 1000)
+#endif
+
+#ifndef IQUEUEMAC_CP_RANDOM_END_US
+#define IQUEUEMAC_CP_RANDOM_END_US        (1U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_WAIT_BEACON_TIME_US
 #define IQUEUEMAC_WAIT_BEACON_TIME_US        (50U * 1000)
+#endif
+
+#ifndef IQUEUEMAC_RECEPTION_MAGIN_US
+#define IQUEUEMAC_RECEPTION_MAGIN_US        (5U * 1000)
+#endif
+
+#ifndef IQUEUEMAC_CP_MIN_GAP_US
+#define IQUEUEMAC_CP_MIN_GAP_US        (30U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_WAIT_RX_END_US
@@ -133,6 +149,7 @@ typedef enum {
 #endif
 
 #define IQUEUEMAC_LPM_MASK					(1 << 17)
+
 
 /**
  * @brief   Initialize an instance of the IQUEUE_MAC layer
