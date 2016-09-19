@@ -1330,7 +1330,9 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
             		if(_addr_match(&iqueuemac->tx.current_neighbour->l2_addr, &receive_packet_info.src_addr)){
             			iqueuemac->tx.got_preamble_ack = true;
-            			iqueuemac_device_process_preamble_ack(iqueuemac, pkt, &receive_packet_info);
+            			if(iqueuemac->phase_changed == false){
+            				iqueuemac_device_process_preamble_ack(iqueuemac, pkt, &receive_packet_info);
+            			}
             			/**got preamble-ack, flush the rx queue***/
             			gnrc_pktbuf_release(pkt);
             			packet_queue_flush(&iqueuemac->rx.queue);
