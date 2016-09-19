@@ -1234,6 +1234,11 @@ void iqueuemac_t2r_end(iqueuemac_t* iqueuemac){
 	iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CP_INIT;
 
 	if(iqueuemac->mac_type == ROUTER){
+		/* turn phase_changed to false to faciliate phase-lock in next cycle. */
+		if(iqueuemac->phase_changed == true){
+			iqueuemac->phase_changed = false;
+		}
+
 		/*********** judge and update the states before switch back to CP listening period   ***********/
 	    iqueuemac->router_states.router_basic_state = R_LISTENNING;
 		iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING;
@@ -1525,6 +1530,12 @@ void iqueuemac_t2u_end(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac->mac_type == ROUTER){
 		/*********** judge and update the states before switch back to CP listening period   ***********/
+
+		/* turn phase_changed to false to faciliate phase-lock in next cycle. */
+		if(iqueuemac->phase_changed == true){
+			iqueuemac->phase_changed = false;
+		}
+
 	    iqueuemac->router_states.router_basic_state = R_LISTENNING;
 		iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING;
 		iqueuemac->router_states.router_new_cycle = false;
