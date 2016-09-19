@@ -903,7 +903,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				/*** if has pending pkt, join the vTDMA period, first wait receiver's beacon ***/
 				if(iqueuemac->tx.current_neighbour->queue.length > 0){
 					iqueuemac->tx.vtdma_para.get_beacon = false;
-					iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_BEACON, IQUEUEMAC_SUPERFRAME_DURATION_US);
+					iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_BEACON, IQUEUEMAC_WAIT_BEACON_TIME_US);
 					// need to flush the rx-queue ??
 					packet_queue_flush(&iqueuemac->rx.queue);
 
