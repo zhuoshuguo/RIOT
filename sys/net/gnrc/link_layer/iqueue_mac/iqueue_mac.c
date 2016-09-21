@@ -865,6 +865,10 @@ void iqueuemac_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 	/******Use CSMA here, and send_packet() will release the pkt itself !!!!******/
 	int res;
 	res = iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
+	if(res < 0){
+		puts("t-2-r res is minus");
+	}
+
 	if(res == -ENOBUFS){
 		puts("iq: nobuf for sending data in t-2-r, release the pkt.");
 
@@ -1102,6 +1106,10 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 		/******disable CSMA here, and iqueuemac_send_data_packet() will release the pkt itself !!!!******/
 		int res;
 		res = iqueuemac_send_data_packet(iqueuemac, NETOPT_DISABLE);
+		if(res < 0){
+			puts("vtdma res is minus");
+		}
+
 		if(res == -ENOBUFS){
 			puts("iq: nobuf for sending data in vtdma, release the pkt.");
 
@@ -1162,8 +1170,9 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 			}break;
 
 			/*** if BUSY and NOACK, regards it as busy channel ***/
-			case TX_FEEDBACK_BUSY:
+			case TX_FEEDBACK_BUSY: puts("vb");
 			case TX_FEEDBACK_NOACK:{
+				puts("vnoack");
 				/*** do not release the pkt here, continue sending the same pkt ***/
 				if(iqueuemac->tx.vtdma_para.slots_num > 0){
 
@@ -1195,6 +1204,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 			}break;
 
 			default:{
+				puts("vtdma tx default, release pkt.");
 				/*** first release the pkt ***/
 				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 				iqueuemac->tx.tx_packet = NULL;
@@ -1370,6 +1380,10 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 		res = iqueue_mac_send_preamble(iqueuemac, NETOPT_DISABLE);
 	}
 
+	if(res < 0){
+		puts("warning, preamble res is minus");
+	}
+
 	/* Enable Auto ACK again for data reception */
 	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
@@ -1449,6 +1463,10 @@ void iqueuemac_t2u_send_data(iqueuemac_t* iqueuemac){
 	/***  do not disable auto-ack here, we need auto-ack for data transmission and possible retransmission ***/
 	int res;
 	res = iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
+	if(res < 0){
+		puts("t-2-U res is minus");
+	}
+
 	if(res == -ENOBUFS){
 		puts("iq: nobuf for sending data.");
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
@@ -1738,6 +1756,9 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 	/****** assemble and send the beacon ******/
 	int res;
 	res = iqueuemac_assemble_and_send_beacon(iqueuemac);
+	if(res < 0){
+		puts("warning, beacon res is minus");
+	}
 	if(res == -ENOBUFS){
 		puts("iq: nobuf for beacon, send beacon failed.");
 		iqueuemac->send_beacon_fail = true;
