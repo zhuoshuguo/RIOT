@@ -2205,6 +2205,7 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
 
                     if(!iqueuemac.rx_started) {
        				   //LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
+                    	puts("rx_pkt corrupted?");
        				   gnrc_pktbuf_release(pkt);
        				iqueuemac.rx_started = false;
                        break;
@@ -2222,6 +2223,7 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                     if(!packet_queue_push(&iqueuemac.rx.queue, pkt, 0))
                    	{
                     	//LOG_ERROR("Can't push RX packet @ %p, memory full?\n", pkt);
+                    	puts("can't push rx-pkt, memory full?");
                     	gnrc_pktbuf_release(pkt);
                     	iqueuemac.packet_received = false;
                     	break;
