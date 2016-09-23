@@ -1690,10 +1690,14 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 		uint32_t alarm;
     	/*** execute phase backoff for avoiding CP overlap. ***/
 		rtt_clear_alarm();
-        alarm = iqueuemac->last_wakeup + RTT_US_TO_TICKS((IQUEUEMAC_SUPERFRAME_DURATION_US + iqueuemac->backoff_phase_gap));
+        alarm = iqueuemac->last_wakeup + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US) + iqueuemac->backoff_phase_ticks;
         rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
         iqueuemac->phase_changed = true;
-        //printf("bp: %lu. \n", iqueuemac->backoff_phase_gap);
+
+        //uint32_t backoff_us;
+        //backoff_us = RTT_TICKS_TO_US(iqueuemac->backoff_phase_ticks);
+        //printf("bp: %lu. \n", backoff_us);
+
         puts("bp");
 	}
 
@@ -1779,7 +1783,7 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 	if(iqueuemac->phase_changed == true){
     	for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++){
     		if(iqueuemac->tx.neighbours[i].mac_type == ROUTER){
-    			long int tmp = iqueuemac->tx.neighbours[i].cp_phase - RTT_US_TO_TICKS(iqueuemac->backoff_phase_gap);
+    			long int tmp = iqueuemac->tx.neighbours[i].cp_phase - iqueuemac->backoff_phase_ticks;
     		    if(tmp < 0) {
     		        tmp += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
     		    }
