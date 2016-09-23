@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include <periph/rtt.h>
 #include <net/gnrc.h>
+#include "random.h"
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
 #include <net/gnrc/iqueue_mac/packet_queue.h>
 #include <net/gnrc/iqueue_mac/hdr.h>
@@ -839,7 +840,6 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
     	switch(receive_packet_info.header->type){
             case FRAMETYPE_BEACON:{
             	uint32_t own_phase;
-            	uint32_t phase_gap_us;
             	uint32_t sender_phase;
 
             	own_phase = _phase_now(iqueuemac);
@@ -857,11 +857,22 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 
             	/* in case the sender's phase is larger */
             	if(sender_phase >= own_phase){
-            		/* calculate the gap in us */
-            		phase_gap_us = RTT_TICKS_TO_US((sender_phase - own_phase));
-            		if(phase_gap_us < IQUEUEMAC_CP_MIN_GAP_US){
+
+            		uint32_t phase_gap_ticks;
+
+            		/* calculate the gap in ticks */
+            		phase_gap_ticks = sender_phase - own_phase;
+
+            		if(phase_gap_ticks < RTT_US_TO_TICKS(IQUEUEMAC_CP_MIN_GAP_US)){
+            			uint32_t backoff_ticks;
+            			uint32_t random_backoff;
+
             			iqueuemac->phase_backoff = true;
-            			iqueuemac->backoff_phase_gap = (IQUEUEMAC_CP_MIN_GAP_US - phase_gap_us) + IQUEUEMAC_RECEPTION_MAGIN_US;
+            			backoff_ticks = RTT_US_TO_TICKS(IQUEUEMAC_CP_MIN_GAP_US + IQUEUEMAC_RECEPTION_MAGIN_US) - phase_gap_ticks;
+
+            			random_backoff = RTT_US_TO_TICKS(IQUEUEMAC_CP_MIN_GAP_US);
+            			random_backoff = random_uint32_range(0, random_backoff);
+            			iqueuemac->backoff_phase_ticks =  backoff_ticks + random_backoff;
             		}
             	}else{
             		;/* currently, we don't deal with the case the sender's phase is smaller */
