@@ -2441,7 +2441,9 @@ static void *_gnrc_iqueuemac_thread(void *args)
               gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)msg.content.ptr;
               //gnrc_netdev2->send(gnrc_netdev2, pkt);
 
-              _queue_tx_packet(&iqueuemac,  pkt);
+              if(!_queue_tx_packet(&iqueuemac,  pkt)){
+            	  puts("push pkt fail.");
+              }
               iqueuemac.need_update = true;
 
             }break;
