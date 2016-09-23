@@ -1322,6 +1322,7 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             	 * But, in case it happens, quit this t-2-u for collision avoidance.
             	 * Release all received preamle here to reduce complexity. Only reply preamble in CP.*/
             	gnrc_pktbuf_release(pkt);
+            	puts("q-u-1");
             	iqueuemac->quit_current_cycle = true;
             }break;
 
@@ -1360,6 +1361,7 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             	 * Release the broadcast pkt, and receive it in CP, thus to reduce complexity.*/
             	iqueuemac->quit_current_cycle = true;
             	gnrc_pktbuf_release(pkt);
+            	puts("q-u-2");
             }break;
 
             default:gnrc_pktbuf_release(pkt);break;
