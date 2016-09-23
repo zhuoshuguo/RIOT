@@ -866,7 +866,7 @@ void iqueuemac_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 	int res;
 	res = iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
 	if(res < 0){
-		puts("t-2-r res is minus");
+		printf("t2r %d\n", res);
 	}
 
 	if(res == -ENOBUFS){
@@ -1107,7 +1107,7 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 		int res;
 		res = iqueuemac_send_data_packet(iqueuemac, NETOPT_DISABLE);
 		if(res < 0){
-			puts("vtdma res is minus");
+			printf("vtdma %d\n", res);
 		}
 
 		if(res == -ENOBUFS){
@@ -1381,7 +1381,7 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 	}
 
 	if(res < 0){
-		puts("warning, preamble res is minus");
+		printf("preamble %d\n", res);
 	}
 
 	/* Enable Auto ACK again for data reception */
@@ -1464,7 +1464,7 @@ void iqueuemac_t2u_send_data(iqueuemac_t* iqueuemac){
 	int res;
 	res = iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
 	if(res < 0){
-		puts("t-2-U res is minus");
+		printf("t2u %d\n", res);
 	}
 
 	if(res == -ENOBUFS){
@@ -1757,7 +1757,7 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 	int res;
 	res = iqueuemac_assemble_and_send_beacon(iqueuemac);
 	if(res < 0){
-		puts("warning, beacon res is minus");
+		printf("beacon %d\n", res);
 	}
 	if(res == -ENOBUFS){
 		puts("iq: nobuf for beacon, send beacon failed.");
