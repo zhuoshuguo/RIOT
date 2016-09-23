@@ -1775,10 +1775,16 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 	/* Enable Auto ACK again for data reception */
 	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
-	/* if phase has been changed, reset all tx-neighbor to unkown. */
+	/* if phase has been changed, figure out the related phase of tx-neighbors. */
 	if(iqueuemac->phase_changed == true){
     	for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++){
-    		iqueuemac->tx.neighbours[i].mac_type = UNKNOWN;
+    		if(iqueuemac->tx.neighbours[i].mac_type == ROUTER){
+    			long int tmp = iqueuemac->tx.neighbours[i].cp_phase - RTT_US_TO_TICKS(iqueuemac->backoff_phase_gap);
+    		    if(tmp < 0) {
+    		        tmp += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+    		    }
+    		    iqueuemac->tx.neighbours[i].cp_phase = (uint32_t)tmp;
+    		}
     	}
 	}
 
