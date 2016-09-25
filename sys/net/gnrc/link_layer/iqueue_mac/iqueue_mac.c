@@ -1644,7 +1644,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	//puts("CP");
 
 	iqueuemac->quit_current_cycle = false;
-	iqueuemac->quit_beacon = false;
+	iqueuemac->get_other_preamble = false;
 	iqueuemac->send_beacon_fail = false;
 	iqueuemac->cp_end = false;
 	iqueuemac->got_preamble = false;
@@ -1659,7 +1659,7 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 
 
 	/* in the future, we will add CP extension func. And we should remember to disable CP extension when
-	 * iqueuemac->quit_beacon is true occurs!!!
+	 * iqueuemac->get_other_preamble is true occurs!!!
 	 */
 
     if(iqueuemac->packet_received == true){
@@ -1676,7 +1676,7 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
     		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
     		iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
     	}else{
-    		if((iqueuemac->quit_beacon == false)&&(iqueuemac->cp_end == false)&&(iqueuemac->quit_current_cycle == false)){
+    		if((iqueuemac->get_other_preamble == false)&&(iqueuemac->cp_end == false)&&(iqueuemac->quit_current_cycle == false)){
         		iqueuemac->got_preamble = false;
         		iqueuemac->cp_end = false;
         		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
@@ -1745,7 +1745,7 @@ void iqueue_mac_router_cp_end(iqueuemac_t* iqueuemac){
 
 	_dispatch(iqueuemac->rx.dispatch_buffer);
 
-	if((iqueuemac->quit_current_cycle == true)||(iqueuemac->quit_beacon == true))
+	if(iqueuemac->quit_current_cycle == true)
 	{
 		iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
 	}else
@@ -1810,11 +1810,19 @@ void iqueuemac_router_wait_beacon_feedback(iqueuemac_t* iqueuemac){
 				iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
 
 				if(iqueuemac->tx.current_neighbour == &iqueuemac->tx.neighbours[0]){
-					iqueuemac->router_states.router_trans_state = R_BROADCAST;
+					if(iqueuemac->get_other_preamble == false){
+						iqueuemac->router_states.router_trans_state = R_BROADCAST;
+					}else{
+				        iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
+					}
 				}else{
 					switch(iqueuemac->tx.current_neighbour->mac_type){
 					  case UNKNOWN: {
-						  iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
+						  if(iqueuemac->get_other_preamble == false){
+							  iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
+						  }else{
+							  iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
+						  }
 					  }break;
 					  case ROUTER: {
 						  iqueuemac->router_states.router_trans_state = R_TRANS_TO_ROUTER;
@@ -1884,10 +1892,19 @@ void iqueue_mac_router_vtdma_end(iqueuemac_t* iqueuemac){
 		iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
 
 		if(iqueuemac->tx.current_neighbour == &iqueuemac->tx.neighbours[0]){
-			iqueuemac->router_states.router_trans_state = R_BROADCAST;
+			if(iqueuemac->get_other_preamble == false){
+				iqueuemac->router_states.router_trans_state = R_BROADCAST;
+			}else{
+		        iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
+			}
 		}else{
 			switch(iqueuemac->tx.current_neighbour->mac_type){
 			  case UNKNOWN: {
+				  if(iqueuemac->get_other_preamble == false){
+					  iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
+				  }else{
+					  iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
+				  }
 				  iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
 			  }break;
 			  case ROUTER: {
