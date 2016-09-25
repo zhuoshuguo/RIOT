@@ -574,7 +574,13 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
  	//lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
 
     netopt_enable_t csma_enable;
-    csma_enable = NETOPT_DISABLE;  // NETOPT_ENABLE
+    if(iqueuemac->get_other_preamble == true){
+    	/* use csma for collision avoidance of other preamble */
+    	csma_enable = NETOPT_ENABLE;  // NETOPT_ENABLE
+    }else{
+    	/* it is important to disable csma here for CP phase overlap detect! */
+    	csma_enable = NETOPT_DISABLE;  // NETOPT_ENABLE
+    }
     int res;
     res = iqueuemac_send(iqueuemac, pkt, csma_enable);
     if(res == -ENOBUFS){
@@ -887,7 +893,7 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
         	    if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
         	    	/** if reception is not going on, reply preamble-ack,
         	    	 * also, don't send preamble-ACK if CP ends. **/
-        	    	if((_get_netdev_state(iqueuemac) == NETOPT_STATE_IDLE)&&(iqueuemac->cp_end == false)){
+        	    	if(_get_netdev_state(iqueuemac) == NETOPT_STATE_IDLE){
         	    		/***  disable auto-ack ***/
         	    		iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
 
@@ -905,7 +911,7 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
         	    }else{
         		    //iqueuemac->quit_current_cycle = true;
         	    	/* if receives unintended preamble, don't send beacon and quit the following vTDMA period. */
-        	    	iqueuemac->quit_beacon = true;
+        	    	iqueuemac->get_other_preamble = true;
         	    }
         	    gnrc_pktbuf_release(pkt);
             }break;
