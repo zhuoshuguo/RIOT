@@ -1340,7 +1340,6 @@ void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 {
-
 	/* if rx is going, wait until rx is completed. */
 	if(_get_netdev_state(iqueuemac) == NETOPT_STATE_RX){
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
@@ -1402,26 +1401,22 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 		return;
 	}
 
-	/******set preamble timeout ******/
-	iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE, IQUEUEMAC_PREAMBLE_INTERVAL_US);
-
-	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_WAIT_PREAMBLE_ACK;
+	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_WAIT_PREAMBLE_TX_END;
 	iqueuemac->need_update = false;
 }
 
+void iqueuemac_t2u_wait_preamble_tx_end(iqueuemac_t* iqueuemac)
+{
+	if(iqueuemac->tx.tx_finished == true){
+		/******set preamble interval timeout ******/
+		iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE, IQUEUEMAC_PREAMBLE_INTERVAL_US);
+
+		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_WAIT_PREAMBLE_ACK;
+		iqueuemac->need_update = false;
+	}
+}
 void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 {
-
-	/* if rx start, wait until rx is completed. */
-	if(_get_netdev_state(iqueuemac) == NETOPT_STATE_RX){
-		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
-		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
-		return;
-	}
-
-	if(iqueuemac_timeout_is_running(iqueuemac,TIMEOUT_WAIT_RX_END)){
-		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
-	}
 
 	if(iqueuemac->packet_received == true){
 	   	iqueuemac->packet_received = false;
@@ -1451,6 +1446,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 		puts("no p-ack, t-2-u fail.");
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
 		iqueuemac->need_update = true;
 		return;
 	}
@@ -1610,6 +1606,7 @@ void iqueuemac_t2u_update(iqueuemac_t* iqueuemac)
 	{
 	 case DEVICE_T2U_SEND_PREAMBLE_INIT: iqueuemac_t2u_send_preamble_init(iqueuemac);break;
      case DEVICE_T2U_SEND_PREAMBLE: iqueuemac_t2u_send_preamble(iqueuemac); break;
+     case DEVICE_T2U_WAIT_PREAMBLE_TX_END: iqueuemac_t2u_wait_preamble_tx_end(iqueuemac); break;
 	 case DEVICE_T2U_WAIT_PREAMBLE_ACK: iqueuemac_t2u_wait_preamble_ack(iqueuemac); break;
 	 case DEVICE_T2U_SEND_DATA: iqueuemac_t2u_send_data(iqueuemac); break;
 	 case DEVICE_T2U_WAIT_TX_FEEDBACK: iqueuemac_t2u_wait_tx_feedback(iqueuemac);break;
