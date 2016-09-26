@@ -876,7 +876,7 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             			iqueuemac->phase_backoff = true;
             			backoff_ticks = RTT_US_TO_TICKS(IQUEUEMAC_CP_MIN_GAP_US + IQUEUEMAC_RECEPTION_MAGIN_US) - phase_gap_ticks;
 
-            			random_backoff = RTT_US_TO_TICKS(IQUEUEMAC_CP_MIN_GAP_US);
+            			random_backoff = RTT_US_TO_TICKS((IQUEUEMAC_SUPERFRAME_DURATION_US/2));
             			random_backoff = random_uint32_range(0, random_backoff);
             			iqueuemac->backoff_phase_ticks =  backoff_ticks + random_backoff;
             		}
