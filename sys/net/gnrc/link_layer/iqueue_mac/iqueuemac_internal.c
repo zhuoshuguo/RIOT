@@ -1250,7 +1250,7 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 
 	 long int phase_ticks;
 
-	 if((iqueuemac->phase_changed == true)&&(iqueuemac.router_states.router_new_cycle == true)){
+	 if((iqueuemac->phase_changed == true)&&(iqueuemac->router_states.router_new_cycle == true)){
 		 /* this means that the node is already in a new cycle when doing phase changed.
 		  * So, give some compensation for later phase adjust */
 		 phase_ticks = _phase_now(iqueuemac) + iqueuemac->backoff_phase_ticks - (iqueuemac_preamble_ack_hdr->phase_in_ticks/2);
