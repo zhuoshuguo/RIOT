@@ -189,8 +189,8 @@ void rtt_handler(uint32_t event)
         	  /*** record the starting phase of iQueuemac ***/
         	  iqueuemac.last_wakeup = rtt_get_counter();
           }else{
-        	  iqueuemac.router_states.router_new_cycle = true;
         	  iqueuemac.last_wakeup = rtt_get_alarm(); //rtt_get_counter();
+        	  iqueuemac.router_states.router_new_cycle = true;
         	  // iqueuemac_stop_lpm();
           }
 
@@ -1244,9 +1244,9 @@ void iqueuemac_t2r_end(iqueuemac_t* iqueuemac){
 	iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CP_INIT;
 
 	if(iqueuemac->mac_type == ROUTER){
-		/* turn phase_changed to false to faciliate phase-lock in next cycle. */
+		/* if phase has been changed, figure out the related phase of tx-neighbors. */
 		if(iqueuemac->phase_changed == true){
-			iqueuemac->phase_changed = false;
+			iqueuemac_figure_tx_neighbor_phase(iqueuemac);
 		}
 
 		/*********** judge and update the states before switch back to CP listening period   ***********/
@@ -1550,9 +1550,9 @@ void iqueuemac_t2u_end(iqueuemac_t* iqueuemac){
 	if(iqueuemac->mac_type == ROUTER){
 		/*********** judge and update the states before switch back to CP listening period   ***********/
 
-		/* turn phase_changed to false to faciliate phase-lock in next cycle. */
+		/* if phase has been changed, figure out the related phase of tx-neighbors. */
 		if(iqueuemac->phase_changed == true){
-			iqueuemac->phase_changed = false;
+			iqueuemac_figure_tx_neighbor_phase(iqueuemac);
 		}
 
 	    iqueuemac->router_states.router_basic_state = R_LISTENNING;
@@ -1742,11 +1742,9 @@ void iqueue_mac_router_cp_end(iqueuemac_t* iqueuemac){
 
 	_dispatch(iqueuemac->rx.dispatch_buffer);
 
-	if(iqueuemac->quit_current_cycle == true)
-	{
+	if(iqueuemac->quit_current_cycle == true){
 		iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
-	}else
-	{
+	}else{
 		iqueuemac->router_states.router_listen_state = R_LISTEN_SEND_BEACON;
 	}
 	iqueuemac->need_update = true;
@@ -1776,19 +1774,6 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 	/* Enable Auto ACK again for data reception */
 	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
-	/* if phase has been changed, figure out the related phase of tx-neighbors. */
-	if(iqueuemac->phase_changed == true){
-    	for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++){
-    		if(iqueuemac->tx.neighbours[i].mac_type == ROUTER){
-    			long int tmp = iqueuemac->tx.neighbours[i].cp_phase - iqueuemac->backoff_phase_ticks;
-    		    if(tmp < 0) {
-    		        tmp += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-    		    }
-    		    iqueuemac->tx.neighbours[i].cp_phase = (uint32_t)tmp;
-    		}
-    	}
-	}
-
 	iqueuemac->router_states.router_listen_state = R_LISTEN_WAIT_BEACON_FEEDBACK;
 	//puts("iqueuemac: router is now sending the beacon!!!");
 }
@@ -1812,6 +1797,10 @@ void iqueuemac_router_wait_beacon_feedback(iqueuemac_t* iqueuemac){
 					}else{
 				        iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
 					}
+					/* if phase has been changed, figure out the related phase of tx-neighbors. */
+					if(iqueuemac->phase_changed == true){
+						iqueuemac_figure_tx_neighbor_phase(iqueuemac);
+					}
 				}else{
 					switch(iqueuemac->tx.current_neighbour->mac_type){
 					  case UNKNOWN: {
@@ -1831,7 +1820,7 @@ void iqueuemac_router_wait_beacon_feedback(iqueuemac_t* iqueuemac){
 					}
 				}
 				iqueuemac->need_update = true;
-			}else{
+			}else{/**** no packet to send ****/
 		        iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
 		        iqueuemac->need_update = true;
 			}
@@ -1894,6 +1883,10 @@ void iqueue_mac_router_vtdma_end(iqueuemac_t* iqueuemac){
 			}else{
 		        iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
 			}
+			/* if phase has been changed, figure out the related phase of tx-neighbors. */
+			if(iqueuemac->phase_changed == true){
+				iqueuemac_figure_tx_neighbor_phase(iqueuemac);
+			}
 		}else{
 			switch(iqueuemac->tx.current_neighbour->mac_type){
 			  case UNKNOWN: {
@@ -1922,6 +1915,11 @@ void iqueue_mac_router_vtdma_end(iqueuemac_t* iqueuemac){
 }
 
 void iqueue_mac_router_sleep_init(iqueuemac_t* iqueuemac){
+
+	/* if phase has been changed, figure out the related phase of tx-neighbors. */
+	if(iqueuemac->phase_changed == true){
+		iqueuemac_figure_tx_neighbor_phase(iqueuemac);
+	}
 
 	iqueuemac_trun_off_radio(iqueuemac);
 	iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING;

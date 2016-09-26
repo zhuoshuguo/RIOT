@@ -1247,7 +1247,17 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 	 /*** remember to reduce a bit the phase for locking, since there is a hand-shake procedure before ***/
 	 //uint32_t  phase_ticks;
 	 /*** adjust the phase of the receiver ***/
-	 long int phase_ticks = _phase_now(iqueuemac) - (iqueuemac_preamble_ack_hdr->phase_in_ticks/2); //rtt_get_counter();
+
+	 long int phase_ticks;
+
+	 if((iqueuemac->phase_changed == true)&&(iqueuemac.router_states.router_new_cycle == true)){
+		 /* this means that the node is already in a new cycle when doing phase changed.
+		  * So, give some compensation for later phase adjust */
+		 phase_ticks = _phase_now(iqueuemac) + iqueuemac->backoff_phase_ticks - (iqueuemac_preamble_ack_hdr->phase_in_ticks/2);
+	 }else{
+		 phase_ticks = _phase_now(iqueuemac) - (iqueuemac_preamble_ack_hdr->phase_in_ticks/2);
+	 }
+
 	 if(phase_ticks < 0) {
 		 phase_ticks += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
 	 }
@@ -1348,9 +1358,9 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
             		if(_addr_match(&iqueuemac->tx.current_neighbour->l2_addr, &receive_packet_info.src_addr)){
             			iqueuemac->tx.got_preamble_ack = true;
-            			if(iqueuemac->phase_changed == false){
-            				iqueuemac_device_process_preamble_ack(iqueuemac, pkt, &receive_packet_info);
-            			}
+
+            			iqueuemac_device_process_preamble_ack(iqueuemac, pkt, &receive_packet_info);
+
             			/**got preamble-ack, flush the rx queue***/
             			gnrc_pktbuf_release(pkt);
             			packet_queue_flush(&iqueuemac->rx.queue);
@@ -1729,6 +1739,23 @@ void iqueuemac_router_vtdma_receive_packet_process(iqueuemac_t* iqueuemac){
     }/* end of while loop */
 }
 
+void iqueuemac_figure_tx_neighbor_phase(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac->phase_changed == true){
+
+		iqueuemac->phase_changed = false;
+
+    	for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++){
+    		if(iqueuemac->tx.neighbours[i].mac_type == ROUTER){
+    			long int tmp = iqueuemac->tx.neighbours[i].cp_phase - iqueuemac->backoff_phase_ticks;
+    		    if(tmp < 0) {
+    		        tmp += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+    		    }
+    		    iqueuemac->tx.neighbours[i].cp_phase = (uint32_t)tmp;
+    		}
+    	}
+	}
+}
 void _dispatch(gnrc_pktsnip_t* buffer[])
 {
     assert(buffer != NULL);
