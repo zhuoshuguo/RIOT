@@ -399,6 +399,7 @@ typedef struct {
 	iqueuemac_tx_feedback_t tx_feedback;
 	bool tx_finished;
 
+
 	vtdma_para_t vtdma_para;
 
 	uint8_t cp_retries;
