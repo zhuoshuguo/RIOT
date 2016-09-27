@@ -1684,11 +1684,11 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
         rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
         iqueuemac->phase_changed = true;
 
-        //uint32_t backoff_us;
-        //backoff_us = RTT_TICKS_TO_US(iqueuemac->backoff_phase_ticks);
-        //printf("bp: %lu. \n", backoff_us);
+        uint32_t backoff_us;
+        backoff_us = RTT_TICKS_TO_US(iqueuemac->backoff_phase_ticks);
+        printf("bp %lu\n", backoff_us);
 
-        puts("bp");
+        //puts("bp");
 	}
 
 	if((iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END))){
