@@ -457,6 +457,7 @@ typedef struct iqueuemac {
     bool phase_changed;
 
     bool send_beacon_fail;
+    bool rx_memory_full;
    
 } iqueuemac_t;
 

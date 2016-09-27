@@ -159,6 +159,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	iqueuemac->duty_cycle_started = false;
 	iqueuemac->quit_current_cycle = false;
 	iqueuemac->send_beacon_fail = false;
+	iqueuemac->rx_memory_full = false;
 
 }
 
@@ -1327,6 +1328,7 @@ void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 	iqueuemac->packet_received = false;
 	iqueuemac->tx.preamble_sent = 0;
 	iqueuemac->tx.got_preamble_ack = false;
+	iqueuemac->rx_memory_full = false;
 
 	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE;
 	iqueuemac->need_update = true;
@@ -1336,6 +1338,30 @@ void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 {
+	/* if memory full, release one pkt and reload next pkt */
+	if(iqueuemac->rx_memory_full == true){
+		iqueuemac->rx_memory_full = false;
+
+		puts("memory full, release one pkt");
+
+		if(iqueuemac->tx.tx_packet != NULL){
+			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+			iqueuemac->tx.tx_packet = NULL;
+		}
+
+		gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.current_neighbour->queue));
+
+		if(pkt != NULL){
+			iqueuemac->tx.tx_packet = pkt;
+		}else{
+			puts("iqueueMAC: NUll pkt, goto t2u end");
+			iqueuemac->tx.current_neighbour = NULL;
+			iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+			iqueuemac->need_update = true;
+			return;
+		}
+	}
+
 	/* if rx is going, wait until rx is completed. */
 	if(_get_netdev_state(iqueuemac) == NETOPT_STATE_RX){
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
@@ -1411,8 +1437,34 @@ void iqueuemac_t2u_wait_preamble_tx_end(iqueuemac_t* iqueuemac)
 		iqueuemac->need_update = false;
 	}
 }
+
 void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 {
+
+	/* if memory full, release one pkt and reload next pkt */
+	if(iqueuemac->rx_memory_full == true){
+		iqueuemac->rx_memory_full = false;
+
+		puts("memory full, release one pkt");
+
+		if(iqueuemac->tx.tx_packet != NULL){
+			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+			iqueuemac->tx.tx_packet = NULL;
+		}
+
+		gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.current_neighbour->queue));
+
+		if(pkt != NULL){
+			iqueuemac->tx.tx_packet = pkt;
+		}else{
+			puts("iqueueMAC: NUll pkt, goto t2u end");
+			iqueuemac->tx.current_neighbour = NULL;
+			iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+			iqueuemac->need_update = true;
+			return;
+		}
+	}
+
 
 	if(iqueuemac->packet_received == true){
 	   	iqueuemac->packet_received = false;
@@ -2237,6 +2289,7 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                     gnrc_pktsnip_t *pkt = gnrc_netdev2->recv(gnrc_netdev2);
 
                     if(pkt == NULL){
+                    	iqueuemac.rx_memory_full = true;
                     	puts("rx: pkt is NULL, memory full?");
                     	iqueuemac.packet_received = false;
                     	iqueuemac.rx_started = false;
