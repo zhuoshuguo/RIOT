@@ -917,6 +917,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				iqueuemac->need_update = true;
 			}break;
 
+			case TX_FEEDBACK_BUSY:puts("t2u channel busy");
 			/*** if NOACK, regards it as phase-lock failed, mark the destination as unknown will try t-2-u next time. ***/
 			case TX_FEEDBACK_NOACK:{
 
@@ -954,7 +955,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				/*** pkt trans failed, don't release the pkt here, retry to transmit in t-2-u procedure. ***/
 
 			}break;
-
+#if 0
 			/*** if BUSY, regards it as channel busy ***/
 			case TX_FEEDBACK_BUSY:{
 				/*** first release the pkt ***/
@@ -967,7 +968,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				iqueuemac->need_update = true;
 
 			}break;
-
+#endif
 			default:{
 				/*** first release the pkt ***/
 				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
@@ -1564,9 +1565,25 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	    	   	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 	    	}
 	    }else{
-	    	puts("trans in t2u failed. t2u failed.");
-	    	gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
-	    	iqueuemac->tx.tx_packet = NULL;
+	        /* save payload pointer */
+	        gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next->next;
+
+	        /* remove iqueuemac header */
+	        iqueuemac->tx.tx_packet->next->next = NULL;
+	        gnrc_pktbuf_release(iqueuemac->tx.tx_packet->next);
+
+	        /* make append payload after netif header again */
+	        iqueuemac->tx.tx_packet->next = payload;
+
+	        /* queue the pkt for transmission in next cycle */
+	        _queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet);
+	        iqueuemac->tx.tx_packet = NULL;
+
+	        iqueuemac->tx.current_neighbour = NULL;
+
+	    	puts("trans in t2u failed. reload pkt");
+	    	//gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+	    	//iqueuemac->tx.tx_packet = NULL;
 
 	    	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 	    }
