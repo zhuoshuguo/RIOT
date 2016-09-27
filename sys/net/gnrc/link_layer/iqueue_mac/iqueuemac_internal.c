@@ -583,8 +583,8 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
     }
     int res;
     res = iqueuemac_send(iqueuemac, pkt, csma_enable);
-    if(res == -ENOBUFS){
-		puts("iqueuemac: pktbuf add failed in iqueuemac_assemble_and_send_beacon().");
+    if(res < 0){
+		puts("iqueuemac: send beacon failed, release it.");
     	gnrc_pktbuf_release(pkt_iqmac);
     }
 	return res;
@@ -1403,6 +1403,11 @@ int iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_enab
 	gnrc_pktsnip_t* pkt;
 	pkt = iqueuemac->tx.tx_packet;
 
+    if (pkt == NULL) {
+        puts("iqsend: pkt was NULL\n");
+        return -EINVAL;
+    }
+
 	/*** enable auto-ACK ??? ***/
 
 	/* Insert iqueue-mac header above NETIF header */
@@ -1443,10 +1448,10 @@ int iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_enab
 
 	int res;
 	res = iqueuemac_send(iqueuemac, pkt, csma_enable);
-    if(res == -ENOBUFS){
-        /* If res is ENOBUFS, then, the old pkt will not be released in send(). so need to release old data once */
+    if(res < 0){
+        /* If res is < 0, then, the old pkt will not be released in send(). so need to release old data once */
         gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
-		puts("iqueuemac: send data failed in iqueuemac_send_data_packet().");
+		puts("iqueuemac: tx-res < 0 in iqueuemac_send_data_packet().");
     }
 	return res;
 

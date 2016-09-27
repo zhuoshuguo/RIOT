@@ -860,23 +860,21 @@ void iqueuemac_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 		; //return;
 	}*/
 
-
 	/***  do not disable auto-ack here, we need auto-ack for data transmission and possible retransmission ***/
 	/******Use CSMA here, and send_packet() will release the pkt itself !!!!******/
 	int res;
 	res = iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
 	if(res < 0){
-		printf("t2r %d\n", res);
-	}
-
-	if(res == -ENOBUFS){
-		puts("iq: nobuf for sending data in t-2-r, release the pkt.");
+		printf("t2r %d, release pkt.\n", res);
 
 		iqueuemac->tx.no_ack_contuer = 0;
-		gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
-		iqueuemac->tx.tx_packet = NULL;
+		if(iqueuemac->tx.tx_packet != NULL){
+			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+			iqueuemac->tx.tx_packet = NULL;
+		}
+
 		iqueuemac->tx.current_neighbour = NULL;
-		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2R_TRANS_END;
+		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 		iqueuemac->need_update = true;
 		return;
 	}
@@ -884,7 +882,7 @@ void iqueuemac_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 	//iqueuemac->tx.tx_packet = NULL;
 
 	iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CPTRANS_FEEDBACK;
-	iqueuemac->need_update = true;
+	iqueuemac->need_update = false;
 
 }
 
@@ -1107,16 +1105,14 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 		int res;
 		res = iqueuemac_send_data_packet(iqueuemac, NETOPT_DISABLE);
 		if(res < 0){
-			printf("vtdma %d\n", res);
-		}
+			printf("vtdma %d, release pkt\n", res);
 
-		if(res == -ENOBUFS){
-			puts("iq: nobuf for sending data in vtdma, release the pkt.");
-
-			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
-			iqueuemac->tx.tx_packet = NULL;
+			if(iqueuemac->tx.tx_packet != NULL){
+				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+				iqueuemac->tx.tx_packet = NULL;
+			}
 			iqueuemac->tx.current_neighbour = NULL;
-			iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2R_TRANS_END;
+			iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 			iqueuemac->need_update = true;
 			return;
 		}
@@ -1223,7 +1219,7 @@ void iqueuemac_t2r_end(iqueuemac_t* iqueuemac){
 
 	/* if t-2-r success or IQUEUEMAC_REPHASELOCK_THRESHOLD has been reached,
 	 * clean the tx current_neighbour address. */
-	if((iqueuemac->tx.tx_packet)&&(iqueuemac->tx.no_ack_contuer == 0)){
+	if((iqueuemac->tx.tx_packet != NULL)&&(iqueuemac->tx.no_ack_contuer == 0)){
 		gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 		iqueuemac->tx.tx_packet = NULL;
 	}
@@ -1464,11 +1460,8 @@ void iqueuemac_t2u_send_data(iqueuemac_t* iqueuemac){
 	int res;
 	res = iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
 	if(res < 0){
-		printf("t2u %d\n", res);
-	}
+		printf("t2u %d, release pkt in t2u end\n", res);
 
-	if(res == -ENOBUFS){
-		puts("iq: nobuf for sending data.");
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 		iqueuemac->need_update = true;
 		return;
@@ -1538,7 +1531,7 @@ void iqueuemac_t2u_end(iqueuemac_t* iqueuemac){
 	/* in case of quit_current_cycle is true, don't release tx-pkt and tx-neighbor, will try immediately next cycle.*/
 	if(iqueuemac->quit_current_cycle == false)
 	{
-		if(iqueuemac->tx.tx_packet){
+		if(iqueuemac->tx.tx_packet != NULL){
 			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 			iqueuemac->tx.tx_packet = NULL;
 		}
@@ -1760,19 +1753,18 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 	/****** assemble and send the beacon ******/
 	int res;
 	res = iqueuemac_assemble_and_send_beacon(iqueuemac);
+
+	/* Enable Auto ACK again for data reception */
+	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
+
 	if(res < 0){
 		printf("beacon %d\n", res);
-	}
-	if(res == -ENOBUFS){
-		puts("iq: nobuf for beacon, send beacon failed.");
+
 		iqueuemac->send_beacon_fail = true;
 		iqueuemac->need_update = true;
 	}else{
 		iqueuemac->need_update = false;
 	}
-
-	/* Enable Auto ACK again for data reception */
-	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	iqueuemac->router_states.router_listen_state = R_LISTEN_WAIT_BEACON_FEEDBACK;
 	//puts("iqueuemac: router is now sending the beacon!!!");
