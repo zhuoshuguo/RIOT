@@ -1848,12 +1848,14 @@ void iqueuemac_router_wait_beacon_feedback(iqueuemac_t* iqueuemac){
 			iqueuemac->router_states.router_listen_state = R_LISTEN_VTDMA_INIT;
 			iqueuemac->need_update = true;
 		}else{ /**** no vTDMA period ****/
+
+			/* has packet to send */
 			if(iqueue_mac_find_next_tx_neighbor(iqueuemac)){
 
-				iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
-
+				/* if it is for broadcast */
 				if(iqueuemac->tx.current_neighbour == &iqueuemac->tx.neighbours[0]){
 					if(iqueuemac->get_other_preamble == false){
+						iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
 						iqueuemac->router_states.router_trans_state = R_BROADCAST;
 					}else{
 				        iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
@@ -1864,24 +1866,28 @@ void iqueuemac_router_wait_beacon_feedback(iqueuemac_t* iqueuemac){
 					}
 				}else{
 					switch(iqueuemac->tx.current_neighbour->mac_type){
-					  case UNKNOWN: {
-						  if(iqueuemac->get_other_preamble == false){
-							  iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
-						  }else{
-							  iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
-						  }
-					  }break;
-					  case ROUTER: {
-						  iqueuemac->router_states.router_trans_state = R_TRANS_TO_ROUTER;
-				 	 }break;
-				 	 case NODE: {
-						  iqueuemac->router_states.router_trans_state = R_TRANS_TO_NODE;
-					  }break;
-					  default:break;
+					case UNKNOWN: {
+						if(iqueuemac->get_other_preamble == false){
+							iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
+							iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
+						}else{
+							iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
+						}
+					}break;
+					case ROUTER: {
+						iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
+						iqueuemac->router_states.router_trans_state = R_TRANS_TO_ROUTER;
+				 	}break;
+				 	case NODE: {
+						iqueuemac->router_states.router_trans_state = R_TRANS_TO_NODE;
+					}break;
+				 	default:{
+						puts("iqueuemac: error! Unknow MAC type.");break;
+					}
 					}
 				}
 				iqueuemac->need_update = true;
-			}else{/**** no packet to send ****/
+			}else{/**** no packet to send, go to sleep ****/
 		        iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
 		        iqueuemac->need_update = true;
 			}
@@ -1932,14 +1938,12 @@ void iqueue_mac_router_vtdma_end(iqueuemac_t* iqueuemac){
 
 	/*** ensure that the channel-switching is finished before go to sleep to turn it off !!! ***/
 
-
 	/*** see if there is pkt to send ***/
 	if(iqueue_mac_find_next_tx_neighbor(iqueuemac)){
 
-		iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
-
 		if(iqueuemac->tx.current_neighbour == &iqueuemac->tx.neighbours[0]){
 			if(iqueuemac->get_other_preamble == false){
+				iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
 				iqueuemac->router_states.router_trans_state = R_BROADCAST;
 			}else{
 		        iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
@@ -1952,19 +1956,22 @@ void iqueue_mac_router_vtdma_end(iqueuemac_t* iqueuemac){
 			switch(iqueuemac->tx.current_neighbour->mac_type){
 			  case UNKNOWN: {
 				  if(iqueuemac->get_other_preamble == false){
+					  iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
 					  iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
 				  }else{
 					  iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
 				  }
-				  iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
 			  }break;
 			  case ROUTER: {
+				  iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
 				  iqueuemac->router_states.router_trans_state = R_TRANS_TO_ROUTER;
 		 	 }break;
 		 	 case NODE: {
 				  iqueuemac->router_states.router_trans_state = R_TRANS_TO_NODE;
 			  }break;
-			  default:break;
+			 default:{
+				 puts("iqueuemac: error! Unknow MAC type.");break;
+			 }
 			}
 		}
 	}else{
