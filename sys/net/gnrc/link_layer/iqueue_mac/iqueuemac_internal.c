@@ -805,27 +805,46 @@ void iqueuemac_router_queue_indicator_update(iqueuemac_t* iqueuemac, gnrc_pktsni
 
 }
 
-
 bool iqueuemac_check_duplicate(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* pa_info)
 {
-	if(_addr_match(&iqueuemac->rx.last_seq_info.node_addr, &pa_info->src_addr)){
-		if(iqueuemac->rx.last_seq_info.seq == pa_info->seq){
+	/* check with last_1 address */
+	if(_addr_match(&iqueuemac->rx.check_dup_pkt.last_1.node_addr, &pa_info->src_addr)){
+		if(iqueuemac->rx.check_dup_pkt.last_1.seq == pa_info->seq){
 			return true;
 		}else{
-			iqueuemac->rx.last_seq_info.seq = pa_info->seq;
+			iqueuemac->rx.check_dup_pkt.last_1.seq = pa_info->seq;
 			return false;
 		}
 	}
 
-	/*** update the last seq ***/
-	iqueuemac->rx.last_seq_info.node_addr.len = pa_info->src_addr.len;
-	memcpy(iqueuemac->rx.last_seq_info.node_addr.addr,
+	/* if reach here, means the sender is not last-1, check with last_2 address */
+
+	bool duplicate;
+	duplicate = false;
+
+	if(_addr_match(&iqueuemac->rx.check_dup_pkt.last_2.node_addr, &pa_info->src_addr)){
+
+		if(iqueuemac->rx.check_dup_pkt.last_2.seq == pa_info->seq){
+			duplicate = true;
+		}
+	}
+
+	/* push last_1 to last_2 */
+	iqueuemac->rx.check_dup_pkt.last_2.node_addr.len = iqueuemac->rx.check_dup_pkt.last_1.node_addr.len;
+	memcpy(iqueuemac->rx.check_dup_pkt.last_2.node_addr.addr,
+			iqueuemac->rx.check_dup_pkt.last_1.node_addr.addr,
+			iqueuemac->rx.check_dup_pkt.last_1.node_addr.len);
+	iqueuemac->rx.check_dup_pkt.last_2.seq = iqueuemac->rx.check_dup_pkt.last_1.seq;
+
+	/* update the last_1 address */
+	iqueuemac->rx.check_dup_pkt.last_1.node_addr.len = pa_info->src_addr.len;
+	memcpy(iqueuemac->rx.check_dup_pkt.last_1.node_addr.addr,
 			pa_info->src_addr.addr,
 			pa_info->src_addr.len);
 
-	iqueuemac->rx.last_seq_info.seq = pa_info->seq;
+	iqueuemac->rx.check_dup_pkt.last_1.seq = pa_info->seq;
 
-	return false;
+	return duplicate;
 }
 
 void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){

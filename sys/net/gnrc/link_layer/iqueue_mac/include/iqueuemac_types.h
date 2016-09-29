@@ -355,6 +355,10 @@ typedef struct {
 	uint8_t seq;
 }last_seq_info_t;
 
+typedef struct {
+	last_seq_info_t last_1;
+	last_seq_info_t last_2;
+}check_dup_pkt_t;
 
 typedef struct {
     /* Internal state of reception state machine */
@@ -367,7 +371,7 @@ typedef struct {
     rx_slots_schedule_unit rx_register_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
 
     rx_vtdma_mana_t router_vtdma_mana;
-    last_seq_info_t last_seq_info;
+    check_dup_pkt_t check_dup_pkt;
 
 } iqueuemac_rx_t;
 
