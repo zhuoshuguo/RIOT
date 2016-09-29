@@ -917,7 +917,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				iqueuemac->need_update = true;
 			}break;
 
-			case TX_FEEDBACK_BUSY:puts("t2u channel busy");
+			case TX_FEEDBACK_BUSY:puts("t2r channel busy");
 			/*** if NOACK, regards it as phase-lock failed, mark the destination as unknown will try t-2-u next time. ***/
 			case TX_FEEDBACK_NOACK:{
 
