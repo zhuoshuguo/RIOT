@@ -912,22 +912,21 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
         	    if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
 
         	    	iqueuemac->got_preamble = true;
-
-    	    		int res;
-    	    		res = iqueue_send_preamble_ack(iqueuemac, &receive_packet_info);
-    	    		if(res < 0){
-    	    			printf("preamble-ack: res %d\n",res);
-    	    		}
-
         	    	/** if reception is not going on, reply preamble-ack,
         	    	 * also, don't send preamble-ACK if CP ends. **/
-        	    	//if(_get_netdev_state(iqueuemac) == NETOPT_STATE_IDLE){
+        	    	if(_get_netdev_state(iqueuemac) == NETOPT_STATE_IDLE){
         	    		/***  disable auto-ack ***/
-        	    		//iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
+        	    		iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
+
+        	    		int res;
+        	    		res = iqueue_send_preamble_ack(iqueuemac, &receive_packet_info);
+        	    		if(res < 0){
+        	    			printf("preamble-ack: res %d\n",res);
+        	    		}
 
         	    		/* Enable Auto ACK again for data reception */
-        	    		//iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
-        	    	//}
+        	    		iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
+        	    	}
         	    }else{
         		    //iqueuemac->quit_current_cycle = true;
         	    	/* if receives unintended preamble, don't send beacon and quit the following vTDMA period. */
