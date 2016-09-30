@@ -1682,6 +1682,15 @@ void iqueuemac_t2u_update(iqueuemac_t* iqueuemac)
 void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
 	/* reset last_seq_info. important! need to do every cycle.*/
+	for(int i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
+		iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.addr[0]=0;
+		iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.addr[1]=0;
+		iqueuemac->rx.check_dup_pkt.last_nodes[i].seq=0;
+	}
+	iqueuemac->rx.check_dup_pkt.queue_head = 0;
+
+
+#if 0
 	iqueuemac->rx.check_dup_pkt.last_1.node_addr.addr[0] =0;
 	iqueuemac->rx.check_dup_pkt.last_1.node_addr.addr[1] =0;
 	iqueuemac->rx.check_dup_pkt.last_1.seq = 0;
@@ -1689,6 +1698,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->rx.check_dup_pkt.last_2.node_addr.addr[0] =0;
 	iqueuemac->rx.check_dup_pkt.last_2.node_addr.addr[1] =0;
 	iqueuemac->rx.check_dup_pkt.last_2.seq = 0;
+#endif
 
 	iqueuemac->router_states.router_new_cycle = false;
 	/******set cp timeout ******/
