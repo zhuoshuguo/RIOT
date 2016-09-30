@@ -927,7 +927,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 			case TX_FEEDBACK_BUSY:puts("t2r channel busy");
 			/*** if NOACK, regards it as phase-lock failed, mark the destination as unknown will try t-2-u next time. ***/
 			case TX_FEEDBACK_NOACK:{
-
+				puts("t2r noack");
 				iqueuemac->tx.no_ack_contuer ++;
 
 				if(iqueuemac->tx.no_ack_contuer >= IQUEUEMAC_REPHASELOCK_THRESHOLD){
@@ -947,11 +947,11 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 			        iqueuemac->tx.tx_packet->next = payload;
 
 			        /* queue the pkt for transmission in next cycle */
-			        _queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet);
+			        if(_queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet) == false){
+			        	puts("Push pkt failed in t2r");
+			        }
 			        iqueuemac->tx.tx_packet = NULL;
 
-					//iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RE_PHASE_LOCK, (IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_RE_PHASE_LOCK_ADVANCE_US));
-					//iqueuemac_trun_off_radio(iqueuemac);
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END; //DEVICE_T2R_RE_PHASE_LOCK_PREPARE;
 
 				}else{
@@ -962,28 +962,29 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				/*** pkt trans failed, don't release the pkt here, retry to transmit in t-2-u procedure. ***/
 
 			}break;
-#if 0
-			/*** if BUSY, regards it as channel busy ***/
-			case TX_FEEDBACK_BUSY:{
-				/*** first release the pkt ***/
-				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
-				iqueuemac->tx.tx_packet = NULL;
 
-				iqueuemac->tx.no_ack_contuer = 0;
-
-				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2N_TRANS_END;
-				iqueuemac->need_update = true;
-
-			}break;
-#endif
 			default:{
-				/*** first release the pkt ***/
-				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
-				iqueuemac->tx.tx_packet = NULL;
+				puts("t2r default error, push pkt");
 
 				iqueuemac->tx.no_ack_contuer = 0;
 
-				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2N_TRANS_END;
+		        /* save payload pointer */
+		        gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next->next;
+
+		        /* remove iqueuemac header */
+		        iqueuemac->tx.tx_packet->next->next = NULL;
+		        gnrc_pktbuf_release(iqueuemac->tx.tx_packet->next);
+
+		        /* make append payload after netif header again */
+		        iqueuemac->tx.tx_packet->next = payload;
+
+		        /* queue the pkt for transmission in next cycle */
+		        if(_queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet) == false){
+		        	puts("Push pkt failed in t2r");
+		        }
+		        iqueuemac->tx.tx_packet = NULL;
+
+				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 				iqueuemac->need_update = true;
 			}break;
 
@@ -1197,7 +1198,9 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 		            iqueuemac->tx.tx_packet->next = payload;
 
 		            /* queue the pkt for transmission in next cycle */
-		            _queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet);
+			        if(_queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet) == false){
+			        	puts("Push pkt failed in t2r");
+			        }
 		            iqueuemac->tx.tx_packet = NULL;
 
 		            /****  vtdma period ends, switch back to the public channel ****/
@@ -1210,11 +1213,23 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 
 			default:{
 				puts("vtdma tx default, release pkt.");
-				/*** first release the pkt ***/
-				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
-				iqueuemac->tx.tx_packet = NULL;
+		        /* save payload pointer */
+		        gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next->next;
 
-				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2N_TRANS_END;
+		        /* remove iqueuemac header */
+		        iqueuemac->tx.tx_packet->next->next = NULL;
+		        gnrc_pktbuf_release(iqueuemac->tx.tx_packet->next);
+
+		        /* make append payload after netif header again */
+		        iqueuemac->tx.tx_packet->next = payload;
+
+		        /* queue the pkt for transmission in next cycle */
+		        if(_queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet) == false){
+		        	puts("Push pkt failed in t2r");
+		        }
+		        iqueuemac->tx.tx_packet = NULL;
+
+				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 				iqueuemac->need_update = true;
 			}break;
 		}
