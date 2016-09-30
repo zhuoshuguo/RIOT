@@ -162,6 +162,12 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	iqueuemac->rx_memory_full = false;
 
 	iqueuemac->rx.check_dup_pkt.queue_head = 0;
+
+
+	for(int i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
+		iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
+	}
+
 }
 
 static void rtt_cb(void* arg)
@@ -1683,12 +1689,15 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
 	/* reset last_seq_info. important! need to do every cycle.*/
 	for(int i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
-		iqueuemac->rx.check_dup_pkt.last_nodes[i].life_cycle ++;
-		if(iqueuemac->rx.check_dup_pkt.last_nodes[i].life_cycle >= IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE){
-			iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.addr[0]=0;
-			iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.addr[1]=0;
-			iqueuemac->rx.check_dup_pkt.last_nodes[i].seq=0;
-			iqueuemac->rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
+		if(iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.len != 0){
+			iqueuemac->rx.check_dup_pkt.last_nodes[i].life_cycle ++;
+			if(iqueuemac->rx.check_dup_pkt.last_nodes[i].life_cycle >= IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE){
+				iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
+				iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.addr[0]=0;
+				iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.addr[1]=0;
+				iqueuemac->rx.check_dup_pkt.last_nodes[i].seq=0;
+				iqueuemac->rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
+			}
 		}
 	}
 

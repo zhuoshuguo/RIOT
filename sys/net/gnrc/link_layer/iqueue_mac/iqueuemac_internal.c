@@ -807,7 +807,35 @@ void iqueuemac_router_queue_indicator_update(iqueuemac_t* iqueuemac, gnrc_pktsni
 
 bool iqueuemac_check_duplicate(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* pa_info)
 {
+	int i;
+	for(i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
+		if(_addr_match(&iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr, &pa_info->src_addr)){
+			iqueuemac->rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
+			if(iqueuemac->rx.check_dup_pkt.last_nodes[i].seq == pa_info->seq){
+				return true;
+			}else{
+				iqueuemac->rx.check_dup_pkt.last_nodes[i].seq = pa_info->seq;
+				return false;
+			}
+		}
+	}
 
+	/* look for a free unit */
+	for(i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
+		if(iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.len == 0){
+			iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.len = pa_info->src_addr.len;
+			memcpy(iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.addr,
+					pa_info->src_addr.addr,
+					pa_info->src_addr.len);
+			iqueuemac->rx.check_dup_pkt.last_nodes[i].seq = pa_info->seq;
+			iqueuemac->rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
+			return false;
+		}
+	}
+	puts("no free unit");
+	return false;
+
+#if 0
 	uint8_t head;
 	head = iqueuemac->rx.check_dup_pkt.queue_head;
 
@@ -856,6 +884,7 @@ bool iqueuemac_check_duplicate(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* 
 	iqueuemac->rx.check_dup_pkt.last_nodes[head].life_cycle = 0;
 
 	return duplicate;
+#endif
 
 #if 0
 	/* check with last_1 address */
@@ -996,14 +1025,15 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 
             // iqueuemac.rx.last_seq_info.seq = netif_hdr->seq;
             case FRAMETYPE_IQUEUE_DATA:{
-            	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
-            		gnrc_pktbuf_release(pkt);
-            		puts("dup pkt.");
-            		return;
-            	}
 
             	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr))
             	{
+                	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
+                		gnrc_pktbuf_release(pkt);
+                		puts("dup pkt.");
+                		return;
+                	}
+
             		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
             		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             		_dispatch(iqueuemac->rx.dispatch_buffer);
@@ -1445,6 +1475,12 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             case FRAMETYPE_IQUEUE_DATA:{
             	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr))
             	{
+                	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
+                		gnrc_pktbuf_release(pkt);
+                		puts("dup pkt.");
+                		return;
+                	}
+
             		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
             		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             		_dispatch(iqueuemac->rx.dispatch_buffer);
@@ -1695,6 +1731,12 @@ void iqueuemac_wait_beacon_packet_process(iqueuemac_t* iqueuemac){
             	 * destination's. */
             	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr))
             	{
+                	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
+                		gnrc_pktbuf_release(pkt);
+                		puts("dup pkt.");
+                		return;
+                	}
+
             		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
             		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             		_dispatch(iqueuemac->rx.dispatch_buffer);
@@ -1803,6 +1845,12 @@ void iqueuemac_router_vtdma_receive_packet_process(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_IQUEUE_DATA:{
+            	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
+            		gnrc_pktbuf_release(pkt);
+            		puts("dup pkt.");
+            		return;
+            	}
+
             	iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
 
