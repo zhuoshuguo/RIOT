@@ -161,6 +161,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	iqueuemac->send_beacon_fail = false;
 	iqueuemac->rx_memory_full = false;
 
+	iqueuemac->rx.check_dup_pkt.queue_head = 0;
 }
 
 static void rtt_cb(void* arg)
@@ -1678,16 +1679,18 @@ void iqueuemac_t2u_update(iqueuemac_t* iqueuemac)
 }
 
 /******************new router state machines*****/
-
 void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
 	/* reset last_seq_info. important! need to do every cycle.*/
 	for(int i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
-		iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.addr[0]=0;
-		iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.addr[1]=0;
-		iqueuemac->rx.check_dup_pkt.last_nodes[i].seq=0;
+		iqueuemac->rx.check_dup_pkt.last_nodes[i].life_cycle ++;
+		if(iqueuemac->rx.check_dup_pkt.last_nodes[i].life_cycle >= IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE){
+			iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.addr[0]=0;
+			iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.addr[1]=0;
+			iqueuemac->rx.check_dup_pkt.last_nodes[i].seq=0;
+			iqueuemac->rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
+		}
 	}
-	iqueuemac->rx.check_dup_pkt.queue_head = 0;
 
 
 #if 0
@@ -1706,6 +1709,9 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	listen_period = random_uint32_range(0, IQUEUEMAC_CP_RANDOM_END_US) + IQUEUEMAC_CP_DURATION_US;
 
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, listen_period);
+
+	/* Enable Auto ACK again for data reception */
+	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	iqueuemac->rx_started = false;
 	iqueuemac->packet_received = false;
