@@ -813,6 +813,8 @@ bool iqueuemac_check_duplicate(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* 
 
 	/* check with last_1 (head) address */
 	if(_addr_match(&iqueuemac->rx.check_dup_pkt.last_nodes[head].node_addr, &pa_info->src_addr)){
+		iqueuemac->rx.check_dup_pkt.last_nodes[head].life_cycle = 0;
+
 		if(iqueuemac->rx.check_dup_pkt.last_nodes[head].seq == pa_info->seq){
 			return true;
 		}else{
@@ -847,6 +849,7 @@ bool iqueuemac_check_duplicate(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* 
 			pa_info->src_addr.len);
 
 	iqueuemac->rx.check_dup_pkt.last_nodes[head].seq = pa_info->seq;
+	iqueuemac->rx.check_dup_pkt.last_nodes[head].life_cycle = 0;
 
 	return duplicate;
 

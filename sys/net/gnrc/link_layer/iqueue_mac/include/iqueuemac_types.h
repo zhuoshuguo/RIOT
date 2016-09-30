@@ -353,11 +353,13 @@ typedef struct {
 typedef struct {
 	l2_addr_t node_addr;
 	uint8_t seq;
+	uint8_t life_cycle;
 }last_seq_info_t;
 
 typedef struct {
 	last_seq_info_t last_nodes[IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE];
 	uint8_t queue_head;
+
 }check_dup_pkt_t;
 
 typedef struct {

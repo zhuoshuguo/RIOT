@@ -112,7 +112,11 @@ typedef enum {
 
 
 #ifndef IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE
-#define IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE             (6U)
+#define IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE             (8U)
+#endif
+
+#ifndef IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE
+#define IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE            (2U)
 #endif
 
 /******* it seems that this should not be larger than 5 *******/
