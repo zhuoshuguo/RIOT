@@ -826,12 +826,16 @@ bool iqueuemac_check_duplicate(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* 
 	bool duplicate;
 	duplicate = false;
 	/* search other units.*/
-	for(uint8_t i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
+	for(int i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
 
-		if((i != head)&&(_addr_match(&iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr, &pa_info->src_addr))){
+		if(_addr_match(&iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr, &pa_info->src_addr)){
 			if(iqueuemac->rx.check_dup_pkt.last_nodes[i].seq == pa_info->seq){
 				duplicate = true;
 			}
+			iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.addr[0]=0;
+			iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.addr[1]=0;
+			iqueuemac->rx.check_dup_pkt.last_nodes[i].seq=0;
+
 			break;
 		}
 	}
