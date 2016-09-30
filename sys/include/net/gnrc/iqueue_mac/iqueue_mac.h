@@ -116,7 +116,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE
-#define IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE            (2U)
+#define IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE            (3U)
 #endif
 
 /******* it seems that this should not be larger than 5 *******/
