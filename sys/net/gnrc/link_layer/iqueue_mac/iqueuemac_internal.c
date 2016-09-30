@@ -807,6 +807,50 @@ void iqueuemac_router_queue_indicator_update(iqueuemac_t* iqueuemac, gnrc_pktsni
 
 bool iqueuemac_check_duplicate(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* pa_info)
 {
+
+	uint8_t head;
+	head = iqueuemac->rx.check_dup_pkt.queue_head;
+
+	/* check with last_1 (head) address */
+	if(_addr_match(&iqueuemac->rx.check_dup_pkt.last_nodes[head].node_addr, &pa_info->src_addr)){
+		if(iqueuemac->rx.check_dup_pkt.last_nodes[head].seq == pa_info->seq){
+			return true;
+		}else{
+			iqueuemac->rx.check_dup_pkt.last_nodes[head].seq = pa_info->seq;
+			return false;
+		}
+	}
+
+	bool duplicate;
+	duplicate = false;
+	/* search other units.*/
+	for(uint8_t i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
+
+		if((i != head)&&(_addr_match(&iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr, &pa_info->src_addr))){
+			if(iqueuemac->rx.check_dup_pkt.last_nodes[i].seq == pa_info->seq){
+				duplicate = true;
+			}
+			break;
+		}
+	}
+
+	/* update the head */
+	iqueuemac->rx.check_dup_pkt.queue_head ++;
+	if(iqueuemac->rx.check_dup_pkt.queue_head >= IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE){
+		iqueuemac->rx.check_dup_pkt.queue_head = 0;
+	}
+	head = iqueuemac->rx.check_dup_pkt.queue_head;
+
+	iqueuemac->rx.check_dup_pkt.last_nodes[head].node_addr.len = pa_info->src_addr.len;
+	memcpy(iqueuemac->rx.check_dup_pkt.last_nodes[head].node_addr.addr,
+			pa_info->src_addr.addr,
+			pa_info->src_addr.len);
+
+	iqueuemac->rx.check_dup_pkt.last_nodes[head].seq = pa_info->seq;
+
+	return duplicate;
+
+#if 0
 	/* check with last_1 address */
 	if(_addr_match(&iqueuemac->rx.check_dup_pkt.last_1.node_addr, &pa_info->src_addr)){
 		if(iqueuemac->rx.check_dup_pkt.last_1.seq == pa_info->seq){
@@ -845,6 +889,8 @@ bool iqueuemac_check_duplicate(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* 
 	iqueuemac->rx.check_dup_pkt.last_1.seq = pa_info->seq;
 
 	return duplicate;
+#endif
+
 }
 
 void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){

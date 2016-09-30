@@ -110,6 +110,11 @@ typedef enum {
 #define IQUEUEMAC_TIMEOUT_COUNT             (3U)
 #endif
 
+
+#ifndef IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE
+#define IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE             (6U)
+#endif
+
 /******* it seems that this should not be larger than 5 *******/
 #ifndef IQUEUEMAC_TX_QUEUE_SIZE
 #define IQUEUEMAC_TX_QUEUE_SIZE             (8U)
