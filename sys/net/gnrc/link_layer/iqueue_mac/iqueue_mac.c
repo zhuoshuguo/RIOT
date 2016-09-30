@@ -35,6 +35,7 @@
 #include "net/gnrc/netdev2.h"
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
 #include <net/gnrc/iqueue_mac/packet_queue.h>
+#include "net/gnrc/netdev2/ieee802154.h"
 
 #include "include/iqueuemac_internal.h"
 #include "include/iqueuemac_types.h"
@@ -1859,6 +1860,13 @@ void iqueue_mac_router_cp_end(iqueuemac_t* iqueuemac){
 void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
     /**** run the sub-channel selection algorithm to select the sub-channel sequence ****/
 	// iqueuemac_select_sub_channel_num(iqueuemac);
+
+	netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+
+	if(device_state->seq > 20){
+		device_state->seq = 0;
+	}
+	printf("seq: %d\n",device_state->seq);
 
 	/***  disable auto-ack ***/
 	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
