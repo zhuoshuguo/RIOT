@@ -34,6 +34,7 @@
 #include <net/gnrc/lwmac/lwmac.h>
 #include <net/gnrc/gnrc_mac_type/packet_queue.h>
 #include <net/gnrc/gnrc_mac_type/timeout.h>
+#include <net/gnrc/gnrc_mac_type/gnrc_mac_internal.h>
 
 #include "include/tx_state_machine.h"
 #include "include/rx_state_machine.h"
@@ -125,12 +126,12 @@ void lwmac_set_state(lwmac_state_t newstate)
     {
     /*********************** Operation states *********************************/
     case LISTENING:
-        _set_netdev_state(&lwmac, NETOPT_STATE_IDLE);
+        _set_netdev_state(&lwmac.gnrc_mac, NETOPT_STATE_IDLE);
         break;
 
     case SLEEPING:
         /* Put transceiver to sleep */
-        _set_netdev_state(&lwmac, NETOPT_STATE_SLEEP);
+        _set_netdev_state(&lwmac.gnrc_mac, NETOPT_STATE_SLEEP);
         /* We may have come here through RTT handler, so timeout may still be active */
         gnrc_mac_clear_timeout(&lwmac.gnrc_mac, TIMEOUT_WAKEUP_PERIOD);
         /* Return immediately, so no rescheduling */
@@ -139,17 +140,17 @@ void lwmac_set_state(lwmac_state_t newstate)
     /* Trying to send data */
     case TRANSMITTING:
         rtt_handler(LWMAC_EVENT_RTT_PAUSE); /* No duty cycling while RXing */
-        _set_netdev_state(&lwmac, NETOPT_STATE_IDLE);  /* Power up netdev */
+        _set_netdev_state(&lwmac.gnrc_mac, NETOPT_STATE_IDLE);  /* Power up netdev */
         break;
 
     /* Receiving incoming data */
     case RECEIVING:
         rtt_handler(LWMAC_EVENT_RTT_PAUSE); /* No duty cycling while TXing */
-        _set_netdev_state(&lwmac, NETOPT_STATE_IDLE);  /* Power up netdev */
+        _set_netdev_state(&lwmac.gnrc_mac, NETOPT_STATE_IDLE);  /* Power up netdev */
         break;
 
     case STOPPED:
-        _set_netdev_state(&lwmac, NETOPT_STATE_OFF);
+        _set_netdev_state(&lwmac.gnrc_mac, NETOPT_STATE_OFF);
         break;
 
     /*********************** Control states ***********************************/

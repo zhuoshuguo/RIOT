@@ -20,6 +20,7 @@
 #include <net/gnrc/lwmac/lwmac.h>
 #include <net/gnrc/gnrc_mac_type/packet_queue.h>
 #include <net/gnrc/gnrc_mac_type/timeout.h>
+#include <net/gnrc/gnrc_mac_type/gnrc_mac_internal.h>
 
 #include "include/rx_state_machine.h"
 #include "include/lwmac_internal.h"
@@ -208,7 +209,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
 
         /* Send WA */
 		lwmac->gnrc_mac.netdev->send(lwmac->gnrc_mac.netdev, pkt);
-        _set_netdev_state(lwmac, NETOPT_STATE_TX);
+        _set_netdev_state(&lwmac->gnrc_mac, NETOPT_STATE_TX);
 
         /* Enable Auto ACK again for data reception */
         autoack = NETOPT_ENABLE;

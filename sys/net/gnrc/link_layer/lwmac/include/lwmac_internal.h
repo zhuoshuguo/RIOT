@@ -44,26 +44,6 @@ typedef struct {
  */
 #define LWMAC_RTT_EVENT_MARGIN_TICKS    ( RTT_MS_TO_TICKS(2) )
 
-/* @brief Extract the destination address out of an GNRC_NETTYPE_NETIF pktsnip
- *
- * @param[in]   pkt                 pktsnip from whom to extract
- * @param[out]  pointer_to_addr     pointer to address will be stored here
- *
- * @return                          length of destination address
- */
-int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[]);
-
-/* @brief Find the first pktsnip of @p type
- *
- * Will search linearly through the packet buffer @p pkt and yield
- * gnrc_pktsnip_t::data of the first pktsnip match the type @p type.
- *
- * @param[in]   pkt     pktsnip that will be searched
- * @param[in]   type    type to search for
- *
- * @return              pointer to data, NULL is not found
- */
-void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type);
 
 /* @brief Parse an incoming packet and extract important information
  *
@@ -77,32 +57,6 @@ void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type);
  */
 int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info);
 
-
-/* @brief Shortcut to get the state of netdev
- *
- * @param[in]   lwmac           lwmac state that stores netdev pointer
- *
- * @return                      state of netdev
- */
-netopt_state_t _get_netdev_state(lwmac_t* lwmac);
-
-/* @brief Shortcut to set the state of netdev
- *
- * @param[in]   lwmac           lwmac state that stores netdev pointer
- * @param[in]   devstate        new state for netdev
- */
-void _set_netdev_state(lwmac_t* lwmac, netopt_state_t devstate);
-
-/* @brief Check if packet is broadcast
- *
- * @param[in]   pkt             packet to check
- */
-static inline bool _packet_is_broadcast(gnrc_pktsnip_t* pkt)
-{
-    gnrc_netif_hdr_t* netif_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
-    return ( (netif_hdr == NULL) ? false :
-                              (netif_hdr->flags & (GNRC_NETIF_HDR_FLAGS_BROADCAST | GNRC_NETIF_HDR_FLAGS_MULTICAST)) );
-}
 
 /* TX queue handling */
 int _find_neighbour(lwmac_t* lwmac, uint8_t* dst_addr, int addr_len);
@@ -130,17 +84,6 @@ int _dispatch_defer(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt);
 
 void _dispatch(gnrc_pktsnip_t* buffer[]);
 
-
-static inline bool _addr_match(l2_addr_t* addr1, l2_addr_t* addr2)
-{
-    assert(addr1);
-    assert(addr2);
-
-    if(addr1->len != addr2->len)
-        return false;
-
-    return (memcmp(addr1->addr, addr2->addr, addr1->len) == 0);
-}
 
 #ifdef __cplusplus
 }

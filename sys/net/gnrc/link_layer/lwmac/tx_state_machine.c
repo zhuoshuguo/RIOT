@@ -21,6 +21,7 @@
 #include <net/gnrc/lwmac/lwmac.h>
 #include <net/gnrc/gnrc_mac_type/packet_queue.h>
 #include <net/gnrc/gnrc_mac_type/timeout.h>
+#include <net/gnrc/gnrc_mac_type/gnrc_mac_internal.h>
 
 #include "include/tx_state_machine.h"
 #include "include/lwmac_internal.h"
@@ -160,7 +161,7 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
             gnrc_pktbuf_hold(pkt, 1);
 
 			lwmac->gnrc_mac.netdev->send(lwmac->gnrc_mac.netdev, pkt);
-            _set_netdev_state(lwmac, NETOPT_STATE_TX);
+            _set_netdev_state(&lwmac->gnrc_mac, NETOPT_STATE_TX);
 
             gnrc_mac_set_timeout(&lwmac->gnrc_mac, TIMEOUT_NEXT_BROADCAST, LWMAC_TIME_BETWEEN_BROADCAST_US);
             LOG_INFO("Broadcast sent\n");
@@ -241,7 +242,7 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
         lwmac->tx.timestamp = rtt_get_counter();
 
         /* Trigger sending frame */
-        _set_netdev_state(lwmac, NETOPT_STATE_TX);
+        _set_netdev_state(&lwmac->gnrc_mac, NETOPT_STATE_TX);
 
         /* Flush RX queue, TODO: maybe find a way without loosing RX packets */
         packet_queue_flush(&lwmac->rx.queue);
@@ -297,7 +298,7 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
             GOTO_TX_STATE(TX_STATE_SEND_WR, true);
         }
 
-        if(_get_netdev_state(lwmac) == NETOPT_STATE_RX) {
+        if(_get_netdev_state(&lwmac->gnrc_mac) == NETOPT_STATE_RX) {
             LOG_WARNING("Wait for completion of frame reception\n");
             break;
         }
@@ -411,7 +412,7 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
 
         /* Send data */
 		lwmac->gnrc_mac.netdev->send(lwmac->gnrc_mac.netdev, pkt);
-        _set_netdev_state(lwmac, NETOPT_STATE_TX);
+        _set_netdev_state(&lwmac->gnrc_mac, NETOPT_STATE_TX);
 
         /* Packet has been released by netdev, so drop pointer */
         lwmac->tx.packet = NULL;
