@@ -8,7 +8,7 @@
 
 /**
  * @{
- * @ingroup     net_lwmac
+ * @ingroup     net_gnrc_mac
  * @file
  * @brief       Timeout handling.
  *
@@ -16,8 +16,8 @@
  * @}
  */
 
-#ifndef LWMAC_TIMEOUT_H
-#define LWMAC_TIMEOUT_H
+#ifndef GNRC_MAC_TIMEOUT_H
+#define GNRC_MAC_TIMEOUT_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 /* Foward declaration */
-typedef struct lwmac lwmac_t;
+typedef struct gnrc_mac gnrc_mac_t;
 
 typedef enum {
     TIMEOUT_DISABLED = 0,
@@ -41,31 +41,31 @@ typedef enum {
     TIMEOUT_WAKEUP_PERIOD,
     TIMEOUT_NEXT_BROADCAST,
     TIMEOUT_BROADCAST_END,
-} lwmac_timeout_type_t;
+} gnrc_mac_timeout_type_t;
 
 typedef struct {
     xtimer_t timer;
     msg_t msg;
     /* If type != DISABLED, this indicates if timeout has expired */
     bool expired;
-    lwmac_timeout_type_t type;
-} lwmac_timeout_t;
-#define LWMAC_TIMEOUT_INIT  { {}, {}, false, TIMEOUT_DISABLED }
+    gnrc_mac_timeout_type_t type;
+} gnrc_mac_timeout_t;
+#define GNRC_MAC_TIMEOUT_INIT  { {}, {}, false, TIMEOUT_DISABLED }
 
-void lwmac_set_timeout(lwmac_t* lwmac, lwmac_timeout_type_t type, uint32_t offset);
+void gnrc_mac_set_timeout(gnrc_mac_t* gnrc_mac, gnrc_mac_timeout_type_t type, uint32_t offset);
 
-void lwmac_clear_timeout(lwmac_t* lwmac, lwmac_timeout_type_t type);
+void gnrc_mac_clear_timeout(gnrc_mac_t* gnrc_mac, gnrc_mac_timeout_type_t type);
 
-bool lwmac_timeout_is_running(lwmac_t* lwmac, lwmac_timeout_type_t type);
+bool gnrc_mac_timeout_is_running(gnrc_mac_t* gnrc_mac, gnrc_mac_timeout_type_t type);
 
-bool lwmac_timeout_is_expired(lwmac_t* lwmac, lwmac_timeout_type_t type);
+bool gnrc_mac_timeout_is_expired(gnrc_mac_t* gnrc_mac, gnrc_mac_timeout_type_t type);
 
-void lwmac_reset_timeouts(lwmac_t* lwmac);
+void gnrc_mac_reset_timeouts(gnrc_mac_t* gnrc_mac);
 
-void lwmac_timeout_make_expire(lwmac_timeout_t* timeout);
+void gnrc_mac_timeout_make_expire(gnrc_mac_timeout_t* timeout);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* LWMAC_TIMEOUT_H */
+#endif /* GNRC_MAC_TIMEOUT_H */

@@ -32,15 +32,15 @@
 #include <net/netdev2.h>
 #include <net/gnrc/netdev2.h>
 #include <net/gnrc/lwmac/lwmac.h>
-#include <net/gnrc/lwmac/packet_queue.h>
+#include <net/gnrc/gnrc_mac_type/packet_queue.h>
+#include <net/gnrc/gnrc_mac_type/timeout.h>
 
 #include "include/tx_state_machine.h"
 #include "include/rx_state_machine.h"
 #include "include/lwmac_internal.h"
 #include "include/lwmac_types.h"
-#include "include/timeout.h"
 
-#define ENABLE_DEBUG    (1)
+#define ENABLE_DEBUG    (0)
 #include "debug.h"
 
 #define LOG_LEVEL LOG_WARNING
@@ -59,7 +59,7 @@
 /******************************************************************************/
 
 /* Internal state of lwMAC */
-static lwmac_t lwmac = LWMAC_INIT;
+static lwmac_t lwmac;// = LWMAC_INIT;
 
 /******************************************************************************/
 
@@ -113,7 +113,7 @@ void lwmac_set_state(lwmac_state_t newstate)
         break;
 
     case SLEEPING:
-        lwmac_clear_timeout(&lwmac, TIMEOUT_WAKEUP_PERIOD);
+        gnrc_mac_clear_timeout(&lwmac.gnrc_mac, TIMEOUT_WAKEUP_PERIOD);
         break;
 
     default:
@@ -132,7 +132,7 @@ void lwmac_set_state(lwmac_state_t newstate)
         /* Put transceiver to sleep */
         _set_netdev_state(&lwmac, NETOPT_STATE_SLEEP);
         /* We may have come here through RTT handler, so timeout may still be active */
-        lwmac_clear_timeout(&lwmac, TIMEOUT_WAKEUP_PERIOD);
+        gnrc_mac_clear_timeout(&lwmac.gnrc_mac, TIMEOUT_WAKEUP_PERIOD);
         /* Return immediately, so no rescheduling */
         return;
 
@@ -193,7 +193,7 @@ bool lwmac_update(void)
         /* If a packet is scheduled, no other (possible earlier) packet can be
          * sent before the first one is handled, even no broadcast
          */
-        if( !lwmac_timeout_is_running(&lwmac, TIMEOUT_WAIT_FOR_DEST_WAKEUP) ) {
+        if( !gnrc_mac_timeout_is_running(&lwmac.gnrc_mac, TIMEOUT_WAIT_FOR_DEST_WAKEUP) ) {
 
             /* Check if there are broadcasts to send and transmit immediately */
             if(packet_queue_length(&(lwmac.tx.neighbours[0].queue)) > 0) {
@@ -216,7 +216,7 @@ bool lwmac_update(void)
                 }
 
                 time_until_tx -= LWMAC_WR_PREPARATION_US;
-                lwmac_set_timeout(&lwmac, TIMEOUT_WAIT_FOR_DEST_WAKEUP, time_until_tx);
+                gnrc_mac_set_timeout(&lwmac.gnrc_mac, TIMEOUT_WAIT_FOR_DEST_WAKEUP, time_until_tx);
 
                 /* Register neighbour to be the next */
                 lwmac.tx.current_neighbour = neighbour;
@@ -230,7 +230,7 @@ bool lwmac_update(void)
                 /* LOG_WARNING("Nothing to send, why did we get called?\n"); */
             }
         } else {
-            if(lwmac_timeout_is_expired(&lwmac, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
+            if(gnrc_mac_timeout_is_expired(&lwmac.gnrc_mac, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
                 LOG_DEBUG("Got timeout for dest wakeup, ticks: %"PRIu32"\n", rtt_get_counter());
                 lwmac_set_state(TRANSMITTING);
             } else {
@@ -242,9 +242,9 @@ bool lwmac_update(void)
     case LISTENING:
         /* Set timeout for if there's no successful rx transaction that will
          * change state to SLEEPING. */
-        if(!lwmac_timeout_is_running(&lwmac, TIMEOUT_WAKEUP_PERIOD)) {
-            lwmac_set_timeout(&lwmac, TIMEOUT_WAKEUP_PERIOD, LWMAC_WAKEUP_DURATION_US);
-        } else if(lwmac_timeout_is_expired(&lwmac, TIMEOUT_WAKEUP_PERIOD)) {
+        if(!gnrc_mac_timeout_is_running(&lwmac.gnrc_mac, TIMEOUT_WAKEUP_PERIOD)) {
+            gnrc_mac_set_timeout(&lwmac.gnrc_mac, TIMEOUT_WAKEUP_PERIOD, LWMAC_WAKEUP_DURATION_US);
+        } else if(gnrc_mac_timeout_is_expired(&lwmac.gnrc_mac, TIMEOUT_WAKEUP_PERIOD)) {
             /* Dispatch first as there still may be broadcast packets. */
             _dispatch(lwmac.rx.dispatch_buffer);
             lwmac_set_state(SLEEPING);
@@ -361,7 +361,7 @@ static void rtt_cb(void* arg)
     msg_t msg;
     msg.content.value = ((uint32_t) arg ) & 0xffff;
     msg.type = LWMAC_EVENT_RTT_TYPE;
-    msg_send(&msg, lwmac.pid);
+    msg_send(&msg, lwmac.gnrc_mac.pid);
 
     if (sched_context_switch_request) {
         thread_yield();
@@ -447,7 +447,7 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
 		{
 		case NETDEV2_EVENT_RX_STARTED:
 			LOG_DEBUG("NETDEV_EVENT_RX_STARTED\n");
-			lwmac.rx_started = true;
+			lwmac.gnrc_mac.rx_started = true;
 			break;
 		case NETDEV2_EVENT_RX_COMPLETE:
 		{
@@ -466,14 +466,14 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
 			 *
 			 * TODO: transceivers might have 2 frame buffers, so make this optional
 			 */
-			if(!lwmac.rx_started) {
+			if(!lwmac.gnrc_mac.rx_started) {
 				LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
 				gnrc_pktbuf_release(pkt);
-				lwmac.rx_started = false;
+				lwmac.gnrc_mac.rx_started = false;
 				break;
 			}
 
-			lwmac.rx_started = false;
+			lwmac.gnrc_mac.rx_started = false;
 
 			if(!packet_queue_push(&lwmac.rx.queue, pkt, 0))
 			{
@@ -485,23 +485,23 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
 			break;
 		}
 		case NETDEV2_EVENT_TX_STARTED:
-			lwmac.tx_feedback = TX_FEEDBACK_UNDEF;
-			lwmac.rx_started = false;
+			lwmac.gnrc_mac.tx_feedback = TX_FEEDBACK_UNDEF;
+			lwmac.gnrc_mac.rx_started = false;
 	//        lwmac_schedule_update();
 			break;
 		case NETDEV2_EVENT_TX_COMPLETE:
-			lwmac.tx_feedback = TX_FEEDBACK_SUCCESS;
-			lwmac.rx_started = false;
+			lwmac.gnrc_mac.tx_feedback = TX_FEEDBACK_SUCCESS;
+			lwmac.gnrc_mac.rx_started = false;
 			lwmac_schedule_update();
 			break;
 		case NETDEV2_EVENT_TX_NOACK:
-			lwmac.tx_feedback = TX_FEEDBACK_NOACK;
-			lwmac.rx_started = false;
+			lwmac.gnrc_mac.tx_feedback = TX_FEEDBACK_NOACK;
+			lwmac.gnrc_mac.rx_started = false;
 			lwmac_schedule_update();
 			break;
 		case NETDEV2_EVENT_TX_MEDIUM_BUSY:
-			lwmac.tx_feedback = TX_FEEDBACK_BUSY;
-			lwmac.rx_started = false;
+			lwmac.gnrc_mac.tx_feedback = TX_FEEDBACK_BUSY;
+			lwmac.gnrc_mac.rx_started = false;
 			lwmac_schedule_update();
 			break;
 
@@ -521,9 +521,9 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
 // TODO: Don't use global variables
 static void *_lwmac_thread(void *args)
 {
-	gnrc_netdev2_t* gnrc_netdev2 = lwmac.netdev = (gnrc_netdev2_t *)args;
+	gnrc_netdev2_t* gnrc_netdev2 = lwmac.gnrc_mac.netdev = (gnrc_netdev2_t *)args;
 	netdev2_t* dev = gnrc_netdev2->dev;
-	lwmac.netdev2_driver = dev->driver;
+	lwmac.gnrc_mac.netdev2_driver = dev->driver;
 
 	gnrc_netdev2->pid = thread_getpid();
 
@@ -537,7 +537,7 @@ static void *_lwmac_thread(void *args)
     rtt_init();
 
     /* Store pid globally, so that IRQ can use it to send msg */
-    lwmac.pid = thread_getpid();
+    lwmac.gnrc_mac.pid = thread_getpid();
 
     /* setup the MAC layers message queue */
     msg_init_queue(msg_queue, LWMAC_IPC_MSG_QUEUE_SIZE);
@@ -566,12 +566,12 @@ static void *_lwmac_thread(void *args)
     dev->driver->set(dev, NETOPT_SRC_LEN, &src_len, sizeof(src_len));
 
     /* Get own address from netdev */
-    lwmac.l2_addr.len = dev->driver->get(dev, NETOPT_ADDRESS_LONG, &lwmac.l2_addr.addr, sizeof(lwmac.l2_addr.addr));
-    assert(lwmac.l2_addr.len > 0);
+    lwmac.gnrc_mac.l2_addr.len = dev->driver->get(dev, NETOPT_ADDRESS_LONG, &lwmac.gnrc_mac.l2_addr.addr, sizeof(lwmac.gnrc_mac.l2_addr.addr));
+    assert(lwmac.gnrc_mac.l2_addr.len > 0);
 
     /* Initialize broadcast sequence number. This at least differs from board
      * to board */
-    lwmac.tx.bcast_seqnr = lwmac.l2_addr.addr[0];
+    lwmac.tx.bcast_seqnr = lwmac.gnrc_mac.l2_addr.addr[0];
 
     /* Initialize receive packet queue */
     packet_queue_init(&lwmac.rx.queue,
@@ -587,7 +587,7 @@ static void *_lwmac_thread(void *args)
     _init_neighbour(_get_neighbour(&lwmac, 0), broadcast_addr, sizeof(broadcast_addr));
 
     /* Reset all timeouts just to be sure */
-    lwmac_reset_timeouts(&lwmac);
+    gnrc_mac_reset_timeouts(&lwmac.gnrc_mac);
 
     /* Start duty cycling */
     lwmac_set_state(START);
@@ -611,9 +611,9 @@ static void *_lwmac_thread(void *args)
             break;
 
         /* An lwmac timeout occured */
-        case LWMAC_EVENT_TIMEOUT_TYPE:
+        case GNRC_MAC_EVENT_TIMEOUT_TYPE:
         {
-            lwmac_timeout_make_expire((lwmac_timeout_t*) msg.content.ptr);
+        	gnrc_mac_timeout_make_expire((gnrc_mac_timeout_t*) msg.content.ptr);
             lwmac_schedule_update();
             break;
         }

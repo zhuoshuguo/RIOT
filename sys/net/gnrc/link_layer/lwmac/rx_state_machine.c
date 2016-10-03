@@ -18,10 +18,10 @@
 
 #include <net/gnrc.h>
 #include <net/gnrc/lwmac/lwmac.h>
-#include <net/gnrc/lwmac/packet_queue.h>
+#include <net/gnrc/gnrc_mac_type/packet_queue.h>
+#include <net/gnrc/gnrc_mac_type/timeout.h>
 
 #include "include/rx_state_machine.h"
-#include "include/timeout.h"
 #include "include/lwmac_internal.h"
 #include "include/lwmac_types.h"
 
@@ -58,7 +58,7 @@ void lwmac_rx_start(lwmac_t* lwmac)
 
     /* Don't attempt to send a WA if channel is busy to get timings right */
     netopt_enable_t csma_disable = NETOPT_DISABLE;
-	lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
+	lwmac->gnrc_mac.netdev2_driver->set(lwmac->gnrc_mac.netdev->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
 
     lwmac->rx.state = RX_STATE_INIT;
 }
@@ -70,7 +70,8 @@ void lwmac_rx_stop(lwmac_t* lwmac)
     if(!lwmac)
         return;
 
-    lwmac_clear_timeout(lwmac, TIMEOUT_DATA);
+    gnrc_mac_clear_timeout(&lwmac->gnrc_mac, TIMEOUT_DATA);
+
     lwmac->rx.state = RX_STATE_STOPPED;
     lwmac->rx.l2_addr.len = 0;
 }
@@ -88,7 +89,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
     switch(lwmac->rx.state)
     {
     case RX_STATE_INIT:
-        lwmac_clear_timeout(lwmac, TIMEOUT_DATA);
+    	gnrc_mac_clear_timeout(&lwmac->gnrc_mac, TIMEOUT_DATA);
         GOTO_RX_STATE(RX_STATE_WAIT_FOR_WR, true);
 
     case RX_STATE_WAIT_FOR_WR:
@@ -130,7 +131,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
             /* No need to keep pkt anymore */
             gnrc_pktbuf_release(pkt);
 
-            if(!_addr_match(&lwmac->l2_addr, &info.dst_addr)) {
+            if(!_addr_match(&lwmac->gnrc_mac.l2_addr, &info.dst_addr)) {
                 LOG_DEBUG("Packet is WR but not for us\n");
                 continue;
             }
@@ -190,7 +191,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
 
         /* Disable Auto ACK */
         netopt_enable_t autoack = NETOPT_DISABLE;
-		lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
+		lwmac->gnrc_mac.netdev2_driver->set(lwmac->gnrc_mac.netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
 
         /* We might have taken too long to answer the WR so we're receiving the
          * next one already. Don't send WA yet and go back to WR reception.
@@ -206,12 +207,12 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
 //        }
 
         /* Send WA */
-		lwmac->netdev->send(lwmac->netdev, pkt);
+		lwmac->gnrc_mac.netdev->send(lwmac->gnrc_mac.netdev, pkt);
         _set_netdev_state(lwmac, NETOPT_STATE_TX);
 
         /* Enable Auto ACK again for data reception */
         autoack = NETOPT_ENABLE;
-		lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
+		lwmac->gnrc_mac.netdev2_driver->set(lwmac->gnrc_mac.netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
 
         GOTO_RX_STATE(RX_STATE_WAIT_WA_SENT, false);
     }
@@ -219,7 +220,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
     {
         LOG_DEBUG("RX_STATE_WAIT_WA_SENT\n");
 
-        if(lwmac->tx_feedback == TX_FEEDBACK_UNDEF) {
+        if(lwmac->gnrc_mac.tx_feedback == TX_FEEDBACK_UNDEF) {
             LOG_DEBUG("WA not yet completely sent\n");
             break;
         }
@@ -232,7 +233,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
 //        }
 
         /* Set timeout for expected data arrival */
-        lwmac_set_timeout(lwmac, TIMEOUT_DATA, LWMAC_DATA_DELAY_US);
+        gnrc_mac_set_timeout(&lwmac->gnrc_mac, TIMEOUT_DATA, LWMAC_DATA_DELAY_US);
 
         GOTO_RX_STATE(RX_STATE_WAIT_FOR_DATA, false);
     }
@@ -268,7 +269,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
                 continue;
             }
 
-            if(!_addr_match(&lwmac->l2_addr, &info.dst_addr)) {
+            if(!_addr_match(&lwmac->gnrc_mac.l2_addr, &info.dst_addr)) {
                 LOG_DEBUG("Packet is not for us\n");
                 gnrc_pktbuf_release(pkt);
                 continue;
@@ -277,14 +278,14 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
             /* Sender maybe didn't get the WA */
             if(info.header->type == FRAMETYPE_WR) {
                 LOG_INFO("Found a WR while waiting for DATA\n");
-                lwmac_clear_timeout(lwmac, TIMEOUT_DATA);
+                gnrc_mac_clear_timeout(&lwmac->gnrc_mac, TIMEOUT_DATA);
                 found_wr = true;
                 break;
             }
 
             if(info.header->type == FRAMETYPE_DATA) {
                 LOG_DEBUG("Found DATA!\n");
-                lwmac_clear_timeout(lwmac, TIMEOUT_DATA);
+                gnrc_mac_clear_timeout(&lwmac->gnrc_mac, TIMEOUT_DATA);
                 found_data = true;
                 break;
             }
@@ -311,8 +312,8 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
          * TODO: Checking for expiration only works once and clears the timeout.
          *       If this is a false positive (other packet than DATA), we're
          *       stuck. */
-        if( (lwmac_timeout_is_expired(lwmac, TIMEOUT_DATA)) &&
-            (!lwmac->rx_started) ) {
+        if( (gnrc_mac_timeout_is_expired(&lwmac->gnrc_mac, TIMEOUT_DATA)) &&
+            (!lwmac->gnrc_mac.rx_started) ) {
             LOG_INFO("DATA timed out\n");
             gnrc_pktbuf_release(pkt);
             GOTO_RX_STATE(RX_STATE_FAILED, true);

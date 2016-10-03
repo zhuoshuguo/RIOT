@@ -19,7 +19,7 @@
 
 #include <net/gnrc.h>
 #include <net/gnrc/lwmac/lwmac.h>
-#include <net/gnrc/lwmac/packet_queue.h>
+#include <net/gnrc/gnrc_mac_type/packet_queue.h>
 
 /******************************************************************************/
 

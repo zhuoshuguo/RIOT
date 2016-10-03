@@ -23,18 +23,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <net/gnrc/lwmac/lwmac.h>
+#include <net/gnrc/gnrc_mac_type/gnrc_mac_types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/******************************************************************************/
-
-typedef struct {
-    uint8_t  addr[LWMAC_MAX_L2_ADDR_LEN] __attribute__ ((aligned (LWMAC_MAX_L2_ADDR_LEN)));
-    uint8_t  len;
-} l2_addr_t;
-#define LWMAC_L2_ADDR_INIT      { {0}, 0 }
 
 /******************************************************************************/
 

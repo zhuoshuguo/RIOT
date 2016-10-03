@@ -30,8 +30,9 @@
 #include <net/gnrc.h>
 #include <net/gnrc/lwmac/lwmac.h>
 #include <net/gnrc/lwmac/hdr.h>
-#include <net/gnrc/lwmac/packet_queue.h>
-#include "timeout.h"
+#include <net/gnrc/gnrc_mac_type/packet_queue.h>
+#include <net/gnrc/gnrc_mac_type/gnrc_mac_types.h>
+#include <net/gnrc/gnrc_mac_type/timeout.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +47,6 @@ extern "C" {
 #define LWMAC_EVENT_RTT_RESUME          (0x4304)
 #define LWMAC_EVENT_RTT_WAKEUP_PENDING  (0x4305)
 #define LWMAC_EVENT_RTT_SLEEP_PENDING   (0x4306)
-#define LWMAC_EVENT_TIMEOUT_TYPE        (0x4400)
 
 /******************************************************************************/
 
@@ -93,15 +93,6 @@ typedef enum {
 } lwmac_rx_state_t;
 #define LWMAC_RX_STATE_INIT RX_STATE_STOPPED
 
-/******************************************************************************/
-
-typedef enum {
-    TX_FEEDBACK_UNDEF = -1,
-    TX_FEEDBACK_SUCCESS,
-    TX_FEEDBACK_NOACK,
-    TX_FEEDBACK_BUSY
-} lwmac_tx_feedback_t;
-#define LWMAC_TX_FEEDBACK_INIT TX_FEEDBACK_UNDEF
 
 /******************************************************************************/
 
@@ -171,23 +162,33 @@ typedef struct {
 /******************************************************************************/
 
 typedef struct lwmac {
+#if 0
     /* PID of lwMAC thread */
     kernel_pid_t pid;
     /* NETDEV device used by lwMAC */
 	gnrc_netdev2_t* netdev;
 	const netdev2_driver_t* netdev2_driver;
-    /* Internal state of MAC layer */
-    lwmac_state_t state;
+
+
     /* Track if a transmission might have corrupted a received packet */
     bool rx_started;
-    /* Own address */
-    l2_addr_t l2_addr;
-    lwmac_rx_t rx;
-    lwmac_tx_t tx;
+
     /* Feedback of last packet that was sent */
     lwmac_tx_feedback_t tx_feedback;
     /* Store timeouts used for protocol */
     lwmac_timeout_t timeouts[LWMAC_TIMEOUT_COUNT];
+    /* Own address */
+    l2_addr_t l2_addr;
+#endif
+
+    gnrc_mac_t gnrc_mac;
+
+    /* Internal state of MAC layer */
+    lwmac_state_t state;
+
+    lwmac_rx_t rx;
+    lwmac_tx_t tx;
+
     /* Used to calculate wakeup times */
     uint32_t last_wakeup;
     /* Keep track of duty cycling to avoid late RTT events after stopping */
@@ -197,6 +198,7 @@ typedef struct lwmac {
     bool needs_rescheduling;
 } lwmac_t;
 
+#if 0
 #define LWMAC_INIT { \
 /* pid */                   KERNEL_PID_UNDEF,  \
 /* netdev */                NULL, \
@@ -212,6 +214,8 @@ typedef struct lwmac {
 /* dutycycling_active */    false, \
 /* needs_rescheduling */    false \
 }
+#endif
+
 
 #ifdef __cplusplus
 }

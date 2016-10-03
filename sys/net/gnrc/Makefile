@@ -10,6 +10,9 @@ endif
 ifneq (,$(filter gnrc_csma_sender,$(USEMODULE)))
     DIRS += link_layer/csma_sender
 endif
+ifneq (,$(filter gnrc_mac_type,$(USEMODULE)))
+    DIRS += link_layer/gnrc_mac_type
+endif
 ifneq (,$(filter gnrc_icmpv6,$(USEMODULE)))
     DIRS += network_layer/icmpv6
 endif

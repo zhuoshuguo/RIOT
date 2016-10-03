@@ -32,7 +32,7 @@ extern "C" {
 /* Time between consecutive wakeups. This parameter governs power consumption,
  * latency and throughput! */
 #ifndef LWMAC_WAKEUP_INTERVAL_US
-#define LWMAC_WAKEUP_INTERVAL_US        (100U * 1000)
+#define LWMAC_WAKEUP_INTERVAL_US        (1000U * 1000)
 #endif
 
 /* Timeout to send the next WR in case no WA has been received during that
@@ -89,10 +89,6 @@ extern "C" {
 #define LWMAC_BROADCAST_DURATION_US     ((LWMAC_WAKEUP_INTERVAL_US * 1100) / 1000)
 #endif
 
-/* Max link layer address length in bytes */
-#ifndef LWMAC_MAX_L2_ADDR_LEN
-#define LWMAC_MAX_L2_ADDR_LEN           (8U)
-#endif
 
 /* CSMA retries for DATA packet after WR->WA was successful. Too many retries
  * may timeout the receiver, refer LWMAC_DATA_DELAY_US */
@@ -120,12 +116,6 @@ extern "C" {
 #define LWMAC_IPC_MSG_QUEUE_SIZE        (8U)
 #endif
 
-/**
- * @brief   Count of parallel timeouts. Shouldn't needed to be changed.
- */
-#ifndef LWMAC_TIMEOUT_COUNT
-#define LWMAC_TIMEOUT_COUNT             (3U)
-#endif
 
 /**
  * @brief   Count of nodes in one-hop distance whose wakeup phase is tracked
