@@ -32,7 +32,7 @@ extern "C" {
 /* Time between consecutive wakeups. This parameter governs power consumption,
  * latency and throughput! */
 #ifndef LWMAC_WAKEUP_INTERVAL_US
-#define LWMAC_WAKEUP_INTERVAL_US        (1000U * 1000)
+#define LWMAC_WAKEUP_INTERVAL_US        (100U * 1000)
 #endif
 
 /* Timeout to send the next WR in case no WA has been received during that

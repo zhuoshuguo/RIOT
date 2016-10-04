@@ -159,6 +159,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
         LOG_DEBUG("RX_STATE_SEND_WA\n");
 
         gnrc_pktsnip_t* pkt;
+        gnrc_pktsnip_t* pkt_lwmac;
         gnrc_netif_hdr_t* nethdr_wa;
 
         assert(lwmac->rx.l2_addr.len != 0);
@@ -174,9 +175,12 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
             GOTO_RX_STATE(RX_STATE_FAILED, true);
         }
 
+        pkt_lwmac = pkt;
+
         pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t) + lwmac->rx.l2_addr.len, GNRC_NETTYPE_NETIF);
         if(pkt == NULL) {
             LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_NETIF\n");
+            gnrc_pktbuf_release(pkt_lwmac);
             GOTO_RX_STATE(RX_STATE_FAILED, true);
         }
 
@@ -208,7 +212,14 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
 //        }
 
         /* Send WA */
-		lwmac->gnrc_mac.netdev->send(lwmac->gnrc_mac.netdev, pkt);
+		int res = lwmac->gnrc_mac.netdev->send(lwmac->gnrc_mac.netdev, pkt);
+		if(res < 0){
+			LOG_ERROR("Send WA failed, release it.");
+			if(pkt != NULL){
+				gnrc_pktbuf_release(pkt);
+			}
+			GOTO_RX_STATE(RX_STATE_FAILED, true);
+		}
         _set_netdev_state(&lwmac->gnrc_mac, NETOPT_STATE_TX);
 
         /* Enable Auto ACK again for data reception */
