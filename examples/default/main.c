@@ -118,7 +118,7 @@ void *sender_thread(void *arg)
 
     while (1) {
 
-    	xtimer_sleep(3);
+    	xtimer_sleep(1);
     	//xtimer_usleep(500000);
 
     	if(send_counter <5000){

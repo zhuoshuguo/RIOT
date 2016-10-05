@@ -356,13 +356,14 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
             /* Check if destination is talking to another node. It will sleep
              * after a finished transaction so there's no point in trying any
              * further now. */
-            if( !_addr_match(&info.dst_addr, &lwmac->gnrc_mac.l2_addr) &&
-                 from_expected_destination) {
+            if(( !_addr_match(&info.dst_addr, &lwmac->gnrc_mac.l2_addr) &&
+                 from_expected_destination) ||(lwmac->tx_counter == 5)) {
                 _queue_tx_packet(lwmac, lwmac->tx.packet);
                 /* drop pointer so it wont be free'd */
                 lwmac->tx.packet = NULL;
                 postponed = true;
                 gnrc_pktbuf_release(pkt);
+                lwmac->tx_counter = 0;
                 break;
             }
 
@@ -392,7 +393,7 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
         }
 
         if(postponed) {
-            LOG_INFO("Destination is talking to another node, postpone\n");
+            puts("Destination is talking to another node, postpone\n");
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 

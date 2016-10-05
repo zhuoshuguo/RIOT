@@ -196,6 +196,8 @@ typedef struct lwmac {
     /* Used internally for rescheduling state machine update, e.g. after state
      * transition caused in update */
     bool needs_rescheduling;
+    uint32_t tx_counter;
+
 } lwmac_t;
 
 #if 0
