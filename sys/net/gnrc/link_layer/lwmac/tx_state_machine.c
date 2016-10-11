@@ -119,7 +119,8 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
         } else {
             /* Don't attempt to send a WR if channel is busy to get timings
              * right, will be changed for sending DATA packet */
-            netopt_enable_t csma_disable = NETOPT_DISABLE;
+        	/* Use CSMA for the first WR */
+            netopt_enable_t csma_disable = NETOPT_ENABLE;
             lwmac->gnrc_mac.netdev2_driver->set(lwmac->gnrc_mac.netdev->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
 
             GOTO_TX_STATE(TX_STATE_SEND_WR, true);
@@ -286,6 +287,9 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
 
         if(lwmac->tx.wr_sent == 0) {
         	gnrc_mac_set_timeout(&lwmac->gnrc_mac, TIMEOUT_NO_RESPONSE, LWMAC_PREAMBLE_DURATION_US);
+        	/* The following WR should not use CSMA */
+            netopt_enable_t csma_disable = NETOPT_DISABLE;
+            lwmac->gnrc_mac.netdev2_driver->set(lwmac->gnrc_mac.netdev->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
         }
 
         lwmac->tx.wr_sent++;
