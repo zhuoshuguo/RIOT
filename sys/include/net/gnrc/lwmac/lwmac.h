@@ -35,13 +35,17 @@ extern "C" {
 #define LWMAC_WAKEUP_INTERVAL_US        (100U * 1000)
 #endif
 
+#ifndef LWMAC_PREAMBLE_DURATION_US
+#define LWMAC_PREAMBLE_DURATION_US        ((13*LWMAC_WAKEUP_INTERVAL_US)/10)
+#endif
+
 /* Timeout to send the next WR in case no WA has been received during that
  * time. It is referenced to the beginning of both WRs, but due to internal
  * overhead, the exact spacing is slightly higher.
  * The minimum possible value depends on the time it takes to completely
  * send a WR with the given hardware (including processor) and data rate. */
 #ifndef LWMAC_TIME_BETWEEN_WR_US
-#define LWMAC_TIME_BETWEEN_WR_US        (7000U)
+#define LWMAC_TIME_BETWEEN_WR_US        (6000U)
 #endif
 
 /* Time to idle between two successive BROADCAST packets, referenced to the

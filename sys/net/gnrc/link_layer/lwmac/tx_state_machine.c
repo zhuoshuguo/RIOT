@@ -285,7 +285,7 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
         }
 
         if(lwmac->tx.wr_sent == 0) {
-        	gnrc_mac_set_timeout(&lwmac->gnrc_mac, TIMEOUT_NO_RESPONSE, LWMAC_WAKEUP_INTERVAL_US);
+        	gnrc_mac_set_timeout(&lwmac->gnrc_mac, TIMEOUT_NO_RESPONSE, LWMAC_PREAMBLE_DURATION_US);
         }
 
         lwmac->tx.wr_sent++;
