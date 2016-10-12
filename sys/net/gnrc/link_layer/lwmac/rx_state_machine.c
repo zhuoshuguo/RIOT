@@ -164,6 +164,11 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
 
         assert(lwmac->rx.l2_addr.len != 0);
 
+    	/* if found ongoing transmission, quit this cycle for rx. */
+        if(_get_netdev_state(&lwmac->gnrc_mac) == NETOPT_STATE_RX) {
+        	GOTO_RX_STATE(RX_STATE_FAILED, true);
+        }
+
         /* Assemble WA packet */
         lwmac_frame_wa_t lwmac_hdr;
         lwmac_hdr.header.type = FRAMETYPE_WA;
