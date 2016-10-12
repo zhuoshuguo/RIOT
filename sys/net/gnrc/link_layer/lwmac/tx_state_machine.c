@@ -107,6 +107,15 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
     	gnrc_mac_clear_timeout(&lwmac->gnrc_mac, TIMEOUT_NEXT_BROADCAST);
     	gnrc_mac_clear_timeout(&lwmac->gnrc_mac, TIMEOUT_BROADCAST_END);
 
+    	/* if found ongoing transmission, quit this cycle for tx. */
+        if(_get_netdev_state(&lwmac->gnrc_mac) == NETOPT_STATE_RX) {
+            _queue_tx_packet(lwmac, lwmac->tx.packet);
+            /* drop pointer so it wont be free'd */
+            lwmac->tx.packet = NULL;
+            GOTO_TX_STATE(TX_STATE_FAILED, true);
+        }
+
+
         if(_packet_is_broadcast(lwmac->tx.packet)) {
             /* Set CSMA retries as configured and enable */
             uint8_t csma_retries = LWMAC_BROADCAST_CSMA_RETRIES;
@@ -193,6 +202,14 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
         gnrc_netif_hdr_t *nethdr;
         uint8_t* dst_addr = NULL;
         int addr_len;
+
+    	/* if found ongoing transmission, quit this cycle for tx. */
+        if(_get_netdev_state(&lwmac->gnrc_mac) == NETOPT_STATE_RX) {
+            _queue_tx_packet(lwmac, lwmac->tx.packet);
+            /* drop pointer so it wont be free'd */
+            lwmac->tx.packet = NULL;
+            GOTO_TX_STATE(TX_STATE_FAILED, true);
+        }
 
         /* Get destination address */
         addr_len = _get_dest_address(lwmac->tx.packet, &dst_addr);
