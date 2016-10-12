@@ -466,7 +466,7 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
         uint8_t csma_retries = LWMAC_DATA_CSMA_RETRIES;
         lwmac->gnrc_mac.netdev2_driver->set(lwmac->gnrc_mac.netdev->dev, NETOPT_CSMA_RETRIES, &csma_retries, sizeof(csma_retries));
 
-        netopt_enable_t csma_enable = NETOPT_DISABLE;
+        netopt_enable_t csma_enable = NETOPT_ENABLE;
         lwmac->gnrc_mac.netdev2_driver->set(lwmac->gnrc_mac.netdev->dev, NETOPT_CSMA, &csma_enable, sizeof(csma_enable));
 
         /* Insert lwMAC header above NETIF header */

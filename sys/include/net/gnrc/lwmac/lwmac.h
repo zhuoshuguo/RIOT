@@ -84,7 +84,7 @@ extern "C" {
  * beginning of the packet if the transceiver supports RX_STARTED event (this
  * can be important for big packets). */
 #ifndef LWMAC_DATA_DELAY_US
-#define LWMAC_DATA_DELAY_US             (5000U)
+#define LWMAC_DATA_DELAY_US             (LWMAC_WAKEUP_DURATION_US)
 #endif
 
 /* How long BROADCAST packets will be sent to make sure every participant has
