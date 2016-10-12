@@ -370,8 +370,19 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
                 break;
             }
 
+
             if(info.header->type == FRAMETYPE_BROADCAST) {
                 continue;
+            }
+
+            /* if found anther node is also trying to send data, quit this cycle. */
+            if(info.header->type == FRAMETYPE_WR){
+                _queue_tx_packet(lwmac, lwmac->tx.packet);
+                /* drop pointer so it wont be free'd */
+                lwmac->tx.packet = NULL;
+                postponed = true;
+                gnrc_pktbuf_release(pkt);
+                break;
             }
 
             if(info.header->type != FRAMETYPE_WA) {
