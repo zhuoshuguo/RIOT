@@ -46,7 +46,7 @@ extern "C" {
 
 /******************************************************************************/
 typedef struct {
-    uint8_t  addr[GNRC_MAC_MAX_L2_ADDR_LEN] __attribute__ ((aligned (GNRC_MAC_MAX_L2_ADDR_LEN)));
+    uint8_t  addr[GNRC_MAC_MAX_L2_ADDR_LEN]; // __attribute__ ((aligned (GNRC_MAC_MAX_L2_ADDR_LEN)));
     uint8_t  len;
 } l2_addr_t;
 #define GNRC_MAC_L2_ADDR_INIT      { {0}, 0 }
