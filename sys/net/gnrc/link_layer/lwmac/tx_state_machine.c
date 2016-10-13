@@ -311,6 +311,12 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
             break;
         }
 
+        if(lwmac->gnrc_mac.tx_feedback == TX_FEEDBACK_BUSY){
+        	_queue_tx_packet(lwmac, lwmac->tx.packet);
+        	lwmac->tx.packet = NULL;
+        	GOTO_TX_STATE(TX_STATE_FAILED, true);
+        }
+
         if(lwmac->tx.wr_sent == 0) {
         	gnrc_mac_set_timeout(&lwmac->gnrc_mac, TIMEOUT_NO_RESPONSE, LWMAC_PREAMBLE_DURATION_US);
         	/* The following WR should not use CSMA */

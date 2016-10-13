@@ -36,7 +36,7 @@ extern "C" {
 #endif
 
 #ifndef LWMAC_PREAMBLE_DURATION_US
-#define LWMAC_PREAMBLE_DURATION_US        ((13*LWMAC_WAKEUP_INTERVAL_US)/10)
+#define LWMAC_PREAMBLE_DURATION_US        ((22*LWMAC_WAKEUP_INTERVAL_US)/10)
 #endif
 
 #ifndef LWMAC_RANDOM_BEFORE_WR_US
@@ -73,7 +73,7 @@ extern "C" {
  *         implementation
  */
 #ifndef LWMAC_WR_BEFORE_PHASE_US
-#define LWMAC_WR_BEFORE_PHASE_US        (1000U)
+#define LWMAC_WR_BEFORE_PHASE_US        (1300U)
 #endif
 
 /* WR preparation overhead before it can be sent (higher with debugging output).
