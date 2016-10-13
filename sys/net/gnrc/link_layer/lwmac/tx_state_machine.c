@@ -292,7 +292,7 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
          * we know it's wakeup phase relative to ours for the next time. This
          * is not exactly the time the WR was completely sent, but the timing
          * we can reproduce here. */
-        lwmac->tx.timestamp = rtt_get_counter();
+        //lwmac->tx.timestamp = rtt_get_counter();
 
         /* Trigger sending frame */
         _set_netdev_state(&lwmac->gnrc_mac, NETOPT_STATE_TX);
@@ -417,6 +417,7 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
                 continue;
             }
 
+            /* Process WA to get the right phase of the receiver */
             lwmac->tx.timestamp = _phase_now();
 
             lwmac_frame_wa_t* wa_hdr;
