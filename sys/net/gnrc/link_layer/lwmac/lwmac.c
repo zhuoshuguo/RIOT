@@ -456,6 +456,11 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
 
 			gnrc_pktsnip_t *pkt = gnrc_netdev2->recv(gnrc_netdev2);
 
+			if(pkt == NULL){
+				lwmac.gnrc_mac.rx_started = false;
+				break;
+			}
+
 			/* Prevent packet corruption when a packet is sent before the previous
 			 * received packet has been downloaded. This happens e.g. when a timeout
 			 * expires that causes the tx state machine to send a packet. When a
