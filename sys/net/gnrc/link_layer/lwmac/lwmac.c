@@ -245,6 +245,9 @@ bool lwmac_update(void)
          * change state to SLEEPING. */
         if(!gnrc_mac_timeout_is_running(&lwmac.gnrc_mac, TIMEOUT_WAKEUP_PERIOD)) {
             gnrc_mac_set_timeout(&lwmac.gnrc_mac, TIMEOUT_WAKEUP_PERIOD, LWMAC_WAKEUP_DURATION_US);
+            //uint32_t timestamp = _phase_now();
+            //timestamp = RTT_TICKS_TO_US(timestamp);
+            //printf("phase is %lu us\n", timestamp);
         } else if(gnrc_mac_timeout_is_expired(&lwmac.gnrc_mac, TIMEOUT_WAKEUP_PERIOD)) {
             /* Dispatch first as there still may be broadcast packets. */
             _dispatch(lwmac.rx.dispatch_buffer);

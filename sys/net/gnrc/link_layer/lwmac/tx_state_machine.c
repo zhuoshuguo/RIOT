@@ -417,6 +417,17 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
                 continue;
             }
 
+            lwmac->tx.timestamp = _phase_now();
+
+            lwmac_frame_wa_t* wa_hdr;
+            wa_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_LWMAC);
+
+            if(lwmac->tx.timestamp >= wa_hdr->current_phase){
+            	lwmac->tx.timestamp = lwmac->tx.timestamp - wa_hdr->current_phase;
+            }else{
+            	lwmac->tx.timestamp = (lwmac->tx.timestamp + RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US)) - wa_hdr->current_phase;
+            }
+
             /* No need to keep pkt anymore */
             gnrc_pktbuf_release(pkt);
 
@@ -444,7 +455,7 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
 
         /* WR arrived at destination, so calculate destination wakeup phase
          * based on the timestamp of the WR we sent */
-         uint32_t new_phase = _ticks_to_phase(lwmac->tx.timestamp);
+         uint32_t new_phase = lwmac->tx.timestamp; //_ticks_to_phase(lwmac->tx.timestamp);
 
         /* Save newly calculated phase for destination */
         lwmac->tx.current_neighbour->phase = new_phase;
