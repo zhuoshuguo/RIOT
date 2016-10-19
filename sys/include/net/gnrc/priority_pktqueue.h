@@ -30,15 +30,33 @@
 extern "C" {
 #endif
 
-typedef priority_queue_node_t packet_queue_node_t;
+typedef struct gnrc_priority_pktqueue_node {
+    struct gnrc_priority_pktqueue_node *next;   /**< next queue node */
+    uint32_t priority;                          /**< queue node priority */
+    gnrc_pktsnip_t *pkt;                        /**< queue node data */
+} gnrc_priority_pktqueue_node_t;
 
 /* TODO: Description */
-typedef struct {
-    priority_queue_t queue;
-    packet_queue_node_t* buffer;
-    size_t buffer_size;
-} gnrc_priority_pktqueue_t;
+typedef priority_queue_t gnrc_priority_pktqueue_t;
 
+#define PRIORITY_PKTQUEUE_NODE_INIT(priority, pkt) { NULL, priority, pkt }
+
+static inline void priority_pktqueue_node_init(gnrc_priority_pktqueue_node_t *node,
+                                               uint32_t priority,
+                                               gnrc_pktsnip_t *pkt)
+{
+    node->next = NULL;
+    node->priority = priority;
+    node->pkt = pkt;
+}
+
+#define PRIORITY_QUEUE_INIT { NULL }
+
+static inline void priority_pktqueue_init(gnrc_priority_pktqueue_t *q)
+{
+    gnrc_priority_pktqueue_t qn = PRIORITY_PKTQUEUE_NODE_INIT;
+    *q = qn;
+}
 
 static inline uint32_t priority_pktqueue_length(gnrc_priority_pktqueue_t *q)
 {
@@ -64,12 +82,7 @@ gnrc_pktsnip_t* priority_pktqueue_pop(gnrc_priority_pktqueue_t* q);
 gnrc_pktsnip_t* priority_pktqueue_head(gnrc_priority_pktqueue_t* q);
 
 packet_queue_node_t* priority_pktqueue_push(gnrc_priority_pktqueue_t* q,
-                                       gnrc_pktsnip_t* snip,
-                                       uint32_t priority);
-
-void priority_pktqueue_init(gnrc_priority_pktqueue_t* q,
-                       packet_queue_node_t buffer[],
-                       size_t buffer_size);
+                                            gnrc_priority_pktqueue_node_t *node);
 
 #ifdef __cplusplus
 }
