@@ -39,7 +39,9 @@ typedef struct gnrc_priority_pktqueue_node {
 /* TODO: Description */
 typedef priority_queue_t gnrc_priority_pktqueue_t;
 
-#define PRIORITY_PKTQUEUE_NODE_INIT(priority, pkt) { NULL, priority, pkt }
+#define PRIORITY_PKTQUEUE_NODE_INIT(priority, pkt) { NULL, priority, pkt}
+
+#define PRIORITY_PKTQUEUE_INIT { NULL }
 
 static inline void priority_pktqueue_node_init(gnrc_priority_pktqueue_node_t *node,
                                                uint32_t priority,
@@ -50,18 +52,16 @@ static inline void priority_pktqueue_node_init(gnrc_priority_pktqueue_node_t *no
     node->pkt = pkt;
 }
 
-#define PRIORITY_QUEUE_INIT { NULL }
-
 static inline void priority_pktqueue_init(gnrc_priority_pktqueue_t *q)
 {
-    gnrc_priority_pktqueue_t qn = PRIORITY_PKTQUEUE_NODE_INIT;
+    gnrc_priority_pktqueue_t qn = PRIORITY_PKTQUEUE_INIT;
     *q = qn;
 }
 
 static inline uint32_t priority_pktqueue_length(gnrc_priority_pktqueue_t *q)
 {
 	uint32_t length = 0;
-	priority_queue_node_t *node = q->queue.first;
+	priority_queue_node_t *node = q->first;
 	if(!node)
 		return length;
 
@@ -81,7 +81,7 @@ gnrc_pktsnip_t* priority_pktqueue_pop(gnrc_priority_pktqueue_t* q);
 /* Get first element without removing */
 gnrc_pktsnip_t* priority_pktqueue_head(gnrc_priority_pktqueue_t* q);
 
-packet_queue_node_t* priority_pktqueue_push(gnrc_priority_pktqueue_t* q,
+void priority_pktqueue_push(gnrc_priority_pktqueue_t* q,
                                             gnrc_priority_pktqueue_node_t *node);
 
 #ifdef __cplusplus

@@ -39,7 +39,7 @@ gnrc_pktsnip_t* priority_pktqueue_pop(gnrc_priority_pktqueue_t* q)
         return NULL;
     priority_queue_node_t *head = priority_queue_remove_head(q);
     gnrc_pktsnip_t* pkt = (gnrc_pktsnip_t*) head->data;
-    _free_node(head);
+    _free_node((gnrc_priority_pktqueue_node_t *)head);
     return pkt;
 }
 
