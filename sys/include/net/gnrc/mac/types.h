@@ -36,28 +36,12 @@
 extern "C" {
 #endif
 
-/******************************************************************************/
-
 typedef enum {
-    TX_FEEDBACK_UNDEF = -1,
+    TX_FEEDBACK_UNDEF = 0,
     TX_FEEDBACK_SUCCESS,
     TX_FEEDBACK_NOACK,
     TX_FEEDBACK_BUSY
 } gnrc_mac_tx_feedback_t;
-
-/******************************************************************************/
-typedef struct gnrc_mac {
-
-	/* NETDEV device used by MAC */
-	gnrc_netdev2_t* gnrc_netdev2;
-    
-    /* Track if a transmission might have corrupted a received packet */
-    bool rx_started;
-
-    /* Feedback of last packet that was sent */
-    gnrc_mac_tx_feedback_t tx_feedback;
-
-} gnrc_mac_t;
 
 #ifdef __cplusplus
 }

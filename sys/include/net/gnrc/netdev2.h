@@ -29,9 +29,13 @@
 #ifndef GNRC_NETDEV2_H
 #define GNRC_NETDEV2_H
 
+#include <assert.h>
+#include <stdint.h>
+
 #include "kernel_types.h"
 #include "net/netdev2.h"
 #include "net/gnrc.h"
+#include "net/gnrc/mac.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,6 +49,17 @@ extern "C" {
  * @brief   Type for @ref msg_t if device fired an event
  */
 #define NETDEV2_MSG_TYPE_EVENT 0x1234
+
+/**
+ * @brief   Mask for @ref gnrc_mac_tx_feedback_t
+ */
+#define GNRC_NETDEV2_MAC_INFO_TX_FEEDBACK_MASK  (0x0003U)
+
+/**
+ * @brief   Flag to track if a transmission might have corrupted a received
+ *          packet
+ */
+#define GNRC_NETDEV2_MAC_INFO_RX_STARTED        (0x0004U)
 
 /**
  * @brief Structure holding GNRC netdev2 adapter state
@@ -81,7 +96,43 @@ typedef struct gnrc_netdev2 {
      * @brief PID of this adapter for netapi messages
      */
     kernel_pid_t pid;
+
+#ifdef MODULE_GNRC_MAC
+    uint16_t mac_info;  /**< general information for the MAC protocol */
+#endif
 } gnrc_netdev2_t;
+
+bool gnrc_netdev2_get_rx_started(gnrc_netdev2_t *dev)
+{
+    return (dev->mac_info & GNRC_NETDEV2_MAC_INFO_RX_STARTED);
+}
+
+void gnrc_netdev2_set_rx_started(gnrc_netdev2_t *dev, bool rx_started)
+{
+    if (rx_started) {
+        dev->mac_info |= GNRC_NETDEV2_MAC_INFO_RX_STARTED;
+    }
+    else {
+        dev->mac_info &= ~GNRC_NETDEV2_MAC_INFO_RX_STARTED;
+    }
+}
+
+gnrc_mac_tx_feedback_t gnrc_netdev2_get_tx_feedback(gnrc_netdev2_t *dev)
+{
+    return (gnrc_mac_tx_feedback_t)(dev->mac_info &
+                                    GNRC_NETDEV2_MAC_INFO_TX_FEEDBACK_MASK);
+}
+
+void gnrc_netdev2_set_tx_feedback(gnrc_netdev2_t *dev,
+                                  gnrc_mac_tx_feedback_t txf)
+{
+    /* check if gnrc_mac_tx_feedback does not collide with
+     * GNRC_NETDEV2_MAC_INFO_RX_STARTED */
+    assert(txf & GNRC_NETDEV2_MAC_INFO_RX_STARTED);
+    /* unset previous value */
+    dev->mac_info &= ~GNRC_NETDEV2_MAC_INFO_TX_FEEDBACK_MASK;
+    dev->mac_info |= (uint16_t)(txf & GNRC_NETDEV2_MAC_INFO_TX_FEEDBACK_MASK);
+}
 
 /**
  * @brief Initialize GNRC netdev2 handler thread
