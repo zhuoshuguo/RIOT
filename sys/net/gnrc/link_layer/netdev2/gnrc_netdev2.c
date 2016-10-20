@@ -29,7 +29,7 @@
 
 #include "net/gnrc/netdev2.h"
 #include "net/ethernet/hdr.h"
-
+#include <net/gnrc/priority_pktqueue.h>
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
@@ -38,6 +38,24 @@
 #endif
 
 #define NETDEV2_NETAPI_MSG_QUEUE_SIZE 8
+
+
+gnrc_priority_pktqueue_node_t pkt_buffer[8];
+gnrc_priority_pktqueue_t pkt_queue;
+
+
+gnrc_priority_pktqueue_node_t* _alloc_node(gnrc_priority_pktqueue_node_t* buffer[], uint8_t size)
+{
+
+    for (size_t i = 0; i < size; i++) {
+        if( (((priority_queue_node_t *)buffer[i])->data == 0) &&
+            (((priority_queue_node_t *)buffer[i])->next == NULL))
+        {
+            return buffer[i];
+        }
+    }
+    return NULL;
+}
 
 static void _pass_on_packet(gnrc_pktsnip_t *pkt);
 
@@ -130,6 +148,8 @@ static void *_gnrc_netdev2_thread(void *args)
     /* initialize low-level driver */
     dev->driver->init(dev);
 
+    priority_pktqueue_init(&pkt_queue);
+
     /* start the event loop */
     while (1) {
         DEBUG("gnrc_netdev2: waiting for incoming messages\n");
@@ -143,7 +163,10 @@ static void *_gnrc_netdev2_thread(void *args)
             case GNRC_NETAPI_MSG_TYPE_SND:
                 DEBUG("gnrc_netdev2: GNRC_NETAPI_MSG_TYPE_SND received\n");
                 gnrc_pktsnip_t *pkt = msg.content.ptr;
-                gnrc_netdev2->send(gnrc_netdev2, pkt);
+
+                gnrc_priority_pktqueue_node_t* node = _alloc_node(pkt_buffer, 8);
+
+                //gnrc_netdev2->send(gnrc_netdev2, pkt);
                 break;
             case GNRC_NETAPI_MSG_TYPE_SET:
                 /* read incoming options */
