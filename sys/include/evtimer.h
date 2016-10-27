@@ -7,16 +7,16 @@
  */
 
 /**
- * @defgroup    sys_evtimer Milisecond interval timers
+ * @defgroup    sys_evtimer Millisecond interval timers
  * @ingroup     sys
- * @brief       Provides timers for events up to 2**32 miliseconds in the future
+ * @brief       Provides timers for events up to 2**32 milliseconds in the future
  *
  * RIOT's main timer subsystem is xtimer, but for many applications xtimer's
  * 64bit absolute time values are wasteful or clumsy to use.
  *
  * Compared to xtimer, evtimer offers:
  *
- * - only relative 32bit milisecond timer values
+ * - only relative 32bit millisecond timer values
  *   Events can be scheduled with a relative offset of up to ~49.7 days in the
  *   future.
  *   For time-critical stuff, use xtimer!
@@ -70,7 +70,7 @@ void evtimer_init(evtimer_t *evtimer, void(*handler)(void*));
 void evtimer_add(evtimer_t *evtimer, evtimer_event_t *event);
 void evtimer_del(evtimer_t *evtimer, evtimer_event_t *event);
 void evtimer_msg_handler(void *arg);
-void evtimer_print(evtimer_t *evtimer);
+void evtimer_print(const evtimer_t *evtimer);
 
 #ifdef __cplusplus
 }
