@@ -29,6 +29,8 @@
 
 #include "net/gnrc/netdev2.h"
 #include "net/ethernet/hdr.h"
+#include "xtimer.h"
+#include "evtimer.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
@@ -38,6 +40,18 @@
 #endif
 
 #define NETDEV2_NETAPI_MSG_QUEUE_SIZE 8
+
+
+evtimer_t evtimer;
+//evtimer_msg_event_t msg_event;
+evtimer_event_t event;
+
+void timer_handler(void* shuguo){
+	xtimer_sleep(3);
+
+ puts("shuguo");
+}
+
 
 static void _pass_on_packet(gnrc_pktsnip_t *pkt);
 
@@ -130,6 +144,60 @@ static void *_gnrc_netdev2_thread(void *args)
     /* initialize low-level driver */
     dev->driver->init(dev);
 
+    xtimer_sleep(3);
+
+    /*
+    msg_event.event.next= NULL;
+    msg_event.event.offset = 2000;
+    msg_event.msg.type = 0x4400;
+    msg_event.msg.content.ptr = &msg_event;
+    */
+
+    event.next= NULL;
+    event.offset = 2000;
+
+    evtimer_init(&evtimer, evtimer_msg_handler);
+
+    puts("start set!");
+    evtimer_add(&evtimer, &event);  //(evtimer_event_t *)&msg_event
+
+    //puts("shuguo app!");
+
+    //evtimer_print(&evtimer);
+
+
+/*
+    uint8_t a[4] = {0,1,1,1};
+    uint16_t b=0;
+
+
+    uint32_t a = 0x12345678;
+
+    uint8_t b=0;
+    uint16_t c=0;
+
+    uint8_t *p1;
+    uint16_t *p2;
+
+    p2 = (uint16_t *)(&a);
+    c = *p2;
+
+    printf("c1 is %x\n", c);
+
+    p2 = p2 +1;
+
+    c = *p2;
+
+    printf("c2 is %x\n", c);
+
+
+    p1 = (uint8_t *)(&a) +1;
+
+    b = *p1;
+
+    printf("b is %x\n", b);
+
+*/
     /* start the event loop */
     while (1) {
         DEBUG("gnrc_netdev2: waiting for incoming messages\n");
