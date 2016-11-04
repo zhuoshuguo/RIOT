@@ -26,43 +26,65 @@
 #define ENABLE_DEBUG (0)
 #include "debug.h"
 
-static void _add_event_to_list(evtimer_event_t *list, evtimer_event_t *event)
+static void _add_event_to_list(evtimer_t *evtimer, evtimer_event_t *event)
 {
     uint32_t delta_sum = 0;
 
-    while (list->next) {
-        evtimer_event_t *list_entry = list->next;
-        if ((list_entry->offset + delta_sum) > event->offset) {
+    evtimer_event_t *current_event;
+    evtimer_event_t *prev_event;
+
+    current_event = evtimer->events;
+    prev_event = NULL;
+
+    while (current_event) {
+        if ((current_event->offset + delta_sum) > event->offset) {
             break;
         }
-        delta_sum += list_entry->offset;
-        list = list->next;
+        delta_sum += current_event->offset;
+        prev_event = current_event;
+        current_event = current_event->next;
     }
 
-    event->next = list->next;
-    if (list->next) {
-        evtimer_event_t *next_entry = list->next;
+    event->next = current_event;
+    if (current_event) {
+        evtimer_event_t *next_entry = current_event;
         next_entry->offset += delta_sum;
         next_entry->offset -= event->offset;
     }
     event->offset -= delta_sum;
 
-    list->next = event;
+    if(prev_event == NULL){
+        evtimer->events = event;
+    }else{
+        prev_event->next = event;
+    }
 }
 
-static void _del_event_from_list(evtimer_event_t *list, evtimer_event_t *event)
+static void _del_event_from_list(evtimer_t *evtimer, evtimer_event_t *event)
 {
-    while (list->next) {
-        evtimer_event_t *list_entry = list->next;
-        if (list_entry == event) {
-            list->next = event->next;
-            if (list->next) {
-                list_entry = list->next;
-                list_entry->offset += event->offset;
+    evtimer_event_t *current_event;
+    evtimer_event_t *prev_event;
+
+    current_event = evtimer->events;
+    prev_event= NULL;
+
+    while (current_event) {
+        if (current_event == event) {
+            if (current_event == evtimer->events) {
+                evtimer->events = event->next;
+            }else{
+                prev_event->next = event->next;
             }
+
+            if (current_event->next) {
+                current_event = current_event->next;
+                current_event->offset += event->offset;
+            }
+            event->next = NULL;
             break;
         }
-        list = list->next;
+        prev_event = current_event;
+        current_event = current_event->next;
     }
 }
 
@@ -117,7 +139,7 @@ void evtimer_add(evtimer_t *evtimer, evtimer_event_t *event)
     DEBUG("evtimer_add(): adding event with offset %" PRIu32 "\n", event->offset);
 
     _update_head_offset(evtimer);
-    _add_event_to_list(evtimer->events, event);
+    _add_event_to_list(evtimer, event);
 
     if (evtimer->events == event) {
         _set_timer(&evtimer->timer, event->offset);
@@ -132,7 +154,7 @@ void evtimer_del(evtimer_t *evtimer, evtimer_event_t *event)
     DEBUG("evtimer_del(): removing event with offset %" PRIu32 "\n", event->offset);
 
     _update_head_offset(evtimer);
-    _del_event_from_list(evtimer->events, event);
+    _del_event_from_list(evtimer, event);
     _update_timer(evtimer);
     irq_restore(state);
 }
