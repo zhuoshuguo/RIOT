@@ -137,6 +137,18 @@ void evtimer_del(evtimer_t *evtimer, evtimer_event_t *event)
     irq_restore(state);
 }
 
+bool evtimer_is_event_sched(evtimer_t *evtimer, evtimer_event_t *event)
+{
+    evtimer_event_t *list_entry = evtimer->events;
+    while (list_entry) {
+        if (list_entry == event) {
+            return true;
+        }
+        list_entry = list_entry->next;
+    }
+    return false;
+}
+
 static evtimer_event_t *_get_next(evtimer_t *evtimer)
 {
     evtimer_event_t *event = evtimer->events;

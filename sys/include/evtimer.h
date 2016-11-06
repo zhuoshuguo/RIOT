@@ -69,6 +69,7 @@ typedef struct {
 void evtimer_init(evtimer_t *evtimer, void(*handler)(void*));
 void evtimer_add(evtimer_t *evtimer, evtimer_event_t *event);
 void evtimer_del(evtimer_t *evtimer, evtimer_event_t *event);
+bool evtimer_is_event_sched(evtimer_t *evtimer, evtimer_event_t *event);
 void evtimer_msg_handler(void *arg);
 void evtimer_print(const evtimer_t *evtimer);
 
