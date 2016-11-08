@@ -102,6 +102,17 @@ typedef struct gnrc_netdev2 {
      * @brief general information for the MAC protocol
      */
     uint16_t mac_info;
+
+    /**
+     * @brief MAC internal state of reception state machine.
+     */
+    gnrc_mac_rx_t rx;
+
+    /**
+     * @brief MAC internal state of transmission state machine.
+     */
+    gnrc_mac_tx_t tx;
+
 #endif
 } gnrc_netdev2_t;
 
