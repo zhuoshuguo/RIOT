@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2015 Daniel Krebs
- *               2016 INRIA
+ *               2016 INRIA.
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -81,6 +81,23 @@ static inline bool gnrc_mac_addr_match(uint8_t * addr1, uint8_t* addr2, uint8_t 
 
     return (memcmp(addr1, addr2, add_len) == 0);
 }
+
+
+static inline gnrc_mac_tx_neighbour_t* _get_neighbour(gnrc_mac_tx_t* tx, unsigned int id)
+{
+    return &(tx.neighbours[id]);
+}
+
+/* @brief queue the pktsnip into the priority packet queue associated to
+ *       the destination node where the pktsnip is targeting.
+ *
+ * @param[in,out] tx        internal state of transmission state machine
+ * @param[in]     priority  the priority of @p pkt
+ * @param[in]     pkt       pktsnip that will be queued
+ *
+ * @return                  return true if queued successfully, otherwise false.
+ */
+bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt);
 
 #ifdef __cplusplus
 }

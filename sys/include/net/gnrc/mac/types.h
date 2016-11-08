@@ -29,7 +29,7 @@
 #include <xtimer.h>
 #include <net/netdev2.h>
 #include <net/gnrc.h>
-#include <mac.h>
+#include <net/gnrc/mac/mac.h>
 #include <net/gnrc/priority_pktqueue.h>
 #include <net/ieee802154.h>
 
@@ -93,9 +93,10 @@ typedef struct {
  *        new MAC protocols.
  */
 typedef struct {
-    /* TX queues for neighbouring nodes. First queue is for broadcast (+1) */
+#if GNRC_MAC_NEIGHBOUR_COUNT != 0
+	/* TX queues for neighbouring nodes. First queue is for broadcast (+1) */
     gnrc_mac_tx_neighbour_t neighbours[GNRC_MAC_NEIGHBOUR_COUNT + 1];
-
+#endif
     /* Shared buffer for TX queue nodes */
     gnrc_priority_pktqueue_node_t _queue_nodes[GNRC_MAC_TX_QUEUE_SIZE];
 
