@@ -1859,14 +1859,15 @@ void iqueue_mac_router_cp_end(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
     /**** run the sub-channel selection algorithm to select the sub-channel sequence ****/
-	// iqueuemac_select_sub_channel_num(iqueuemac);
+    // iqueuemac_select_sub_channel_num(iqueuemac);
 
+	/* set device seq
 	netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
-
 	if(device_state->seq > 20){
 		device_state->seq = 0;
 	}
 	printf("seq: %d\n",device_state->seq);
+    */
 
 	/***  disable auto-ack ***/
 	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
