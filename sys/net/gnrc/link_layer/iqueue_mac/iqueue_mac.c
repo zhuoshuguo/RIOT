@@ -1789,7 +1789,6 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 
-
 	/* in the future, we will add CP extension func. And we should remember to disable CP extension when
 	 * iqueuemac->get_other_preamble is true occurs!!!
 	 */
@@ -1913,7 +1912,13 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 		iqueuemac->send_beacon_fail = true;
 		iqueuemac->need_update = true;
 	}else{
-		iqueuemac->need_update = false;
+		/* if the beacon has not been sent due to no slots. */
+		if(iqueuemac->rx.router_vtdma_mana.total_slots_num == 0) {
+			iqueuemac->send_beacon_fail = true;
+			iqueuemac->need_update = true;
+		}else{
+		    iqueuemac->need_update = false;
+		}
 	}
 
 	iqueuemac->router_states.router_listen_state = R_LISTEN_WAIT_BEACON_FEEDBACK;
