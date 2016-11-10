@@ -295,6 +295,8 @@ void rtt_handler(uint32_t event)
 
 void iqueuemac_device_broadcast_init(iqueuemac_t* iqueuemac){
 
+	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
+
 	iqueuemac_trun_on_radio(iqueuemac);
 
 	/*** assemble broadcast packet ***/
@@ -825,6 +827,9 @@ void iqueuemac_t2n_update(iqueuemac_t* iqueuemac)
 void iqueuemac_t2r_init(iqueuemac_t* iqueuemac){
 
 	iqueuemac_trun_off_radio(iqueuemac);
+
+	/* Enable Auto ACK again for data reception */
+	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	iqueuemac->quit_current_cycle = false;
 
@@ -1433,8 +1438,13 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 
 	int res;
 	if(iqueuemac->tx.preamble_sent == 0){
+
 		res = iqueue_mac_send_preamble(iqueuemac, NETOPT_ENABLE);
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE_DURATION, IQUEUEMAC_PREAMBLE_DURATION_US);
+
+		/* Enable Auto ACK again for data reception */
+		iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
+
 	}else{
 		res = iqueue_mac_send_preamble(iqueuemac, NETOPT_DISABLE);
 	}
@@ -1904,7 +1914,7 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
 	res = iqueuemac_assemble_and_send_beacon(iqueuemac);
 
 	/* Enable Auto ACK again for data reception */
-	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
+	//iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	if(res < 0){
 		printf("beacon %d\n", res);
