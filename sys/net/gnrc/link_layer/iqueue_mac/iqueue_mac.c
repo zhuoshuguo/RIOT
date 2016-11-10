@@ -1995,6 +1995,8 @@ void iqueue_mac_router_vtdma_init(iqueuemac_t* iqueuemac){
 
 	/*** switch the radio to the subchannel ***/
 	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->sub_channel_num);
+	/* Enable Auto ACK again for data reception */
+	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	/*** set the vTDMA period timeout!!! ***/
 	uint32_t vtdma_duration;
