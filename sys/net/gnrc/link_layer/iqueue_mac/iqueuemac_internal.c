@@ -541,12 +541,17 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 	    pkt_iqmac = pkt;
 
 	}else{
+		/* if there is no slots to allocate, quit sending beacon! */
+		return 0;
+
+        /*
 		pkt = gnrc_pktbuf_add(NULL, &iqueuemac_hdr, sizeof(iqueuemac_hdr), GNRC_NETTYPE_IQUEUEMAC);
 		if(pkt == NULL) {
 			puts("iqueuemac: pktbuf add failed in iqueuemac_assemble_and_send_beacon().");
 			return -ENOBUFS;
 		}
 		pkt_iqmac = pkt;
+		*/
 	}
 
 	/********* Add the Netif header  *********/
