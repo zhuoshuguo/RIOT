@@ -834,7 +834,14 @@ void iqueuemac_t2r_init(iqueuemac_t* iqueuemac){
 	uint32_t wait_phase_duration;
 
 	wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
-	wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
+
+	/*
+	if(RTT_TICKS_TO_US(wait_phase_duration) < IQUEUEMAC_WAIT_CP_SECUR_GAP_US){
+		puts("wait is smaller than 0.");
+	}*/
+
+	wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration);// - IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
+
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
 
 	/*** flush the rx-queue here to reduce possible buffered packet in RIOT!! ***/
@@ -1354,6 +1361,9 @@ void iqueuemac_t2r_end(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2r_update(iqueuemac_t* iqueuemac)
 {
+
+	//printf("%d.\n",iqueuemac->device_states.iqueuemac_device_t2r_state);
+
 	switch(iqueuemac->device_states.iqueuemac_device_t2r_state)
 	{
 	 case DEVICE_T2R_WAIT_CP_INIT: iqueuemac_t2r_init(iqueuemac);break;
@@ -2175,6 +2185,8 @@ void iqueue_mac_router_sleep_end(iqueuemac_t* iqueuemac){
 }
 
 void iqueue_mac_router_listen_update(iqueuemac_t* iqueuemac){
+
+	//printf("%d.\n",iqueuemac->router_states.router_listen_state);
 
 	switch(iqueuemac->router_states.router_listen_state)
    {
