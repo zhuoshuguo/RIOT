@@ -401,6 +401,8 @@ typedef struct {
 	/* Queue of destination node to which the current packet will be sent */
 	iqueuemac_tx_neighbour_t* current_neighbour;
 
+	uint8_t tx_seq;
+
 	/* Feedback of last packet that was sent */
 	iqueuemac_tx_feedback_t tx_feedback;
 	bool tx_finished;

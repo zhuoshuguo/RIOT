@@ -869,6 +869,11 @@ void iqueuemac_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 		; //return;
 	}*/
 
+	if(iqueuemac->tx.no_ack_contuer > 0){
+		netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+		device_state->seq = iqueuemac->tx.tx_seq;
+	}
+
 	/***  do not disable auto-ack here, we need auto-ack for data transmission and possible retransmission ***/
 	/******Use CSMA here, and send_packet() will release the pkt itself !!!!******/
 	int res;
@@ -930,6 +935,10 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 			case TX_FEEDBACK_NOACK:{
 				puts("t2r noack");
 				iqueuemac->tx.no_ack_contuer ++;
+
+				netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+				iqueuemac->tx.tx_seq = device_state->seq - 1;
+
 
 				if(iqueuemac->tx.no_ack_contuer >= IQUEUEMAC_REPHASELOCK_THRESHOLD){
 					iqueuemac->tx.no_ack_contuer = 0xFF; //0;
@@ -1373,6 +1382,7 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 		if(iqueuemac->tx.tx_packet != NULL){
 			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 			iqueuemac->tx.tx_packet = NULL;
+			iqueuemac->tx.no_ack_contuer = 0;
 		}
 
 		gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.current_neighbour->queue));
@@ -1476,6 +1486,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 		if(iqueuemac->tx.tx_packet != NULL){
 			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 			iqueuemac->tx.tx_packet = NULL;
+			iqueuemac->tx.no_ack_contuer = 0;
 		}
 
 		gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.current_neighbour->queue));
@@ -1517,7 +1528,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_PREAMBLE_DURATION)){
-		puts("no p-ack, t-2-u fail.");
+		puts("no preamble-ack, drop pkt.");
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
@@ -1533,6 +1544,12 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 }
 
 void iqueuemac_t2u_send_data(iqueuemac_t* iqueuemac){
+
+	/* if found this is a retrying data, reload its original seq. */
+	if(iqueuemac->tx.no_ack_contuer > 0){
+		netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+		device_state->seq = iqueuemac->tx.tx_seq;
+	}
 
 	/***  do not disable auto-ack here, we need auto-ack for data transmission and possible retransmission ***/
 	int res;
@@ -1565,6 +1582,8 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 
 	    	gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 	    	iqueuemac->tx.tx_packet = NULL;
+
+	    	iqueuemac->tx.no_ack_contuer = 0;
 
 	    	/*** TX_FEEDBACK_SUCCESS means the router has success received the queue-length indicator ***/
 	    	/*  add this part in the future to support vtdma in sending-to-unkown (to router type) */
@@ -1615,6 +1634,7 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	    	puts("t2u send data failed. drop pkt");
 	    	gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 	    	iqueuemac->tx.tx_packet = NULL;
+	    	iqueuemac->tx.no_ack_contuer = 0;
 	    	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 	    }
 
@@ -1633,6 +1653,7 @@ void iqueuemac_t2u_end(iqueuemac_t* iqueuemac){
 		if(iqueuemac->tx.tx_packet != NULL){
 			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 			iqueuemac->tx.tx_packet = NULL;
+			iqueuemac->tx.no_ack_contuer = 0;
 		}
 		iqueuemac->tx.current_neighbour = NULL;
 	}
