@@ -828,9 +828,6 @@ void iqueuemac_t2r_init(iqueuemac_t* iqueuemac){
 
 	iqueuemac_trun_off_radio(iqueuemac);
 
-	/* Enable Auto ACK again for data reception */
-	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
-
 	iqueuemac->quit_current_cycle = false;
 
 	/* set timer for the targeted router! */
@@ -850,6 +847,9 @@ void iqueuemac_t2r_init(iqueuemac_t* iqueuemac){
 void iqueuemac_t2r_wait_cp(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_CP)){
+		/* Enable Auto ACK again for data reception */
+		iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
+
 		iqueuemac_trun_on_radio(iqueuemac);
 		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_CP;
 		iqueuemac->need_update = true;
