@@ -50,6 +50,7 @@
 #endif
 
 uint32_t send_counter;
+uint32_t own_addess;
 
 static void generate_and_send_pkt(void){
 
@@ -66,6 +67,8 @@ static void generate_and_send_pkt(void){
 
 	    payload[0] = send_counter;
 
+	    payload[1] = own_addess;
+
 	    dev2 = 4;
 	    /* parse interface */
 	    dev = (kernel_pid_t)dev2;
@@ -73,6 +76,15 @@ static void generate_and_send_pkt(void){
 	    addr_len = 2;
 	    addr[0] = 0x44;
 	    addr[1] = 0x7e;
+
+	    //addr[0] = 0x10;
+	    //addr[1] = 0x3e;
+
+	    //addr[0] = 0x6f;
+	    //addr[1] = 0x46;
+
+	    //addr[0] = 0xa3;
+	    //addr[1] = 0x12;
 
 	    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
 	    if(hdr == NULL){
@@ -108,7 +120,26 @@ void *sender_thread(void *arg)
 
     send_counter = 0;
 
-    xtimer_sleep(10);
+    int16_t devpid;
+
+    devpid = 4;
+
+    uint8_t own_addr[2];
+
+    gnrc_netapi_get(devpid, NETOPT_ADDRESS, 0, &own_addr,
+                            sizeof(own_addr));
+
+
+    xtimer_sleep(3);
+
+    own_addess = 0;
+    own_addess = own_addr[0];
+    own_addess = own_addess << 8;
+    own_addess |= own_addr[1];
+
+    printf("own add is %lx.\n", own_addess);
+
+    xtimer_sleep(7);
 
     while (1) {
 
