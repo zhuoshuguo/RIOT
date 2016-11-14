@@ -104,7 +104,12 @@ static void generate_and_send_pkt(void){
 		}else{
 		    LL_PREPEND(pkt, hdr);
 
-		    gnrc_netapi_send(dev, pkt);
+		    int res;
+		    res = gnrc_netapi_send(dev, pkt);
+
+		    if(res < 1){
+		    	puts("app: send data msg to mac failed!");
+		    }
 
 		    printf("p: %lu.\n", send_counter);
 		}
