@@ -290,6 +290,15 @@ void iqueuemac_set_autoack(iqueuemac_t* iqueuemac, netopt_enable_t autoack)
 	                              sizeof(setautoack));
 }
 
+void iqueuemac_set_ack_req(iqueuemac_t* iqueuemac, netopt_enable_t ack_req)
+{
+    netopt_enable_t set_ack_req = ack_req;
+
+    iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev,
+                                  NETOPT_ACK_REQ,
+                                  &set_ack_req,
+                                  sizeof(set_ack_req));
+}
 
 netopt_state_t _get_netdev_state(iqueuemac_t* iqueuemac)
 {

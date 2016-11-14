@@ -131,6 +131,7 @@ static inline bool _addr_match(l2_addr_t* addr1, l2_addr_t* addr2)
 void iqueuemac_trun_on_radio(iqueuemac_t* iqueuemac);
 void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac);
 void iqueuemac_set_autoack(iqueuemac_t* iqueuemac, netopt_enable_t autoack);
+void iqueuemac_set_ack_req(iqueuemac_t* iqueuemac, netopt_enable_t ack_req);
 netopt_state_t _get_netdev_state(iqueuemac_t* iqueuemac);
 void iqueuemac_set_promiscuousmode(iqueuemac_t* iqueuemac, netopt_enable_t enable);
 void iqueuemac_turn_radio_channel(iqueuemac_t* iqueuemac, uint16_t channel_num);
