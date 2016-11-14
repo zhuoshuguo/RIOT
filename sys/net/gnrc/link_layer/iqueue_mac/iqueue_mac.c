@@ -1154,6 +1154,7 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 
 	}else{/*** here means the slots have been used up !!! ***/
 		/****  switch back to the public channel ****/
+		puts("v-end1");
 		iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
 
 		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
@@ -1170,6 +1171,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 		switch(iqueuemac->tx.tx_feedback){
 
 			case TX_FEEDBACK_SUCCESS:{
+				puts("v");
 				/*** first release the pkt ***/
 				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 				iqueuemac->tx.tx_packet = NULL;
@@ -1187,6 +1189,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 					}
 				}else{
 					/****  vtdma period ends, switch back to the public channel ****/
+					puts("v-end2");
 					iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
 
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
@@ -1221,6 +1224,8 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 			        	puts("Push pkt failed in t2r");
 			        }
 		            iqueuemac->tx.tx_packet = NULL;
+
+		            puts("v-end3");
 
 		            /****  vtdma period ends, switch back to the public channel ****/
 					iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
@@ -1263,6 +1268,7 @@ void iqueuemac_t2r_end(iqueuemac_t* iqueuemac){
 	/* if t-2-r success or IQUEUEMAC_REPHASELOCK_THRESHOLD has been reached,
 	 * clean the tx current_neighbour address. */
 	if((iqueuemac->tx.tx_packet != NULL)&&(iqueuemac->tx.no_ack_contuer == 0)){
+		puts("t2r:drop pkt");
 		gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 		iqueuemac->tx.tx_packet = NULL;
 	}
