@@ -1042,13 +1042,14 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 
             	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr))
             	{
+            		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+
                 	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
                 		gnrc_pktbuf_release(pkt);
                 		puts("dup pkt.");
                 		return;
                 	}
 
-            		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
             		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             		_dispatch(iqueuemac->rx.dispatch_buffer);
             	}else/* if the data is not for the node, release it.  */
@@ -1490,13 +1491,14 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             case FRAMETYPE_IQUEUE_DATA:{
             	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr))
             	{
+            		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+
                 	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
                 		gnrc_pktbuf_release(pkt);
                 		puts("dup pkt.");
                 		return;
                 	}
 
-            		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
             		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             		_dispatch(iqueuemac->rx.dispatch_buffer);
             	}else/* if the data is not for the node, release it.  */
@@ -1747,13 +1749,14 @@ void iqueuemac_wait_beacon_packet_process(iqueuemac_t* iqueuemac){
             	 * destination's. */
             	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr))
             	{
+            		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+
                 	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
                 		gnrc_pktbuf_release(pkt);
                 		puts("dup pkt.");
                 		return;
                 	}
 
-            		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
             		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             		_dispatch(iqueuemac->rx.dispatch_buffer);
             	}else/* if the data is not for the node, release it.  */
@@ -1861,13 +1864,13 @@ void iqueuemac_router_vtdma_receive_packet_process(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_IQUEUE_DATA:{
+            	iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+
             	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
             		gnrc_pktbuf_release(pkt);
             		puts("dup pkt.");
             		return;
             	}
-
-            	iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
 
         	    _dispatch(iqueuemac->rx.dispatch_buffer);

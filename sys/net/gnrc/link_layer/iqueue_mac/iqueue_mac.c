@@ -2021,6 +2021,8 @@ void iqueue_mac_router_vtdma_init(iqueuemac_t* iqueuemac){
 
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_VTDMA, vtdma_duration);
 
+	iqueuemac->vtdma_end = false;
+
 	iqueuemac->router_states.router_listen_state = R_LISTEN_VTDMA;
 	iqueuemac->need_update = true;
 
@@ -2036,11 +2038,24 @@ void iqueue_mac_router_vtdma(iqueuemac_t* iqueuemac){
 	    iqueuemac_router_vtdma_receive_packet_process(iqueuemac);
 	}
 
-	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_VTDMA)){
-		//puts("iqueuemac: Router vTDMA ends!!");
+ 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_VTDMA)){
+ 		iqueuemac->vtdma_end = true;
+ 	}
+
+ 	if(iqueuemac->vtdma_end == true){
+
+ 	    if(_get_netdev_state(iqueuemac) == NETOPT_STATE_RX)
+ 		{
+ 			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
+ 			iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
+ 			return;
+ 		}
+
+ 	 	//puts("iqueuemac: Router vTDMA ends!!");
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
 		iqueuemac->router_states.router_listen_state = R_LISTEN_VTDMA_END;
 		iqueuemac->need_update = true;
-	}
+ 	 }
 }
 
 void iqueue_mac_router_vtdma_end(iqueuemac_t* iqueuemac){
