@@ -851,8 +851,8 @@ void iqueuemac_t2r_wait_cp(iqueuemac_t* iqueuemac){
 		iqueuemac_trun_on_radio(iqueuemac);
 		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_CP;
 
-		/* set up required ack flag! */
-		iqueuemac_set_ack_req(iqueuemac, NETOPT_ENABLE);
+		/* set up auto-ack for packet reception! */
+		iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 		iqueuemac->need_update = true;
 	}
@@ -937,10 +937,19 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				iqueuemac->need_update = true;
 			}break;
 
-			case TX_FEEDBACK_BUSY:puts("t2r channel busy");
+			case TX_FEEDBACK_BUSY:
 			/*** if NOACK, regards it as phase-lock failed, mark the destination as unknown will try t-2-u next time. ***/
 			case TX_FEEDBACK_NOACK:{
-				puts("t2r noack");
+
+				/* this is for debug, delete when formal iqueuemac version is release! */
+				/* delete this turn-off radio when formal iqueuemac version is release!
+				 * since it (turn-off radio func here) is mainly for debug */
+				iqueuemac_trun_off_radio(iqueuemac);
+				if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_BUSY) {
+				    puts("t2r:busy");
+				}else if (iqueuemac->tx.tx_feedback == TX_FEEDBACK_NOACK){
+					puts("t2r:noack");
+				}
 				iqueuemac->tx.no_ack_contuer ++;
 
 				netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
@@ -1154,7 +1163,7 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 
 	}else{/*** here means the slots have been used up !!! ***/
 		/****  switch back to the public channel ****/
-		puts("v-end1");
+		//puts("v-end1");
 		iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
 
 		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
@@ -1171,7 +1180,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 		switch(iqueuemac->tx.tx_feedback){
 
 			case TX_FEEDBACK_SUCCESS:{
-				puts("v");
+				//puts("v");
 				/*** first release the pkt ***/
 				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 				iqueuemac->tx.tx_packet = NULL;
@@ -1189,7 +1198,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 					}
 				}else{
 					/****  vtdma period ends, switch back to the public channel ****/
-					puts("v-end2");
+					//puts("v-end2");
 					iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
 
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
@@ -1225,7 +1234,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 			        }
 		            iqueuemac->tx.tx_packet = NULL;
 
-		            puts("v-end3");
+		            //puts("v-end3");
 
 		            /****  vtdma period ends, switch back to the public channel ****/
 					iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
