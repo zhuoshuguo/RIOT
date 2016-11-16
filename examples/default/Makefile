@@ -55,7 +55,7 @@ ifneq (,$(filter $(BOARD),$(BOARD_PROVIDES_NETIF)))
 
   # We use only the lower layers of the GNRC network stack, hence, we can
   # reduce the size of the packet buffer a bit
-  CFLAGS += -DGNRC_PKTBUF_SIZE=2048
+  CFLAGS += -DGNRC_PKTBUF_SIZE=4096
 endif
 
 FEATURES_OPTIONAL += config
