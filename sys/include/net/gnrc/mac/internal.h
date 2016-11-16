@@ -70,7 +70,7 @@ static inline bool _packet_is_broadcast(gnrc_pktsnip_t* pkt)
  *
  * @return               true if the two address match each other, otherwise return false.
  */
-static inline bool _ieee802154_addr_match( uint8_t * addr1, uint8_t* addr2, uint8_t add_len)
+static inline bool _ieee802154_addr_match(uint8_t * addr1, uint8_t* addr2, uint8_t add_len)
 {
     assert(addr1);
     assert(addr2);
