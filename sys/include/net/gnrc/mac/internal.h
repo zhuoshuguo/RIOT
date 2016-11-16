@@ -51,7 +51,7 @@ int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[]);
  */
 void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type);
 
-/* @brief Check if packet is broadcast
+/* @brief Check if packet is for broadcast
  *
  * @param[in]   pkt             packet to check
  */
@@ -62,14 +62,21 @@ static inline bool _packet_is_broadcast(gnrc_pktsnip_t* pkt)
                               (netif_hdr->flags & (GNRC_NETIF_HDR_FLAGS_BROADCAST | GNRC_NETIF_HDR_FLAGS_MULTICAST)) );
 }
 
-
-static inline bool _addr_match( uint8_t * addr1, uint8_t* addr2, uint8_t add_len)
+/* @brief Check whether the two given IEEE802.15.4 addresses match each other (are the same).
+ *
+ * @param[in]   addr1    the first address given for checking
+ * @param[in]   addr2    the second address given for checking
+ * @param[in]   add_len  the length of the address
+ *
+ * @return               true if the two address match each other, otherwise return false.
+ */
+static inline bool _ieee802154_addr_match( uint8_t * addr1, uint8_t* addr2, uint8_t add_len)
 {
     assert(addr1);
     assert(addr2);
     assert(add_len);
 
-    if(add_len > IEEE802154_LONG_ADDRESS_LEN)
+    if((add_len != IEEE802154_LONG_ADDRESS_LEN)&&(add_len != IEEE802154_SHORT_ADDRESS_LEN))
         return false;
 
     return (memcmp(addr1, addr2, add_len) == 0);

@@ -24,8 +24,6 @@
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
-/******************************************************************************/
-
 int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[])
 {
     int res;
@@ -49,9 +47,6 @@ int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[])
     return res;
 }
 
-/******************************************************************************/
-
-/* Find a payload based on it's protocol type */
 void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type)
 {
     while(pkt != NULL)
