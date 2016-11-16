@@ -74,8 +74,20 @@ static void generate_and_send_pkt(void){
 	    dev = (kernel_pid_t)dev2;
 
 	    addr_len = 2;
-	    addr[0] = 0x44;
-	    addr[1] = 0x7e;
+
+	    if(own_addess == 0xbcc6) {
+	        addr[0] = 0x10;
+	        addr[1] = 0x3e;
+	    }else if(own_addess == 0x1b1a) {
+	        addr[0] = 0xa3;
+	        addr[1] = 0x12;
+	    }else if(own_addess == 0x5ad6) {
+		    addr[0] = 0x6f;
+		    addr[1] = 0x46;
+	    }else if(own_addess == 0x52d2) {
+		    addr[0] = 0x44;
+		    addr[1] = 0x7e;
+	    }
 
 	    //addr[0] = 0x10;
 	    //addr[1] = 0x3e;
