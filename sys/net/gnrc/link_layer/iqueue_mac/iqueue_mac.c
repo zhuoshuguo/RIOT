@@ -955,11 +955,10 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
 				iqueuemac->tx.tx_seq = device_state->seq - 1;
 
-
 				if(iqueuemac->tx.no_ack_contuer >= IQUEUEMAC_REPHASELOCK_THRESHOLD){
-					iqueuemac->tx.no_ack_contuer = 0xFF; //0;
+					//iqueuemac->tx.no_ack_contuer = 0xFF; //0;
 
-					//puts("phase-lock failed.");
+					printf("t2r:noack %d, go t2u\n",iqueuemac->tx.no_ack_contuer);
 					iqueuemac->tx.current_neighbour->mac_type = UNKNOWN;
 
 #if 0
@@ -983,6 +982,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END; //DEVICE_T2R_RE_PHASE_LOCK_PREPARE;
 
 				}else{
+					printf("t2r:noack %d, go t2r\n",iqueuemac->tx.no_ack_contuer);
 					/* go to t-2-r end and try t-2-r again. */
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 				}
