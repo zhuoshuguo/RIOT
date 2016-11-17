@@ -47,6 +47,7 @@ typedef enum {
     TX_FEEDBACK_BUSY          /**< found medium busy when doing transmission */
 } gnrc_mac_tx_feedback_t;
 
+#if ((GNRC_MAC_RX_QUEUE_SIZE != 0)||(GNRC_MAC_DISPATCH_BUFFER_SIZE != 0))
 /**
  * @brief MAC internal type for storing reception state parameters and
  *        state machines.
@@ -55,16 +56,22 @@ typedef enum {
  *        new MAC protocols.
  */
 typedef struct {
+#if GNRC_MAC_RX_QUEUE_SIZE != 0
     /* RX queue for storing received packets */
     gnrc_priority_pktqueue_t queue;
 
     /* RX queue nodes */
     gnrc_priority_pktqueue_node_t _queue_nodes[GNRC_MAC_RX_QUEUE_SIZE];
+#endif
 
+#if GNRC_MAC_DISPATCH_BUFFER_SIZE != 0
     /* buffer for storing dispatching packets */
     gnrc_pktsnip_t* dispatch_buffer[GNRC_MAC_DISPATCH_BUFFER_SIZE];
+#endif
 } gnrc_mac_rx_t;
+#endif
 
+#if GNRC_MAC_NEIGHBOUR_COUNT != 0
 /**
  * @brief type for storing states of tx neighbor node.
  */
@@ -84,7 +91,9 @@ typedef struct {
  * @brief Maximum phase value.
  */
 #define GNRC_MAC_PHASE_MAX             (-1)
+#endif
 
+#if ((GNRC_MAC_NEIGHBOUR_COUNT != 0)||(GNRC_MAC_TX_QUEUE_SIZE != 0))
 /**
  * @brief MAC internal type for storing transmission state parameters and
  *        state machines.
@@ -96,18 +105,20 @@ typedef struct {
 #if GNRC_MAC_NEIGHBOUR_COUNT != 0
     /* TX queues for neighbouring nodes. First queue is for broadcast (+1) */
     gnrc_mac_tx_neighbour_t neighbours[GNRC_MAC_NEIGHBOUR_COUNT + 1];
+
+    /* Queue of destination node to which the current packet will be sent */
+    gnrc_mac_tx_neighbour_t* current_neighbour;
 #endif
+
+#if GNRC_MAC_TX_QUEUE_SIZE != 0
     /* Shared buffer for TX queue nodes */
     gnrc_priority_pktqueue_node_t _queue_nodes[GNRC_MAC_TX_QUEUE_SIZE];
 
     /* Packet that is currently scheduled to be sent */
     gnrc_pktsnip_t* packet;
-
-    /* Queue of destination node to which the current packet will be sent */
-    gnrc_mac_tx_neighbour_t* current_neighbour;
-
+#endif
 } gnrc_mac_tx_t;
-
+#endif
 
 
 #ifdef __cplusplus
