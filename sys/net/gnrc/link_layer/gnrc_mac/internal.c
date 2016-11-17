@@ -22,7 +22,6 @@
 #include <net/gnrc.h>
 #include <net/gnrc/mac/internal.h>
 #include <net/gnrc/mac/types.h>
-#include <net/gnrc/mac/mac.h>
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
@@ -52,6 +51,23 @@ int gnrc_mac_get_dstaddr(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[])
 void* gnrc_mac_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type)
 
 
+#if ((GNRC_MAC_TX_QUEUE_SIZE != 0)||(GNRC_MAC_RX_QUEUE_SIZE != 0))
+gnrc_priority_pktqueue_node_t* _alloc_pktqueue_node(gnrc_priority_pktqueue_node_t* nodes[], uint32_t size)
+{
+    /* search for free packet_queue_node */
+    for (size_t i = 0; i < size; i++) {
+        if((nodes[i]->pkt == NULL) &&
+           (nodes[i]->next == NULL)) {
+            return nodes[i];
+        }
+    }
+
+    return NULL;
+}
+#endif
+
+#if GNRC_MAC_TX_QUEUE_SIZE != 0
+#if GNRC_MAC_NEIGHBOUR_COUNT != 0
 int _find_neighbour(gnrc_mac_tx_t* tx, uint8_t* dst_addr, int addr_len)
 {
     gnrc_mac_tx_neighbour_t* neighbours;
@@ -109,21 +125,27 @@ void _init_neighbour(gnrc_mac_tx_neighbour_t* neighbour, uint8_t* addr, int len)
     neighbour->phase = GNRC_MAC_PHASE_UNINITIALIZED;
     memcpy(&(neighbour->l2_addr), addr, len);
 }
-
-gnrc_priority_pktqueue_node_t* _alloc_pktqueue_node(gnrc_priority_pktqueue_node_t* nodes[], uint32_t size)
-{
-    /* search for free packet_queue_node */
-    for (size_t i = 0; i < size; i++) {
-        if((nodes[i]->pkt == NULL) &&
-           (nodes[i]->next == NULL)) {
-            return &nodes[i];
-        }
-    }
-    return NULL;
-}
+#endif
 
 bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
 {
+
+#if GNRC_MAC_NEIGHBOUR_COUNT == 0
+
+    gnrc_priority_pktqueue_node_t* node;
+    node = _alloc_pktqueue_node(tx->_queue_nodes, GNRC_MAC_TX_QUEUE_SIZE);
+
+    if(node) {
+        gnrc_priority_pktqueue_node_init(node, priority, pkt);
+        gnrc_priority_pktqueue_push(tx->queue, node);
+        return true;
+    }
+
+    DEBUG("[gnrc_mac-int] Can't push to TX queue, no entries left\n");
+    return false;
+
+#else
+
     gnrc_mac_tx_neighbour_t* neighbour;
     int neighbour_id;
 
@@ -141,7 +163,6 @@ bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
         addr_len = _get_dest_address(pkt, &addr);
         if(addr_len <= 0) {
             DEBUG("[gnrc_mac-int] Packet has no destination address\n");
-            gnrc_pktbuf_release(pkt);
             return false;
         }
 
@@ -166,7 +187,6 @@ bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
                 /* All queues are in use, so reject */
                 if(neighbour_id < 0) {
                     DEBUG("[gnrc_mac-int] Couldn't allocate tx queue for packet\n");
-                    gnrc_pktbuf_release(pkt);
                     return false;
                 }
             }
@@ -180,22 +200,24 @@ bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
 
     }
 
-    gnrc_priority_pktqueue_node_t* node = _alloc_pktqueue_node(tx._queue_nodes, GNRC_MAC_TX_QUEUE_SIZE);
+    gnrc_priority_pktqueue_node_t* node;
+    node = _alloc_pktqueue_node(tx->_queue_nodes, GNRC_MAC_TX_QUEUE_SIZE);
     if(node) {
         gnrc_priority_pktqueue_node_init(node, priority, pkt);
         gnrc_priority_pktqueue_push(&neighbour->queue, node);
-    }else {
-        DEBUG("[gnrc_mac-int] Can't push to neighbour #%d's queue, no entries left\n",
-                neighbour_id);
-        gnrc_pktbuf_release(pkt);
-        return false;
+        DEBUG("[gnrc_mac-int] Queuing pkt to neighbour #%d\n", neighbour_id);
+        return true;
     }
 
-    DEBUG("[gnrc_mac-int] Queuing pkt to neighbour #%d\n", neighbour_id);
+    DEBUG("[gnrc_mac-int] Can't push to neighbour #%d's queue, no entries left\n",
+            neighbour_id);
+    return false;
 
-    return true;
+#endif
 }
+#endif
 
+#if GNRC_MAC_RX_QUEUE_SIZE != 0
 bool _queue_rx_packet(gnrc_mac_rx_t* rx, uint32_t priority, gnrc_pktsnip_t* pkt)
 {
     gnrc_priority_pktqueue_node_t* node;
@@ -210,4 +232,5 @@ bool _queue_rx_packet(gnrc_mac_rx_t* rx, uint32_t priority, gnrc_pktsnip_t* pkt)
     DEBUG("[gnrc_mac] Can't push RX packet @ %p, no entries left\n", pkt);
     return false;
 }
+#endif
 

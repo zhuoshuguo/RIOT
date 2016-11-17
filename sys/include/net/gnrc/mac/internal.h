@@ -26,6 +26,8 @@
 #include <stdint.h>
 #include <net/gnrc/mac/types.h>
 #include <net/ieee802154.h>
+#include <net/gnrc/netdev2.h>
+#include <net/gnrc/mac/mac.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -82,6 +84,8 @@ static inline bool gnrc_mac_addr_match(uint8_t * addr1, uint8_t* addr2, uint8_t 
     return (memcmp(addr1, addr2, add_len) == 0);
 }
 
+#if GNRC_MAC_TX_QUEUE_SIZE != 0
+#if GNRC_MAC_NEIGHBOUR_COUNT != 0
 /* @brief fetch the address of the tx neighbor according to the neighbor's ID
  *
  * @param[in]     tx        internal state of transmission state machine
@@ -93,8 +97,14 @@ static inline gnrc_mac_tx_neighbour_t* _get_neighbour(gnrc_mac_tx_t* tx, unsigne
 {
     return &(tx.neighbours[id]);
 }
+#endif
 
-/* @brief queue the packet into the packet queue which is associated with the pkt's destination.
+/* @brief queue the packet into the related transmission packet queue.
+ *        Note that, in case the neighbor structure is used and the neighbor has Tx-queue,
+ *        this function queues the packet to the queue associated with the
+ *        pkt's destination neighbor. On the other hand, if neighbor structure is not used,
+ *        this function queues the packet to the single priority TX queue stored in
+ *        the 'gnrc_mac_tx_t' structure.
  *
  * @param[in,out] tx        gnrc_mac transmission management object
  * @param[in]     priority  the priority of @p pkt
@@ -103,7 +113,9 @@ static inline gnrc_mac_tx_neighbour_t* _get_neighbour(gnrc_mac_tx_t* tx, unsigne
  * @return                  return true if queued successfully, otherwise false.
  */
 bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt);
+#endif
 
+#if GNRC_MAC_RX_QUEUE_SIZE != 0
 /* @brief queue the packet into the reception packet queue.
  *
  * @param[in,out] rx        gnrc_mac reception management object
@@ -113,6 +125,8 @@ bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
  * @return                  return true if queued successfully, otherwise false.
  */
 bool _queue_rx_packet(gnrc_mac_rx_t* rx, uint32_t priority, gnrc_pktsnip_t* pkt);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

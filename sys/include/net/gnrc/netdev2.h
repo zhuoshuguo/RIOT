@@ -36,7 +36,6 @@
 #include "net/netdev2.h"
 #include "net/gnrc.h"
 #include "net/gnrc/mac/types.h"
-#include "net/gnrc/mac/mac.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -104,21 +103,17 @@ typedef struct gnrc_netdev2 {
      */
     uint16_t mac_info;
 
-#if ((GNRC_MAC_RX_QUEUE_SIZE != 0)||(GNRC_MAC_DISPATCH_BUFFER_SIZE != 0))
     /**
      * @brief MAC internal object which stores reception parameters, queues, and
      *        state machines.
      */
     gnrc_mac_rx_t rx;
-#endif
 
-#if ((GNRC_MAC_NEIGHBOUR_COUNT != 0)||(GNRC_MAC_TX_QUEUE_SIZE != 0))
     /**
      * @brief MAC internal object which stores transmission parameters, queues, and
      *        state machines.
      */
     gnrc_mac_tx_t tx;
-#endif
 
 #endif
 } gnrc_netdev2_t;
