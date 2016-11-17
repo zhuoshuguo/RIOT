@@ -1099,7 +1099,7 @@ void iqueuemac_t2r_wait_beacon(iqueuemac_t* iqueuemac){
     }
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_BEACON)){
-		//puts("iqueuemac: No beacon.");
+		puts("t2r:no beacon");
 		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 		iqueuemac->need_update = true;
 	}
