@@ -94,7 +94,7 @@ typedef struct {
  */
 typedef struct {
 #if GNRC_MAC_NEIGHBOUR_COUNT != 0
-	/* TX queues for neighbouring nodes. First queue is for broadcast (+1) */
+    /* TX queues for neighbouring nodes. First queue is for broadcast (+1) */
     gnrc_mac_tx_neighbour_t neighbours[GNRC_MAC_NEIGHBOUR_COUNT + 1];
 #endif
     /* Shared buffer for TX queue nodes */

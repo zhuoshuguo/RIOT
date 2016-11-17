@@ -104,12 +104,14 @@ typedef struct gnrc_netdev2 {
     uint16_t mac_info;
 
     /**
-     * @brief MAC internal state of reception state machine.
+     * @brief MAC internal object which stores reception parameters and
+     *        state machines.
      */
     gnrc_mac_rx_t rx;
 
     /**
-     * @brief MAC internal state of transmission state machine.
+     * @brief MAC internal object which stores transmission parameters and
+     *        state machines.
      */
     gnrc_mac_tx_t tx;
 

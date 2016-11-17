@@ -82,14 +82,19 @@ static inline bool gnrc_mac_addr_match(uint8_t * addr1, uint8_t* addr2, uint8_t 
     return (memcmp(addr1, addr2, add_len) == 0);
 }
 
-
+/* @brief fetch the address of the tx neighbor according to the neighbor's ID
+ *
+ * @param[in]     tx        internal state of transmission state machine
+ * @param[in]     id        the ID of the neighbor
+ *
+ * @return                  the address of the neighbor
+ */
 static inline gnrc_mac_tx_neighbour_t* _get_neighbour(gnrc_mac_tx_t* tx, unsigned int id)
 {
     return &(tx.neighbours[id]);
 }
 
-/* @brief queue the pktsnip into the priority packet queue associated to
- *       the destination node where the pktsnip is targeting.
+/* @brief queue the packet into the packet queue which is associated with the pkt's destination.
  *
  * @param[in,out] tx        internal state of transmission state machine
  * @param[in]     priority  the priority of @p pkt
