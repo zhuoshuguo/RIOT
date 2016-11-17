@@ -110,13 +110,13 @@ void _init_neighbour(gnrc_mac_tx_neighbour_t* neighbour, uint8_t* addr, int len)
     memcpy(&(neighbour->l2_addr), addr, len);
 }
 
-gnrc_priority_pktqueue_node_t* _alloc_pktqueue_node(gnrc_mac_tx_t* tx)
+gnrc_priority_pktqueue_node_t* _alloc_pktqueue_node(gnrc_priority_pktqueue_node_t* nodes[], uint32_t size)
 {
     /* search for free packet_queue_node */
-    for (size_t i = 0; i < GNRC_MAC_TX_QUEUE_SIZE; i++) {
-        if((tx->_queue_nodes[i].pkt == NULL) &&
-           (tx->_queue_nodes[i].next == NULL)) {
-            return &tx->_queue_nodes[i];
+    for (size_t i = 0; i < size; i++) {
+        if((nodes[i]->pkt == NULL) &&
+           (nodes[i]->next == NULL)) {
+            return &nodes[i];
         }
     }
     return NULL;
@@ -180,7 +180,7 @@ bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
 
     }
 
-    gnrc_priority_pktqueue_node_t* node = _alloc_pktqueue_node(tx);
+    gnrc_priority_pktqueue_node_t* node = _alloc_pktqueue_node(tx._queue_nodes, GNRC_MAC_TX_QUEUE_SIZE);
     if(node) {
         gnrc_priority_pktqueue_node_init(node, priority, pkt);
         gnrc_priority_pktqueue_push(&neighbour->queue, node);
@@ -194,5 +194,20 @@ bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
     DEBUG("[gnrc_mac-int] Queuing pkt to neighbour #%d\n", neighbour_id);
 
     return true;
+}
+
+bool _queue_rx_packet(gnrc_mac_rx_t* rx, uint32_t priority, gnrc_pktsnip_t* pkt)
+{
+    gnrc_priority_pktqueue_node_t* node;
+    node = _alloc_pktqueue_node(rx->_queue_nodes, GNRC_MAC_RX_QUEUE_SIZE);
+
+    if(node) {
+        gnrc_priority_pktqueue_node_init(node, priority, pkt);
+        gnrc_priority_pktqueue_push(&rx->queue, node);
+        return true;
+    }
+
+    DEBUG("[gnrc_mac] Can't push RX packet @ %p, no entries left\n", pkt);
+    return false;
 }
 

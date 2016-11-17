@@ -96,7 +96,7 @@ static inline gnrc_mac_tx_neighbour_t* _get_neighbour(gnrc_mac_tx_t* tx, unsigne
 
 /* @brief queue the packet into the packet queue which is associated with the pkt's destination.
  *
- * @param[in,out] tx        internal state of transmission state machine
+ * @param[in,out] tx        gnrc_mac transmission management object
  * @param[in]     priority  the priority of @p pkt
  * @param[in]     pkt       pktsnip that will be queued
  *
@@ -104,6 +104,15 @@ static inline gnrc_mac_tx_neighbour_t* _get_neighbour(gnrc_mac_tx_t* tx, unsigne
  */
 bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt);
 
+/* @brief queue the packet into the reception packet queue.
+ *
+ * @param[in,out] rx        gnrc_mac reception management object
+ * @param[in]     priority  the priority of @p pkt
+ * @param[in]     pkt       pktsnip that will be queued
+ *
+ * @return                  return true if queued successfully, otherwise false.
+ */
+bool _queue_rx_packet(gnrc_mac_rx_t* rx, uint32_t priority, gnrc_pktsnip_t* pkt);
 #ifdef __cplusplus
 }
 #endif
