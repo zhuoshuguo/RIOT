@@ -30,12 +30,6 @@
 extern "C" {
 #endif
 
-/**
- * @brief   Count of parallel MAC timeouts.
- */
-#ifndef GNRC_MAC_TIMEOUT_COUNT
-#define GNRC_MAC_TIMEOUT_COUNT             (3U)
-#endif
 
 /**
  * @brief   The default rx queue size for incoming packets
