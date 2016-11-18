@@ -68,7 +68,7 @@ gnrc_priority_pktqueue_node_t* _alloc_pktqueue_node(gnrc_priority_pktqueue_node_
 
 #if GNRC_MAC_TX_QUEUE_SIZE != 0
 #if GNRC_MAC_NEIGHBOR_COUNT != 0
-int _find_neighbor(gnrc_mac_tx_t* tx, uint8_t* dst_addr, int addr_len)
+int _find_neighbor(gnrc_mac_tx_t* tx, const uint8_t* dst_addr, int addr_len)
 {
     gnrc_mac_tx_neighbor_t* neighbors;
     neighbors = tx->neighbors;
@@ -115,7 +115,7 @@ int _alloc_neighbor(gnrc_mac_tx_t* tx)
     return -1;
 }
 
-void _init_neighbor(gnrc_mac_tx_neighbor_t* neighbor, uint8_t* addr, int len)
+void _init_neighbor(gnrc_mac_tx_neighbor_t* neighbor, const uint8_t* addr, int len)
 {
     assert(neighbor != NULL);
     assert(addr  != NULL);
