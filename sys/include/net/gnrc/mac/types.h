@@ -51,37 +51,36 @@ typedef enum {
  * @brief MAC internal type for storing reception state parameters and
  *        state machines.
  *        This structure can be extended to contain more needed
- *        states and parameters. Please #ifdef+NEWMAC them out for particular
- *        new MAC protocols.
+ *        states and parameters. Please guard them by appropriate
+ *        #ifdef directives when applicable.
  */
 typedef struct {
 #if GNRC_MAC_RX_QUEUE_SIZE != 0
-    /* RX queue for storing received packets */
-    gnrc_priority_pktqueue_t queue;
-
-    /* RX queue nodes */
-    gnrc_priority_pktqueue_node_t _queue_nodes[GNRC_MAC_RX_QUEUE_SIZE];
+    gnrc_priority_pktqueue_t queue;                                      /**< RX packet queue */
+    gnrc_priority_pktqueue_node_t _queue_nodes[GNRC_MAC_RX_QUEUE_SIZE];  /**< RX queue nodes */
 #endif
+/* GNRC_MAC_RX_QUEUE_SIZE */
 
 #if GNRC_MAC_DISPATCH_BUFFER_SIZE != 0
-    /* buffer for storing dispatching packets */
-    gnrc_pktsnip_t* dispatch_buffer[GNRC_MAC_DISPATCH_BUFFER_SIZE];
+    gnrc_pktsnip_t* dispatch_buffer[GNRC_MAC_DISPATCH_BUFFER_SIZE];      /**< dispatching packet buffer */
 #endif
+/* GNRC_MAC_DISPATCH_BUFFER_SIZE */
 } gnrc_mac_rx_t;
 
-#if GNRC_MAC_NEIGHBOUR_COUNT != 0
+#if GNRC_MAC_NEIGHBOR_COUNT != 0
 /**
- * @brief type for storing states of tx neighbor node.
+ * @brief type for storing states of TX neighbor node.
  */
 typedef struct {
-    uint8_t  l2_addr[IEEE802154_LONG_ADDRESS_LEN]; /* Address of neighbour node */
-    uint8_t  l2_addr_len;                          /* Neighbour address length */
-    uint32_t phase;                                /* Neighbour's wake-up Phase */
+    uint8_t  l2_addr[IEEE802154_LONG_ADDRESS_LEN];   /**< Address of neighbor node */
+    uint8_t  l2_addr_len;                            /**< Neighbor address length */
+    uint32_t phase;                                  /**< Neighbor's wake-up Phase */
 
 #if GNRC_MAC_TX_QUEUE_SIZE != 0
-    gnrc_priority_pktqueue_t queue;                /* TX queue for this particular Neighbour */
+    gnrc_priority_pktqueue_t queue;                  /**< TX queue for this particular Neighbor */
 #endif
-} gnrc_mac_tx_neighbour_t;
+/* GNRC_MAC_TX_QUEUE_SIZE */
+} gnrc_mac_tx_neighbor_t;
 
 /**
  * @brief Uninitialized phase value.
@@ -93,36 +92,36 @@ typedef struct {
  */
 #define GNRC_MAC_PHASE_MAX             (-1)
 #endif
+/* GNRC_MAC_NEIGHBOR_COUNT */
 
 /**
  * @brief MAC internal type for storing transmission state parameters and
  *        state machines.
  *        This structure can be extended to contain more needed
- *        states and parameters. Please #ifdef+NEWMAC them out for particular
- *        new MAC protocols.
+ *        states and parameters. Please guard them by appropriate
+ *        #ifdef directives when applicable.
  */
 typedef struct {
-#if GNRC_MAC_NEIGHBOUR_COUNT != 0
-    /* TX queues for neighbouring nodes. First queue is for broadcast (+1) */
-    gnrc_mac_tx_neighbour_t neighbours[GNRC_MAC_NEIGHBOUR_COUNT + 1];
-
-    /* Queue of destination node to which the current packet will be sent */
-    gnrc_mac_tx_neighbour_t* current_neighbour;
+#if GNRC_MAC_NEIGHBOR_COUNT != 0
+	gnrc_mac_tx_neighbor_t neighbors[GNRC_MAC_NEIGHBOR_COUNT + 1];      /**< TX queues for neighboring nodes.
+	                                                                         First queue is for broadcast (+1) */
+	gnrc_mac_tx_neighbor_t* current_neighbor;                           /**< Queue of destination node to which
+	                                                                         the current packet will be sent */
 #endif
+/* GNRC_MAC_NEIGHBOR_COUNT */
 
 #if GNRC_MAC_TX_QUEUE_SIZE != 0
-#if GNRC_MAC_NEIGHBOUR_COUNT == 0
-    /* if neighbor is not used, define a queue for managing packets. */
-    gnrc_priority_pktqueue_t queue;
+#if GNRC_MAC_NEIGHBOR_COUNT == 0
+    gnrc_priority_pktqueue_t queue;                                     /**< If neighbor queues is not used, define
+                                                                             a single queue for managing packets. */
 #endif
-    /* Shared buffer for TX queue nodes */
-    gnrc_priority_pktqueue_node_t _queue_nodes[GNRC_MAC_TX_QUEUE_SIZE];
+/* GNRC_MAC_NEIGHBOR_COUNT */
 
-    /* Packet that is currently scheduled to be sent */
-    gnrc_pktsnip_t* packet;
+    gnrc_priority_pktqueue_node_t _queue_nodes[GNRC_MAC_TX_QUEUE_SIZE]; /**< Shared buffer for TX queue nodes */
+    gnrc_pktsnip_t* packet;                                             /**< currently scheduled packet for sending */
 #endif
+/* GNRC_MAC_TX_QUEUE_SIZE */
 } gnrc_mac_tx_t;
-
 
 #ifdef __cplusplus
 }

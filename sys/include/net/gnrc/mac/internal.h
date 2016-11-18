@@ -85,7 +85,7 @@ static inline bool gnrc_mac_addr_match(uint8_t * addr1, uint8_t* addr2, uint8_t 
 }
 
 #if GNRC_MAC_TX_QUEUE_SIZE != 0
-#if GNRC_MAC_NEIGHBOUR_COUNT != 0
+#if GNRC_MAC_NEIGHBOR_COUNT != 0
 /* @brief fetch the address of the tx neighbor according to the neighbor's ID
  *
  * @param[in]     tx        internal state of transmission state machine
@@ -93,11 +93,12 @@ static inline bool gnrc_mac_addr_match(uint8_t * addr1, uint8_t* addr2, uint8_t 
  *
  * @return                  the address of the neighbor
  */
-static inline gnrc_mac_tx_neighbour_t* _get_neighbour(gnrc_mac_tx_t* tx, unsigned int id)
+static inline gnrc_mac_tx_neighbor_t* _get_neighbor(gnrc_mac_tx_t* tx, unsigned int id)
 {
-    return &(tx.neighbours[id]);
+    return &(tx.neighbors[id]);
 }
 #endif
+/* GNRC_MAC_NEIGHBOR_COUNT */
 
 /* @brief queue the packet into the related transmission packet queue.
  *        Note that, in case the neighbor structure is used and the neighbor has Tx-queue,
@@ -114,6 +115,7 @@ static inline gnrc_mac_tx_neighbour_t* _get_neighbour(gnrc_mac_tx_t* tx, unsigne
  */
 bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt);
 #endif
+/* GNRC_MAC_TX_QUEUE_SIZE */
 
 #if GNRC_MAC_RX_QUEUE_SIZE != 0
 /* @brief queue the packet into the reception packet queue.
@@ -126,6 +128,7 @@ bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
  */
 bool _queue_rx_packet(gnrc_mac_rx_t* rx, uint32_t priority, gnrc_pktsnip_t* pkt);
 #endif
+/* GNRC_MAC_RX_QUEUE_SIZE */
 
 #ifdef __cplusplus
 }

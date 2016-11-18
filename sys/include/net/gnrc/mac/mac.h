@@ -30,7 +30,6 @@
 extern "C" {
 #endif
 
-
 /**
  * @brief   The default rx queue size for incoming packets
  */
@@ -48,8 +47,8 @@ extern "C" {
 /**
  * @brief   Count of nodes in one-hop distance whose wakeup phase is tracked
  */
-#ifndef GNRC_MAC_NEIGHBOUR_COUNT
-#define GNRC_MAC_NEIGHBOUR_COUNT           (8U)
+#ifndef GNRC_MAC_NEIGHBOR_COUNT
+#define GNRC_MAC_NEIGHBOR_COUNT           (8U)
 #endif
 
 /**
