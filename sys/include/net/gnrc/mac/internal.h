@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2015 Daniel Krebs
+ *               2016 INRIA
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -7,7 +8,7 @@
  */
 
 /**
- * @defgroup    net_gnrc_mac  A common MAC type for providing key MAC parameters and helper functions
+ * @ingroup     net_gnrc_mac  A common MAC type for providing key MAC parameters and helper functions
  * @ingroup     net
  * @brief       A common MAC type for providing key MAC parameters and helper functions.
  * @{
