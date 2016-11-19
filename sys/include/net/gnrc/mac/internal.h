@@ -24,7 +24,7 @@
 #define GNRC_MAC_INTERNAL_H_
 
 #include <stdint.h>
-#include <types.h>
+#include <net/gnrc/mac/types.h>
 #include <net/ieee802154.h>
 
 #ifdef __cplusplus
@@ -59,8 +59,8 @@ void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type);
 static inline bool _packet_is_broadcast(gnrc_pktsnip_t* pkt)
 {
     gnrc_netif_hdr_t* netif_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
-    return ( (netif_hdr == NULL) ? false :
-                              (netif_hdr->flags & (GNRC_NETIF_HDR_FLAGS_BROADCAST | GNRC_NETIF_HDR_FLAGS_MULTICAST)) );
+    return ((netif_hdr == NULL) ? false :
+            (netif_hdr->flags & (GNRC_NETIF_HDR_FLAGS_BROADCAST | GNRC_NETIF_HDR_FLAGS_MULTICAST)));
 }
 
 /* @brief Check whether the two given IEEE802.15.4 addresses match each other (are the same).

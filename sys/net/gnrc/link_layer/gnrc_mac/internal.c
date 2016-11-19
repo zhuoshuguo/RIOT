@@ -33,19 +33,18 @@ int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[])
     if(!pkt)
         return -ENODEV;
 
-    gnrc_pktsnip_t* netif_snip = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+    netif_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
 
-    if(netif_snip) {
-        netif_hdr = (gnrc_netif_hdr_t*) netif_snip->data;
+    if(netif_hdr) {
+        if((res = netif_hdr->dst_l2addr_len) <= 0)
+            return -ENOENT;
+
+        *pointer_to_addr = gnrc_netif_hdr_get_dst_addr(netif_hdr);
+        return res;
+
     } else {
         return -ENOENT;
     }
-
-    if((res = netif_hdr->dst_l2addr_len) <= 0)
-        return -ENOENT;
-
-    *pointer_to_addr = gnrc_netif_hdr_get_dst_addr(netif_hdr);
-    return res;
 }
 
 void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type)
