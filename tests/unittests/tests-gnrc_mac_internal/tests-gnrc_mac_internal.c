@@ -77,12 +77,60 @@ static void test_get_dest_address(void)
     TEST_ASSERT(add[1] == 0xb6);
 }
 
+static void test_packet_is_broadcast(void)
+{
+    gnrc_netif_hdr_t* netif_hdr;
+    uint8_t src_addr[2];
+    gnrc_pktsnip_t *pkt = gnrc_pktbuf_add(NULL, TEST_STRING4, sizeof(TEST_STRING4),
+                                          GNRC_NETTYPE_UNDEF);
+    pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t) + 2,
+                          GNRC_NETTYPE_NETIF);
+    src_addr[0] = 0xf3;
+    src_addr[1] = 0xb6;
+
+    netif_hdr = (gnrc_netif_hdr_t*) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+    gnrc_netif_hdr_init(netif_hdr, 2, 0);
+    gnrc_netif_hdr_set_src_addr(netif_hdr, src_addr, 2);
+
+    netif_hdr->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
+
+    TEST_ASSERT(netif_hdr == pkt->data);
+    TEST_ASSERT_EQUAL_STRING(TEST_STRING4, pkt->next->data);
+    TEST_ASSERT(_packet_is_broadcast(pkt));
+
+    netif_hdr->flags &= ~GNRC_NETIF_HDR_FLAGS_BROADCAST;
+    TEST_ASSERT(false == _packet_is_broadcast(pkt));
+}
+
+static void test_addr_match(void)
+{
+    uint8_t addr1[8];
+    uint8_t addr2[8];
+
+    uint64_t add = 0x0123456789abcdef;
+
+    memcpy(addr1, &add, 8);
+    memcpy(addr2, &add, 8);
+
+    TEST_ASSERT(_addr_match(addr1,addr2,2));
+    TEST_ASSERT(_addr_match(addr1,addr2,5));
+    TEST_ASSERT(_addr_match(addr1,addr2,8));
+
+    add = 0xfedcba9876543210;
+    memcpy(addr2, &add, 8);
+
+    TEST_ASSERT(false ==_addr_match(addr1,addr2,2));
+    TEST_ASSERT(false ==_addr_match(addr1,addr2,5));
+    TEST_ASSERT(false ==_addr_match(addr1,addr2,8));
+}
 
 Test *tests_gnrc_mac_internal_tests(void)
 {
     EMB_UNIT_TESTFIXTURES(fixtures) {
         new_TestFixture(test_gnrc_pktbuf_find),
         new_TestFixture(test_get_dest_address),
+        new_TestFixture(test_packet_is_broadcast),
+        new_TestFixture(test_addr_match),
     };
 
     EMB_UNIT_TESTCALLER(gnrc_mac_internal_tests, set_up, NULL, fixtures);
