@@ -26,7 +26,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <kernel_types.h>
-#include <xtimer.h>
 #include <net/netdev2.h>
 #include <net/gnrc.h>
 #include <net/gnrc/mac/mac.h>

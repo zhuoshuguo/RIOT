@@ -68,7 +68,7 @@ gnrc_priority_pktqueue_node_t* _alloc_pktqueue_node(gnrc_priority_pktqueue_node_
 
 #if GNRC_MAC_TX_QUEUE_SIZE != 0
 #if GNRC_MAC_NEIGHBOR_COUNT != 0
-int _find_neighbor(gnrc_mac_tx_t* tx, const uint8_t* dst_addr, int addr_len)
+int _gnrc_mac_find_neighbor(gnrc_mac_tx_t* tx, const uint8_t* dst_addr, int addr_len)
 {
     gnrc_mac_tx_neighbor_t* neighbors;
     neighbors = tx->neighbors;
@@ -84,7 +84,7 @@ int _find_neighbor(gnrc_mac_tx_t* tx, const uint8_t* dst_addr, int addr_len)
 }
 
 /* Free first empty queue that is not active */
-int _free_neighbor(gnrc_mac_tx_t* tx)
+int _gnrc_mac_free_neighbor(gnrc_mac_tx_t* tx)
 {
     gnrc_mac_tx_neighbor_t* neighbors;
     neighbors = tx->neighbors;
@@ -101,7 +101,7 @@ int _free_neighbor(gnrc_mac_tx_t* tx)
     return -1;
 }
 
-int _alloc_neighbor(gnrc_mac_tx_t* tx)
+int _gnrc_mac_alloc_neighbor(gnrc_mac_tx_t* tx)
 {
     gnrc_mac_tx_neighbor_t* neighbors;
     neighbors = tx->neighbors;
@@ -115,7 +115,7 @@ int _alloc_neighbor(gnrc_mac_tx_t* tx)
     return -1;
 }
 
-void _init_neighbor(gnrc_mac_tx_neighbor_t* neighbor, const uint8_t* addr, int len)
+void _gnrc_mac_init_neighbor(gnrc_mac_tx_neighbor_t* neighbor, const uint8_t* addr, int len)
 {
     assert(neighbor != NULL);
     assert(addr  != NULL);
@@ -128,7 +128,7 @@ void _init_neighbor(gnrc_mac_tx_neighbor_t* neighbor, const uint8_t* addr, int l
 #endif
 /* endif for #if GNRC_MAC_NEIGHBOR_COUNT != 0 */
 
-bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
+bool gnrc_mac_queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
 {
 #if GNRC_MAC_NEIGHBOR_COUNT == 0
 
@@ -153,7 +153,7 @@ bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
     if(_packet_is_broadcast(pkt)) {
         /* Broadcast queue is neighbor 0 by definition */
         neighbor_id = 0;
-        neighbor = _get_neighbor(tx, neighbor_id);
+        neighbor = gnrc_mac_get_neighbor(tx, neighbor_id);
 
     } else {
         uint8_t* addr;
@@ -168,14 +168,14 @@ bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
         }
 
         /* Search for existing queue for destination */
-        neighbor_id = _find_neighbor(tx, addr, addr_len);
+        neighbor_id = _gnrc_mac_find_neighbor(tx, addr, addr_len);
 
         /* neighbor node doesn't have a queue yet */
         if(neighbor_id < 0) {
             neighbor_known = false;
 
             /* Try to allocate neighbor entry */
-            neighbor_id = _alloc_neighbor(tx);
+            neighbor_id = _gnrc_mac_alloc_neighbor(tx);
 
             /* No neighbor entries left */
             if(neighbor_id < 0) {
@@ -183,7 +183,7 @@ bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
                       "GNRC_MAC_NEIGHBOR_COUNT for better performance\n");
 
                 /* Try to free an unused queue */
-                neighbor_id = _free_neighbor(tx);
+                neighbor_id = _gnrc_mac_free_neighbor(tx);
 
                 /* All queues are in use, so reject */
                 if(neighbor_id < 0) {
@@ -193,10 +193,10 @@ bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
             }
         }
 
-        neighbor = _get_neighbor(tx, neighbor_id);
+        neighbor = gnrc_mac_get_neighbor(tx, neighbor_id);
 
         if(!neighbor_known) {
-            _init_neighbor(neighbor, addr, addr_len);
+            _gnrc_mac_init_neighbor(neighbor, addr, addr_len);
         }
 
     }
@@ -221,7 +221,7 @@ bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
 /* endif for `#if GNRC_MAC_TX_QUEUE_SIZE != 0` */
 
 #if GNRC_MAC_RX_QUEUE_SIZE != 0
-bool _queue_rx_packet(gnrc_mac_rx_t* rx, uint32_t priority, gnrc_pktsnip_t* pkt)
+bool gnrc_mac_queue_rx_packet(gnrc_mac_rx_t* rx, uint32_t priority, gnrc_pktsnip_t* pkt)
 {
     gnrc_priority_pktqueue_node_t* node;
     node = _alloc_pktqueue_node(rx->_queue_nodes, GNRC_MAC_RX_QUEUE_SIZE);
@@ -237,4 +237,22 @@ bool _queue_rx_packet(gnrc_mac_rx_t* rx, uint32_t priority, gnrc_pktsnip_t* pkt)
 }
 #endif
 /* endif for `#if GNRC_MAC_RX_QUEUE_SIZE != 0` */
+
+#if GNRC_MAC_DISPATCH_BUFFER_SIZE != 0
+void gnrc_mac_dispatch(gnrc_pktsnip_t* buffer[])
+{
+    assert(buffer != NULL);
+
+    for(unsigned i = 0; i < GNRC_MAC_DISPATCH_BUFFER_SIZE; i++) {
+        if(buffer[i]) {
+            if (!gnrc_netapi_dispatch_receive(buffer[i]->type, GNRC_NETREG_DEMUX_CTX_ALL, buffer[i])) {
+                DEBUG("Unable to forward packet of type %i\n", buffer[i]->type);
+                gnrc_pktbuf_release(buffer[i]);
+            }
+            buffer[i] = NULL;
+        }
+    }
+}
+#endif
+/* endif for `#if GNRC_MAC_DISPATCH_BUFFER_SIZE != 0` */
 

@@ -93,7 +93,7 @@ static inline bool gnrc_mac_addr_match(uint8_t * addr1, uint8_t* addr2, uint8_t 
  *
  * @return                  the address of the neighbor
  */
-static inline gnrc_mac_tx_neighbor_t* _get_neighbor(gnrc_mac_tx_t* tx, unsigned int id)
+static inline gnrc_mac_tx_neighbor_t* gnrc_mac_get_neighbor(gnrc_mac_tx_t* tx, unsigned int id)
 {
     return &(tx.neighbors[id]);
 }
@@ -113,7 +113,7 @@ static inline gnrc_mac_tx_neighbor_t* _get_neighbor(gnrc_mac_tx_t* tx, unsigned 
  *
  * @return                  return true if queued successfully, otherwise false.
  */
-bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt);
+bool gnrc_mac_queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt);
 #endif
 /* GNRC_MAC_TX_QUEUE_SIZE */
 
@@ -126,9 +126,18 @@ bool _queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip_t* pkt)
  *
  * @return                  return true if queued successfully, otherwise false.
  */
-bool _queue_rx_packet(gnrc_mac_rx_t* rx, uint32_t priority, gnrc_pktsnip_t* pkt);
+bool gnrc_mac_queue_rx_packet(gnrc_mac_rx_t* rx, uint32_t priority, gnrc_pktsnip_t* pkt);
 #endif
 /* GNRC_MAC_RX_QUEUE_SIZE */
+
+#if GNRC_MAC_DISPATCH_BUFFER_SIZE != 0
+/* @brief dispatch all the packets in the dispatching buffer to upper layer.
+ *
+ * @param[in,out]  buffer   the buffer storing dispatching packets
+ */
+void gnrc_mac_dispatch(gnrc_pktsnip_t* buffer[]);
+#endif
+/* endif for `#if GNRC_MAC_DISPATCH_BUFFER_SIZE != 0` */
 
 #ifdef __cplusplus
 }
