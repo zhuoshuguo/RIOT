@@ -38,7 +38,7 @@ extern "C" {
  *
  * @return                          length of destination address
  */
-int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[]);
+int gnrc_mac_get_dstaddr(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[]);
 
 /* @brief Find the first pktsnip of @p type
  *
@@ -50,7 +50,7 @@ int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[]);
  *
  * @return              pointer to data, NULL is not found
  */
-void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type);
+void* gnrc_mac_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type);
 
 /* @brief Check if packet is for broadcast
  *
@@ -58,9 +58,9 @@ void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type);
  *
  * @return              true if the packet is for broadcast, otherwise false
  */
-static inline bool _packet_is_broadcast(gnrc_pktsnip_t* pkt)
+static inline bool gnrc_mac_chk_pkt_bcast(gnrc_pktsnip_t* pkt)
 {
-    gnrc_netif_hdr_t* netif_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+    gnrc_netif_hdr_t* netif_hdr = gnrc_mac_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
     return ((netif_hdr == NULL) ? false :
             (netif_hdr->flags & (GNRC_NETIF_HDR_FLAGS_BROADCAST | GNRC_NETIF_HDR_FLAGS_MULTICAST)));
 }
@@ -73,7 +73,7 @@ static inline bool _packet_is_broadcast(gnrc_pktsnip_t* pkt)
  *
  * @return               true if the two address match each other, otherwise return false.
  */
-static inline bool _addr_match(uint8_t * addr1, uint8_t* addr2, uint8_t add_len)
+static inline bool gnrc_mac_addr_match(uint8_t * addr1, uint8_t* addr2, uint8_t add_len)
 {
     assert(addr1);
     assert(addr2);

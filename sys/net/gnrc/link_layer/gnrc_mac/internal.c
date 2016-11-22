@@ -25,7 +25,7 @@
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
-int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[])
+int gnrc_mac_get_dstaddr(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[])
 {
     int res;
     gnrc_netif_hdr_t* netif_hdr;
@@ -33,7 +33,7 @@ int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[])
     if(!pkt)
         return -ENODEV;
 
-    netif_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+    netif_hdr = gnrc_mac_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
 
     if(netif_hdr) {
         if((res = netif_hdr->dst_l2addr_len) <= 0)
@@ -47,7 +47,7 @@ int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[])
     }
 }
 
-void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type)
+void* gnrc_mac_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type)
 {
     while(pkt != NULL)
     {
