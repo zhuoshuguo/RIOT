@@ -124,6 +124,91 @@ static void test_gnrc_mac_addr_match(void)
     TEST_ASSERT(false ==gnrc_mac_addr_match(addr1,addr2,8));
 }
 
+static void test_gnrc_mac_queue_tx_packet(void)
+{
+	gnrc_mac_tx_t tx;
+    gnrc_netif_hdr_t* netif_hdr;
+    uint8_t dst_addr[2];
+    bool push_success;
+    ////////////////////
+    gnrc_pktsnip_t *pkt = gnrc_pktbuf_add(NULL, TEST_STRING4, sizeof(TEST_STRING4),
+                                          GNRC_NETTYPE_UNDEF);
+    pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t) + 2,
+                          GNRC_NETTYPE_NETIF);
+    dst_addr[0] = 0x76;
+    dst_addr[1] = 0xb6;
+    netif_hdr = (gnrc_netif_hdr_t*) gnrc_mac_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+    gnrc_netif_hdr_init(netif_hdr, 0, 2);
+    gnrc_netif_hdr_set_dst_addr(netif_hdr, dst_addr, 2);
+
+    //////////////////
+    gnrc_pktsnip_t *pkt2 = gnrc_pktbuf_add(NULL, TEST_STRING8, sizeof(TEST_STRING8),
+                                          GNRC_NETTYPE_UNDEF);
+    pkt2 = gnrc_pktbuf_add(pkt2, NULL, sizeof(gnrc_netif_hdr_t) + 2,
+                           GNRC_NETTYPE_NETIF);
+
+    netif_hdr = (gnrc_netif_hdr_t*) gnrc_mac_pktbuf_find(pkt2, GNRC_NETTYPE_NETIF);
+    gnrc_netif_hdr_init(netif_hdr, 0, 2);
+    gnrc_netif_hdr_set_dst_addr(netif_hdr, dst_addr, 2);
+
+    /////////////////
+    dst_addr[0] = 0x44;
+    dst_addr[1] = 0x7e;
+    gnrc_pktsnip_t *pkt3 = gnrc_pktbuf_add(NULL, TEST_STRING16, sizeof(TEST_STRING16),
+                                           GNRC_NETTYPE_UNDEF);
+    pkt3 = gnrc_pktbuf_add(pkt3, NULL, sizeof(gnrc_netif_hdr_t) + 2,
+                          GNRC_NETTYPE_NETIF);
+
+    netif_hdr = (gnrc_netif_hdr_t*) gnrc_mac_pktbuf_find(pkt3, GNRC_NETTYPE_NETIF);
+    gnrc_netif_hdr_init(netif_hdr, 0, 2);
+    gnrc_netif_hdr_set_dst_addr(netif_hdr, dst_addr, 2);
+
+
+    for (size_t i = 0; i < GNRC_MAC_TX_QUEUE_SIZE; i++) {
+        tx._queue_nodes[i].pkt = NULL;
+        tx._queue_nodes[i].next = NULL;
+    }
+
+    for(int i = 0; i <= (signed)GNRC_MAC_NEIGHBOR_COUNT; i++) {
+    	tx.neighbors[i].l2_addr_len = 0;
+        gnrc_priority_pktqueue_init(&(tx.neighbors[i].queue));
+    }
+
+    push_success = gnrc_mac_queue_tx_packet(&tx,1,pkt);
+
+    gnrc_pktsnip_t *pkt_head;
+    pkt_head = gnrc_priority_pktqueue_head(&tx.neighbors[0].queue);
+
+    TEST_ASSERT(push_success);
+    TEST_ASSERT(pkt_head == pkt);
+    TEST_ASSERT(1 == gnrc_priority_pktqueue_length(&tx.neighbors[0].queue));
+    TEST_ASSERT_EQUAL_STRING(TEST_STRING4, pkt_head->next->data);
+
+    push_success = gnrc_mac_queue_tx_packet(&tx,0,pkt2);
+    pkt_head = gnrc_priority_pktqueue_head(&tx.neighbors[0].queue);
+
+    TEST_ASSERT(push_success);
+    TEST_ASSERT(pkt_head == pkt2);
+    TEST_ASSERT(2 == gnrc_priority_pktqueue_length(&tx.neighbors[0].queue));
+    TEST_ASSERT_EQUAL_STRING(TEST_STRING8, pkt_head->next->data);
+
+    pkt_head = gnrc_priority_pktqueue_pop(&tx.neighbors[0].queue);
+    TEST_ASSERT(pkt_head == pkt2);
+    TEST_ASSERT(1 == gnrc_priority_pktqueue_length(&tx.neighbors[0].queue));
+    TEST_ASSERT_EQUAL_STRING(TEST_STRING8, pkt_head->next->data);
+
+    pkt_head = gnrc_priority_pktqueue_head(&tx.neighbors[0].queue);
+    TEST_ASSERT(pkt_head == pkt);
+    TEST_ASSERT_EQUAL_STRING(TEST_STRING4, pkt_head->next->data);
+
+    push_success = gnrc_mac_queue_tx_packet(&tx,0,pkt3);
+    pkt_head = gnrc_priority_pktqueue_head(&tx.neighbors[1].queue);
+    TEST_ASSERT(push_success);
+    TEST_ASSERT(pkt_head == pkt3);
+    TEST_ASSERT(1 == gnrc_priority_pktqueue_length(&tx.neighbors[1].queue));
+    TEST_ASSERT_EQUAL_STRING(TEST_STRING16, pkt_head->next->data);
+}
+
 Test *tests_gnrc_mac_internal_tests(void)
 {
     EMB_UNIT_TESTFIXTURES(fixtures) {
@@ -131,6 +216,7 @@ Test *tests_gnrc_mac_internal_tests(void)
         new_TestFixture(test_gnrc_mac_get_dstaddr),
         new_TestFixture(test_gnrc_mac_chk_pkt_bcast),
         new_TestFixture(test_gnrc_mac_addr_match),
+        new_TestFixture(test_gnrc_mac_queue_tx_packet),
     };
 
     EMB_UNIT_TESTCALLER(gnrc_mac_internal_tests, set_up, NULL, fixtures);

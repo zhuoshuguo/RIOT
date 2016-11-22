@@ -26,11 +26,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <kernel_types.h>
-#include <net/netdev2.h>
 #include <net/gnrc.h>
-#include <net/gnrc/mac/mac.h>
 #include <net/gnrc/priority_pktqueue.h>
 #include <net/ieee802154.h>
+#include <net/gnrc/mac/mac.h>
 
 #ifdef __cplusplus
 extern "C" {

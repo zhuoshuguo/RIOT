@@ -1,1 +1,2 @@
+USEMODULE += gnrc_priority_pktqueue
 USEMODULE += gnrc_mac

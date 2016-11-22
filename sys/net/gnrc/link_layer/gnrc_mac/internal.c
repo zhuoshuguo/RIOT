@@ -21,7 +21,6 @@
 #include <stdbool.h>
 #include <net/gnrc.h>
 #include <net/gnrc/mac/internal.h>
-#include <net/gnrc/mac/types.h>
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"

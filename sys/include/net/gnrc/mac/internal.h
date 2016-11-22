@@ -24,10 +24,8 @@
 #define GNRC_MAC_INTERNAL_H_
 
 #include <stdint.h>
-#include <net/gnrc/mac/types.h>
 #include <net/ieee802154.h>
-#include <net/gnrc/netdev2.h>
-#include <net/gnrc/mac/mac.h>
+#include <net/gnrc/mac/types.h>
 
 #ifdef __cplusplus
 extern "C" {
