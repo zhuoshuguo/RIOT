@@ -289,6 +289,9 @@ typedef struct {
     uint32_t cp_phase;   /* in ticks*/
     /* Indicating that whether this neighbor is within the same cluster*/
     bool in_same_cluster;
+
+    uint16_t cur_pub_channel;
+
 } iqueuemac_tx_neighbour_t;
 
 typedef struct {
@@ -414,6 +417,8 @@ typedef struct {
 
 	uint8_t no_ack_contuer;
 
+	bool t2u_on_public_1;
+
 
 } iqueuemac_tx_t;
 
@@ -445,7 +450,9 @@ typedef struct iqueuemac {
     l2_addr_t father_router_addr;
 
     uint16_t sub_channel_num;
-    uint16_t public_channel_num;
+    uint16_t pub_channel_1;
+    uint16_t pub_channel_2;
+    uint16_t cur_pub_channel;
 
     /* Used to calculate wakeup times */
     uint32_t last_wakeup;    

@@ -116,7 +116,9 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 		iqueuemac->node_states.node_new_cycle = false;
 	}
 
-	iqueuemac->public_channel_num = 26;
+	iqueuemac->pub_channel_1 = 26;
+	iqueuemac->pub_channel_2 = 11;
+	iqueuemac->cur_pub_channel = iqueuemac->pub_channel_1;
 
 	iqueuemac->device_states.device_broadcast_state = DEVICE_BROADCAST_INIT;
 	iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_WAIT_CP_INIT;
@@ -1164,7 +1166,7 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 	}else{/*** here means the slots have been used up !!! ***/
 		/****  switch back to the public channel ****/
 		//puts("v-end1");
-		iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
+		iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
 
 		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 		iqueuemac->need_update = true;
@@ -1199,7 +1201,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 				}else{
 					/****  vtdma period ends, switch back to the public channel ****/
 					//puts("v-end2");
-					iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
+					iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
 
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 				}
@@ -1237,7 +1239,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 		            //puts("v-end3");
 
 		            /****  vtdma period ends, switch back to the public channel ****/
-					iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
+					iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 				}
 				iqueuemac->need_update = true;
@@ -1390,11 +1392,23 @@ void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE;
 	iqueuemac->need_update = true;
 
+	iqueuemac->tx.t2u_on_public_1 = true;
+
 	packet_queue_flush(&iqueuemac->rx.queue);
 }
 
 void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 {
+	if(iqueuemac->tx.preamble_sent != 0){
+	    if(iqueuemac->tx.t2u_on_public_1 == true){
+		    iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_2);
+		    iqueuemac->tx.t2u_on_public_1 = false;
+	    }else{
+	    	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_1);
+	    	iqueuemac->tx.t2u_on_public_1 = true;
+	    }
+	}
+
 	/* if memory full, release one pkt and reload next pkt */
 	if(iqueuemac->rx_memory_full == true){
 		iqueuemac->rx_memory_full = false;
@@ -1451,7 +1465,7 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 	//if every thing goes fine, continue to send preamble.
 
 	/***  disable auto-ack, namely disable pkt reception. ***/
-	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
+	//iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
 
 	int res;
 	if(iqueuemac->tx.preamble_sent == 0){
@@ -1460,7 +1474,7 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE_DURATION, IQUEUEMAC_PREAMBLE_DURATION_US);
 
 		/* Enable Auto ACK again for data reception */
-		iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
+		//iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	}else{
 		res = iqueue_mac_send_preamble(iqueuemac, NETOPT_DISABLE);
@@ -1529,6 +1543,12 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 		}
 	}
 
+	/* if rx is going, wait until rx is completed. */
+	if(_get_netdev_state(iqueuemac) == NETOPT_STATE_RX){
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
+		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
+		return;
+	}
 
 	if(iqueuemac->packet_received == true){
 	   	iqueuemac->packet_received = false;
@@ -1547,6 +1567,12 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 	}
 
 	if(iqueuemac->tx.got_preamble_ack == true){
+		if(iqueuemac->tx.t2u_on_public_1 == true){
+		    iqueuemac->tx.current_neighbour->cur_pub_channel = iqueuemac->pub_channel_1;
+		}else{
+			iqueuemac->tx.current_neighbour->cur_pub_channel = iqueuemac->pub_channel_2;
+		}
+
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_DATA;
@@ -1792,6 +1818,15 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
 	/* Enable Auto ACK again for data reception */
 	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
+
+	/* switch public channel */
+	if(iqueuemac->cur_pub_channel == iqueuemac->pub_channel_1) {
+		iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_2);
+		iqueuemac->cur_pub_channel = iqueuemac->pub_channel_2;
+	}else{
+		iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_1);
+		iqueuemac->cur_pub_channel = iqueuemac->pub_channel_1;
+	}
 
 	iqueuemac->rx_started = false;
 	iqueuemac->packet_received = false;
@@ -2064,7 +2099,7 @@ void iqueue_mac_router_vtdma_end(iqueuemac_t* iqueuemac){
 	_dispatch(iqueuemac->rx.dispatch_buffer);
 
 	/*** switch the radio to the public-channel!!! ***/
-	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->public_channel_num);
+	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
 
 	/*** ensure that the channel-switching is finished before go to sleep to turn it off !!! ***/
 
