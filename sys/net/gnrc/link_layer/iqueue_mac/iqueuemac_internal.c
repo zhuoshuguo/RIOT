@@ -1900,6 +1900,7 @@ void iqueuemac_figure_tx_neighbor_phase(iqueuemac_t* iqueuemac){
     	}
 	}
 }
+
 void _dispatch(gnrc_pktsnip_t* buffer[])
 {
     assert(buffer != NULL);
@@ -1925,6 +1926,17 @@ void _dispatch(gnrc_pktsnip_t* buffer[])
         }
     }
 }
+
+void update_neighbor_pubchan(iqueuemac_t* iqueuemac)
+{
+	/* update tx-nighbors' current channel */
+	for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++){
+		if(iqueuemac->tx.neighbours[i].mac_type == ROUTER){
+
+		}
+	}
+}
+
 
 
 /******************************************************************************/
