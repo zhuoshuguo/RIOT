@@ -49,15 +49,25 @@ int gnrc_mac_get_dstaddr(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[])
 }
 
 void* gnrc_mac_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type)
+{
+    while(pkt != NULL)
+    {
+        if(pkt->type == type) {
+            return pkt->data;
+        }
+        pkt = pkt->next;
+    }
+    return NULL;
+}
 
 #if ((GNRC_MAC_TX_QUEUE_SIZE != 0)||(GNRC_MAC_RX_QUEUE_SIZE != 0))
-gnrc_priority_pktqueue_node_t* _alloc_pktqueue_node(gnrc_priority_pktqueue_node_t* nodes[], uint32_t size)
+gnrc_priority_pktqueue_node_t* _alloc_pktqueue_node(gnrc_priority_pktqueue_node_t* nodes, uint32_t size)
 {
     /* search for free packet_queue_node */
     for (size_t i = 0; i < size; i++) {
-        if((nodes[i]->pkt == NULL) &&
-           (nodes[i]->next == NULL)) {
-            return nodes[i];
+        if((nodes[i].pkt == NULL) &&
+           (nodes[i].next == NULL)) {
+            return &nodes[i];
         }
     }
 
@@ -73,7 +83,7 @@ int _gnrc_mac_find_neighbor(gnrc_mac_tx_t* tx, const uint8_t* dst_addr, int addr
     gnrc_mac_tx_neighbor_t* neighbors;
     neighbors = tx->neighbors;
 
-    for(int i = 0; i <= GNRC_MAC_NEIGHBOR_COUNT; i++) {
+    for(int i = 0; i <= (signed)GNRC_MAC_NEIGHBOR_COUNT; i++) {
         if(neighbors[i].l2_addr_len == addr_len) {
             if(memcmp(&(neighbors[i].l2_addr), dst_addr, addr_len) == 0) {
                 return i;
@@ -90,9 +100,9 @@ int _gnrc_mac_free_neighbor(gnrc_mac_tx_t* tx)
     neighbors = tx->neighbors;
 
     /* Don't attempt to free broadcast neighbor, so start at index 1 */
-    for(int i = 1; i <= GNRC_MAC_NEIGHBOR_COUNT; i++) {
+    for(int i = 1; i <= (signed)GNRC_MAC_NEIGHBOR_COUNT; i++) {
         if((gnrc_priority_pktqueue_length(&(neighbors[i].queue)) == 0) &&
-           (&neighbors[i] != tx.current_neighbor)) {
+           (&neighbors[i] != tx->current_neighbor)) {
             /* Mark as free */
             neighbors[i].l2_addr_len = 0;
             return i;
@@ -106,7 +116,7 @@ int _gnrc_mac_alloc_neighbor(gnrc_mac_tx_t* tx)
     gnrc_mac_tx_neighbor_t* neighbors;
     neighbors = tx->neighbors;
 
-    for(int i = 0; i <= GNRC_MAC_NEIGHBOR_COUNT; i++) {
+    for(int i = 0; i <= (signed)GNRC_MAC_NEIGHBOR_COUNT; i++) {
         if(neighbors[i].l2_addr_len == 0) {
             gnrc_priority_pktqueue_init(&(neighbors[i].queue));
             return i;
@@ -150,7 +160,7 @@ bool gnrc_mac_queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip
     gnrc_mac_tx_neighbor_t* neighbor;
     int neighbor_id;
 
-    if(_packet_is_broadcast(pkt)) {
+    if(gnrc_mac_chk_pkt_bcast(pkt)) {
         /* Broadcast queue is neighbor 0 by definition */
         neighbor_id = 0;
         neighbor = gnrc_mac_get_neighbor(tx, neighbor_id);
@@ -161,7 +171,7 @@ bool gnrc_mac_queue_tx_packet(gnrc_mac_tx_t* tx, uint32_t priority, gnrc_pktsnip
         bool neighbor_known = true;
 
         /* Get destination address of packet */
-        addr_len = _get_dest_address(pkt, &addr);
+        addr_len = gnrc_mac_get_dstaddr(pkt, &addr);
         if(addr_len <= 0) {
             DEBUG("[gnrc_mac-int] Packet has no destination address\n");
             return false;

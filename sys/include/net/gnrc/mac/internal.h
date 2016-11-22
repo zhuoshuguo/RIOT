@@ -95,7 +95,7 @@ static inline bool gnrc_mac_addr_match(uint8_t * addr1, uint8_t* addr2, uint8_t 
  */
 static inline gnrc_mac_tx_neighbor_t* gnrc_mac_get_neighbor(gnrc_mac_tx_t* tx, unsigned int id)
 {
-    return &(tx.neighbors[id]);
+    return &(tx->neighbors[id]);
 }
 #endif
 /* GNRC_MAC_NEIGHBOR_COUNT */

@@ -25,7 +25,6 @@
 #define GNRC_MAC_H
 
 #include <kernel_types.h>
-#include <net/gnrc/netdev2.h>
 
 #ifdef __cplusplus
 extern "C" {
