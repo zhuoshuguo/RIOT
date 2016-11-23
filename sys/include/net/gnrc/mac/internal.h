@@ -131,9 +131,9 @@ bool gnrc_mac_queue_rx_packet(gnrc_mac_rx_t* rx, uint32_t priority, gnrc_pktsnip
 #if GNRC_MAC_DISPATCH_BUFFER_SIZE != 0
 /* @brief dispatch all the packets in the dispatching buffer to upper layer.
  *
- * @param[in,out]  buffer   the buffer storing dispatching packets
+ * @param[in,out]  rx       gnrc_mac reception management object
  */
-void gnrc_mac_dispatch(gnrc_pktsnip_t* buffer[]);
+void gnrc_mac_dispatch(gnrc_mac_rx_t* rx);
 #endif
 /* endif for `#if GNRC_MAC_DISPATCH_BUFFER_SIZE != 0` */
 

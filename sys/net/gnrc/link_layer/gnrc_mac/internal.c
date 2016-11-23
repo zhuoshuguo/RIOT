@@ -248,17 +248,17 @@ bool gnrc_mac_queue_rx_packet(gnrc_mac_rx_t* rx, uint32_t priority, gnrc_pktsnip
 /* endif for `#if GNRC_MAC_RX_QUEUE_SIZE != 0` */
 
 #if GNRC_MAC_DISPATCH_BUFFER_SIZE != 0
-void gnrc_mac_dispatch(gnrc_pktsnip_t* buffer[])
+void gnrc_mac_dispatch(gnrc_mac_rx_t* rx)
 {
-    assert(buffer != NULL);
+    assert(rx != NULL);
 
     for(unsigned i = 0; i < GNRC_MAC_DISPATCH_BUFFER_SIZE; i++) {
-        if(buffer[i]) {
-            if (!gnrc_netapi_dispatch_receive(buffer[i]->type, GNRC_NETREG_DEMUX_CTX_ALL, buffer[i])) {
+        if(rx->dispatch_buffer[i]) {
+            if (!gnrc_netapi_dispatch_receive(rx->dispatch_buffer[i]->type, GNRC_NETREG_DEMUX_CTX_ALL, rx->dispatch_buffer[i])) {
                 DEBUG("Unable to forward packet of type %i\n", buffer[i]->type);
-                gnrc_pktbuf_release(buffer[i]);
+                gnrc_pktbuf_release(rx->dispatch_buffer[i]);
             }
-            buffer[i] = NULL;
+            rx->dispatch_buffer[i] = NULL;
         }
     }
 }

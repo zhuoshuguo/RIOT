@@ -124,6 +124,20 @@ static void test_gnrc_mac_addr_match(void)
     TEST_ASSERT(false ==gnrc_mac_addr_match(addr1,addr2,8));
 }
 
+static void test_gnrc_mac_get_neighbor(void)
+{
+    gnrc_mac_tx_t tx;
+    gnrc_mac_tx_neighbor_t * neighbor;
+
+    neighbor = gnrc_mac_get_neighbor(&tx,0);
+
+    TEST_ASSERT(neighbor == &tx.neighbors[0]);
+
+    neighbor = gnrc_mac_get_neighbor(&tx,GNRC_MAC_NEIGHBOR_COUNT-1);
+
+    TEST_ASSERT(neighbor == &tx.neighbors[GNRC_MAC_NEIGHBOR_COUNT-1]);
+}
+
 static void test_gnrc_mac_queue_tx_packet(void)
 {
 	gnrc_mac_tx_t tx;
@@ -209,6 +223,66 @@ static void test_gnrc_mac_queue_tx_packet(void)
     TEST_ASSERT_EQUAL_STRING(TEST_STRING16, pkt_head->next->data);
 }
 
+static void test_gnrc_mac_queue_rx_packet(void)
+{
+    gnrc_mac_rx_t rx;
+    gnrc_pktsnip_t *pkt1 = gnrc_pktbuf_add(NULL, TEST_STRING4, sizeof(TEST_STRING4),
+                                           GNRC_NETTYPE_UNDEF);
+    gnrc_pktsnip_t *pkt2 = gnrc_pktbuf_add(NULL, TEST_STRING8, sizeof(TEST_STRING8),
+                                           GNRC_NETTYPE_UNDEF);
+    gnrc_pktsnip_t *pkt3 = gnrc_pktbuf_add(NULL, TEST_STRING16, sizeof(TEST_STRING16),
+                                           GNRC_NETTYPE_UNDEF);
+
+    for (size_t i = 0; i < GNRC_MAC_RX_QUEUE_SIZE; i++) {
+        rx._queue_nodes[i].pkt = NULL;
+        rx._queue_nodes[i].next = NULL;
+    }
+
+    gnrc_priority_pktqueue_init(&rx.queue);
+
+    TEST_ASSERT(gnrc_mac_queue_rx_packet(&rx,1,pkt1));
+    TEST_ASSERT(1 == gnrc_priority_pktqueue_length(&rx.queue));
+
+    gnrc_pktsnip_t *pkt_head;
+    pkt_head = gnrc_priority_pktqueue_head(&rx.queue);
+
+    TEST_ASSERT(pkt_head == pkt1);
+    TEST_ASSERT_EQUAL_STRING(TEST_STRING4, pkt_head->data);
+
+    TEST_ASSERT(gnrc_mac_queue_rx_packet(&rx,1,pkt2));
+    TEST_ASSERT(2 == gnrc_priority_pktqueue_length(&rx.queue));
+
+    pkt_head = gnrc_priority_pktqueue_head(&rx.queue);
+
+    TEST_ASSERT(pkt_head == pkt1);
+    TEST_ASSERT_EQUAL_STRING(TEST_STRING4, pkt_head->data);
+
+    TEST_ASSERT(gnrc_mac_queue_rx_packet(&rx,0,pkt3));
+    TEST_ASSERT(3 == gnrc_priority_pktqueue_length(&rx.queue));
+
+    pkt_head = gnrc_priority_pktqueue_head(&rx.queue);
+
+    TEST_ASSERT(pkt_head == pkt3);
+    TEST_ASSERT_EQUAL_STRING(TEST_STRING16, pkt_head->data);
+}
+
+
+static void test_gnrc_mac_dispatch(void)
+{
+    gnrc_mac_rx_t rx;
+
+    for (size_t i = 0; i < GNRC_MAC_DISPATCH_BUFFER_SIZE; i++) {
+        rx.dispatch_buffer[i] = gnrc_pktbuf_add(NULL, TEST_STRING4, sizeof(TEST_STRING4),
+                                                GNRC_NETTYPE_UNDEF);
+    }
+
+    gnrc_mac_dispatch(&rx);
+
+    for (size_t i = 0; i < GNRC_MAC_DISPATCH_BUFFER_SIZE; i++) {
+    	TEST_ASSERT_NULL(rx.dispatch_buffer[i]);
+    }
+}
+
 Test *tests_gnrc_mac_internal_tests(void)
 {
     EMB_UNIT_TESTFIXTURES(fixtures) {
@@ -216,7 +290,10 @@ Test *tests_gnrc_mac_internal_tests(void)
         new_TestFixture(test_gnrc_mac_get_dstaddr),
         new_TestFixture(test_gnrc_mac_chk_pkt_bcast),
         new_TestFixture(test_gnrc_mac_addr_match),
+        new_TestFixture(test_gnrc_mac_get_neighbor),
         new_TestFixture(test_gnrc_mac_queue_tx_packet),
+        new_TestFixture(test_gnrc_mac_queue_rx_packet),
+        new_TestFixture(test_gnrc_mac_dispatch),
     };
 
     EMB_UNIT_TESTCALLER(gnrc_mac_internal_tests, set_up, NULL, fixtures);
