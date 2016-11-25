@@ -212,6 +212,8 @@ void rtt_handler(uint32_t event)
           alarm = iqueuemac.last_wakeup + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
           rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
 
+          update_neighbor_pubchan(&iqueuemac);
+
           iqueuemac.need_update = true;
 
       }break;
@@ -830,6 +832,9 @@ void iqueuemac_t2r_init(iqueuemac_t* iqueuemac){
 
 	iqueuemac_trun_off_radio(iqueuemac);
 
+	/* turn to the neighbor's public channel */
+	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->tx.current_neighbour->cur_pub_channel);
+
 	iqueuemac->quit_current_cycle = false;
 
 	/* set timer for the targeted router! */
@@ -1166,7 +1171,7 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 	}else{/*** here means the slots have been used up !!! ***/
 		/****  switch back to the public channel ****/
 		//puts("v-end1");
-		iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
+		//iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
 
 		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 		iqueuemac->need_update = true;
@@ -1201,7 +1206,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 				}else{
 					/****  vtdma period ends, switch back to the public channel ****/
 					//puts("v-end2");
-					iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
+					//iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
 
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 				}
@@ -1239,7 +1244,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 		            //puts("v-end3");
 
 		            /****  vtdma period ends, switch back to the public channel ****/
-					iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
+					//iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 				}
 				iqueuemac->need_update = true;
@@ -1392,6 +1397,7 @@ void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE;
 	iqueuemac->need_update = true;
 
+	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_1);
 	iqueuemac->tx.t2u_on_public_1 = true;
 
 	packet_queue_flush(&iqueuemac->rx.queue);
@@ -1819,14 +1825,8 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	/* Enable Auto ACK again for data reception */
 	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
-	/* switch public channel */
-	if(iqueuemac->cur_pub_channel == iqueuemac->pub_channel_1) {
-		iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_2);
-		iqueuemac->cur_pub_channel = iqueuemac->pub_channel_2;
-	}else{
-		iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_1);
-		iqueuemac->cur_pub_channel = iqueuemac->pub_channel_1;
-	}
+	/* turn to public channel */
+	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
 
 	iqueuemac->rx_started = false;
 	iqueuemac->packet_received = false;

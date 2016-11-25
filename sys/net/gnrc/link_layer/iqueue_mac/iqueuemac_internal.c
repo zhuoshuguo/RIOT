@@ -1929,10 +1929,21 @@ void _dispatch(gnrc_pktsnip_t* buffer[])
 
 void update_neighbor_pubchan(iqueuemac_t* iqueuemac)
 {
+	if(iqueuemac->cur_pub_channel == iqueuemac->pub_channel_1) {
+		iqueuemac->cur_pub_channel = iqueuemac->pub_channel_2;
+	}else{
+		iqueuemac->cur_pub_channel = iqueuemac->pub_channel_1;
+	}
+
 	/* update tx-nighbors' current channel */
 	for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++){
 		if(iqueuemac->tx.neighbours[i].mac_type == ROUTER){
-
+			/* switch public channel */
+			if(iqueuemac->tx.neighbours[i].cur_pub_channel == iqueuemac->pub_channel_1) {
+				iqueuemac->tx.neighbours[i].cur_pub_channel = iqueuemac->pub_channel_2;
+			}else{
+				iqueuemac->tx.neighbours[i].cur_pub_channel = iqueuemac->pub_channel_1;
+			}
 		}
 	}
 }
