@@ -1442,19 +1442,21 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 
 	/* if rx is going, wait until rx is completed. */
 	if(_get_netdev_state(iqueuemac) == NETOPT_STATE_RX){
+		/* when rx completed, will reach here */
+		if(iqueuemac->packet_received == true){
+			iqueuemac->packet_received = false;
+			iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac);
+		}
+
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
-		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
-		return;
+		if(iqueuemac->quit_current_cycle == false){
+		    iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
+		    return;
+		}
 	}
 
 	if(iqueuemac_timeout_is_running(iqueuemac,TIMEOUT_WAIT_RX_END)){
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
-	}
-
-	/* when rx completed, will reach here */
-	if(iqueuemac->packet_received == true){
-		iqueuemac->packet_received = false;
-		iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac);
 	}
 
 	// to be filt in! for example, add receive other's broadcast and preamble handle codes here!!!
@@ -1551,9 +1553,17 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 
 	/* if rx is going, wait until rx is completed. */
 	if(_get_netdev_state(iqueuemac) == NETOPT_STATE_RX){
+		/* when rx completed, will reach here */
+		if(iqueuemac->packet_received == true){
+			iqueuemac->packet_received = false;
+			iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac);
+		}
+
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
-		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
-		return;
+		if(iqueuemac->quit_current_cycle == false){
+		    iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
+		    return;
+		}
 	}
 
 	if(iqueuemac->packet_received == true){
