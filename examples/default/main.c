@@ -50,11 +50,13 @@
 #endif
 
 uint32_t send_counter;
+uint32_t send_counter1;
+uint32_t send_counter2;
 uint32_t own_addess;
 
 static void generate_and_send_pkt(void){
 
-	   kernel_pid_t dev;
+	    kernel_pid_t dev;
 	    uint8_t addr[2];
 	    size_t addr_len;
 	    gnrc_pktsnip_t *hdr;
@@ -65,8 +67,6 @@ static void generate_and_send_pkt(void){
 
 	    send_counter++;
 
-	    payload[0] = send_counter;
-
 	    payload[1] = own_addess;
 
 	    dev2 = 4;
@@ -76,14 +76,47 @@ static void generate_and_send_pkt(void){
 	    addr_len = 2;
 
 	    if(own_addess == 0xbcc6) {
-	        addr[0] = 0x10;
-	        addr[1] = 0x3e;
+	    	if((send_counter%2)==0){
+	    		payload[3] = 0x000052d2;
+		        addr[0] = 0x52;
+		        addr[1] = 0xd2;
+		        send_counter1 ++;
+		        payload[0] = send_counter1;
+	    	}else{
+	    		payload[3] = 0x0000447e;
+		        addr[0] = 0x10;
+		        addr[1] = 0x3e;
+		        send_counter2 ++;
+		        payload[0] = send_counter2;
+	    	}
 	    }else if(own_addess == 0x1b1a) {
-	        addr[0] = 0xa3;
-	        addr[1] = 0x12;
+	    	if((send_counter%2)==0){
+	    		payload[3] = 0x000052d2;
+		        addr[0] = 0x10;
+		        addr[1] = 0x3e;
+		        send_counter1 ++;
+		        payload[0] = send_counter1;
+	    	}else{
+	    		payload[3] = 0x0000447e;
+		        addr[0] = 0xa3;
+		        addr[1] = 0x12;
+		        send_counter2 ++;
+		        payload[0] = send_counter2;
+	    	}
 	    }else if(own_addess == 0x5ad6) {
-		    addr[0] = 0x6f;
-		    addr[1] = 0x46;
+	    	if((send_counter%2)==0){
+	    		payload[3] = 0x000052d2;
+		        addr[0] = 0x6f;
+		        addr[1] = 0x46;
+		        send_counter1 ++;
+		        payload[0] = send_counter1;
+	    	}else{
+	    		payload[3] = 0x0000447e;
+		        addr[0] = 0x6f;
+		        addr[1] = 0x46;
+		        send_counter2 ++;
+		        payload[0] = send_counter2;
+	    	}
 	    }else if(own_addess == 0x52d2) {
 		    addr[0] = 0x44;
 		    addr[1] = 0x7e;
@@ -136,6 +169,8 @@ void *sender_thread(void *arg)
     //printf("shuguo-app thread started, pid: %" PRIkernel_pid "\n", thread_getpid());
 
     send_counter = 0;
+    send_counter1 = 0;
+    send_counter2 = 0;
 
     int16_t devpid;
 
@@ -160,10 +195,10 @@ void *sender_thread(void *arg)
 
     while (1) {
 
-    	//xtimer_sleep(1);
-    	xtimer_usleep(500000);
+    	xtimer_sleep(1);
+    	//xtimer_usleep(250000);
 
-    	if(send_counter <5000){
+    	if(send_counter <10000){
     		for(int i=0; i<1; i++){
     			generate_and_send_pkt();
     		}
