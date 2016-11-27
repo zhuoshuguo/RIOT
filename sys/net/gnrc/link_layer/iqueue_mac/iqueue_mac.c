@@ -1459,6 +1459,11 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
 	}
 
+	if(iqueuemac->packet_received == true){
+	   	iqueuemac->packet_received = false;
+	   	iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac);
+	}
+
 	// to be filt in! for example, add receive other's broadcast and preamble handle codes here!!!
 	if(iqueuemac->quit_current_cycle == true){
 		puts("q t2u");
