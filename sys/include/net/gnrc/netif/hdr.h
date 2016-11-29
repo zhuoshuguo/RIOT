@@ -205,12 +205,7 @@ void gnrc_netif_hdr_print(gnrc_netif_hdr_t *hdr);
  *
  * @return              true if the packet is for broadcast, otherwise false
  */
-static inline bool gnrc_netif_chk_pkt_bcast(gnrc_pktsnip_t* pkt)
-{
-    gnrc_netif_hdr_t* netif_hdr = gnrc_mac_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
-    return ((netif_hdr == NULL) ? false :
-            (netif_hdr->flags & (GNRC_NETIF_HDR_FLAGS_BROADCAST | GNRC_NETIF_HDR_FLAGS_MULTICAST)));
-}
+bool gnrc_netif_hdr_chk_pkt_bcast(gnrc_pktsnip_t* pkt);
 
 /* @brief   Extract the destination address out of an GNRC_NETTYPE_NETIF pktsnip
  *
@@ -219,7 +214,7 @@ static inline bool gnrc_netif_chk_pkt_bcast(gnrc_pktsnip_t* pkt)
  *
  * @return                          length of destination address
  */
-int gnrc_netif_get_dstaddr(gnrc_pktsnip_t* pkt, uint8_t** pointer_to_addr);
+int gnrc_netif_hdr_get_dstaddr(gnrc_pktsnip_t* pkt, uint8_t** pointer_to_addr);
 
 #ifdef __cplusplus
 }
