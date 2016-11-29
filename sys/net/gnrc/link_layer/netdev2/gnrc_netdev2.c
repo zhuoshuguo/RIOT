@@ -130,6 +130,10 @@ static void *_gnrc_netdev2_thread(void *args)
     /* initialize low-level driver */
     dev->driver->init(dev);
 
+    /* Don't attempt to send a WA if channel is busy to get timings right */
+    netopt_enable_t csma_disable = NETOPT_DISABLE;
+    gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
+
     /* start the event loop */
     while (1) {
         DEBUG("gnrc_netdev2: waiting for incoming messages\n");
@@ -143,7 +147,10 @@ static void *_gnrc_netdev2_thread(void *args)
             case GNRC_NETAPI_MSG_TYPE_SND:
                 DEBUG("gnrc_netdev2: GNRC_NETAPI_MSG_TYPE_SND received\n");
                 gnrc_pktsnip_t *pkt = msg.content.ptr;
-                gnrc_netdev2->send(gnrc_netdev2, pkt);
+                while(1){
+                	gnrc_pktbuf_hold(pkt, 1);
+                    gnrc_netdev2->send(gnrc_netdev2, pkt);
+                }
                 break;
             case GNRC_NETAPI_MSG_TYPE_SET:
                 /* read incoming options */
