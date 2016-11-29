@@ -453,6 +453,7 @@ typedef struct iqueuemac {
     uint16_t pub_channel_1;
     uint16_t pub_channel_2;
     uint16_t cur_pub_channel;
+    uint8_t cp_backoff_counter;
 
     /* Used to calculate wakeup times */
     uint32_t last_wakeup;    
