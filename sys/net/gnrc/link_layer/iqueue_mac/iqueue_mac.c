@@ -1852,6 +1852,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
 	//puts("CP");
 
+	iqueuemac->cp_backoff_counter = 0;
 	iqueuemac->quit_current_cycle = false;
 	iqueuemac->get_other_preamble = false;
 	iqueuemac->send_beacon_fail = false;
@@ -1916,8 +1917,10 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 
 	if((iqueuemac->cp_end == true)||(iqueuemac->quit_current_cycle == true))
 	{
-		if(_get_netdev_state(iqueuemac) == NETOPT_STATE_RX)
+		if((_get_netdev_state(iqueuemac) == NETOPT_STATE_RX)&&
+			(iqueuemac->cp_backoff_counter < IQUEUEMAC_MAX_CP_BACKOFF_COUNTER))
 		{
+			iqueuemac->cp_backoff_counter ++;
 			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
 			iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
 		}else{
