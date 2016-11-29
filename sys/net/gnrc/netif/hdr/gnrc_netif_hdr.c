@@ -38,38 +38,31 @@ gnrc_pktsnip_t *gnrc_netif_hdr_build(uint8_t *src, uint8_t src_len, uint8_t *dst
     return pkt;
 }
 
-bool gnrc_netif_hdr_chk_pkt_bcast(gnrc_pktsnip_t* pkt)
-{
-    pkt = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
-
-    if(pkt) {
-        gnrc_netif_hdr_t* netif_hdr;
-        netif_hdr = pkt->data;
-        return ((netif_hdr == NULL) ? false :
-                (netif_hdr->flags & (GNRC_NETIF_HDR_FLAGS_BROADCAST | GNRC_NETIF_HDR_FLAGS_MULTICAST)));
-    }
-
-    return false;
-}
-
-int gnrc_netif_hdr_get_dstaddr(gnrc_pktsnip_t* pkt, uint8_t** pointer_to_addr)
+int gnrc_netif_hdr_get_dstaddr(gnrc_netif_hdr_t *hdr, uint8_t** pointer_to_addr)
 {
     int res;
-    gnrc_netif_hdr_t* netif_hdr;
 
-    if(!pkt)
-        return -ENODEV;
+    if(hdr) {
+        if((res = hdr->dst_l2addr_len) <= 0)
+            return -ENOENT;
 
-    pkt = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
-    if(pkt) {
-        netif_hdr = pkt->data;
-        if(netif_hdr) {
-            if((res = netif_hdr->dst_l2addr_len) <= 0)
-                return -ENOENT;
+        *pointer_to_addr = gnrc_netif_hdr_get_dst_addr(hdr);
+        return res;
+    }
 
-            *pointer_to_addr = gnrc_netif_hdr_get_dst_addr(netif_hdr);
-            return res;
-        }
+    return -ENOENT;
+}
+
+int gnrc_netif_hdr_get_srcaddr(gnrc_netif_hdr_t *hdr, uint8_t** pointer_to_addr)
+{
+    int res;
+
+    if(hdr) {
+        if((res = hdr->dst_l2addr_len) <= 0)
+            return -ENOENT;
+
+        *pointer_to_addr = gnrc_netif_hdr_get_src_addr(hdr);
+        return res;
     }
 
     return -ENOENT;

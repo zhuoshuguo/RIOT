@@ -201,20 +201,45 @@ void gnrc_netif_hdr_print(gnrc_netif_hdr_t *hdr);
 
 /* @brief   Check if packet is for broadcast
  *
- * @param[in]   pkt     packet to check
+ * @param[in]   hdr     gnrc_netif header to check
  *
  * @return              true if the packet is for broadcast, otherwise false
  */
-bool gnrc_netif_hdr_chk_pkt_bcast(gnrc_pktsnip_t* pkt);
+static inline bool gnrc_netif_hdr_chk_pkt_bcast(gnrc_netif_hdr_t *hdr)
+{
+    return ((hdr == NULL) ? false :
+            (hdr->flags & GNRC_NETIF_HDR_FLAGS_BROADCAST));
+}
 
-/* @brief   Extract the destination address out of an GNRC_NETTYPE_NETIF pktsnip
+/* @brief   Check if packet is for multicast
  *
- * @param[in]   pkt                 pktsnip from whom to extract
+ * @param[in]   hdr     gnrc_netif header to check
+ *
+ * @return              true if the packet is for multicast, otherwise false
+ */
+static inline bool gnrc_netif_hdr_chk_pkt_mcast(gnrc_netif_hdr_t *hdr)
+{
+    return ((hdr == NULL) ? false :
+            (hdr->flags & GNRC_NETIF_HDR_FLAGS_MULTICAST));
+}
+
+/* @brief   Extract the destination address out of a gnrc_netif header
+ *
+ * @param[in]   hdr                 gnrc_netif header from whom to extract
  * @param[out]  pointer_to_addr     pointer to address will be stored here
  *
  * @return                          length of destination address
  */
-int gnrc_netif_hdr_get_dstaddr(gnrc_pktsnip_t* pkt, uint8_t** pointer_to_addr);
+int gnrc_netif_hdr_get_dstaddr(gnrc_netif_hdr_t *hdr, uint8_t** pointer_to_addr);
+
+/* @brief   Extract the source address out of a gnrc_netif header
+ *
+ * @param[in]   hdr                 gnrc_netif header from whom to extract
+ * @param[out]  pointer_to_addr     pointer to address will be stored here
+ *
+ * @return                          length of destination address
+ */
+int gnrc_netif_hdr_get_srcaddr(gnrc_netif_hdr_t *hdr, uint8_t** pointer_to_addr);
 
 #ifdef __cplusplus
 }
