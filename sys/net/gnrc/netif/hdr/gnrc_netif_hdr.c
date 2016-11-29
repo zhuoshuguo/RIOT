@@ -42,7 +42,7 @@ bool gnrc_netif_hdr_chk_pkt_bcast(gnrc_pktsnip_t* pkt)
 {
     pkt = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
 
-    if(pkt){
+    if(pkt) {
         gnrc_netif_hdr_t* netif_hdr;
         netif_hdr = pkt->data;
         return ((netif_hdr == NULL) ? false :
@@ -62,7 +62,7 @@ int gnrc_netif_hdr_get_dstaddr(gnrc_pktsnip_t* pkt, uint8_t** pointer_to_addr)
 
     pkt = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
     if(pkt) {
-    	netif_hdr = pkt->data;
+        netif_hdr = pkt->data;
         if(netif_hdr) {
             if((res = netif_hdr->dst_l2addr_len) <= 0)
                 return -ENOENT;
