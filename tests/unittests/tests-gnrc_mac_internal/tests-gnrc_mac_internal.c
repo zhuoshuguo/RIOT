@@ -21,11 +21,6 @@
 #include "unittests-constants.h"
 #include "tests-gnrc_mac_internal.h"
 
-#define PKT_INIT_ELEM(len, data, next, type) \
-    { 1, (next), (data), (len), type }
-#define PKT_INIT_ELEM_STATIC_DATA(data, next, type) PKT_INIT_ELEM(sizeof(data), data, next, type)
-#define PKTQUEUE_INIT_ELEM(pkt) { NULL, pkt }
-
 static void set_up(void)
 {
     gnrc_pktbuf_init();
@@ -53,45 +48,39 @@ static void test_gnrc_mac_pktbuf_find(void)
 
 static void test_gnrc_mac_get_dstaddr(void)
 {
-    gnrc_netif_hdr_t* netif_hdr;
+    gnrc_pktsnip_t *hdr;
     uint8_t dst_addr[2];
     uint8_t* add;
-    int addr_len2 = 0;
-    gnrc_pktsnip_t *pkt = gnrc_pktbuf_add(NULL, TEST_STRING4, sizeof(TEST_STRING4),
-                                          GNRC_NETTYPE_UNDEF);
-    pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t) + 2,
-                          GNRC_NETTYPE_NETIF);
+    int addr_len = 0;
+
     dst_addr[0] = 0x76;
     dst_addr[1] = 0xb6;
 
-    netif_hdr = (gnrc_netif_hdr_t*) gnrc_mac_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
-    gnrc_netif_hdr_init(netif_hdr, 0, 2);
-    gnrc_netif_hdr_set_dst_addr(netif_hdr, dst_addr, 2);
+    hdr = gnrc_netif_hdr_build(NULL, 0, dst_addr, 2);
+    gnrc_pktsnip_t *pkt = gnrc_pktbuf_add(NULL, TEST_STRING4, sizeof(TEST_STRING4),
+                                          GNRC_NETTYPE_UNDEF);
+    LL_APPEND(hdr, pkt);
+    pkt = hdr;
 
-    addr_len2 = gnrc_mac_get_dstaddr(pkt,&add);
+    addr_len = gnrc_mac_get_dstaddr(pkt,&add);
 
-    TEST_ASSERT(netif_hdr == pkt->data);
-    TEST_ASSERT(addr_len2 == 2);
+    TEST_ASSERT(addr_len == 2);
     TEST_ASSERT_EQUAL_STRING(TEST_STRING4, pkt->next->data);
-    TEST_ASSERT(add[0] == 0x76);
-    TEST_ASSERT(add[1] == 0xb6);
+    TEST_ASSERT(0 == memcmp(dst_addr,add,addr_len));
 }
 
 static void test_gnrc_mac_chk_pkt_bcast(void)
 {
+    gnrc_pktsnip_t *hdr;
     gnrc_netif_hdr_t* netif_hdr;
-    uint8_t src_addr[2];
+
+    hdr = gnrc_netif_hdr_build(NULL, 0, NULL, 0);
     gnrc_pktsnip_t *pkt = gnrc_pktbuf_add(NULL, TEST_STRING4, sizeof(TEST_STRING4),
                                           GNRC_NETTYPE_UNDEF);
-    pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t) + 2,
-                          GNRC_NETTYPE_NETIF);
-    src_addr[0] = 0xf3;
-    src_addr[1] = 0xb6;
+    LL_APPEND(hdr, pkt);
+    pkt = hdr;
 
-    netif_hdr = (gnrc_netif_hdr_t*) gnrc_mac_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
-    gnrc_netif_hdr_init(netif_hdr, 2, 0);
-    gnrc_netif_hdr_set_src_addr(netif_hdr, src_addr, 2);
-
+    netif_hdr = gnrc_mac_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
     netif_hdr->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
 
     TEST_ASSERT(netif_hdr == pkt->data);
@@ -119,9 +108,9 @@ static void test_gnrc_mac_addr_match(void)
     add = 0xfedcba9876543210;
     memcpy(addr2, &add, 8);
 
-    TEST_ASSERT(false ==gnrc_mac_addr_match(addr1,addr2,2));
-    TEST_ASSERT(false ==gnrc_mac_addr_match(addr1,addr2,5));
-    TEST_ASSERT(false ==gnrc_mac_addr_match(addr1,addr2,8));
+    TEST_ASSERT(false == gnrc_mac_addr_match(addr1,addr2,2));
+    TEST_ASSERT(false == gnrc_mac_addr_match(addr1,addr2,5));
+    TEST_ASSERT(false == gnrc_mac_addr_match(addr1,addr2,8));
 }
 
 Test *tests_gnrc_mac_internal_tests(void)
