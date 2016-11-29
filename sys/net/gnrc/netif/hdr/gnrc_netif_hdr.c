@@ -38,4 +38,26 @@ gnrc_pktsnip_t *gnrc_netif_hdr_build(uint8_t *src, uint8_t src_len, uint8_t *dst
     return pkt;
 }
 
+int gnrc_netif_get_dstaddr(gnrc_pktsnip_t* pkt, uint8_t** pointer_to_addr)
+{
+    int res;
+    gnrc_netif_hdr_t* netif_hdr;
+
+    if(!pkt)
+        return -ENODEV;
+
+    netif_hdr = gnrc_mac_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+
+    if(netif_hdr) {
+        if((res = netif_hdr->dst_l2addr_len) <= 0)
+            return -ENOENT;
+
+        *pointer_to_addr = gnrc_netif_hdr_get_dst_addr(netif_hdr);
+        return res;
+
+    } else {
+        return -ENOENT;
+    }
+}
+
 /** @} */

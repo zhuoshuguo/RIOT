@@ -31,57 +31,6 @@
 extern "C" {
 #endif
 
-/* @brief Extract the destination address out of an GNRC_NETTYPE_NETIF pktsnip
- *
- * @param[in]   pkt                 pktsnip from whom to extract
- * @param[out]  pointer_to_addr     pointer to address will be stored here
- *
- * @return                          length of destination address
- */
-int gnrc_mac_get_dstaddr(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[]);
-
-/* @brief Find the first pktsnip of @p type
- *
- * Will search linearly through the packet buffer @p pkt and yield
- * gnrc_pktsnip_t::data of the first pktsnip match the type @p type.
- *
- * @param[in]   pkt     pktsnip that will be searched
- * @param[in]   type    type to search for
- *
- * @return              pointer to data, NULL is not found
- */
-void* gnrc_mac_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type);
-
-/* @brief Check if packet is for broadcast
- *
- * @param[in]   pkt     packet to check
- *
- * @return              true if the packet is for broadcast, otherwise false
- */
-static inline bool gnrc_mac_chk_pkt_bcast(gnrc_pktsnip_t* pkt)
-{
-    gnrc_netif_hdr_t* netif_hdr = gnrc_mac_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
-    return ((netif_hdr == NULL) ? false :
-            (netif_hdr->flags & (GNRC_NETIF_HDR_FLAGS_BROADCAST | GNRC_NETIF_HDR_FLAGS_MULTICAST)));
-}
-
-/* @brief Check whether the two given addresses match each other (are the same).
- *
- * @param[in]   addr1    the first address given for checking
- * @param[in]   addr2    the second address given for checking
- * @param[in]   add_len  the length of the address
- *
- * @return               true if the two address match each other, otherwise return false.
- */
-static inline bool gnrc_mac_addr_match(uint8_t * addr1, uint8_t* addr2, uint8_t add_len)
-{
-    assert(addr1);
-    assert(addr2);
-    assert(add_len);
-
-    return (memcmp(addr1, addr2, add_len) == 0);
-}
-
 #ifdef __cplusplus
 }
 #endif
