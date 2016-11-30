@@ -202,10 +202,11 @@ void gnrc_netif_hdr_print(gnrc_netif_hdr_t *hdr);
 /* @brief   Fetch the netif header flags of a gnrc packet
  *
  * @param[in]   pkt     gnrc packet from whom to fetch
+ * @param[out]  flags   pointer to flags will be stored here
  *
- * @return              the netif header flags of @p pkt
+ * @return              the result of fetching flags of @p pkt
  */
-uint8_t* gnrc_netif_hdr_get_flag(gnrc_pktsnip_t* pkt);
+int gnrc_netif_hdr_get_flag(gnrc_pktsnip_t* pkt, uint8_t* flags);
 
 /* @brief   Extract the destination address out of a gnrc packet
  *

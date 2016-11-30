@@ -38,23 +38,23 @@ gnrc_pktsnip_t *gnrc_netif_hdr_build(uint8_t *src, uint8_t src_len, uint8_t *dst
     return pkt;
 }
 
-uint8_t* gnrc_netif_hdr_get_flag(gnrc_pktsnip_t* pkt)
+int gnrc_netif_hdr_get_flag(gnrc_pktsnip_t* pkt, uint8_t* flags)
 {
     int res;
     gnrc_netif_hdr_t* netif_hdr;
 
     if(!pkt)
-        return NULL;
+        return -ENODEV;
 
-    pkt = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
-    if(pkt) {
+    if((pkt = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))) {
         netif_hdr = pkt->data;
         if(netif_hdr) {
-            return &netif_hdr->flags;
+            *flags = netif_hdr->flags;
+            return 0;
         }
     }
 
-    return NULL;
+    return -ENODEV;
 }
 
 int gnrc_netif_hdr_get_dstaddr(gnrc_pktsnip_t* pkt, uint8_t** pointer_to_addr)
