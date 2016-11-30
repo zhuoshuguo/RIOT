@@ -199,47 +199,31 @@ gnrc_pktsnip_t *gnrc_netif_hdr_build(uint8_t *src, uint8_t src_len, uint8_t *dst
  */
 void gnrc_netif_hdr_print(gnrc_netif_hdr_t *hdr);
 
-/* @brief   Check if packet is for broadcast
+/* @brief   Fetch the netif header flags of a gnrc packet
  *
- * @param[in]   hdr     gnrc_netif header to check
+ * @param[in]   pkt     gnrc packet from whom to fetch
  *
- * @return              true if the packet is for broadcast, otherwise false
+ * @return              the netif header flags of @p pkt
  */
-static inline bool gnrc_netif_hdr_chk_pkt_bcast(gnrc_netif_hdr_t *hdr)
-{
-    return ((hdr == NULL) ? false :
-            (hdr->flags & GNRC_NETIF_HDR_FLAGS_BROADCAST));
-}
+uint8_t* gnrc_netif_hdr_get_flag(gnrc_pktsnip_t* pkt);
 
-/* @brief   Check if packet is for multicast
+/* @brief   Extract the destination address out of a gnrc packet
  *
- * @param[in]   hdr     gnrc_netif header to check
- *
- * @return              true if the packet is for multicast, otherwise false
- */
-static inline bool gnrc_netif_hdr_chk_pkt_mcast(gnrc_netif_hdr_t *hdr)
-{
-    return ((hdr == NULL) ? false :
-            (hdr->flags & GNRC_NETIF_HDR_FLAGS_MULTICAST));
-}
-
-/* @brief   Extract the destination address out of a gnrc_netif header
- *
- * @param[in]   hdr                 gnrc_netif header from whom to extract
+ * @param[in]   pkt                 gnrc packet from whom to extract
  * @param[out]  pointer_to_addr     pointer to address will be stored here
  *
  * @return                          length of destination address
  */
-int gnrc_netif_hdr_get_dstaddr(gnrc_netif_hdr_t *hdr, uint8_t** pointer_to_addr);
+int gnrc_netif_hdr_get_dstaddr(gnrc_pktsnip_t* pkt, uint8_t** pointer_to_addr);
 
-/* @brief   Extract the source address out of a gnrc_netif header
+/* @brief   Extract the source address out of a gnrc packet
  *
- * @param[in]   hdr                 gnrc_netif header from whom to extract
+ * @param[in]   pkt                 gnrc packet from whom to extract
  * @param[out]  pointer_to_addr     pointer to address will be stored here
  *
- * @return                          length of destination address
+ * @return                          length of source address
  */
-int gnrc_netif_hdr_get_srcaddr(gnrc_netif_hdr_t *hdr, uint8_t** pointer_to_addr);
+int gnrc_netif_hdr_get_srcaddr(gnrc_pktsnip_t* pkt, uint8_t** pointer_to_addr);
 
 #ifdef __cplusplus
 }
