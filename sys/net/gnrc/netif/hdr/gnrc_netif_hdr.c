@@ -44,9 +44,10 @@ int gnrc_netif_hdr_get_flag(gnrc_pktsnip_t* pkt, uint8_t* flags)
     gnrc_netif_hdr_t* netif_hdr;
 
     if(!pkt)
-        return -ENODEV;
+        return -ENOENT;
 
-    if((pkt = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))) {
+    pkt = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
+    if(pkt) {
         netif_hdr = pkt->data;
         if(netif_hdr) {
             *flags = netif_hdr->flags;
@@ -54,7 +55,7 @@ int gnrc_netif_hdr_get_flag(gnrc_pktsnip_t* pkt, uint8_t* flags)
         }
     }
 
-    return -ENODEV;
+    return -ENOENT;
 }
 
 int gnrc_netif_hdr_get_dstaddr(gnrc_pktsnip_t* pkt, uint8_t** pointer_to_addr)
@@ -63,7 +64,7 @@ int gnrc_netif_hdr_get_dstaddr(gnrc_pktsnip_t* pkt, uint8_t** pointer_to_addr)
     gnrc_netif_hdr_t* netif_hdr;
 
     if(!pkt)
-        return -ENODEV;
+        return -ENOENT;
 
     pkt = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
     if(pkt) {
@@ -86,7 +87,7 @@ int gnrc_netif_hdr_get_srcaddr(gnrc_pktsnip_t* pkt, uint8_t** pointer_to_addr)
     gnrc_netif_hdr_t* netif_hdr;
 
     if(!pkt)
-        return -ENODEV;
+        return -ENOENT;
 
     pkt = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
     if(pkt) {
