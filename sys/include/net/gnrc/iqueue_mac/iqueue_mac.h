@@ -99,7 +99,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_WAIT_CP_SECUR_GAP_US
-#define IQUEUEMAC_WAIT_CP_SECUR_GAP_US        (5U * 1000)
+#define IQUEUEMAC_WAIT_CP_SECUR_GAP_US        (30U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_QUIT_CP_MARGIN_US
