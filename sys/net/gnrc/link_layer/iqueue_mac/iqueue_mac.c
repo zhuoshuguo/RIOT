@@ -1404,7 +1404,7 @@ void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 	iqueuemac->tx.got_preamble_ack = false;
 	iqueuemac->rx_memory_full = false;
 
-	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE;
+	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
 	iqueuemac->need_update = true;
 
 	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_1);
@@ -1413,8 +1413,8 @@ void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 	packet_queue_flush(&iqueuemac->rx.queue);
 }
 
-void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
-{
+void iqueuemac_t2u_send_preamble_prepare(iqueuemac_t* iqueuemac){
+
 	if(iqueuemac->tx.preamble_sent != 0){
 	    if(iqueuemac->tx.t2u_on_public_1 == true){
 		    iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_2);
@@ -1425,6 +1425,12 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 	    }
 	}
 
+	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE;
+	iqueuemac->need_update = true;
+}
+
+void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
+{
 	/* if memory full, release one pkt and reload next pkt */
 	if(iqueuemac->rx_memory_full == true){
 		iqueuemac->rx_memory_full = false;
@@ -1496,9 +1502,6 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 		res = iqueue_mac_send_preamble(iqueuemac, NETOPT_ENABLE);
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE_DURATION, IQUEUEMAC_PREAMBLE_DURATION_US);
 
-		/* Enable Auto ACK again for data reception */
-		//iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
-
 	}else{
 		res = iqueue_mac_send_preamble(iqueuemac, NETOPT_DISABLE);
 	}
@@ -1508,7 +1511,7 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 	}
 
 	/* Enable Auto ACK again for data reception */
-	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
+	//iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	iqueuemac->tx.preamble_sent ++;
 
@@ -1604,6 +1607,11 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 			iqueuemac->tx.current_neighbour->cur_pub_channel = iqueuemac->pub_channel_2;
 		}
 
+		iqueuemac->tx.current_neighbour->mac_type = UNKNOWN;
+
+		/* Enable Auto ACK again for data reception */
+		iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
+
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_DATA;
@@ -1621,7 +1629,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_PREAMBLE)){
-		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE;
+		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
 		iqueuemac->need_update = true;
 		return;
 	}
@@ -1802,6 +1810,7 @@ void iqueuemac_t2u_update(iqueuemac_t* iqueuemac)
 	switch(iqueuemac->device_states.iqueuemac_device_t2u_state)
 	{
 	 case DEVICE_T2U_SEND_PREAMBLE_INIT: iqueuemac_t2u_send_preamble_init(iqueuemac);break;
+	 case DEVICE_T2U_SEND_PREAMBLE_PREPARE: iqueuemac_t2u_send_preamble_prepare(iqueuemac);break;
      case DEVICE_T2U_SEND_PREAMBLE: iqueuemac_t2u_send_preamble(iqueuemac); break;
      case DEVICE_T2U_WAIT_PREAMBLE_TX_END: iqueuemac_t2u_wait_preamble_tx_end(iqueuemac); break;
 	 case DEVICE_T2U_WAIT_PREAMBLE_ACK: iqueuemac_t2u_wait_preamble_ack(iqueuemac); break;

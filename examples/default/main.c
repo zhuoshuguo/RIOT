@@ -76,6 +76,11 @@ static void generate_and_send_pkt(void){
 	    addr_len = 2;
 
 	    if(own_addess == 0xbcc6) {
+	    	payload[3] = 0x000052d2;
+	        addr[0] = 0x52;
+	        addr[1] = 0xd2;
+	        payload[0] = send_counter;
+	    	/*
 	    	if((send_counter%2)==0){
 	    		payload[3] = 0x000052d2;
 		        addr[0] = 0x52;
@@ -88,7 +93,7 @@ static void generate_and_send_pkt(void){
 		        addr[1] = 0x3e;
 		        send_counter2 ++;
 		        payload[0] = send_counter2;
-	    	}
+	    	}*/
 	    }else if(own_addess == 0x1b1a) {
 	    	if((send_counter%2)==0){
 	    		payload[3] = 0x000052d2;
