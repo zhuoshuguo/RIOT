@@ -417,6 +417,7 @@ typedef struct {
 	uint8_t cp_retries;
 
 	uint8_t no_ack_contuer;
+	uint8_t t2u_retry_contuer;
 
 	bool t2u_on_public_1;
 

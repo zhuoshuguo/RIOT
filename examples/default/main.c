@@ -186,7 +186,6 @@ void *sender_thread(void *arg)
     gnrc_netapi_get(devpid, NETOPT_ADDRESS, 0, &own_addr,
                             sizeof(own_addr));
 
-
     xtimer_sleep(3);
 
     own_addess = 0;

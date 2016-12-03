@@ -975,6 +975,8 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 					printf("t2r:noack %d, go t2u\n",iqueuemac->tx.no_ack_contuer);
 					iqueuemac->tx.current_neighbour->mac_type = UNKNOWN;
 
+					iqueuemac->tx.t2u_retry_contuer = 0;
+
 #if 0
 
 			        /* save payload pointer */
@@ -1703,6 +1705,7 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	    	iqueuemac->tx.tx_packet = NULL;
 
 	    	iqueuemac->tx.no_ack_contuer = 0;
+	    	iqueuemac->tx.t2u_retry_contuer = 0;
 
 	    	/*** TX_FEEDBACK_SUCCESS means the router has success received the queue-length indicator ***/
 	    	/*  add this part in the future to support vtdma in sending-to-unkown (to router type) */
@@ -1750,11 +1753,25 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	    	//gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 	    	//iqueuemac->tx.tx_packet = NULL;
 #endif
-	    	puts("t2u send data failed. drop pkt");
-	    	gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
-	    	iqueuemac->tx.tx_packet = NULL;
-	    	iqueuemac->tx.no_ack_contuer = 0;
-	    	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+	    	iqueuemac->tx.t2u_retry_contuer ++;
+
+	    	if(iqueuemac->tx.t2u_retry_contuer >= IQUEUEMAC_T2U_RETYR_THRESHOLD) {
+	    	    printf("t2u data failed on ch %d. drop pkt",iqueuemac->tx.current_neighbour->cur_pub_channel);
+	    	    gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+	    	    iqueuemac->tx.tx_packet = NULL;
+	    	    iqueuemac->tx.no_ack_contuer = 0;
+	    	    iqueuemac->tx.t2u_retry_contuer = 0;
+	    	    iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+	    	}else{
+	    		iqueuemac->tx.no_ack_contuer = IQUEUEMAC_REPHASELOCK_THRESHOLD;
+				netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+				iqueuemac->tx.tx_seq = device_state->seq - 1;
+
+	    		printf("t2u data failed on ch %d. rety",iqueuemac->tx.current_neighbour->cur_pub_channel);
+	    		/* thus not to set current_neighbour to NULL in t2u-end */
+	    		iqueuemac->quit_current_cycle = true;
+	    		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+	    	}
 	    }
 
 	    iqueuemac->need_update = true;
