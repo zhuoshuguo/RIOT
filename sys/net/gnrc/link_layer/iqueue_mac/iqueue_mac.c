@@ -1641,11 +1641,35 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_PREAMBLE_DURATION)){
+		/*
 		puts("no preamble-ack, drop pkt.");
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_MAX_PREAM_INTERVAL);
+
+		iqueuemac->need_update = true;
+		return; */
+		/////
+    	iqueuemac->tx.t2u_retry_contuer ++;
+
+    	if(iqueuemac->tx.t2u_retry_contuer >= IQUEUEMAC_T2U_RETYR_THRESHOLD) {
+    		puts("no preamble-ack, drop pkt.");
+    		iqueuemac->tx.t2u_retry_contuer = 0;
+    		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+    		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
+    		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
+    		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_MAX_PREAM_INTERVAL);
+    	}else{
+    		iqueuemac->tx.no_ack_contuer = IQUEUEMAC_REPHASELOCK_THRESHOLD;
+			netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+			iqueuemac->tx.tx_seq = device_state->seq - 1;
+
+    		puts("t2u no-preamack, rety");
+    		/* thus not to set current_neighbour to NULL in t2u-end */
+    		iqueuemac->quit_current_cycle = true;
+    		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+    	}
 
 		iqueuemac->need_update = true;
 		return;
@@ -1756,7 +1780,7 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	    	iqueuemac->tx.t2u_retry_contuer ++;
 
 	    	if(iqueuemac->tx.t2u_retry_contuer >= IQUEUEMAC_T2U_RETYR_THRESHOLD) {
-	    	    printf("t2u data failed on ch %d. drop pkt",iqueuemac->tx.current_neighbour->cur_pub_channel);
+	    	    printf("t2u data failed on ch %d. drop pkt.\n",iqueuemac->tx.current_neighbour->cur_pub_channel);
 	    	    gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 	    	    iqueuemac->tx.tx_packet = NULL;
 	    	    iqueuemac->tx.no_ack_contuer = 0;
@@ -1767,7 +1791,7 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 				netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
 				iqueuemac->tx.tx_seq = device_state->seq - 1;
 
-	    		printf("t2u data failed on ch %d. rety",iqueuemac->tx.current_neighbour->cur_pub_channel);
+	    		printf("t2u data failed on ch %d. rety.\n",iqueuemac->tx.current_neighbour->cur_pub_channel);
 	    		/* thus not to set current_neighbour to NULL in t2u-end */
 	    		iqueuemac->quit_current_cycle = true;
 	    		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
@@ -2100,6 +2124,7 @@ void iqueuemac_router_wait_beacon_feedback(iqueuemac_t* iqueuemac){
 							iqueuemac->router_states.router_basic_state = R_TRANSMITTING;
 							iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
 						}else{
+							puts("otherpm");
 							iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
 						}
 					}break;

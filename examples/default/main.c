@@ -75,6 +75,12 @@ static void generate_and_send_pkt(void){
 
 	    addr_len = 2;
 
+    	payload[3] = 0x000052d2;
+        addr[0] = 0x52;
+        addr[1] = 0xd2;
+        payload[0] = send_counter;
+
+#if 0
 	    if(own_addess == 0xbcc6) {
 	    	payload[3] = 0x000052d2;
 	        addr[0] = 0x52;
@@ -126,7 +132,7 @@ static void generate_and_send_pkt(void){
 		    addr[0] = 0x44;
 		    addr[1] = 0x7e;
 	    }
-
+#endif
 	    //addr[0] = 0x10;
 	    //addr[1] = 0x3e;
 
@@ -199,10 +205,10 @@ void *sender_thread(void *arg)
 
     while (1) {
 
-    	xtimer_sleep(1);
-    	//xtimer_usleep(250000);
+    	xtimer_sleep(4);
+    	//xtimer_usleep(1500000);
 
-    	if(send_counter <10000){
+    	if(send_counter <1000){
     		for(int i=0; i<1; i++){
     			generate_and_send_pkt();
     		}
