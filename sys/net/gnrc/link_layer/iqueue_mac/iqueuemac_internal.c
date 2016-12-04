@@ -1027,6 +1027,7 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
         		    //iqueuemac->quit_current_cycle = true;
         	    	/* if receives unintended preamble, don't send beacon and quit the following vTDMA period. */
         	    	iqueuemac->get_other_preamble = true;
+        	    	puts("op");
         	    }
         	    gnrc_pktbuf_release(pkt);
             }break;

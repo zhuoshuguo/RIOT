@@ -1055,6 +1055,12 @@ void iqueuemac_t2r_re_phase_lock_prepare(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2r_wait_beacon(iqueuemac_t* iqueuemac){
 
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_BEACON)){
+		packet_queue_flush(&iqueuemac->rx.queue);
+		puts("t2r:no beacon");
+		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+		iqueuemac->need_update = true;
+	}
 
     if(iqueuemac->packet_received == true){
     	iqueuemac->packet_received = false;
@@ -1114,11 +1120,7 @@ void iqueuemac_t2r_wait_beacon(iqueuemac_t* iqueuemac){
     	return;
     }
 
-	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_BEACON)){
-		puts("t2r:no beacon");
-		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
-		iqueuemac->need_update = true;
-	}
+
 }
 
 void iqueuemac_t2r_wait_own_slots(iqueuemac_t* iqueuemac){
@@ -1542,11 +1544,20 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 	}
 
 	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_WAIT_PREAMBLE_TX_END;
-	iqueuemac->need_update = false;
+	//below, revision on 4th december.
+	//iqueuemac->need_update = false;
+	iqueuemac->need_update = true;
 }
 
 void iqueuemac_t2u_wait_preamble_tx_end(iqueuemac_t* iqueuemac)
 {
+	//below, revision on 4th december.
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL)){
+		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
+		iqueuemac->need_update = true;
+		return;
+	}
+
 	if(iqueuemac->tx.tx_finished == true){
 		/******set preamble interval timeout ******/
 		iqueuemac_set_timeout(iqueuemac, TIMEOUT_PREAMBLE, IQUEUEMAC_PREAMBLE_INTERVAL_US);
@@ -1735,14 +1746,19 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	    	/*  add this part in the future to support vtdma in sending-to-unkown (to router type) */
 	    	if((iqueuemac->tx.current_neighbour->queue.length > 0)&&(iqueuemac->tx.current_neighbour->mac_type == ROUTER)){
 
+	    		puts("st2r-b");
 	    	    iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_INIT;
 	    		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 	    		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
+	    		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
+	    		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_MAX_PREAM_INTERVAL);
 
 	    		iqueuemac->tx.vtdma_para.get_beacon = false;
-	    		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_BEACON, IQUEUEMAC_SUPERFRAME_DURATION_US);
+	    		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_BEACON, IQUEUEMAC_WAIT_BEACON_TIME_US);
 	    		// need to flush the rx-queue ??
 	    		packet_queue_flush(&iqueuemac->rx.queue);
+
+	    		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_BEACON;
 
 	    		if(iqueuemac->mac_type == ROUTER){
 	    			iqueuemac->router_states.router_trans_state = R_TRANS_TO_ROUTER;
@@ -1750,7 +1766,7 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	    		   	iqueuemac->node_states.node_trans_state = N_TRANS_TO_ROUTER;
 	    		}
 
-	    		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_BEACON;
+
 	    	}else{
 	    	   	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 	    	}
@@ -1803,6 +1819,7 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 }
 
 void iqueuemac_t2u_end(iqueuemac_t* iqueuemac){
+	puts("pd");
 
 	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
@@ -2613,7 +2630,13 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                     if(!packet_queue_push(&iqueuemac.rx.queue, pkt, 0))
                    	{
                     	//LOG_ERROR("Can't push RX packet @ %p, memory full?\n", pkt);
-                    	puts("can't push rx-pkt, memory full?");
+                    	printf("can't push rx-pkt, full? queue length is %lu \n",iqueuemac.rx.queue.length);
+
+                    	printf("router_states.router_basic_state: %d \n",iqueuemac.router_states.router_basic_state);
+                    	printf("router_states.router_trans_state: %d \n",iqueuemac.router_states.router_trans_state);
+                    	printf("iqueuemac_device_t2u_state: %d \n",iqueuemac.device_states.iqueuemac_device_t2u_state);
+                    	printf("iqueuemac_device_t2r_state: %d \n",iqueuemac.device_states.iqueuemac_device_t2r_state);
+
                     	gnrc_pktbuf_release(pkt);
                     	iqueuemac.packet_received = false;
                     	break;
