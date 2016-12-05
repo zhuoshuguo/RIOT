@@ -1918,6 +1918,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	listen_period = random_uint32_range(0, IQUEUEMAC_CP_RANDOM_END_US) + IQUEUEMAC_CP_DURATION_US;
 
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, listen_period);
+	iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_MAX, IQUEUEMAC_CP_DURATION_MAX_US);
 
 	/* Enable Auto ACK again for data reception */
 	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
@@ -1992,6 +1993,15 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
         //puts("bp");
 	}
 
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_MAX)){
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_MAX);
+		iqueuemac->router_states.router_listen_state = R_LISTEN_CP_END;
+		iqueuemac->need_update = true;
+		return;
+	}
+
 	if((iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END))){
 		iqueuemac->cp_end = true;
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
@@ -2009,6 +2019,7 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 			/** only timeout event and rx_complete event will reach here! **/
 			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
 			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
+			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_MAX);
 			iqueuemac->router_states.router_listen_state = R_LISTEN_CP_END;
 			iqueuemac->need_update = true;
 		}

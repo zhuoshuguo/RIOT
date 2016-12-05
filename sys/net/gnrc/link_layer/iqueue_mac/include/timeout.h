@@ -50,8 +50,8 @@ typedef enum {
 	/*****************router******************/
 	TIMEOUT_COLLECT_BEACON_END,
     TIMEOUT_CP_END,
+	TIMEOUT_CP_MAX,
 	TIMEOUT_WAIT_RX_END,
-    TIMEOUT_CP_MAX,
     TIMEOUT_VTDMA,
 	/*****************simple-node******************/
 	TIMEOUT_N_CP_DURATION,
