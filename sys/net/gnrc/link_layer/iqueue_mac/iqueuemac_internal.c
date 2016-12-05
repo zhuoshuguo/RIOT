@@ -1622,6 +1622,7 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
        		iqueuemac->tx.tx_packet =  pkt;
        		iqueuemac->tx.current_neighbour = &iqueuemac->tx.neighbours[next];
        		iqueuemac->tx.tx_seq = 0;
+       		iqueuemac->tx.t2u_retry_contuer = 0;
 
        		//printf("iqueuemac: the find nearest neighbor is %d. \n", next);
        		return true;
