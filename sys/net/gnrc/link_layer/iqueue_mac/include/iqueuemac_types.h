@@ -90,6 +90,7 @@ typedef enum {
 
 typedef enum {
 	DEVICE_T2U_SEND_PREAMBLE_INIT = 0,
+	DEVICE_T2U_SEND_PREAMBLE_PREPARE,
 	DEVICE_T2U_SEND_PREAMBLE,
 	DEVICE_T2U_WAIT_PREAMBLE_TX_END,
 	DEVICE_T2U_WAIT_PREAMBLE_ACK,
@@ -419,6 +420,7 @@ typedef struct {
 
 	bool t2u_on_public_1;
 
+	bool reach_max_preamble_interval;
 
 } iqueuemac_tx_t;
 
