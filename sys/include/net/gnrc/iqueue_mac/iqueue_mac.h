@@ -55,7 +55,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_WAIT_BEACON_TIME_US
-#define IQUEUEMAC_WAIT_BEACON_TIME_US        (50U * 1000)
+#define IQUEUEMAC_WAIT_BEACON_TIME_US        (30U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_RECEPTION_MAGIN_US
