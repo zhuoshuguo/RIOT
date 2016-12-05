@@ -1048,7 +1048,6 @@ void iqueuemac_t2r_re_phase_lock_prepare(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2r_wait_beacon(iqueuemac_t* iqueuemac){
 
-
     if(iqueuemac->packet_received == true){
     	iqueuemac->packet_received = false;
     	iqueuemac_wait_beacon_packet_process(iqueuemac);
@@ -1108,6 +1107,7 @@ void iqueuemac_t2r_wait_beacon(iqueuemac_t* iqueuemac){
     }
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_BEACON)){
+		packet_queue_flush(&iqueuemac->rx.queue);
 		puts("t2r:no beacon");
 		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 		iqueuemac->need_update = true;
@@ -1407,6 +1407,8 @@ void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 
 void iqueuemac_t2u_send_preamble_prepare(iqueuemac_t* iqueuemac){
 
+	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_MAX_PREAM_INTERVAL);
+
 	if(iqueuemac->tx.preamble_sent != 0){
 	    if(iqueuemac->tx.t2u_on_public_1 == true){
 		    iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_2);
@@ -1415,10 +1417,13 @@ void iqueuemac_t2u_send_preamble_prepare(iqueuemac_t* iqueuemac){
 	    	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_1);
 	    	iqueuemac->tx.t2u_on_public_1 = true;
 	    }
+	    iqueuemac_set_timeout(iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL, IQUEUEMAC_MAX_PREAM_INTERVAL_US);
+	}else{
+		/* here, we set the pream_max_interval timeout to 5*MAX_PREAM_INTERVAL due to the fact that the first preamble is
+		 * using csma for sending, and csma cost some time (could be large, i.e., larger than 4 ms). */
+		iqueuemac_set_timeout(iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL, (5*IQUEUEMAC_MAX_PREAM_INTERVAL_US));
 	}
 
-	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_MAX_PREAM_INTERVAL);
-	iqueuemac_set_timeout(iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL, IQUEUEMAC_MAX_PREAM_INTERVAL_US);
 	iqueuemac->tx.reach_max_preamble_interval = false;
 
 	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE;
@@ -1531,7 +1536,7 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 	}
 
 	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_WAIT_PREAMBLE_TX_END;
-	iqueuemac->need_update = false;
+	iqueuemac->need_update = true;
 }
 
 void iqueuemac_t2u_wait_preamble_tx_end(iqueuemac_t* iqueuemac)
@@ -1542,6 +1547,14 @@ void iqueuemac_t2u_wait_preamble_tx_end(iqueuemac_t* iqueuemac)
 
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_WAIT_PREAMBLE_ACK;
 		iqueuemac->need_update = false;
+		return;
+	}
+
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL)){
+		packet_queue_flush(&iqueuemac->rx.queue);
+		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
+		iqueuemac->need_update = true;
+		return;
 	}
 }
 
@@ -1716,11 +1729,15 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	    	    iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_INIT;
 	    		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 	    		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
+	    		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
+	    		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_MAX_PREAM_INTERVAL);
 
 	    		iqueuemac->tx.vtdma_para.get_beacon = false;
-	    		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_BEACON, IQUEUEMAC_SUPERFRAME_DURATION_US);
+	    		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_BEACON, IQUEUEMAC_WAIT_BEACON_TIME_US);
 	    		// need to flush the rx-queue ??
 	    		packet_queue_flush(&iqueuemac->rx.queue);
+
+	    		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_BEACON;
 
 	    		if(iqueuemac->mac_type == ROUTER){
 	    			iqueuemac->router_states.router_trans_state = R_TRANS_TO_ROUTER;
@@ -1728,7 +1745,6 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	    		   	iqueuemac->node_states.node_trans_state = N_TRANS_TO_ROUTER;
 	    		}
 
-	    		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_BEACON;
 	    	}else{
 	    	   	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 	    	}
