@@ -1415,6 +1415,10 @@ void iqueuemac_t2u_send_preamble_prepare(iqueuemac_t* iqueuemac){
 	    }
 	}
 
+	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_MAX_PREAM_INTERVAL);
+	iqueuemac_set_timeout(iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL, IQUEUEMAC_MAX_PREAM_INTERVAL_US);
+	iqueuemac->tx.reach_max_preamble_interval = false;
+
 	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE;
 	iqueuemac->need_update = true;
 
@@ -1447,8 +1451,12 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 		}
 	}
 
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL)){
+		iqueuemac->tx.reach_max_preamble_interval = true;
+	}
+
 	/* if rx is going, wait until rx is completed. */
-	if(_get_netdev_state(iqueuemac) == NETOPT_STATE_RX){
+	if((_get_netdev_state(iqueuemac) == NETOPT_STATE_RX)&&(iqueuemac->tx.reach_max_preamble_interval == false)){
 		/* when rx completed, will reach here */
 		if(iqueuemac->packet_received == true){
 			iqueuemac->packet_received = false;
@@ -1462,9 +1470,7 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 		}
 	}
 
-	if(iqueuemac_timeout_is_running(iqueuemac,TIMEOUT_WAIT_RX_END)){
-		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
-	}
+	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
 
 	if(iqueuemac->packet_received == true){
 	   	iqueuemac->packet_received = false;
@@ -1476,8 +1482,15 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 		puts("q t2u");
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_MAX_PREAM_INTERVAL);
 
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+		iqueuemac->need_update = true;
+		return;
+	}
+
+	if(iqueuemac->tx.reach_max_preamble_interval == true) {
+		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
 		iqueuemac->need_update = true;
 		return;
 	}
@@ -1558,8 +1571,12 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 		}
 	}
 
+	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL)){
+		iqueuemac->tx.reach_max_preamble_interval = true;
+	}
+
 	/* if rx is going, wait until rx is completed. */
-	if(_get_netdev_state(iqueuemac) == NETOPT_STATE_RX){
+	if((_get_netdev_state(iqueuemac) == NETOPT_STATE_RX)&&(iqueuemac->tx.reach_max_preamble_interval == false)){
 		/* when rx completed, will reach here */
 		if(iqueuemac->packet_received == true){
 			iqueuemac->packet_received = false;
@@ -1583,6 +1600,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 		puts("q t2u");
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_MAX_PREAM_INTERVAL);
 
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 		iqueuemac->need_update = true;
@@ -1601,6 +1619,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_MAX_PREAM_INTERVAL);
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_DATA;
 		iqueuemac->need_update = true;
 		return;
@@ -1611,11 +1630,18 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RX_END);
+		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_MAX_PREAM_INTERVAL);
 		iqueuemac->need_update = true;
 		return;
 	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_PREAMBLE)){
+		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
+		iqueuemac->need_update = true;
+		return;
+	}
+
+	if(iqueuemac->tx.reach_max_preamble_interval == true) {
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
 		iqueuemac->need_update = true;
 		return;
