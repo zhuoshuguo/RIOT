@@ -55,7 +55,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_CP_DURATION_MAX_US
-#define IQUEUEMAC_CP_DURATION_MAX_US        (3*IQUEUEMAC_CP_DURATION_US)
+#define IQUEUEMAC_CP_DURATION_MAX_US        (5*IQUEUEMAC_CP_DURATION_US)
 #endif
 
 //this can be merged into IQUEUEMAC_CP_DURATION_MAX_US.
@@ -120,7 +120,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_MAX_CP_BACKOFF_COUNTER
-#define IQUEUEMAC_MAX_CP_BACKOFF_COUNTER      (3U)
+#define IQUEUEMAC_MAX_CP_BACKOFF_COUNTER      (5U)
 #endif
 
 #ifndef IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE
@@ -133,11 +133,11 @@ typedef enum {
 
 /******* it seems that this should not be larger than 5 *******/
 #ifndef IQUEUEMAC_TX_QUEUE_SIZE
-#define IQUEUEMAC_TX_QUEUE_SIZE             (24U)
+#define IQUEUEMAC_TX_QUEUE_SIZE             (30U)
 #endif
 
 #ifndef IQUEUEMAC_RX_QUEUE_SIZE
-#define IQUEUEMAC_RX_QUEUE_SIZE             (8U)
+#define IQUEUEMAC_RX_QUEUE_SIZE             (10U)
 #endif
 
 /******* it seems that this should not be larger than 3 *******/
@@ -158,7 +158,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM
-#define IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM           (14U)
+#define IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM           (15U)
 #endif
 
 #ifndef IQUEUEMAC_REPHASELOCK_THRESHOLD

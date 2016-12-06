@@ -166,7 +166,6 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 
 	iqueuemac->rx.check_dup_pkt.queue_head = 0;
 
-
 	for(int i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
 		iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
 	}
