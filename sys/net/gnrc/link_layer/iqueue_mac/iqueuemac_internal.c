@@ -960,6 +960,9 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 
     	switch(receive_packet_info.header->type){
             case FRAMETYPE_BEACON:{
+
+            	gnrc_pktbuf_release(pkt);
+#if 0
             	uint32_t own_phase;
             	uint32_t sender_phase;
 
@@ -971,7 +974,7 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             	/* this means that the beacon sender will change its phase, so meaningless to deal with this received beacon */
             	if(iqueuemac_beacon_hdr->current_phase == 0){
             		gnrc_pktbuf_release(pkt);
-            		return;
+            		continue;
             	}
 
             	sender_phase = iqueuemac_beacon_hdr->current_phase + RTT_US_TO_TICKS(IQUEUEMAC_RECEPTION_MAGIN_US);
@@ -1001,6 +1004,7 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 
             	gnrc_pktbuf_release(pkt);
             	/* in the future, take CP overlape collision measurements after receive ohter's beacon!! */
+#endif
 
             }break;
 
