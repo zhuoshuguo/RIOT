@@ -163,6 +163,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	iqueuemac->quit_current_cycle = false;
 	iqueuemac->send_beacon_fail = false;
 	iqueuemac->rx_memory_full = false;
+	iqueuemac->phase_backoff = false;
 
 	iqueuemac->rx.check_dup_pkt.queue_head = 0;
 
@@ -291,6 +292,20 @@ void rtt_handler(uint32_t event)
 
       }
 
+}
+
+void iqueuemac_phase_backoff(iqueuemac_t* iqueuemac)
+{
+	uint32_t alarm;
+	/*** execute phase backoff for avoiding CP overlap. ***/
+	rtt_clear_alarm();
+    alarm = iqueuemac->last_wakeup + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US) + iqueuemac->backoff_phase_ticks;
+    rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
+    iqueuemac->phase_changed = true;
+
+    uint32_t backoff_us;
+    backoff_us = RTT_TICKS_TO_US(iqueuemac->backoff_phase_ticks);
+    printf("bp %lu\n", backoff_us);
 }
 
 
@@ -1941,10 +1956,15 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->cp_end = false;
 	iqueuemac->got_preamble = false;
 
-	iqueuemac->phase_backoff = false;
 	iqueuemac->phase_changed = false;
 
 	packet_queue_flush(&iqueuemac->rx.queue);
+
+	/* backoff phase if needed */
+	if(iqueuemac->phase_backoff == true){
+		iqueuemac->phase_backoff = false;
+		iqueuemac_phase_backoff(iqueuemac);
+	}
 }
 
 void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
@@ -1976,20 +1996,9 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
     	}
     }
 
-	if(iqueuemac->phase_backoff == true){
+	if((iqueuemac->phase_backoff == true) && (iqueuemac->phase_changed == false)){
 		iqueuemac->phase_backoff = false;
-		uint32_t alarm;
-    	/*** execute phase backoff for avoiding CP overlap. ***/
-		rtt_clear_alarm();
-        alarm = iqueuemac->last_wakeup + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US) + iqueuemac->backoff_phase_ticks;
-        rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
-        iqueuemac->phase_changed = true;
-
-        uint32_t backoff_us;
-        backoff_us = RTT_TICKS_TO_US(iqueuemac->backoff_phase_ticks);
-        printf("bp %lu\n", backoff_us);
-
-        //puts("bp");
+		iqueuemac_phase_backoff(iqueuemac);
 	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_MAX)){

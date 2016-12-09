@@ -1325,9 +1325,7 @@ void iqueuemac_remove_in_cluster_neighbor(iqueuemac_t* iqueuemac, l2_addr_t* add
 			return;
 		}
 	}
-
 }
-
 
 void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info){
 
@@ -1378,6 +1376,31 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 
 	 if(phase_ticks < 0) {
 		 phase_ticks += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+	 }
+
+	 /* check if phase is too close */
+	 long int future_neighbor_phase;
+	 if(iqueuemac->phase_changed == true){
+		 future_neighbor_phase = phase_ticks - iqueuemac->backoff_phase_ticks;
+
+		 if(future_neighbor_phase < 0) {
+			 future_neighbor_phase += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+		 }
+	 }else{
+		 future_neighbor_phase = phase_ticks;
+	 }
+
+	 uint32_t neighbor_phase;
+	 neighbor_phase = (uint32_t)future_neighbor_phase;
+
+	 /* if the sender's phase is too close to the receiver */
+	 if((RTT_TICKS_TO_US(neighbor_phase) > (IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_CP_MIN_GAP_US)) ||
+			 (RTT_TICKS_TO_US(neighbor_phase) < IQUEUEMAC_CP_MIN_GAP_US))
+	 {
+		 puts("p close");
+		 iqueuemac->phase_backoff = true;
+		 iqueuemac->backoff_phase_ticks =
+				 random_uint32_range(RTT_US_TO_TICKS(IQUEUEMAC_CP_MIN_GAP_US), RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_CP_MIN_GAP_US));
 	 }
 
      /*** move 1/3 CP duration to give some time redundancy for sender the has forward timer-drift!!! ***/
