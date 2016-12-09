@@ -68,7 +68,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_CP_MIN_GAP_US
-#define IQUEUEMAC_CP_MIN_GAP_US        (30U * 1000)
+#define IQUEUEMAC_CP_MIN_GAP_US        (50U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_MAX_PREAM_INTERVAL_US
