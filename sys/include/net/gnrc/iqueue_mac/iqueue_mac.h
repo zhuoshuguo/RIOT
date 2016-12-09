@@ -133,7 +133,7 @@ typedef enum {
 
 /******* it seems that this should not be larger than 5 *******/
 #ifndef IQUEUEMAC_TX_QUEUE_SIZE
-#define IQUEUEMAC_TX_QUEUE_SIZE             (30U)
+#define IQUEUEMAC_TX_QUEUE_SIZE             (60U)
 #endif
 
 #ifndef IQUEUEMAC_RX_QUEUE_SIZE
@@ -154,7 +154,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT
-#define IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT           (5U)
+#define IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT           (10U)
 #endif
 
 #ifndef IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM
