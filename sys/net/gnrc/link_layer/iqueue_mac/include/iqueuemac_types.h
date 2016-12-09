@@ -423,6 +423,8 @@ typedef struct {
 
 	bool reach_max_preamble_interval;
 
+	uint32_t last_tx_neighbor_id;
+
 } iqueuemac_tx_t;
 
 /******************************************************************************/

@@ -1614,8 +1614,8 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
 
     //////////////
     int next = -1;
-    uint32_t phase_check;
-    uint32_t phase_nearest = IQUEUEMAC_PHASE_MAX;
+    //uint32_t phase_check;
+    //uint32_t phase_nearest = IQUEUEMAC_PHASE_MAX;
 
     /*** If current_neighbour is not NULL, means last t-2-r or t-2-u failed, will continue try t-2-r/t-2-u
      * again for the same neighbor, which has not been released in last t-2-r/t-2-u. ***/
@@ -1627,8 +1627,28 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
     if(iqueuemac->tx.neighbours[0].queue.length > 0){
     	next = 0;
     }else{
-    	/*** find the nearest neighbor ***/
+    	/*** find the next neighbor ***/
+    	uint32_t j;
+    	j = iqueuemac->tx.last_tx_neighbor_id + 1;
+
+    	if(j >= IQUEUEMAC_NEIGHBOUR_COUNT) {
+    		j= 1;
+    	}
+
     	for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
+
+    		if(iqueuemac->tx.neighbours[j].queue.length > 0) {
+    			iqueuemac->tx.last_tx_neighbor_id = j;
+    			next = (int)j;
+    			break;
+    		} else {
+    			j ++;
+    	    	if(j >= IQUEUEMAC_NEIGHBOUR_COUNT) {
+    	    		j= 1;
+    	    	}
+    		}
+
+#if 0
         	if(iqueuemac->tx.neighbours[i].queue.length > 0) {
             	/* Unknown destinations are initialized with their phase at the end
              	* of the local interval, so known destinations that still wakeup
@@ -1640,6 +1660,7 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
         	        phase_nearest = phase_check;
         	    }
        	 	}
+#endif
     	}
     }
     ////////
