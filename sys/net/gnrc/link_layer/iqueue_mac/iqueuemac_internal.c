@@ -246,7 +246,7 @@ bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
     //printf("iqueuemac: the inited addr in the neighbor-list is %d %d \n", iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[1], iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[0]);
 
     if(packet_queue_push(&(neighbour->queue), pkt, 0) == NULL) {
-    	puts("iqueuemac: Cann't push packet into queue, queue is perhaps full! ");
+    	puts("tx-queue: full, drop data");
         gnrc_pktbuf_release(pkt);
         return false;
     }
