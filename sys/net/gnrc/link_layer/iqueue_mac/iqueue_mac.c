@@ -1161,6 +1161,10 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 		 * so, no rx security check needed here. and no need to disable autoack here.
 		 *  */
 
+		if(iqueuemac->tx.no_ack_contuer > 0){
+			netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+			device_state->seq = iqueuemac->tx.tx_seq;
+		}
 
 		/***  do not disable auto-ack here, we need auto-ack for data transmission and possible retransmission ***/
 		/******disable CSMA here, and iqueuemac_send_data_packet() will release the pkt itself !!!!******/
@@ -1209,6 +1213,8 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 				iqueuemac->tx.tx_packet = NULL;
 
+				iqueuemac->tx.no_ack_contuer = 0;
+
 				/*** if the sender has pending pkt, continue vTDMA transmission ***/
 				if((iqueuemac->tx.vtdma_para.slots_num > 0)&&(iqueuemac->tx.current_neighbour->queue.length>0)){
 					gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.current_neighbour->queue));
@@ -1231,34 +1237,22 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 			}break;
 
 			/*** if BUSY and NOACK, regards it as busy channel ***/
-			case TX_FEEDBACK_BUSY: puts("vb");
+			case TX_FEEDBACK_BUSY:
 			case TX_FEEDBACK_NOACK:{
-				puts("vnoack");
+
+				iqueuemac->tx.no_ack_contuer = 1;
+
+				netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+				iqueuemac->tx.tx_seq = device_state->seq - 1;
+
 				/*** do not release the pkt here, continue sending the same pkt ***/
 				if(iqueuemac->tx.vtdma_para.slots_num > 0){
+					puts("v1");
 
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
 
 				}else{ /* if no slots for sending, queue the pkt for retry in next cycle */
-
-					//puts("failed in vTDMA, re-queue pkt.");
-		           /* save payload pointer */
-		            gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next->next;
-
-		            /* remove iqueuemac header */
-		            iqueuemac->tx.tx_packet->next->next = NULL;
-		            gnrc_pktbuf_release(iqueuemac->tx.tx_packet->next);
-
-		            /* make append payload after netif header again */
-		            iqueuemac->tx.tx_packet->next = payload;
-
-		            /* queue the pkt for transmission in next cycle */
-			        if(_queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet) == false){
-			        	puts("Push pkt failed in t2r");
-			        }
-		            iqueuemac->tx.tx_packet = NULL;
-
-		            //puts("v-end3");
+					puts("v2");
 
 		            /****  vtdma period ends, switch back to the public channel ****/
 					//iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
