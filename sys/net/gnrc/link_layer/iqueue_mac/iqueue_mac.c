@@ -1408,6 +1408,14 @@ void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
 	iqueuemac->need_update = true;
 
+	/*** Must disable auto-ack here!! need this sentence!! becuase it may due to other's unknwn reasons,
+	 * that this snode may has autoACK here. ***/
+	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_1);
+	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
+
+	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_2);
+	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
+
 	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_1);
 	iqueuemac->tx.t2u_on_public_1 = true;
 
