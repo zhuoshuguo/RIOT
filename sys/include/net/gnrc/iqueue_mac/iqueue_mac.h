@@ -158,7 +158,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM
-#define IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM           (15U)
+#define IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM           (20U)
 #endif
 
 #ifndef IQUEUEMAC_REPHASELOCK_THRESHOLD
