@@ -128,12 +128,12 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE
-#define IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE            (10U)
+#define IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE            (30U)
 #endif
 
 /******* it seems that this should not be larger than 5 *******/
 #ifndef IQUEUEMAC_TX_QUEUE_SIZE
-#define IQUEUEMAC_TX_QUEUE_SIZE             (60U)
+#define IQUEUEMAC_TX_QUEUE_SIZE             (70U)
 #endif
 
 #ifndef IQUEUEMAC_RX_QUEUE_SIZE
