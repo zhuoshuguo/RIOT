@@ -43,7 +43,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_SUPERFRAME_DURATION_US
-#define IQUEUEMAC_SUPERFRAME_DURATION_US        (300U * 1000)
+#define IQUEUEMAC_SUPERFRAME_DURATION_US        (500U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_CP_DURATION_US
@@ -60,7 +60,7 @@ typedef enum {
 
 //this can be merged into IQUEUEMAC_CP_DURATION_MAX_US.
 #ifndef IQUEUEMAC_WAIT_BEACON_TIME_US
-#define IQUEUEMAC_WAIT_BEACON_TIME_US        (45U * 1000)
+#define IQUEUEMAC_WAIT_BEACON_TIME_US        (IQUEUEMAC_CP_DURATION_MAX_US)
 #endif
 
 #ifndef IQUEUEMAC_RECEPTION_MAGIN_US
@@ -68,7 +68,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_CP_MIN_GAP_US
-#define IQUEUEMAC_CP_MIN_GAP_US        (50U * 1000)
+#define IQUEUEMAC_CP_MIN_GAP_US        (30U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_MAX_PREAM_INTERVAL_US
