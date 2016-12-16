@@ -162,7 +162,7 @@ void iqueuemac_wait_beacon_packet_process(iqueuemac_t* iqueuemac);
 void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac);
 void iqueuemac_router_vtdma_receive_packet_process(iqueuemac_t* iqueuemac);
 void iqueuemac_figure_tx_neighbor_phase(iqueuemac_t* iqueuemac);
-void _dispatch(gnrc_pktsnip_t* buffer[]);
+void _dispatch(gnrc_pktsnip_t** buffer);
 void update_neighbor_pubchan(iqueuemac_t* iqueuemac);
 
 #ifdef __cplusplus

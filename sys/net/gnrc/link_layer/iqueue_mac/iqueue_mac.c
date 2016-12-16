@@ -908,7 +908,7 @@ void iqueuemac_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 	int res;
 	res = iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
 	if(res < 0){
-		printf("t2r %d, release pkt.\n", res);
+		printf("t2r %d, drop pkt.\n", res);
 
 		iqueuemac->tx.no_ack_contuer = 0;
 		if(iqueuemac->tx.tx_packet != NULL){
@@ -961,8 +961,8 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 
 			case TX_FEEDBACK_BUSY:
 			/*** if NOACK, regards it as phase-lock failed, mark the destination as unknown will try t-2-u next time. ***/
-			case TX_FEEDBACK_NOACK:{
-
+			case TX_FEEDBACK_NOACK:
+			default:{
 				/* this is for debug, delete when formal iqueuemac version is release! */
 				/* delete this turn-off radio when formal iqueuemac version is release!
 				 * since it (turn-off radio func here) is mainly for debug */
@@ -985,24 +985,6 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 
 					iqueuemac->tx.t2u_retry_contuer = 0;
 
-#if 0
-
-			        /* save payload pointer */
-			        gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next->next;
-
-			        /* remove iqueuemac header */
-			        iqueuemac->tx.tx_packet->next->next = NULL;
-			        gnrc_pktbuf_release(iqueuemac->tx.tx_packet->next);
-
-			        /* make append payload after netif header again */
-			        iqueuemac->tx.tx_packet->next = payload;
-
-			        /* queue the pkt for transmission in next cycle */
-			        if(_queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet) == false){
-			        	puts("Push pkt failed in t2r");
-			        }
-			        iqueuemac->tx.tx_packet = NULL;
-#endif
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END; //DEVICE_T2R_RE_PHASE_LOCK_PREPARE;
 
 				}else{
@@ -1014,7 +996,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				/*** pkt trans failed, don't release the pkt here, retry to transmit in t-2-u procedure. ***/
 
 			}break;
-
+#if 0
 			default:{
 				puts("t2r default error, push pkt");
 
@@ -1039,7 +1021,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 				iqueuemac->need_update = true;
 			}break;
-
+#endif
 		}
 	}
 }
@@ -1071,7 +1053,7 @@ void iqueuemac_t2r_wait_beacon(iqueuemac_t* iqueuemac){
     if(iqueuemac->quit_current_cycle == true)
     {
     	/* if we are here, means tx_packet is NULL, so just need to release neighbor also. */
-    	iqueuemac->tx.current_neighbour = NULL;
+    	//iqueuemac->tx.current_neighbour = NULL;
 
     	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_BEACON);
 		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
@@ -1141,7 +1123,7 @@ void iqueuemac_t2r_wait_own_slots(iqueuemac_t* iqueuemac){
 			iqueuemac->tx.tx_packet = pkt;
 			iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
 		}else{
-			puts("iqueueMAC-Error: NUll pktbuf!");
+			puts("iqueueMAC-Error: NUll pktbuf, drop!");
 			iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 		}
 		iqueuemac->need_update = true;
@@ -1155,7 +1137,6 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 		/**** Delete the pkt no matter the transmission is success or not !!! ****/
 		/**** Or, only delete the pkt when the feedback shows good !!! ****/
 		//gnrc_pktsnip_t *pkt = packet_queue_head(&(iqueuemac->tx.current_neighbour.queue));
-
 
 		/* since it is now on sub-channel, so there is possibility that this sender will receive a broadcast, preamble or data pkt towards it.
 		 * so, no rx security check needed here. and no need to disable autoack here.
@@ -1171,7 +1152,7 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 		int res;
 		res = iqueuemac_send_data_packet(iqueuemac, NETOPT_DISABLE);
 		if(res < 0){
-			printf("vtdma %d, release pkt\n", res);
+			printf("vtdma %d, drop pkt\n", res);
 
 			if(iqueuemac->tx.tx_packet != NULL){
 				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
@@ -1193,6 +1174,12 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 		/****  switch back to the public channel ****/
 		//puts("v-end1");
 		//iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
+		if(iqueuemac->tx.tx_packet != NULL) {
+			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+			iqueuemac->tx.tx_packet = NULL;
+			puts("v3:drop pkt");
+			iqueuemac->tx.current_neighbour = NULL;
+		}
 
 		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 		iqueuemac->need_update = true;
@@ -1238,7 +1225,8 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 
 			/*** if BUSY and NOACK, regards it as busy channel ***/
 			case TX_FEEDBACK_BUSY:
-			case TX_FEEDBACK_NOACK:{
+			case TX_FEEDBACK_NOACK:
+			default:{
 
 				iqueuemac->tx.no_ack_contuer = 1;
 
@@ -1260,28 +1248,6 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 				}
 				iqueuemac->need_update = true;
 
-			}break;
-
-			default:{
-				puts("vtdma tx default, release pkt.");
-		        /* save payload pointer */
-		        gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next->next;
-
-		        /* remove iqueuemac header */
-		        iqueuemac->tx.tx_packet->next->next = NULL;
-		        gnrc_pktbuf_release(iqueuemac->tx.tx_packet->next);
-
-		        /* make append payload after netif header again */
-		        iqueuemac->tx.tx_packet->next = payload;
-
-		        /* queue the pkt for transmission in next cycle */
-		        if(_queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet) == false){
-		        	puts("Push pkt failed in t2r");
-		        }
-		        iqueuemac->tx.tx_packet = NULL;
-
-				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
-				iqueuemac->need_update = true;
 			}break;
 		}
 	}
@@ -1454,7 +1420,7 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 	if(iqueuemac->rx_memory_full == true){
 		iqueuemac->rx_memory_full = false;
 
-		puts("memory full, release one pkt");
+		puts("memory full, drop one pkt");
 
 		if(iqueuemac->tx.tx_packet != NULL){
 			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
@@ -1582,7 +1548,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 	if(iqueuemac->rx_memory_full == true){
 		iqueuemac->rx_memory_full = false;
 
-		puts("memory full, release one pkt");
+		puts("memory full, drop one pkt");
 
 		if(iqueuemac->tx.tx_packet != NULL){
 			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
@@ -1708,7 +1674,7 @@ void iqueuemac_t2u_send_data(iqueuemac_t* iqueuemac){
 	int res;
 	res = iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
 	if(res < 0){
-		printf("t2u %d, release pkt in t2u end\n", res);
+		printf("t2u %d, drop pkt\n", res);
 
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 		iqueuemac->need_update = true;
@@ -1766,35 +1732,13 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	    	   	iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 	    	}
 	    }else{
-
-#if 0
-	        /* save payload pointer */
-	        gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next->next;
-
-	        /* remove iqueuemac header */
-	        iqueuemac->tx.tx_packet->next->next = NULL;
-	        gnrc_pktbuf_release(iqueuemac->tx.tx_packet->next);
-
-	        /* make append payload after netif header again */
-	        iqueuemac->tx.tx_packet->next = payload;
-
-	        /* queue the pkt for transmission in next cycle */
-	        _queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet);
-	        iqueuemac->tx.tx_packet = NULL;
-
-	        iqueuemac->tx.current_neighbour = NULL;
-
-	    	puts("trans in t2u failed. reload pkt");
-	    	//gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
-	    	//iqueuemac->tx.tx_packet = NULL;
-#endif
-
 	    	iqueuemac->tx.t2u_retry_contuer ++;
 
 	    	if(iqueuemac->tx.t2u_retry_contuer >= IQUEUEMAC_T2U_RETYR_THRESHOLD) {
 	    	    printf("t2u data failed on ch %d. drop pkt.\n",iqueuemac->tx.current_neighbour->cur_pub_channel);
 	    	    gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 	    	    iqueuemac->tx.tx_packet = NULL;
+	    	    iqueuemac->tx.current_neighbour = NULL;
 	    	    iqueuemac->tx.no_ack_contuer = 0;
 	    	    iqueuemac->tx.t2u_retry_contuer = 0;
 	    	    iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
@@ -1826,6 +1770,7 @@ void iqueuemac_t2u_end(iqueuemac_t* iqueuemac){
 			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 			iqueuemac->tx.tx_packet = NULL;
 			iqueuemac->tx.no_ack_contuer = 0;
+			puts("drop pkt");
 		}
 		iqueuemac->tx.current_neighbour = NULL;
 	}
