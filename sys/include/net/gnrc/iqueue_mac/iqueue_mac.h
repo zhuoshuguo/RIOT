@@ -133,11 +133,11 @@ typedef enum {
 
 /******* it seems that this should not be larger than 5 *******/
 #ifndef IQUEUEMAC_TX_QUEUE_SIZE
-#define IQUEUEMAC_TX_QUEUE_SIZE             (70U)
+#define IQUEUEMAC_TX_QUEUE_SIZE             (55U)
 #endif
 
 #ifndef IQUEUEMAC_RX_QUEUE_SIZE
-#define IQUEUEMAC_RX_QUEUE_SIZE             (10U)
+#define IQUEUEMAC_RX_QUEUE_SIZE             (8U)
 #endif
 
 /******* it seems that this should not be larger than 3 *******/

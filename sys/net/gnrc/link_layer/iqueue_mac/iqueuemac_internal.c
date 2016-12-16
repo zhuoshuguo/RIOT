@@ -426,6 +426,27 @@ int iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* in
 
 int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 {
+	int i;
+	int j=0;
+	uint8_t total_tdma_node_num = 0;
+	uint8_t total_tdma_slot_num = 0;
+	bool slots_full = false;
+
+	iqueuemac->rx.router_vtdma_mana.total_slots_num = 0;
+
+	for(i=0;i<IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT;i++)
+	{
+		if(iqueuemac->rx.rx_register_list[i].queue_indicator >0){
+			total_tdma_slot_num = iqueuemac->rx.rx_register_list[i].queue_indicator;
+			break;
+		}
+	}
+	if(total_tdma_slot_num == 0) {
+		return 0;
+	}
+
+	total_tdma_slot_num = 0;
+
 	/****** assemble and send the beacon ******/
 	gnrc_pktsnip_t* pkt;
 	gnrc_pktsnip_t* pkt_iqmac;
@@ -446,16 +467,10 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 
 	/********* Add the slots schedule list functionality here!!!  *********/
 
+	iqueuemac->rx.router_vtdma_mana.total_slots_num = 0;
+
 	l2_id_t  id_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
 	uint8_t  slots_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
-
-	int i;
-	int j=0;
-	uint8_t total_tdma_node_num = 0;
-	uint8_t  total_tdma_slot_num = 0;
-	bool slots_full = false;
-
-	iqueuemac->rx.router_vtdma_mana.total_slots_num = 0;
 
 	/**** search router-type first ****/
 	for(i=0;i<IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT;i++)
@@ -599,7 +614,7 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
     res = iqueuemac_send(iqueuemac, pkt, csma_enable);
     if(res < 0){
 		puts("iqueuemac: send beacon failed, release it.");
-    	gnrc_pktbuf_release(pkt_iqmac);
+    	gnrc_pktbuf_release(pkt);
     }
 	return res;
 
@@ -727,32 +742,6 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
 /******************************************************************************/
 int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info, iqueuemac_t* iqueuemac)
 {
-	iqueuemac_hdr_t* iqueuemac_hdr;
-	iqueuemac_frame_data_t* iqueuemac_data_hdr;
-	uint8_t same_cluster;
-	uint8_t extra_mac_type;
-
-	iqueuemac_hdr = (iqueuemac_hdr_t*) pkt->next->data;
-
-	if(iqueuemac_hdr->type == FRAMETYPE_IQUEUE_DATA){
-
-		//puts("iqueuemac: push a data");
-		iqueuemac_data_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_IQUEUEMAC);
-
-		same_cluster = iqueuemac_data_hdr->queue_indicator & 0x40;
-
-		extra_mac_type = iqueuemac_data_hdr->queue_indicator & 0x80;
-
-		/*** if the sender is node type ***/
-		if(extra_mac_type == 0x80){
-			if(same_cluster == 0x40){
-				iqueuemac_add_in_cluster_neighbor(iqueuemac, &pa_info->src_addr);
-			}else{
-				iqueuemac_remove_in_cluster_neighbor(iqueuemac, &pa_info->src_addr);
-			}
-		}
-	}
-
 	for(unsigned i = 0; i < IQUEUEMAC_DISPATCH_BUFFER_SIZE; i++) {
 	   /* Buffer will be filled bottom-up and emptied completely so no holes */
 	   if(buffer[i] == NULL) {
@@ -761,6 +750,8 @@ int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_
 	    }
 	}
 	gnrc_pktbuf_release(pkt);
+	puts("dispatch buffer full, drop pkt");
+
 	return -1;
 }
 
@@ -1044,8 +1035,7 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             // iqueuemac.rx.last_seq_info.seq = netif_hdr->seq;
             case FRAMETYPE_IQUEUE_DATA:{
 
-            	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr))
-            	{
+            	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)) {
             		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
 
                 	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
@@ -1056,8 +1046,7 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
 
             		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             		_dispatch(iqueuemac->rx.dispatch_buffer);
-            	}else/* if the data is not for the node, release it.  */
-            	{
+            	}else{/* if the data is not for the node, release it.  */
             		/* it is very unlikely that we will receive not-intended data here, since CP will not overlape! */
             		gnrc_pktbuf_release(pkt);
             	}
@@ -1069,10 +1058,13 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             case FRAMETYPE_BROADCAST:{
             	iqueuemac->quit_current_cycle = true;
                 iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+                _dispatch(iqueuemac->rx.dispatch_buffer);
                 //puts("iqueuemac: router receives a broadcast data !!");
            }break;
 
-            default:gnrc_pktbuf_release(pkt);break;
+            default:{
+            	gnrc_pktbuf_release(pkt);break;
+            }
   	    }
 
     }/* end of while loop */
@@ -1528,8 +1520,8 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
 
             		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
             		_dispatch(iqueuemac->rx.dispatch_buffer);
-            	}else/* if the data is not for the node, release it.  */
-            	{
+            	}else {/* if the data is not for the node, release it.  */
+
             		gnrc_pktbuf_release(pkt);
             	}
             }break;
@@ -1572,14 +1564,6 @@ int iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_enab
 		iqueuemac_data_hdr.header.type = FRAMETYPE_IQUEUE_DATA;
 		iqueuemac_data_hdr.queue_indicator = iqueuemac->tx.current_neighbour->queue.length;
 
-		if(iqueuemac->mac_type == NODE){
-			iqueuemac_data_hdr.queue_indicator = iqueuemac_data_hdr.queue_indicator | 0x80;
-		}
-
-		if(iqueuemac->tx.current_neighbour->in_same_cluster == true){
-			iqueuemac_data_hdr.queue_indicator = iqueuemac_data_hdr.queue_indicator | 0x40;
-		}
-
 		/* save payload pointer */
 		gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next;
 
@@ -1599,10 +1583,11 @@ int iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_enab
 	gnrc_pktbuf_hold(iqueuemac->tx.tx_packet,1);
 
 	int res;
-	res = iqueuemac_send(iqueuemac, pkt, csma_enable);
+	res = iqueuemac_send(iqueuemac, iqueuemac->tx.tx_packet, csma_enable);
     if(res < 0){
         /* If res is < 0, then, the old pkt will not be released in send(). so need to release old data once */
         gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
+        iqueuemac->tx.tx_packet = NULL;
 		puts("iqueuemac: tx-res < 0 in iqueuemac_send_data_packet().");
     }
 	return res;
@@ -1667,7 +1652,7 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
     if(next >= 0){
        	gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.neighbours[next].queue));
       	if(pkt != NULL){
-       		iqueuemac->tx.tx_packet =  pkt;
+       		iqueuemac->tx.tx_packet = pkt;
        		iqueuemac->tx.current_neighbour = &iqueuemac->tx.neighbours[next];
        		iqueuemac->tx.tx_seq = 0;
        		iqueuemac->tx.t2u_retry_contuer = 0;
@@ -1950,7 +1935,7 @@ void iqueuemac_figure_tx_neighbor_phase(iqueuemac_t* iqueuemac){
 	}
 }
 
-void _dispatch(gnrc_pktsnip_t* buffer[])
+void _dispatch(gnrc_pktsnip_t** buffer)
 {
     assert(buffer != NULL);
 
@@ -1970,6 +1955,7 @@ void _dispatch(gnrc_pktsnip_t* buffer[])
             if (!gnrc_netapi_dispatch_receive(buffer[i]->type, GNRC_NETREG_DEMUX_CTX_ALL, buffer[i])) {
                 DEBUG("Unable to forward packet of type %i\n", buffer[i]->type);
                 gnrc_pktbuf_release(buffer[i]);
+                puts("dispatch pkt fail, drop it");
             }
             buffer[i] = NULL;
         }
