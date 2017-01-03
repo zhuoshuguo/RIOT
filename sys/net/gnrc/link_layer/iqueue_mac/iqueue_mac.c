@@ -117,7 +117,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	}
 
 	iqueuemac->pub_channel_1 = 26;
-	iqueuemac->pub_channel_2 = 11;
+	iqueuemac->pub_channel_2 = 26;
 	iqueuemac->cur_pub_channel = iqueuemac->pub_channel_1;
 
 	iqueuemac->device_states.device_broadcast_state = DEVICE_BROADCAST_INIT;
@@ -2555,9 +2555,9 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                     if(!iqueuemac.rx_started) {
        				   //LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
                     	puts("rx_pkt corrupted?");
-       				   gnrc_pktbuf_release(pkt);
-       				iqueuemac.rx_started = false;
-                       break;
+       				    gnrc_pktbuf_release(pkt);
+       				    iqueuemac.rx_started = false;
+                        break;
                     }
 
                     iqueuemac.rx_started = false;
