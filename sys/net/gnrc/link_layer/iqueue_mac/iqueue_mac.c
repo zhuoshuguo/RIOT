@@ -870,11 +870,15 @@ void iqueuemac_t2r_wait_cp(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_CP)){
 
+		/* set up auto-ack for packet reception! */
+		iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
+		iqueuemac_set_ack_req(iqueuemac, NETOPT_ENABLE);
+
 		iqueuemac_trun_on_radio(iqueuemac);
 		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_CP;
 
 		/* set up auto-ack for packet reception! */
-		iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
+		//iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 		iqueuemac->need_update = true;
 	}
@@ -1294,6 +1298,9 @@ void iqueuemac_t2r_end(iqueuemac_t* iqueuemac){
 
 		iqueuemac_trun_off_radio(iqueuemac);
 		//puts("iqueuemac: router (device) is in t-2-r end.");
+
+		/* set up auto-ack for packet reception! */
+		iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 	}else{
 		iqueuemac->node_states.node_basic_state = N_LISTENNING;
 
