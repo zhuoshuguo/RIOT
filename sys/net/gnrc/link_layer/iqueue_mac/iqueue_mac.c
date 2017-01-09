@@ -168,6 +168,9 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	iqueuemac->rx.check_dup_pkt.queue_head = 0;
 	iqueuemac->tx.last_tx_neighbor_id = 0;
 
+	netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+	device_state->seq = iqueuemac->own_addr.addr[0];
+
 	for(int i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
 		iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
 	}
