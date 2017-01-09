@@ -172,6 +172,11 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 		iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
 	}
 
+	for(int i=0;i<IQUEUEMAC_TX_QUEUE_SIZE;i++){
+		iqueuemac->tx._queue_nodes[i].data = 0;
+		iqueuemac->tx._queue_nodes[i].next = NULL;
+	}
+
 }
 
 static void rtt_cb(void* arg)
