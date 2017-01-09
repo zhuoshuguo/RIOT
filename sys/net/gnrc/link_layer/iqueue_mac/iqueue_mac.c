@@ -117,7 +117,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	}
 
 	iqueuemac->pub_channel_1 = 26;
-	iqueuemac->pub_channel_2 = 26;
+	iqueuemac->pub_channel_2 = 11;
 	iqueuemac->cur_pub_channel = iqueuemac->pub_channel_1;
 
 	iqueuemac->device_states.device_broadcast_state = DEVICE_BROADCAST_INIT;
