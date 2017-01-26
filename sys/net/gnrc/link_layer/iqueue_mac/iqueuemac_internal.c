@@ -267,6 +267,12 @@ void iqueuemac_trun_on_radio(iqueuemac_t* iqueuemac)
 	                              NETOPT_STATE,
 	                              &devstate,
 	                              sizeof(devstate));
+
+	if(iqueuemac->radio_is_on == false) {
+		iqueuemac->last_radio_on_time = xtimer_now();
+		iqueuemac->radio_is_on = true;
+   	}
+
 }
 
 void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac)
@@ -277,6 +283,13 @@ void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac)
 	                              NETOPT_STATE,
 	                              &devstate,
 	                              sizeof(devstate));
+
+	if(iqueuemac->radio_is_on == true) {
+		iqueuemac->radio_off_time = xtimer_now();
+		iqueuemac->awake_duration_sum += (iqueuemac->radio_off_time - iqueuemac->last_radio_on_time);
+		iqueuemac->radio_is_on = false;
+	}
+
 }
 
 
@@ -1365,9 +1378,10 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 		 /* this means that the node is already in a new cycle when doing phase changed.
 		  * So, give some compensation for later phase adjust */
 		 phase_ticks = _phase_now(iqueuemac) + iqueuemac->backoff_phase_ticks - iqueuemac_preamble_ack_hdr->phase_in_ticks;
-		 phase_ticks += (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)/4);
+		 //phase_ticks += (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)/4);
 	 }else{
-		 phase_ticks = _phase_now(iqueuemac) - iqueuemac_preamble_ack_hdr->phase_in_ticks + (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)/4);
+		 phase_ticks = _phase_now(iqueuemac) - iqueuemac_preamble_ack_hdr->phase_in_ticks;
+		 //phase_ticks = _phase_now(iqueuemac) - iqueuemac_preamble_ack_hdr->phase_in_ticks + (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)/4);
 	 }
 
 	 if(phase_ticks < 0) {

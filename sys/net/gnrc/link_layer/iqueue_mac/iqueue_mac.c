@@ -166,6 +166,8 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 		iqueuemac->tx._queue_nodes[i].next = NULL;
 	}
 
+	iqueuemac->radio_is_on = false;
+
 }
 
 static void rtt_cb(void* arg)
@@ -487,6 +489,11 @@ void iqueuemac_init_end(iqueuemac_t* iqueuemac){
 	iqueuemac->duty_cycle_started = false;
 	rtt_handler(IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
 	iqueuemac->need_update = true;
+
+	iqueuemac_set_timeout(iqueuemac, DUTYCYCLE_RECORD, IQUEUEMAC_DUTYCYCLE_RECORD_US);
+
+	iqueuemac->system_start_time = xtimer_now();
+	iqueuemac->awake_duration_sum = 0;
 }
 
 void iqueuemac_init_update(iqueuemac_t* iqueuemac){
@@ -1482,6 +1489,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
 	iqueuemac->rx_started = false;
 	iqueuemac->packet_received = false;
+
 	iqueuemac_trun_on_radio(iqueuemac);
 
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_LISTEN;
@@ -1866,6 +1874,26 @@ void iqueue_mac_router_sleep_end(iqueuemac_t* iqueuemac){
 
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_INIT;
 	iqueuemac->need_update = true;
+
+	/*
+	uint32_t duty;
+	duty = xtimer_now();
+	duty = (iqueuemac->awake_duration_sum)*1000 / (duty - iqueuemac->system_start_time);
+    printf("dutycycle is %lu \n", duty);
+    */
+
+	if(iqueuemac_timeout_is_expired(iqueuemac, DUTYCYCLE_RECORD)){
+		/* Output duty-cycle ratio */
+		uint64_t duty;
+		duty = (uint64_t)xtimer_now();
+
+		printf("Device awake_duration_sum: %lu us \n", iqueuemac->awake_duration_sum);
+		printf("Device life time : %lu us \n", (uint32_t)(duty - (uint64_t)iqueuemac->system_start_time));
+
+		duty = ((uint64_t) iqueuemac->awake_duration_sum)*100 / (duty - (uint64_t)iqueuemac->system_start_time);
+		printf("Device achieved duty-cycle: %lu %% \n", (uint32_t)duty);
+
+	}
 }
 
 void iqueue_mac_router_listen_update(iqueuemac_t* iqueuemac){

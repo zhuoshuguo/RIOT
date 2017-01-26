@@ -395,6 +395,14 @@ typedef struct iqueuemac {
 
     bool send_beacon_fail;
     bool rx_memory_full;
+
+    bool radio_is_on;
+    uint32_t awake_duration_sum;
+    uint32_t last_radio_on_time;
+    uint32_t radio_off_time;
+    uint32_t system_start_time;
+
+
    
 } iqueuemac_t;
 
