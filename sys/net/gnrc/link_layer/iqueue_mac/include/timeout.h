@@ -53,9 +53,7 @@ typedef enum {
 	TIMEOUT_CP_MAX,
 	TIMEOUT_WAIT_RX_END,
     TIMEOUT_VTDMA,
-	/*****************simple-node******************/
-	TIMEOUT_N_CP_DURATION,
-	TIMEOUT_BEACON_END
+	DUTYCYCLE_RECORD,
 
 } iqueuemac_timeout_type_t;
 
