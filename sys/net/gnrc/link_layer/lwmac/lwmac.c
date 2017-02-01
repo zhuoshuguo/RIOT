@@ -442,7 +442,8 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
 		{
 		case NETDEV2_EVENT_RX_STARTED:
 			LOG_DEBUG("NETDEV_EVENT_RX_STARTED\n");
-			lwmac.rx_started = true;
+			//lwmac.rx_started = true;
+			gnrc_netdev2_set_rx_started(gnrc_netdev2,true);
 			break;
 		case NETDEV2_EVENT_RX_COMPLETE:
 		{
@@ -462,18 +463,18 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
 			 * TODO: transceivers might have 2 frame buffers, so make this optional
 			 */
             if(pkt == NULL){
-                lwmac.rx_started = false;
+            	gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
                 break;
             }
 
-			if(!lwmac.rx_started) {
+			if(!gnrc_netdev2_get_rx_started(gnrc_netdev2)) {
 				LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
 				gnrc_pktbuf_release(pkt);
-				lwmac.rx_started = false;
+				gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
 				break;
 			}
 
-			lwmac.rx_started = false;
+			gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
 
 			if(!packet_queue_push(&lwmac.rx.queue, pkt, 0))
 			{
@@ -487,25 +488,25 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
 		case NETDEV2_EVENT_TX_STARTED:
             //lwmac.tx_feedback = TX_FEEDBACK_UNDEF;
             gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_UNDEF);
-			lwmac.rx_started = false;
+            gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
 	//        lwmac_schedule_update();
 			break;
 		case NETDEV2_EVENT_TX_COMPLETE:
 			//lwmac.tx_feedback = TX_FEEDBACK_SUCCESS;
 			gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_SUCCESS);
-			lwmac.rx_started = false;
+			gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
 			lwmac_schedule_update();
 			break;
 		case NETDEV2_EVENT_TX_NOACK:
 			//lwmac.tx_feedback = TX_FEEDBACK_NOACK;
 			gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_NOACK);
-			lwmac.rx_started = false;
+			gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
 			lwmac_schedule_update();
 			break;
 		case NETDEV2_EVENT_TX_MEDIUM_BUSY:
 			//lwmac.tx_feedback = TX_FEEDBACK_BUSY;
 			gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_BUSY);
-			lwmac.rx_started = false;
+			gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
 			lwmac_schedule_update();
 			break;
 
