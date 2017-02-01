@@ -486,25 +486,25 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
 		}
 		case NETDEV2_EVENT_TX_STARTED:
             //lwmac.tx_feedback = TX_FEEDBACK_UNDEF;
-            gnrc_netdev2_set_tx_feedback(lwmac.netdev,TX_FEEDBACK_UNDEF);
+            gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_UNDEF);
 			lwmac.rx_started = false;
 	//        lwmac_schedule_update();
 			break;
 		case NETDEV2_EVENT_TX_COMPLETE:
 			//lwmac.tx_feedback = TX_FEEDBACK_SUCCESS;
-			gnrc_netdev2_set_tx_feedback(lwmac.netdev,TX_FEEDBACK_SUCCESS);
+			gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_SUCCESS);
 			lwmac.rx_started = false;
 			lwmac_schedule_update();
 			break;
 		case NETDEV2_EVENT_TX_NOACK:
 			//lwmac.tx_feedback = TX_FEEDBACK_NOACK;
-			gnrc_netdev2_set_tx_feedback(lwmac.netdev,TX_FEEDBACK_NOACK);
+			gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_NOACK);
 			lwmac.rx_started = false;
 			lwmac_schedule_update();
 			break;
 		case NETDEV2_EVENT_TX_MEDIUM_BUSY:
 			//lwmac.tx_feedback = TX_FEEDBACK_BUSY;
-			gnrc_netdev2_set_tx_feedback(lwmac.netdev,TX_FEEDBACK_BUSY);
+			gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_BUSY);
 			lwmac.rx_started = false;
 			lwmac_schedule_update();
 			break;
