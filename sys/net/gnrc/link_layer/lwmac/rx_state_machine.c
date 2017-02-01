@@ -328,8 +328,8 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
          * TODO: Checking for expiration only works once and clears the timeout.
          *       If this is a false positive (other packet than DATA), we're
          *       stuck. */
-        if( (lwmac_timeout_is_expired(lwmac, TIMEOUT_DATA)) &&
-            (!lwmac->rx_started) ) {
+        if((lwmac_timeout_is_expired(lwmac, TIMEOUT_DATA)) &&
+            (!gnrc_netdev2_get_rx_started(lwmac->netdev))) {
             LOG_INFO("DATA timed out\n");
             gnrc_pktbuf_release(pkt);
             GOTO_RX_STATE(RX_STATE_FAILED, true);

@@ -169,7 +169,7 @@ typedef struct lwmac {
     /* Internal state of MAC layer */
     lwmac_state_t state;
     /* Track if a transmission might have corrupted a received packet */
-    bool rx_started;
+    //bool rx_started;
     /* Own address */
     l2_addr_t l2_addr;
     lwmac_rx_t rx;
@@ -191,7 +191,6 @@ typedef struct lwmac {
 /* netdev */                NULL, \
 /* netdev2_driver */		NULL, \
 /* state */                 UNDEF, \
-/* rx_in_progress */        false, \
 /* l2_addr */               LWMAC_L2_ADDR_INIT, \
 /* rx */                    LWMAC_RX_INIT, \
 /* tx */                    LWMAC_TX_INIT, \
