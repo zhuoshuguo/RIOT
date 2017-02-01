@@ -157,8 +157,6 @@ extern "C" {
 #define LWMAC_RX_QUEUE_SIZE             (8U)
 #endif
 
-#define LWMAC_LPM_MASK					(1 << 17)
-
 /**
  * @brief   Initialize an instance of the LWMAC layer
  *

@@ -174,8 +174,7 @@ typedef struct lwmac {
     l2_addr_t l2_addr;
     lwmac_rx_t rx;
     lwmac_tx_t tx;
-    /* Feedback of last packet that was sent */
-    lwmac_tx_feedback_t tx_feedback;
+
     /* Store timeouts used for protocol */
     lwmac_timeout_t timeouts[LWMAC_TIMEOUT_COUNT];
     /* Used to calculate wakeup times */
@@ -196,7 +195,6 @@ typedef struct lwmac {
 /* l2_addr */               LWMAC_L2_ADDR_INIT, \
 /* rx */                    LWMAC_RX_INIT, \
 /* tx */                    LWMAC_TX_INIT, \
-/* tx_feedback */           LWMAC_TX_FEEDBACK_INIT, \
 /* timeouts */              { LWMAC_TIMEOUT_INIT }, \
 /* last_wakeup */           0, \
 /* dutycycling_active */    false, \

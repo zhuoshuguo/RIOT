@@ -236,7 +236,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
     {
         LOG_DEBUG("RX_STATE_WAIT_WA_SENT\n");
 
-        if(lwmac->tx_feedback == TX_FEEDBACK_UNDEF) {
+        if(gnrc_netdev2_get_tx_feedback(lwmac->netdev) == TX_FEEDBACK_UNDEF) {
             LOG_DEBUG("WA not yet completely sent\n");
             break;
         }

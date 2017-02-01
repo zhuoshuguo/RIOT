@@ -40,7 +40,7 @@
 #include "include/lwmac_types.h"
 #include "include/timeout.h"
 
-#define ENABLE_DEBUG    (1)
+#define ENABLE_DEBUG    (0)
 #include "debug.h"
 
 #define LOG_LEVEL LOG_WARNING
@@ -380,14 +380,12 @@ void rtt_handler(uint32_t event)
         lwmac.last_wakeup = rtt_get_alarm();
         alarm = _next_inphase_event(lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US));
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_SLEEP_PENDING);
-        lpm_prevent_sleep |= LWMAC_LPM_MASK;
         lwmac_set_state(LISTENING);
         break;
 
     case LWMAC_EVENT_RTT_SLEEP_PENDING:
         alarm = _next_inphase_event(lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_WAKEUP_PENDING);
-        lpm_prevent_sleep &= ~(LWMAC_LPM_MASK);
         lwmac_set_state(SLEEPING);
         break;
 
@@ -396,7 +394,6 @@ void rtt_handler(uint32_t event)
         LOG_DEBUG("RTT: Initialize duty cycling\n");
         alarm = rtt_get_counter() + RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US);
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_SLEEP_PENDING);
-        lpm_prevent_sleep |= LWMAC_LPM_MASK;
         lwmac.dutycycling_active = true;
         break;
 
@@ -404,7 +401,6 @@ void rtt_handler(uint32_t event)
     case LWMAC_EVENT_RTT_PAUSE:
         rtt_clear_alarm();
         LOG_DEBUG("RTT: Stop duty cycling, now in state %u\n", lwmac.state);
-        lpm_prevent_sleep |= LWMAC_LPM_MASK;
         lwmac.dutycycling_active = false;
         break;
 
@@ -412,7 +408,6 @@ void rtt_handler(uint32_t event)
         LOG_DEBUG("RTT: Resume duty cycling\n");
         alarm = _next_inphase_event(lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_WAKEUP_PENDING);
-        lpm_prevent_sleep &= ~(LWMAC_LPM_MASK);
         lwmac.dutycycling_active = true;
         break;
     }
@@ -490,22 +485,26 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
 			break;
 		}
 		case NETDEV2_EVENT_TX_STARTED:
-			lwmac.tx_feedback = TX_FEEDBACK_UNDEF;
+            //lwmac.tx_feedback = TX_FEEDBACK_UNDEF;
+            gnrc_netdev2_set_tx_feedback(lwmac.netdev,TX_FEEDBACK_UNDEF);
 			lwmac.rx_started = false;
 	//        lwmac_schedule_update();
 			break;
 		case NETDEV2_EVENT_TX_COMPLETE:
-			lwmac.tx_feedback = TX_FEEDBACK_SUCCESS;
+			//lwmac.tx_feedback = TX_FEEDBACK_SUCCESS;
+			gnrc_netdev2_set_tx_feedback(lwmac.netdev,TX_FEEDBACK_SUCCESS);
 			lwmac.rx_started = false;
 			lwmac_schedule_update();
 			break;
 		case NETDEV2_EVENT_TX_NOACK:
-			lwmac.tx_feedback = TX_FEEDBACK_NOACK;
+			//lwmac.tx_feedback = TX_FEEDBACK_NOACK;
+			gnrc_netdev2_set_tx_feedback(lwmac.netdev,TX_FEEDBACK_NOACK);
 			lwmac.rx_started = false;
 			lwmac_schedule_update();
 			break;
 		case NETDEV2_EVENT_TX_MEDIUM_BUSY:
-			lwmac.tx_feedback = TX_FEEDBACK_BUSY;
+			//lwmac.tx_feedback = TX_FEEDBACK_BUSY;
+			gnrc_netdev2_set_tx_feedback(lwmac.netdev,TX_FEEDBACK_BUSY);
 			lwmac.rx_started = false;
 			lwmac_schedule_update();
 			break;
@@ -733,14 +732,14 @@ kernel_pid_t gnrc_lwmac_init(char *stack, int stacksize, char priority,
     }
 
     /* Prevent sleeping until first RTT alarm is set */
-    lpm_prevent_sleep |= LWMAC_LPM_MASK;
+    //lpm_prevent_sleep |= LWMAC_LPM_MASK;
 
     /* create new LWMAC thread */
     res = thread_create(stack, stacksize, priority, THREAD_CREATE_STACKTEST,
                          _lwmac_thread, (void *)dev, name);
     if (res <= 0) {
         LOG_ERROR("Couldn't create thread\n");
-        lpm_prevent_sleep &= ~(LWMAC_LPM_MASK);
+        //lpm_prevent_sleep &= ~(LWMAC_LPM_MASK);
         return -EINVAL;
     }
 
