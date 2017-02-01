@@ -27,7 +27,7 @@
 #include "include/lwmac_internal.h"
 #include "include/lwmac_types.h"
 
-#define ENABLE_DEBUG    (1)
+#define ENABLE_DEBUG    (0)
 #include "debug.h"
 
 #define LOG_LEVEL LOG_WARNING
@@ -296,12 +296,12 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
     {
         LOG_DEBUG("TX_STATE_WAIT_WR_SENT\n");
 
-        if(lwmac->tx_feedback == TX_FEEDBACK_UNDEF) {
+        if(gnrc_netdev2_get_tx_feedback(lwmac->netdev) == TX_FEEDBACK_UNDEF) {
             LOG_DEBUG("WR not yet completely sent\n");
             break;
         }
 
-        if(lwmac->tx_feedback == TX_FEEDBACK_BUSY) {
+        if(gnrc_netdev2_get_tx_feedback(lwmac->netdev) == TX_FEEDBACK_BUSY) {
             _queue_tx_packet(lwmac, lwmac->tx.packet);
             lwmac->tx.packet = NULL;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
@@ -505,19 +505,19 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
     case TX_STATE_WAIT_FEEDBACK:
     {
         LOG_DEBUG("TX_STATE_WAIT_FEEDBACK\n");
-        if(lwmac->tx_feedback == TX_FEEDBACK_UNDEF) {
+        if(gnrc_netdev2_get_tx_feedback(lwmac->netdev) == TX_FEEDBACK_UNDEF) {
             break;
-        } else if(lwmac->tx_feedback == TX_FEEDBACK_SUCCESS) {
+        } else if(gnrc_netdev2_get_tx_feedback(lwmac->netdev) == TX_FEEDBACK_SUCCESS) {
             GOTO_TX_STATE(TX_STATE_SUCCESSFUL, true);
-        } else if(lwmac->tx_feedback == TX_FEEDBACK_NOACK) {
+        } else if(gnrc_netdev2_get_tx_feedback(lwmac->netdev) == TX_FEEDBACK_NOACK) {
             LOG_ERROR("Not ACKED\n");
             GOTO_TX_STATE(TX_STATE_FAILED, true);
-        } else if(lwmac->tx_feedback == TX_FEEDBACK_BUSY) {
+        } else if(gnrc_netdev2_get_tx_feedback(lwmac->netdev) == TX_FEEDBACK_BUSY) {
             LOG_ERROR("Channel busy \n");
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
-        LOG_ERROR("Tx feedback unhandled: %i\n", lwmac->tx_feedback);
+        LOG_ERROR("Tx feedback unhandled: %i\n", gnrc_netdev2_get_tx_feedback(lwmac->netdev));
         GOTO_TX_STATE(TX_STATE_FAILED, true);
     }
     case TX_STATE_SUCCESSFUL:
