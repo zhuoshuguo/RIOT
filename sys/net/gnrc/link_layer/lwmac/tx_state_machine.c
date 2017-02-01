@@ -370,7 +370,7 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
                 continue;
             }
 
-            if(_addr_match(&info.src_addr, &lwmac->tx.current_neighbour->l2_addr)) {
+            if(memcmp(&info.src_addr.addr, &lwmac->tx.current_neighbour->l2_addr.addr, lwmac->tx.current_neighbour->l2_addr.len) == 0) {
                 from_expected_destination = true;
             }
 
@@ -383,7 +383,7 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
             /* Check if destination is talking to another node. It will sleep
              * after a finished transaction so there's no point in trying any
              * further now. */
-            if( !_addr_match(&info.dst_addr, &lwmac->l2_addr) &&
+            if( !(memcmp(&info.dst_addr.addr, &lwmac->netdev->l2_addr, lwmac->netdev->l2_addr_len) == 0) &&
                  from_expected_destination) {
                 _queue_tx_packet(lwmac, lwmac->tx.packet);
                 /* drop pointer so it wont be free'd */

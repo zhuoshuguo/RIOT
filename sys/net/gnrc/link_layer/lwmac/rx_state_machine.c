@@ -130,7 +130,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
             /* No need to keep pkt anymore */
             gnrc_pktbuf_release(pkt);
 
-            if(!_addr_match(&lwmac->l2_addr, &info.dst_addr)) {
+            if(!(memcmp(&info.dst_addr.addr, &lwmac->netdev->l2_addr, lwmac->netdev->l2_addr_len) == 0)) {
                 LOG_DEBUG("Packet is WR but not for us\n");
                 continue;
             }
@@ -279,13 +279,13 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
                 continue;
             }
 
-            if(!_addr_match(&lwmac->rx.l2_addr, &info.src_addr)) {
+            if(!(memcmp(&info.src_addr.addr, &lwmac->rx.l2_addr.addr, lwmac->rx.l2_addr.len) == 0)) {
                 LOG_DEBUG("Packet is not from destination\n");
                 gnrc_pktbuf_release(pkt);
                 continue;
             }
 
-            if(!_addr_match(&lwmac->l2_addr, &info.dst_addr)) {
+            if(!(memcmp(&info.dst_addr.addr, &lwmac->netdev->l2_addr, lwmac->netdev->l2_addr_len) == 0)) {
                 LOG_DEBUG("Packet is not for us\n");
                 gnrc_pktbuf_release(pkt);
                 continue;

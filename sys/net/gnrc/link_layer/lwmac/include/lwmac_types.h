@@ -171,7 +171,7 @@ typedef struct lwmac {
     /* Track if a transmission might have corrupted a received packet */
     //bool rx_started;
     /* Own address */
-    l2_addr_t l2_addr;
+    //l2_addr_t l2_addr;
     lwmac_rx_t rx;
     lwmac_tx_t tx;
 
@@ -191,7 +191,6 @@ typedef struct lwmac {
 /* netdev */                NULL, \
 /* netdev2_driver */		NULL, \
 /* state */                 UNDEF, \
-/* l2_addr */               LWMAC_L2_ADDR_INIT, \
 /* rx */                    LWMAC_RX_INIT, \
 /* tx */                    LWMAC_TX_INIT, \
 /* timeouts */              { LWMAC_TIMEOUT_INIT }, \

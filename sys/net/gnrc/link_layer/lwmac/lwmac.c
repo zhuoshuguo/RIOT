@@ -571,12 +571,13 @@ static void *_lwmac_thread(void *args)
     dev->driver->set(dev, NETOPT_SRC_LEN, &src_len, sizeof(src_len));
 
     /* Get own address from netdev */
-    lwmac.l2_addr.len = dev->driver->get(dev, NETOPT_ADDRESS_LONG, &lwmac.l2_addr.addr, sizeof(lwmac.l2_addr.addr));
-    assert(lwmac.l2_addr.len > 0);
+    //lwmac.l2_addr.len = dev->driver->get(dev, NETOPT_ADDRESS_LONG, &lwmac.l2_addr.addr, sizeof(lwmac.l2_addr.addr));
+    gnrc_netdev2->l2_addr_len = dev->driver->get(dev, NETOPT_ADDRESS_LONG, &gnrc_netdev2->l2_addr, IEEE802154_LONG_ADDRESS_LEN);
+    assert(gnrc_netdev2->l2_addr_len > 0);
 
     /* Initialize broadcast sequence number. This at least differs from board
      * to board */
-    lwmac.tx.bcast_seqnr = lwmac.l2_addr.addr[0];
+    lwmac.tx.bcast_seqnr = gnrc_netdev2->l2_addr[0];
 
     /* Initialize receive packet queue */
     packet_queue_init(&lwmac.rx.queue,
