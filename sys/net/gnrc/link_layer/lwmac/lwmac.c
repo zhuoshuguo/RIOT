@@ -32,7 +32,6 @@
 #include <net/netdev2.h>
 #include <net/gnrc/netdev2.h>
 #include <net/gnrc/lwmac/lwmac.h>
-#include <net/gnrc/lwmac/packet_queue.h>
 #include <net/gnrc/lwmac/types.h>
 #include <net/gnrc/mac/internal.h>
 

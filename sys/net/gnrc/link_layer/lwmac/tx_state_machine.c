@@ -19,14 +19,12 @@
 #include <periph/rtt.h>
 #include <net/gnrc.h>
 #include <net/gnrc/lwmac/lwmac.h>
-#include <net/gnrc/lwmac/packet_queue.h>
 #include <random.h>
 
 #include <net/gnrc/mac/internal.h>
 #include <net/gnrc/lwmac/timeout.h>
 #include "include/tx_state_machine.h"
 #include "include/lwmac_internal.h"
-#include "include/lwmac_types.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
