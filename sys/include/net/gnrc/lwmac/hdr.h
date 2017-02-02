@@ -22,7 +22,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <net/gnrc/lwmac/lwmac.h>
+//#include <net/gnrc/lwmac/lwmac.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,7 +31,7 @@ extern "C" {
 /******************************************************************************/
 
 typedef struct {
-    uint8_t  addr[LWMAC_MAX_L2_ADDR_LEN];// __attribute__ ((aligned (LWMAC_MAX_L2_ADDR_LEN)));
+    uint8_t  addr[IEEE802154_LONG_ADDRESS_LEN];// __attribute__ ((aligned (LWMAC_MAX_L2_ADDR_LEN)));
     uint8_t  len;
 } l2_addr_t;
 #define LWMAC_L2_ADDR_INIT      { {0}, 0 }

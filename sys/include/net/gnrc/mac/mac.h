@@ -56,6 +56,10 @@ extern "C" {
 #define GNRC_MAC_TX_QUEUE_SIZE             (8U)
 #endif
 
+#ifndef LWMAC_TIMEOUT_COUNT
+#define LWMAC_TIMEOUT_COUNT             (3U)
+#endif
+
 #ifdef __cplusplus
 }
 #endif

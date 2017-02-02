@@ -19,9 +19,10 @@
 #include <net/gnrc.h>
 #include <net/gnrc/lwmac/lwmac.h>
 #include <net/gnrc/lwmac/packet_queue.h>
+#include <net/gnrc/mac/internal.h>
 
 #include "include/rx_state_machine.h"
-#include "include/timeout.h"
+#include <net/gnrc/lwmac/timeout.h>
 #include "include/lwmac_internal.h"
 #include "include/lwmac_types.h"
 
@@ -42,53 +43,53 @@
 #define LOG_DEBUG(...) LOG(LOG_DEBUG, "[lwmac-rx] " __VA_ARGS__)
 
 /* Break out of switch and mark the need for rescheduling */
-#define GOTO_RX_STATE(rx_state, do_resched) lwmac->rx.state = rx_state; \
+#define GOTO_RX_STATE(rx_state, do_resched) gnrc_netdev2->rx.state = rx_state; \
                                 reschedule = do_resched; \
                                 break
 
 /******************************************************************************/
 
-void lwmac_rx_start(lwmac_t* lwmac)
+void lwmac_rx_start(gnrc_netdev2_t* gnrc_netdev2)
 {
-    if(lwmac == NULL)
+    if(gnrc_netdev2 == NULL)
         return;
 
     /* RX address should have been reset, probably not stopped then */
-    assert(lwmac->rx.l2_addr.len == 0);
+    assert(gnrc_netdev2->rx.l2_addr.len == 0);
 
     /* Don't attempt to send a WA if channel is busy to get timings right */
     netopt_enable_t csma_disable = NETOPT_DISABLE;
-	lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
+    gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
 
-    lwmac->rx.state = RX_STATE_INIT;
+    gnrc_netdev2->rx.state = RX_STATE_INIT;
 }
 
 /******************************************************************************/
 
-void lwmac_rx_stop(lwmac_t* lwmac)
+void lwmac_rx_stop(gnrc_netdev2_t* gnrc_netdev2)
 {
-    if(!lwmac)
+    if(!gnrc_netdev2)
         return;
 
-    lwmac_clear_timeout(lwmac, TIMEOUT_DATA);
-    lwmac->rx.state = RX_STATE_STOPPED;
-    lwmac->rx.l2_addr.len = 0;
+    lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_DATA);
+    gnrc_netdev2->rx.state = RX_STATE_STOPPED;
+    gnrc_netdev2->rx.l2_addr.len = 0;
 }
 
 /******************************************************************************/
 
 /* Returns whether rescheduling is needed or not */
-static bool _lwmac_rx_update(lwmac_t* lwmac)
+static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 {
     bool reschedule = false;
 
-    if(!lwmac)
+    if(!gnrc_netdev2)
         return reschedule;
 
-    switch(lwmac->rx.state)
+    switch(gnrc_netdev2->rx.state)
     {
     case RX_STATE_INIT:
-        lwmac_clear_timeout(lwmac, TIMEOUT_DATA);
+        lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_DATA);
         GOTO_RX_STATE(RX_STATE_WAIT_FOR_WR, true);
 
     case RX_STATE_WAIT_FOR_WR:
@@ -98,7 +99,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
         gnrc_pktsnip_t* pkt;
         bool found_wr = false;
 
-        while( (pkt = packet_queue_pop(&lwmac->rx.queue)) != NULL ) {
+        while( (pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev2->rx.queue)) != NULL ) {
             LOG_DEBUG("Inspecting pkt @ %p\n", pkt);
 
             /* Parse packet */
@@ -112,7 +113,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
             }
 
             if(info.header->type == FRAMETYPE_BROADCAST) {
-                _dispatch_defer(lwmac->rx.dispatch_buffer, pkt);
+                _dispatch_defer(gnrc_netdev2->rx.dispatch_buffer, pkt);
                 continue;
             }
 
@@ -130,13 +131,13 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
             /* No need to keep pkt anymore */
             gnrc_pktbuf_release(pkt);
 
-            if(!(memcmp(&info.dst_addr.addr, &lwmac->netdev->l2_addr, lwmac->netdev->l2_addr_len) == 0)) {
+            if(!(memcmp(&info.dst_addr.addr, &gnrc_netdev2->l2_addr, gnrc_netdev2->l2_addr_len) == 0)) {
                 LOG_DEBUG("Packet is WR but not for us\n");
                 continue;
             }
 
             /* Save source address for later addressing */
-            lwmac->rx.l2_addr = info.src_addr;
+            gnrc_netdev2->rx.l2_addr = info.src_addr;
 
             found_wr = true;
             break;
@@ -148,7 +149,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
         }
 
         // TODO: don't flush queue
-        packet_queue_flush(&lwmac->rx.queue);
+        gnrc_priority_pktqueue_flush(&gnrc_netdev2->rx.queue);
 
         GOTO_RX_STATE(RX_STATE_SEND_WA, true);
     }
@@ -160,18 +161,18 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
         gnrc_pktsnip_t* pkt_lwmac;
         gnrc_netif_hdr_t* nethdr_wa;
 
-        assert(lwmac->rx.l2_addr.len != 0);
+        assert(gnrc_netdev2->rx.l2_addr.len != 0);
 
         /* if found ongoing transmission,
          * quit sending WA for collision avoidance. */
-        if(_get_netdev_state(lwmac) == NETOPT_STATE_RX){
+        if(_get_netdev_state(gnrc_netdev2) == NETOPT_STATE_RX){
             GOTO_RX_STATE(RX_STATE_FAILED, true);
         }
 
         /* Assemble WA packet */
         lwmac_frame_wa_t lwmac_hdr;
         lwmac_hdr.header.type = FRAMETYPE_WA;
-        lwmac_hdr.dst_addr = lwmac->rx.l2_addr;
+        lwmac_hdr.dst_addr = gnrc_netdev2->rx.l2_addr;
         lwmac_hdr.current_phase = _phase_now();
 
         pkt = gnrc_pktbuf_add(NULL, &lwmac_hdr, sizeof(lwmac_hdr), GNRC_NETTYPE_LWMAC);
@@ -181,7 +182,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
         }
         pkt_lwmac = pkt;
 
-        pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t) + lwmac->rx.l2_addr.len, GNRC_NETTYPE_NETIF);
+        pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t) + gnrc_netdev2->rx.l2_addr.len, GNRC_NETTYPE_NETIF);
         if(pkt == NULL) {
             LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_NETIF\n");
             gnrc_pktbuf_release(pkt_lwmac);
@@ -193,14 +194,14 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
         nethdr_wa = (gnrc_netif_hdr_t*) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
 
         /* Construct NETIF header and insert address for WA packet */
-        gnrc_netif_hdr_init(nethdr_wa, 0, lwmac->rx.l2_addr.len);
+        gnrc_netif_hdr_init(nethdr_wa, 0, gnrc_netdev2->rx.l2_addr.len);
 
         /* Send WA as broadcast*/
         nethdr_wa->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
 
         /* Disable Auto ACK */
         netopt_enable_t autoack = NETOPT_DISABLE;
-		lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
+        gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
 
         /* We might have taken too long to answer the WR so we're receiving the
          * next one already. Don't send WA yet and go back to WR reception.
@@ -216,7 +217,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
 //        }
 
         /* Send WA */
-		int res = lwmac->netdev->send(lwmac->netdev, pkt);
+		int res = gnrc_netdev2->send(gnrc_netdev2, pkt);
 		if(res < 0){
             LOG_ERROR("Send WA failed.");
             if(pkt != NULL){
@@ -224,11 +225,11 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
             }
             GOTO_RX_STATE(RX_STATE_FAILED, true);
         }
-        _set_netdev_state(lwmac, NETOPT_STATE_TX);
+        _set_netdev_state(gnrc_netdev2, NETOPT_STATE_TX);
 
         /* Enable Auto ACK again for data reception */
         autoack = NETOPT_ENABLE;
-		lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
+        gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
 
         GOTO_RX_STATE(RX_STATE_WAIT_WA_SENT, false);
     }
@@ -236,7 +237,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
     {
         LOG_DEBUG("RX_STATE_WAIT_WA_SENT\n");
 
-        if(gnrc_netdev2_get_tx_feedback(lwmac->netdev) == TX_FEEDBACK_UNDEF) {
+        if(gnrc_netdev2_get_tx_feedback(gnrc_netdev2) == TX_FEEDBACK_UNDEF) {
             LOG_DEBUG("WA not yet completely sent\n");
             break;
         }
@@ -249,7 +250,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
 //        }
 
         /* Set timeout for expected data arrival */
-        lwmac_set_timeout(lwmac, TIMEOUT_DATA, LWMAC_DATA_DELAY_US);
+        lwmac_set_timeout(&gnrc_netdev2->lwmac, TIMEOUT_DATA, LWMAC_DATA_DELAY_US);
 
         GOTO_RX_STATE(RX_STATE_WAIT_FOR_DATA, false);
     }
@@ -261,7 +262,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
         bool found_data = false;
         bool found_wr = false;
 
-        while( (pkt = packet_queue_pop(&lwmac->rx.queue)) != NULL ) {
+        while( (pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev2->rx.queue)) != NULL ) {
             LOG_DEBUG("Inspecting pkt @ %p\n", pkt);
 
             /* Parse packet */
@@ -275,17 +276,17 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
             }
 
             if(info.header->type == FRAMETYPE_BROADCAST) {
-                _dispatch_defer(lwmac->rx.dispatch_buffer, pkt);
+                _dispatch_defer(gnrc_netdev2->rx.dispatch_buffer, pkt);
                 continue;
             }
 
-            if(!(memcmp(&info.src_addr.addr, &lwmac->rx.l2_addr.addr, lwmac->rx.l2_addr.len) == 0)) {
+            if(!(memcmp(&info.src_addr.addr, &gnrc_netdev2->rx.l2_addr.addr, gnrc_netdev2->rx.l2_addr.len) == 0)) {
                 LOG_DEBUG("Packet is not from destination\n");
                 gnrc_pktbuf_release(pkt);
                 continue;
             }
 
-            if(!(memcmp(&info.dst_addr.addr, &lwmac->netdev->l2_addr, lwmac->netdev->l2_addr_len) == 0)) {
+            if(!(memcmp(&info.dst_addr.addr, &gnrc_netdev2->l2_addr, gnrc_netdev2->l2_addr_len) == 0)) {
                 LOG_DEBUG("Packet is not for us\n");
                 gnrc_pktbuf_release(pkt);
                 continue;
@@ -294,14 +295,14 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
             /* Sender maybe didn't get the WA */
             if(info.header->type == FRAMETYPE_WR) {
                 LOG_INFO("Found a WR while waiting for DATA\n");
-                lwmac_clear_timeout(lwmac, TIMEOUT_DATA);
+                lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_DATA);
                 found_wr = true;
                 break;
             }
 
             if(info.header->type == FRAMETYPE_DATA) {
                 LOG_DEBUG("Found DATA!\n");
-                lwmac_clear_timeout(lwmac, TIMEOUT_DATA);
+                lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_DATA);
                 found_data = true;
                 break;
             }
@@ -316,7 +317,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
         if(found_wr) {
             LOG_INFO("WA probably got lost, reset RX state machine\n");
             /* Push WR back to rx queue */
-            packet_queue_push(&lwmac->rx.queue, pkt, 0);
+            gnrc_mac_queue_rx_packet(&gnrc_netdev2->rx, 0, pkt);
             /* Start over again */
             GOTO_RX_STATE(RX_STATE_INIT, true);
         }
@@ -328,8 +329,8 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
          * TODO: Checking for expiration only works once and clears the timeout.
          *       If this is a false positive (other packet than DATA), we're
          *       stuck. */
-        if((lwmac_timeout_is_expired(lwmac, TIMEOUT_DATA)) &&
-            (!gnrc_netdev2_get_rx_started(lwmac->netdev))) {
+        if((lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_DATA)) &&
+            (!gnrc_netdev2_get_rx_started(gnrc_netdev2))) {
             LOG_INFO("DATA timed out\n");
             gnrc_pktbuf_release(pkt);
             GOTO_RX_STATE(RX_STATE_FAILED, true);
@@ -340,7 +341,7 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
             break;
         }
 
-        _dispatch_defer(lwmac->rx.dispatch_buffer, pkt);
+        _dispatch_defer(gnrc_netdev2->rx.dispatch_buffer, pkt);
 
         GOTO_RX_STATE(RX_STATE_SUCCESSFUL, true);
     }
@@ -356,10 +357,10 @@ static bool _lwmac_rx_update(lwmac_t* lwmac)
 
 /******************************************************************************/
 
-void lwmac_rx_update(lwmac_t* lwmac)
+void lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 {
     /* Update until no rescheduling needed */
-    while(_lwmac_rx_update(lwmac));
+    while(_lwmac_rx_update(gnrc_netdev2));
 }
 
 /******************************************************************************/

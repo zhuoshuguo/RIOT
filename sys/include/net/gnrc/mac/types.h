@@ -28,6 +28,7 @@
 #include <net/gnrc/priority_pktqueue.h>
 #include <net/ieee802154.h>
 #include <net/gnrc/mac/mac.h>
+#include <net/gnrc/lwmac/types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -65,6 +66,12 @@ typedef struct {
 #if (GNRC_MAC_DISPATCH_BUFFER_SIZE != 0) || defined(DOXYGEN)
     gnrc_pktsnip_t* dispatch_buffer[GNRC_MAC_DISPATCH_BUFFER_SIZE];      /**< dispatch packet buffer */
 #endif /* (GNRC_MAC_DISPATCH_BUFFER_SIZE != 0) || defined(DOXYGEN) */
+
+#ifdef MODULE_GNRC_LWMAC
+    l2_addr_t l2_addr;
+    /* Internal state of reception state machine */
+    lwmac_rx_state_t state;
+#endif
 } gnrc_mac_rx_t;
 
 /**
@@ -156,6 +163,19 @@ typedef struct {
     gnrc_priority_pktqueue_node_t _queue_nodes[GNRC_MAC_TX_QUEUE_SIZE]; /**< Shared buffer for TX queue nodes */
     gnrc_pktsnip_t* packet;                                             /**< currently scheduled packet for sending */
 #endif /* (GNRC_MAC_TX_QUEUE_SIZE != 0) || defined(DOXYGEN) */
+
+#ifdef MODULE_GNRC_LWMAC
+    /* Internal state of transmission state machine */
+    lwmac_tx_state_t state;
+
+    /* Count how many WRs were sent until WA received */
+    uint32_t wr_sent;
+
+    uint32_t timestamp;
+
+    /* Sequence number for broadcast data to filter at receiver */
+    uint8_t bcast_seqnr;
+#endif
 } gnrc_mac_tx_t;
 
 /**

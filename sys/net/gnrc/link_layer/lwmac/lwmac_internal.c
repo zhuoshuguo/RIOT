@@ -62,7 +62,7 @@ void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type)
 }
 
 /******************************************************************************/
-
+#if 0
 int _find_neighbour(lwmac_t* lwmac, uint8_t* dst_addr, int addr_len)
 {
     lwmac_tx_neighbour_t* neighbours = lwmac->tx.neighbours;
@@ -127,6 +127,7 @@ void _init_neighbour(lwmac_tx_neighbour_t* neighbour, uint8_t* addr, int len)
     neighbour->phase = LWMAC_PHASE_UNINITIALIZED;
     memcpy(&(neighbour->l2_addr.addr), addr, len);
 }
+#endif
 
 /******************************************************************************/
 
@@ -190,7 +191,7 @@ uint32_t _ticks_until_phase(uint32_t phase)
 /******************************************************************************/
 
 /* Find the neighbour that has a packet queued and is next for sending */
-lwmac_tx_neighbour_t* _next_tx_neighbour(lwmac_t* lwmac)
+gnrc_mac_tx_neighbor_t* _next_tx_neighbour(gnrc_netdev2_t* gnrc_netdev2)
 {
     int next = -1;
 
@@ -199,12 +200,12 @@ lwmac_tx_neighbour_t* _next_tx_neighbour(lwmac_t* lwmac)
 
     for(int i = 0; i < LWMAC_NEIGHBOUR_COUNT; i++) {
 
-        if(packet_queue_length(&(_get_neighbour(lwmac, i)->queue)) > 0) {
+        if(gnrc_priority_pktqueue_length(&(_get_neighbour(gnrc_netdev2, i)->queue)) > 0) {
 
             /* Unknown destinations are initialized with their phase at the end
              * of the local interval, so known destinations that still wakeup
              * in this interval will be preferred. */
-            phase_check = _ticks_until_phase(_get_neighbour(lwmac, i)->phase);
+            phase_check = _ticks_until_phase(_get_neighbour(gnrc_netdev2, i)->phase);
 
             if(phase_check <= phase_nearest) {
                 next = i;
@@ -214,14 +215,14 @@ lwmac_tx_neighbour_t* _next_tx_neighbour(lwmac_t* lwmac)
         }
     }
 
-    return (next < 0) ? NULL : &(lwmac->tx.neighbours[next]);
+    return (next < 0) ? NULL : &(gnrc_netdev2->tx.neighbors[next]);
 }
 
 /******************************************************************************/
 
-int _time_until_tx_us(lwmac_t* lwmac)
+int _time_until_tx_us(gnrc_netdev2_t* gnrc_netdev2)
 {
-    lwmac_tx_neighbour_t* neighbour = _next_tx_neighbour(lwmac);
+	gnrc_mac_tx_neighbor_t* neighbour = _next_tx_neighbour(gnrc_netdev2);
 
     if(neighbour == NULL) {
         return -1;
@@ -230,7 +231,7 @@ int _time_until_tx_us(lwmac_t* lwmac)
 }
 
 /******************************************************************************/
-
+#if 0
 bool _queue_tx_packet(lwmac_t* lwmac,  gnrc_pktsnip_t* pkt)
 {
 
@@ -301,6 +302,7 @@ bool _queue_tx_packet(lwmac_t* lwmac,  gnrc_pktsnip_t* pkt)
 
     return true;
 }
+#endif
 
 /******************************************************************************/
 
@@ -380,23 +382,23 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
 /******************************************************************************/
 
 // TODO: Don't use global variables
-void _set_netdev_state(lwmac_t* lwmac, netopt_state_t devstate)
+void _set_netdev_state(gnrc_netdev2_t* gnrc_netdev2, netopt_state_t devstate)
 {
-	lwmac->netdev2_driver->set(lwmac->netdev->dev,
-                               NETOPT_STATE,
-                               &devstate,
-                               sizeof(devstate));
+	gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev,
+                                   NETOPT_STATE,
+                                   &devstate,
+                                   sizeof(devstate));
 }
 
 /******************************************************************************/
 
-netopt_state_t _get_netdev_state(lwmac_t* lwmac)
+netopt_state_t _get_netdev_state(gnrc_netdev2_t* gnrc_netdev2)
 {
     netopt_state_t state;
-	if (0 < lwmac->netdev2_driver->get(lwmac->netdev->dev,
-                                       NETOPT_STATE,
-                                       &state,
-                                       sizeof(state))) {
+	if (0 < gnrc_netdev2->dev->driver->get(gnrc_netdev2->dev,
+                                           NETOPT_STATE,
+                                           &state,
+                                           sizeof(state))) {
         return state;
     }
     return -1;
