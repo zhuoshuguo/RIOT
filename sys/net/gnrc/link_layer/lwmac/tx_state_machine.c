@@ -22,8 +22,9 @@
 #include <net/gnrc/lwmac/packet_queue.h>
 #include <random.h>
 
+#include <net/gnrc/mac/internal.h>
+#include <net/gnrc/lwmac/timeout.h>
 #include "include/tx_state_machine.h"
-#include "include/timeout.h"
 #include "include/lwmac_internal.h"
 #include "include/lwmac_types.h"
 
@@ -44,146 +45,146 @@
 #define LOG_DEBUG(...) LOG(LOG_DEBUG, "[lwmac-tx] " __VA_ARGS__)
 
 /* Break out of switch and mark the need for rescheduling */
-#define GOTO_TX_STATE(tx_state, do_resched) lwmac->tx.state = tx_state; \
+#define GOTO_TX_STATE(tx_state, do_resched) gnrc_netdev2->tx.state = tx_state; \
                                 reschedule = do_resched; \
                                 break
 
 /******************************************************************************/
 
-void lwmac_tx_start(lwmac_t* lwmac, gnrc_pktsnip_t* pkt, lwmac_tx_neighbour_t* neighbour)
+void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2, gnrc_pktsnip_t* pkt, gnrc_mac_tx_neighbor_t* neighbour)
 {
-    assert(lwmac != NULL);
+    assert(gnrc_netdev2 != NULL);
     assert(pkt != NULL);
     assert(neighbour != NULL);
 
-    if(lwmac->tx.packet) {
+    if(gnrc_netdev2->tx.packet) {
         LOG_WARNING("Starting but tx.packet is still set\n");
-        gnrc_pktbuf_release(lwmac->tx.packet);
+        gnrc_pktbuf_release(gnrc_netdev2->tx.packet);
     }
 
-    lwmac->tx.packet = pkt;
-    lwmac->tx.current_neighbour = neighbour;
-    lwmac->tx.state = TX_STATE_INIT;
-    lwmac->tx.wr_sent = 0;
+    gnrc_netdev2->tx.packet = pkt;
+    gnrc_netdev2->tx.current_neighbor = neighbour;
+    gnrc_netdev2->tx.state = TX_STATE_INIT;
+    gnrc_netdev2->tx.wr_sent = 0;
 }
 
 /******************************************************************************/
 
-void lwmac_tx_stop(lwmac_t* lwmac)
+void lwmac_tx_stop(gnrc_netdev2_t* gnrc_netdev2)
 {
-    if(!lwmac)
+    if(!gnrc_netdev2)
         return;
 
-    lwmac_clear_timeout(lwmac, TIMEOUT_WR);
-    lwmac_clear_timeout(lwmac, TIMEOUT_NO_RESPONSE);
-    lwmac_clear_timeout(lwmac, TIMEOUT_NEXT_BROADCAST);
-    lwmac_clear_timeout(lwmac, TIMEOUT_BROADCAST_END);
-    lwmac->tx.state = TX_STATE_STOPPED;
+    lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WR);
+    lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_NO_RESPONSE);
+    lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_NEXT_BROADCAST);
+    lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_BROADCAST_END);
+    gnrc_netdev2->tx.state = TX_STATE_STOPPED;
 
     /* Release packet in case of failure */
-    if(lwmac->tx.packet) {
-        gnrc_pktbuf_release(lwmac->tx.packet);
-        lwmac->tx.packet = NULL;
+    if(gnrc_netdev2->tx.packet) {
+        gnrc_pktbuf_release(gnrc_netdev2->tx.packet);
+        gnrc_netdev2->tx.packet = NULL;
     }
-    lwmac->tx.current_neighbour = NULL;
+    gnrc_netdev2->tx.current_neighbor = NULL;
 }
 
 /******************************************************************************/
 
 /* Returns whether rescheduling is needed or not */
-static bool _lwmac_tx_update(lwmac_t* lwmac)
+static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 {
     bool reschedule = false;
 
-    if(!lwmac)
+    if(!gnrc_netdev2)
         return reschedule;
 
-    switch(lwmac->tx.state)
+    switch(gnrc_netdev2->tx.state)
     {
     case TX_STATE_INIT:
     {
-        lwmac_clear_timeout(lwmac, TIMEOUT_WR);
-        lwmac_clear_timeout(lwmac, TIMEOUT_NO_RESPONSE);
-        lwmac_clear_timeout(lwmac, TIMEOUT_NEXT_BROADCAST);
-        lwmac_clear_timeout(lwmac, TIMEOUT_BROADCAST_END);
+        lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WR);
+        lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_NO_RESPONSE);
+        lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_NEXT_BROADCAST);
+        lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_BROADCAST_END);
 
         /* if found ongoing transmission,
          * quit this cycle for collision avoidance. */
-        if(_get_netdev_state(lwmac) == NETOPT_STATE_RX){
-            _queue_tx_packet(lwmac, lwmac->tx.packet);
+        if(_get_netdev_state(gnrc_netdev2) == NETOPT_STATE_RX){
+        	gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
             /* drop pointer so it wont be free'd */
-            lwmac->tx.packet = NULL;
+        	gnrc_netdev2->tx.packet = NULL;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
-        if(_packet_is_broadcast(lwmac->tx.packet)) {
+        if(_packet_is_broadcast(gnrc_netdev2->tx.packet)) {
             /* Set CSMA retries as configured and enable */
             uint8_t csma_retries = LWMAC_BROADCAST_CSMA_RETRIES;
-			lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_CSMA_RETRIES,
+            gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA_RETRIES,
                                         &csma_retries, sizeof(csma_retries));
             netopt_enable_t csma_enable = NETOPT_ENABLE;
-			lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_CSMA, &csma_enable, sizeof(csma_enable));
+            gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA, &csma_enable, sizeof(csma_enable));
 
             GOTO_TX_STATE(TX_STATE_SEND_BROADCAST, true);
         } else {
             /* Use CSMA for the first WR */
             netopt_enable_t csma_disable = NETOPT_ENABLE;
-			lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
+            gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
 
             GOTO_TX_STATE(TX_STATE_SEND_WR, true);
         }
     }
     case TX_STATE_SEND_BROADCAST:
     {
-        gnrc_pktsnip_t* pkt = lwmac->tx.packet;
+        gnrc_pktsnip_t* pkt = gnrc_netdev2->tx.packet;
         bool first = false;
 
-        if(lwmac_timeout_is_running(lwmac, TIMEOUT_BROADCAST_END)) {
-            if(lwmac_timeout_is_expired(lwmac, TIMEOUT_BROADCAST_END)) {
-                lwmac_clear_timeout(lwmac, TIMEOUT_NEXT_BROADCAST);
+        if(lwmac_timeout_is_running(&gnrc_netdev2->lwmac, TIMEOUT_BROADCAST_END)) {
+            if(lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_BROADCAST_END)) {
+                lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_NEXT_BROADCAST);
                 gnrc_pktbuf_release(pkt);
-                lwmac->tx.packet = NULL;
+                gnrc_netdev2->tx.packet = NULL;
                 GOTO_TX_STATE(TX_STATE_SUCCESSFUL, true);
             }
         } else {
             LOG_INFO("Initialize broadcasting\n");
-            lwmac_set_timeout(lwmac, TIMEOUT_BROADCAST_END, LWMAC_BROADCAST_DURATION_US);
+            lwmac_set_timeout(&gnrc_netdev2->lwmac, TIMEOUT_BROADCAST_END, LWMAC_BROADCAST_DURATION_US);
 
             gnrc_pktsnip_t* pkt_payload;
 
             /* Prepare packet with LwMAC header*/
             lwmac_frame_broadcast_t hdr = {};
             hdr.header.type = FRAMETYPE_BROADCAST;
-            hdr.seq_nr = lwmac->tx.bcast_seqnr++;
+            hdr.seq_nr = gnrc_netdev2->tx.bcast_seqnr++;
 
             pkt_payload = pkt->next;
             pkt->next = gnrc_pktbuf_add(pkt->next, &hdr, sizeof(hdr), GNRC_NETTYPE_LWMAC);
             if(pkt->next == NULL) {
                 LOG_ERROR("Cannot allocate pktbuf of type FRAMETYPE_BROADCAST\n");
-                lwmac->tx.packet->next = pkt_payload;
+                gnrc_netdev2->tx.packet->next = pkt_payload;
                 GOTO_TX_STATE(TX_STATE_FAILED, true);
             }
 
             /* No Auto-ACK for broadcast packets */
             netopt_enable_t autoack = NETOPT_DISABLE;
-			lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
+            gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
 
             first = true;
         }
 
-        if( lwmac_timeout_is_expired(lwmac, TIMEOUT_NEXT_BROADCAST) ||
+        if( lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_NEXT_BROADCAST) ||
             first ) {
             /* Don't let the packet be released yet, we want to send it again */
             gnrc_pktbuf_hold(pkt, 1);
 
-            int res = lwmac->netdev->send(lwmac->netdev, pkt);
+            int res = gnrc_netdev2->send(gnrc_netdev2, pkt);
             if(res < 0){
                 LOG_ERROR("Send broadcast pkt failed.");
                 GOTO_TX_STATE(TX_STATE_FAILED, true);
             }
-            _set_netdev_state(lwmac, NETOPT_STATE_TX);
+            _set_netdev_state(gnrc_netdev2, NETOPT_STATE_TX);
 
-            lwmac_set_timeout(lwmac, TIMEOUT_NEXT_BROADCAST, LWMAC_TIME_BETWEEN_BROADCAST_US);
+            lwmac_set_timeout(&gnrc_netdev2->lwmac, TIMEOUT_NEXT_BROADCAST, LWMAC_TIME_BETWEEN_BROADCAST_US);
             LOG_INFO("Broadcast sent\n");
         }
 
@@ -205,10 +206,10 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
 
         /* if found ongoing transmission,
          * quit this cycle for collision avoidance. */
-        if(_get_netdev_state(lwmac) == NETOPT_STATE_RX) {
-            _queue_tx_packet(lwmac, lwmac->tx.packet);
+        if(_get_netdev_state(gnrc_netdev2) == NETOPT_STATE_RX) {
+        	gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
             /* drop pointer so it wont be free'd */
-            lwmac->tx.packet = NULL;
+        	gnrc_netdev2->tx.packet = NULL;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
@@ -222,7 +223,9 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
         /* Assemble WR */
         lwmac_frame_wr_t wr_hdr = {};
         wr_hdr.header.type = FRAMETYPE_WR;
-        wr_hdr.dst_addr = lwmac->tx.current_neighbour->l2_addr;
+        //wr_hdr.dst_addr = gnrc_netdev2->tx.current_neighbor->l2_addr;
+        memcpy(&(wr_hdr.dst_addr.addr), gnrc_netdev2->tx.current_neighbor->l2_addr, gnrc_netdev2->tx.current_neighbor->l2_addr_len);
+        wr_hdr.dst_addr.len = gnrc_netdev2->tx.current_neighbor->l2_addr_len;
 
         pkt = gnrc_pktbuf_add(NULL, &wr_hdr, sizeof(wr_hdr), GNRC_NETTYPE_LWMAC);
         if(pkt == NULL) {
@@ -253,11 +256,11 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
 
         /* Disable Auto ACK */
         netopt_enable_t autoack = NETOPT_DISABLE;
-		lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
+        gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
 
         /* Prepare WR, this will discard any frame in the transceiver that has
          * possibly arrived in the meantime but we don't care at this point. */
-        int res = lwmac->netdev->send(lwmac->netdev, pkt);
+        int res = gnrc_netdev2->send(gnrc_netdev2, pkt);
         if(res < 0){
             LOG_ERROR("Send WR failed.");
             if(pkt != NULL){
@@ -267,11 +270,11 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
         }
 
         /* First WR, try to catch wakeup phase */
-        if(lwmac->tx.wr_sent == 0) {
+        if(gnrc_netdev2->tx.wr_sent == 0) {
 
             /* Calculate wakeup time */
             uint32_t wait_until;
-            wait_until  = _phase_to_ticks(lwmac->tx.current_neighbour->phase);
+            wait_until  = _phase_to_ticks(gnrc_netdev2->tx.current_neighbor->phase);
             wait_until -= RTT_US_TO_TICKS(LWMAC_WR_BEFORE_PHASE_US);
 
             /* This output blocks a long time and can prevent correct timing */
@@ -285,10 +288,10 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
         }
 
         /* Trigger sending frame */
-        _set_netdev_state(lwmac, NETOPT_STATE_TX);
+        _set_netdev_state(gnrc_netdev2, NETOPT_STATE_TX);
 
         /* Flush RX queue, TODO: maybe find a way without loosing RX packets */
-        packet_queue_flush(&lwmac->rx.queue);
+        gnrc_priority_pktqueue_flush(&gnrc_netdev2->rx.queue);
 
         GOTO_TX_STATE(TX_STATE_WAIT_WR_SENT, false);
     }
@@ -296,26 +299,26 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
     {
         LOG_DEBUG("TX_STATE_WAIT_WR_SENT\n");
 
-        if(gnrc_netdev2_get_tx_feedback(lwmac->netdev) == TX_FEEDBACK_UNDEF) {
+        if(gnrc_netdev2_get_tx_feedback(gnrc_netdev2) == TX_FEEDBACK_UNDEF) {
             LOG_DEBUG("WR not yet completely sent\n");
             break;
         }
 
-        if(gnrc_netdev2_get_tx_feedback(lwmac->netdev) == TX_FEEDBACK_BUSY) {
-            _queue_tx_packet(lwmac, lwmac->tx.packet);
-            lwmac->tx.packet = NULL;
+        if(gnrc_netdev2_get_tx_feedback(gnrc_netdev2) == TX_FEEDBACK_BUSY) {
+        	gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
+        	gnrc_netdev2->tx.packet = NULL;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
             break;
         }
 
-        if(lwmac->tx.wr_sent == 0) {
-            lwmac_set_timeout(lwmac, TIMEOUT_NO_RESPONSE, LWMAC_PREAMBLE_DURATION_US);
+        if(gnrc_netdev2->tx.wr_sent == 0) {
+            lwmac_set_timeout(&gnrc_netdev2->lwmac, TIMEOUT_NO_RESPONSE, LWMAC_PREAMBLE_DURATION_US);
             /* Only the first WR use CSMA */
             netopt_enable_t csma_disable = NETOPT_DISABLE;
-            lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
+            gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
         }
 
-        lwmac->tx.wr_sent++;
+        gnrc_netdev2->tx.wr_sent++;
 
         /* This is not needed anymore, because WRs are sent without CSMA/CA */
 //        if(lwmac->tx_feedback == TX_FEEDBACK_BUSY) {
@@ -324,12 +327,12 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
 //        }
 
         /* Set timeout for next WR in case no WA will be received */
-        lwmac_set_timeout(lwmac, TIMEOUT_WR, LWMAC_TIME_BETWEEN_WR_US);
+        lwmac_set_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WR, LWMAC_TIME_BETWEEN_WR_US);
 
         /* Debug WR timing */
-        LOG_DEBUG("Destination phase was: %"PRIu32"\n", lwmac->tx.current_neighbour->phase);
-        LOG_DEBUG("Phase when sent was:   %"PRIu32"\n", _ticks_to_phase(lwmac->tx.timestamp));
-        LOG_DEBUG("Ticks when sent was:   %"PRIu32"\n", lwmac->tx.timestamp);
+        LOG_DEBUG("Destination phase was: %"PRIu32"\n", gnrc_netdev2->tx.current_neighbor->phase);
+        LOG_DEBUG("Phase when sent was:   %"PRIu32"\n", _ticks_to_phase(gnrc_netdev2->tx.timestamp));
+        LOG_DEBUG("Ticks when sent was:   %"PRIu32"\n", gnrc_netdev2->tx.timestamp);
 
         GOTO_TX_STATE(TX_STATE_WAIT_FOR_WA, false);
     }
@@ -342,21 +345,21 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
         bool postponed = false;
         bool from_expected_destination = false;
 
-        if(lwmac_timeout_is_expired(lwmac, TIMEOUT_NO_RESPONSE)) {
+        if(lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_NO_RESPONSE)) {
             LOG_DEBUG("No response from destination\n");
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
-        if(lwmac_timeout_is_expired(lwmac, TIMEOUT_WR)) {
+        if(lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_WR)) {
             GOTO_TX_STATE(TX_STATE_SEND_WR, true);
         }
 
-        if(_get_netdev_state(lwmac) == NETOPT_STATE_RX) {
+        if(_get_netdev_state(gnrc_netdev2) == NETOPT_STATE_RX) {
             LOG_WARNING("Wait for completion of frame reception\n");
             break;
         }
 
-        while( (pkt = packet_queue_pop(&lwmac->rx.queue)) != NULL )
+        while((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev2->rx.queue)) != NULL)
         {
             LOG_DEBUG("Inspecting pkt @ %p\n", pkt);
 
@@ -370,12 +373,12 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
                 continue;
             }
 
-            if(memcmp(&info.src_addr.addr, &lwmac->tx.current_neighbour->l2_addr.addr, lwmac->tx.current_neighbour->l2_addr.len) == 0) {
+            if(memcmp(&info.src_addr.addr, &gnrc_netdev2->tx.current_neighbor->l2_addr, gnrc_netdev2->tx.current_neighbor->l2_addr_len) == 0) {
                 from_expected_destination = true;
             }
 
             if(info.header->type == FRAMETYPE_BROADCAST) {
-                _dispatch_defer(lwmac->rx.dispatch_buffer, pkt);
+                _dispatch_defer(gnrc_netdev2->rx.dispatch_buffer, pkt);
                 /* Drop pointer to it can't get released */
                 pkt = NULL;
             }
@@ -383,11 +386,11 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
             /* Check if destination is talking to another node. It will sleep
              * after a finished transaction so there's no point in trying any
              * further now. */
-            if( !(memcmp(&info.dst_addr.addr, &lwmac->netdev->l2_addr, lwmac->netdev->l2_addr_len) == 0) &&
+            if( !(memcmp(&info.dst_addr.addr, &gnrc_netdev2->l2_addr, gnrc_netdev2->l2_addr_len) == 0) &&
                  from_expected_destination) {
-                _queue_tx_packet(lwmac, lwmac->tx.packet);
+                gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
                 /* drop pointer so it wont be free'd */
-                lwmac->tx.packet = NULL;
+                gnrc_netdev2->tx.packet = NULL;
                 postponed = true;
                 gnrc_pktbuf_release(pkt);
                 break;
@@ -400,9 +403,9 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
             /* if found anther node is also trying to send data,
              * quit this cycle for collision avoidance. */
             if(info.header->type == FRAMETYPE_WR){
-                _queue_tx_packet(lwmac, lwmac->tx.packet);
+            	gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
                 /* drop pointer so it wont be free'd */
-                lwmac->tx.packet = NULL;
+            	gnrc_netdev2->tx.packet = NULL;
                 postponed = true;
                 gnrc_pktbuf_release(pkt);
                 break;
@@ -415,14 +418,14 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
             }
 
             /* calculate the phase of the receiver based on WA */
-            lwmac->tx.timestamp = _phase_now();
+            gnrc_netdev2->tx.timestamp = _phase_now();
             lwmac_frame_wa_t* wa_hdr;
             wa_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_LWMAC);
-            if(lwmac->tx.timestamp >= wa_hdr->current_phase){
-                lwmac->tx.timestamp = lwmac->tx.timestamp - wa_hdr->current_phase;
+            if(gnrc_netdev2->tx.timestamp >= wa_hdr->current_phase){
+            	gnrc_netdev2->tx.timestamp = gnrc_netdev2->tx.timestamp - wa_hdr->current_phase;
             }else{
-                lwmac->tx.timestamp += RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US);
-                lwmac->tx.timestamp -= wa_hdr->current_phase;
+            	gnrc_netdev2->tx.timestamp += RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US);
+            	gnrc_netdev2->tx.timestamp -= wa_hdr->current_phase;
             }
 
             /* No need to keep pkt anymore */
@@ -434,8 +437,8 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
             }
 
             /* All checks passed so this must be a valid WA */
-            lwmac_clear_timeout(lwmac, TIMEOUT_WR);
-            lwmac_clear_timeout(lwmac, TIMEOUT_NO_RESPONSE);
+            lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WR);
+            lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_NO_RESPONSE);
             found_wa = true;
             break;
         }
@@ -451,11 +454,11 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
         }
 
         /* Save newly calculated phase for destination */
-        lwmac->tx.current_neighbour->phase = lwmac->tx.timestamp;
-        LOG_INFO("New phase: %"PRIu32"\n", lwmac->tx.timestamp);
+        gnrc_netdev2->tx.current_neighbor->phase = gnrc_netdev2->tx.timestamp;
+        LOG_INFO("New phase: %"PRIu32"\n", gnrc_netdev2->tx.timestamp);
 
         /* We've got our WA, so discard the rest, TODO: no flushing */
-        packet_queue_flush(&lwmac->rx.queue);
+        gnrc_priority_pktqueue_flush(&gnrc_netdev2->rx.queue);
 
         GOTO_TX_STATE(TX_STATE_SEND_DATA, true);
     }
@@ -463,20 +466,20 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
     {
         LOG_DEBUG("TX_STATE_SEND_DATA\n");
 
-        gnrc_pktsnip_t* pkt = lwmac->tx.packet;
+        gnrc_pktsnip_t* pkt = gnrc_netdev2->tx.packet;
         gnrc_pktsnip_t* pkt_payload;
 
         /* Enable Auto ACK again */
         netopt_enable_t autoack = NETOPT_ENABLE;
-		lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
+        gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
 
         /* It's okay to retry sending DATA. Timing doesn't matter anymore and
          * destination is waiting for a certain amount of time. */
         uint8_t csma_retries = LWMAC_DATA_CSMA_RETRIES;
-		lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_CSMA_RETRIES, &csma_retries, sizeof(csma_retries));
+        gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA_RETRIES, &csma_retries, sizeof(csma_retries));
 
         netopt_enable_t csma_enable = NETOPT_ENABLE;
-		lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_CSMA, &csma_enable, sizeof(csma_enable));
+        gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA, &csma_enable, sizeof(csma_enable));
 
         pkt_payload = pkt->next;
 
@@ -485,39 +488,39 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
         pkt->next = gnrc_pktbuf_add(pkt->next, &hdr, sizeof(hdr), GNRC_NETTYPE_LWMAC);
         if(pkt->next == NULL){
             LOG_ERROR("Cannot allocate pktbuf of type FRAMETYPE_DATA\n");
-            lwmac->tx.packet->next = pkt_payload;
+            gnrc_netdev2->tx.packet->next = pkt_payload;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
         /* Send data */
-        int res = lwmac->netdev->send(lwmac->netdev, pkt);
+        int res = gnrc_netdev2->send(gnrc_netdev2, pkt);
         if(res < 0){
             LOG_ERROR("Send data failed.");
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
-        _set_netdev_state(lwmac, NETOPT_STATE_TX);
+        _set_netdev_state(gnrc_netdev2, NETOPT_STATE_TX);
 
         /* Packet has been released by netdev, so drop pointer */
-        lwmac->tx.packet = NULL;
+        gnrc_netdev2->tx.packet = NULL;
 
         GOTO_TX_STATE(TX_STATE_WAIT_FEEDBACK, false);
     }
     case TX_STATE_WAIT_FEEDBACK:
     {
         LOG_DEBUG("TX_STATE_WAIT_FEEDBACK\n");
-        if(gnrc_netdev2_get_tx_feedback(lwmac->netdev) == TX_FEEDBACK_UNDEF) {
+        if(gnrc_netdev2_get_tx_feedback(gnrc_netdev2) == TX_FEEDBACK_UNDEF) {
             break;
-        } else if(gnrc_netdev2_get_tx_feedback(lwmac->netdev) == TX_FEEDBACK_SUCCESS) {
+        } else if(gnrc_netdev2_get_tx_feedback(gnrc_netdev2) == TX_FEEDBACK_SUCCESS) {
             GOTO_TX_STATE(TX_STATE_SUCCESSFUL, true);
-        } else if(gnrc_netdev2_get_tx_feedback(lwmac->netdev) == TX_FEEDBACK_NOACK) {
+        } else if(gnrc_netdev2_get_tx_feedback(gnrc_netdev2) == TX_FEEDBACK_NOACK) {
             LOG_ERROR("Not ACKED\n");
             GOTO_TX_STATE(TX_STATE_FAILED, true);
-        } else if(gnrc_netdev2_get_tx_feedback(lwmac->netdev) == TX_FEEDBACK_BUSY) {
+        } else if(gnrc_netdev2_get_tx_feedback(gnrc_netdev2) == TX_FEEDBACK_BUSY) {
             LOG_ERROR("Channel busy \n");
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
-        LOG_ERROR("Tx feedback unhandled: %i\n", gnrc_netdev2_get_tx_feedback(lwmac->netdev));
+        LOG_ERROR("Tx feedback unhandled: %i\n", gnrc_netdev2_get_tx_feedback(gnrc_netdev2));
         GOTO_TX_STATE(TX_STATE_FAILED, true);
     }
     case TX_STATE_SUCCESSFUL:
@@ -532,10 +535,10 @@ static bool _lwmac_tx_update(lwmac_t* lwmac)
 
 /******************************************************************************/
 
-void lwmac_tx_update(lwmac_t* lwmac)
+void lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 {
     /* Update until no rescheduling needed */
-    while(_lwmac_tx_update(lwmac));
+    while(_lwmac_tx_update(gnrc_netdev2));
 }
 
 /******************************************************************************/

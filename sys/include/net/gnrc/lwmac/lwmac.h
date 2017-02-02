@@ -25,6 +25,9 @@
 #include <kernel_types.h>
 #include <net/gnrc/netdev2.h>
 
+/* Foward declaration */
+typedef struct gnrc_netdev2 gnrc_netdev2_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

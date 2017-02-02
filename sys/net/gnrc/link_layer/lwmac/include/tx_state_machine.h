@@ -20,17 +20,18 @@
 #define LWMAC_TX_STATE_MACHINE_H_
 
 #include "net/gnrc/pkt.h"
-#include "lwmac_types.h"
+#include <net/gnrc/netdev2.h>
+#include "net/gnrc/mac/types.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void lwmac_tx_start(lwmac_t* lwmac, gnrc_pktsnip_t* pkt, lwmac_tx_neighbour_t* neighbour);
+void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2, gnrc_pktsnip_t* pkt, gnrc_mac_tx_neighbor_t* neighbour);
 
-void lwmac_tx_stop(lwmac_t* lwmac);
+void lwmac_tx_stop(gnrc_netdev2_t* gnrc_netdev2);
 
-void lwmac_tx_update(lwmac_t* lwmac);
+void lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2);
 
 #ifdef __cplusplus
 }

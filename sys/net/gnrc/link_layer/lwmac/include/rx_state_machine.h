@@ -20,17 +20,17 @@
 #define LWMAC_RX_STATE_MACHINE_H_
 
 #include "net/gnrc/pkt.h"
-#include "lwmac_types.h"
+#include <net/gnrc/netdev2.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void lwmac_rx_start(lwmac_t* lwmac);
+void lwmac_rx_start(gnrc_netdev2_t* gnrc_netdev2);
 
-void lwmac_rx_stop(lwmac_t* lwmac);
+void lwmac_rx_stop(gnrc_netdev2_t* gnrc_netdev2);
 
-void lwmac_rx_update(lwmac_t* lwmac);
+void lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2);
 
 #ifdef __cplusplus
 }

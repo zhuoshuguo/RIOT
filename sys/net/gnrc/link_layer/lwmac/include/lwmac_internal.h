@@ -23,7 +23,7 @@
 
 #include <stdint.h>
 #include "periph/rtt.h"
-#include "lwmac_types.h"
+#include "net/gnrc/mac/types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -84,14 +84,14 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info);
  *
  * @return                      state of netdev
  */
-netopt_state_t _get_netdev_state(lwmac_t* lwmac);
+netopt_state_t _get_netdev_state(gnrc_netdev2_t* gnrc_netdev2);
 
 /* @brief Shortcut to set the state of netdev
  *
  * @param[in]   lwmac           lwmac state that stores netdev pointer
  * @param[in]   devstate        new state for netdev
  */
-void _set_netdev_state(lwmac_t* lwmac, netopt_state_t devstate);
+void _set_netdev_state(gnrc_netdev2_t* gnrc_netdev2, netopt_state_t devstate);
 
 /* @brief Check if packet is broadcast
  *
@@ -108,11 +108,11 @@ static inline bool _packet_is_broadcast(gnrc_pktsnip_t* pkt)
 int _find_neighbour(lwmac_t* lwmac, uint8_t* dst_addr, int addr_len);
 int _free_neighbour(lwmac_t* lwmac);
 int _alloc_neighbour(lwmac_t* lwmac);
-void _init_neighbour(lwmac_tx_neighbour_t* neighbour, uint8_t* addr, int len);
+void _init_neighbour(gnrc_mac_tx_neighbor_t* neighbour, uint8_t* addr, int len);
 
-static inline lwmac_tx_neighbour_t* _get_neighbour(lwmac_t* lwmac, unsigned int id)
+static inline gnrc_mac_tx_neighbor_t* _get_neighbour(gnrc_netdev2_t* gnrc_netdev2, unsigned int id)
 {
-    return &(lwmac->tx.neighbours[id]);
+    return &(gnrc_netdev2->tx.neighbors[id]);
 }
 
 /* RTT phase calculation */
@@ -121,9 +121,9 @@ uint32_t _phase_to_ticks(uint32_t phase);
 uint32_t _phase_now(void);
 uint32_t _ticks_until_phase(uint32_t phase);
 
-lwmac_tx_neighbour_t* _next_tx_neighbour(lwmac_t* lwmac);
-int _time_until_tx_us(lwmac_t* lwmac);
-bool _queue_tx_packet(lwmac_t* lwmac,  gnrc_pktsnip_t* pkt);
+gnrc_mac_tx_neighbor_t* _next_tx_neighbour(gnrc_netdev2_t* gnrc_netdev2);
+int _time_until_tx_us(gnrc_netdev2_t* gnrc_netdev2);
+bool _queue_tx_packet(gnrc_netdev2_t* gnrc_netdev2,  gnrc_pktsnip_t* pkt);
 uint32_t _next_inphase_event(uint32_t last, uint32_t interval);
 
 int _dispatch_defer(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt);
