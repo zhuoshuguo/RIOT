@@ -31,67 +31,12 @@
 #include <net/gnrc/lwmac/lwmac.h>
 #include <net/gnrc/lwmac/hdr.h>
 #include <net/gnrc/lwmac/packet_queue.h>
-#include "timeout.h"
+#include <net/gnrc/lwmac/timeout.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/******************************************************************************/
-
-#define LWMAC_EVENT_RTT_TYPE            (0x4300)
-#define LWMAC_EVENT_RTT_START           (0x4301)
-#define LWMAC_EVENT_RTT_STOP            (0x4302)
-#define LWMAC_EVENT_RTT_PAUSE           (0x4303)
-#define LWMAC_EVENT_RTT_RESUME          (0x4304)
-#define LWMAC_EVENT_RTT_WAKEUP_PENDING  (0x4305)
-#define LWMAC_EVENT_RTT_SLEEP_PENDING   (0x4306)
-#define LWMAC_EVENT_TIMEOUT_TYPE        (0x4400)
-
-/******************************************************************************/
-
-typedef enum {
-    UNDEF = -1,
-    STOPPED,
-    START,
-    STOP,
-    RESET,
-    LISTENING,
-    RECEIVING,      /* RX is handled in own state machine */
-    TRANSMITTING,   /* TX is handled in own state machine */
-    SLEEPING,
-    STATE_COUNT
-} lwmac_state_t;
-
-/******************************************************************************/
-
-typedef enum {
-    TX_STATE_STOPPED = 0,
-    TX_STATE_INIT,          /**< Initiate transmission */
-    TX_STATE_SEND_BROADCAST,/**< directly goes to SUCCESSFUL or FAILED when finished */
-    TX_STATE_SEND_WR,       /**< Send a wakeup request */
-    TX_STATE_WAIT_WR_SENT,  /**< Wait until WR sent to set timeout */
-    TX_STATE_WAIT_FOR_WA,   /**< Wait for dest node's wakeup ackknowledge */
-    TX_STATE_SEND_DATA,     /**< Send the actual payload data */
-    TX_STATE_WAIT_FEEDBACK, /**< Wait if packet was ACKed */
-    TX_STATE_SUCCESSFUL,    /**< Transmission has finished successfully */
-    TX_STATE_FAILED         /**< Payload data couldn't be delivered to dest */
-} lwmac_tx_state_t;
-#define LWMAC_TX_STATE_INIT TX_STATE_STOPPED
-
-/******************************************************************************/
-
-typedef enum {
-    RX_STATE_STOPPED = 0,
-    RX_STATE_INIT,          /**< Initiate reception */
-    RX_STATE_WAIT_FOR_WR,   /**< Wait for a wakeup request */
-    RX_STATE_SEND_WA,       /**< Send wakeup ackknowledge to requesting node */
-    RX_STATE_WAIT_WA_SENT,  /**< Wait until WA sent to set timeout */
-    RX_STATE_WAIT_FOR_DATA, /**< Wait for actual payload data */
-    RX_STATE_SUCCESSFUL,    /**< Recption has finished successfully */
-    RX_STATE_FAILED         /**< Reception over, but nothing received */
-} lwmac_rx_state_t;
-#define LWMAC_RX_STATE_INIT RX_STATE_STOPPED
 
 /******************************************************************************/
 
