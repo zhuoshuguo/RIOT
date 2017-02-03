@@ -27,24 +27,6 @@
 #include "debug.h"
 
 /******************************************************************************/
-
-int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[])
-{
-    int res;
-    gnrc_netif_hdr_t* netif_hdr;
-
-    if(!pkt)
-        return -ENODEV;
-
-    netif_hdr = (gnrc_netif_hdr_t*) pkt->data;
-    if( (res = netif_hdr->dst_l2addr_len) <= 0)
-        return -ENOENT;
-
-    *pointer_to_addr = gnrc_netif_hdr_get_dst_addr(netif_hdr);
-    return res;
-}
-
-/******************************************************************************/
 /* TODO: maybe static inline */
 uint32_t _ticks_to_phase(uint32_t ticks)
 {

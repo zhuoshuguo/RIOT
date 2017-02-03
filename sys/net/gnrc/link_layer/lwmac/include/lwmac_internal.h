@@ -44,15 +44,6 @@ typedef struct {
  */
 #define LWMAC_RTT_EVENT_MARGIN_TICKS    ( RTT_MS_TO_TICKS(2) )
 
-/* @brief Extract the destination address out of an GNRC_NETTYPE_NETIF pktsnip
- *
- * @param[in]   pkt                 pktsnip from whom to extract
- * @param[out]  pointer_to_addr     pointer to address will be stored here
- *
- * @return                          length of destination address
- */
-int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[]);
-
 /* @brief Parse an incoming packet and extract important information
  *
  * Copies addresses into @p info, but header points inside @p pkt.
@@ -94,7 +85,6 @@ uint32_t _next_inphase_event(uint32_t last, uint32_t interval);
 int _dispatch_defer(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt);
 
 void _dispatch(gnrc_pktsnip_t* buffer[]);
-
 
 #ifdef __cplusplus
 }
