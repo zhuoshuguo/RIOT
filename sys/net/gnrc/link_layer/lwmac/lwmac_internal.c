@@ -198,12 +198,12 @@ gnrc_mac_tx_neighbor_t* _next_tx_neighbour(gnrc_netdev2_t* gnrc_netdev2)
 
     for(int i = 0; i < LWMAC_NEIGHBOUR_COUNT; i++) {
 
-        if(gnrc_priority_pktqueue_length(&(_get_neighbour(gnrc_netdev2, i)->queue)) > 0) {
+        if(gnrc_priority_pktqueue_length(&gnrc_netdev2->tx.neighbors[i].queue) > 0) {
 
             /* Unknown destinations are initialized with their phase at the end
              * of the local interval, so known destinations that still wakeup
              * in this interval will be preferred. */
-            phase_check = _ticks_until_phase(_get_neighbour(gnrc_netdev2, i)->phase);
+            phase_check = _ticks_until_phase(gnrc_netdev2->tx.neighbors[i].phase);
 
             if(phase_check <= phase_nearest) {
                 next = i;

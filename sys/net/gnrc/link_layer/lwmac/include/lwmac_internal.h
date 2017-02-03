@@ -104,17 +104,6 @@ static inline bool _packet_is_broadcast(gnrc_pktsnip_t* pkt)
                               (netif_hdr->flags & (GNRC_NETIF_HDR_FLAGS_BROADCAST | GNRC_NETIF_HDR_FLAGS_MULTICAST)) );
 }
 
-/* TX queue handling */
-int _find_neighbour(lwmac_t* lwmac, uint8_t* dst_addr, int addr_len);
-int _free_neighbour(lwmac_t* lwmac);
-int _alloc_neighbour(lwmac_t* lwmac);
-void _init_neighbour(gnrc_mac_tx_neighbor_t* neighbour, uint8_t* addr, int len);
-
-static inline gnrc_mac_tx_neighbor_t* _get_neighbour(gnrc_netdev2_t* gnrc_netdev2, unsigned int id)
-{
-    return &(gnrc_netdev2->tx.neighbors[id]);
-}
-
 /* RTT phase calculation */
 uint32_t _ticks_to_phase(uint32_t ticks);
 uint32_t _phase_to_ticks(uint32_t phase);

@@ -722,7 +722,7 @@ static void *_lwmac_thread(void *args)
 }
 
 kernel_pid_t gnrc_lwmac_init(char *stack, int stacksize, char priority,
-						const char *name, gnrc_netdev2_t *dev)
+                             const char *name, gnrc_netdev2_t *dev)
 {
     kernel_pid_t res;
 
