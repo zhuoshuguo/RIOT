@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2015 Daniel Krebs
+ *               2016 INRIA
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -7,12 +8,14 @@
  */
 
 /**
- * @{
  * @ingroup     net_lwmac
+ * @{
+ *
  * @file
- * @brief       Implementation of TX state machine
+ * @brief       Implementation of TX state machine of LWMAC protocol
  *
  * @author      Daniel Krebs <github@daniel-krebs.net>
+ * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  * @}
  */
 
@@ -540,5 +543,3 @@ void lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
     /* Update until no rescheduling needed */
     while(_lwmac_tx_update(gnrc_netdev2));
 }
-
-/******************************************************************************/
