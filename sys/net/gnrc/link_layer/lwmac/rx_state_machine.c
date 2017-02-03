@@ -189,7 +189,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 
         /* We wouldn't get here if add the NETIF header had failed, so no
            sanity checks needed */
-        nethdr_wa = (gnrc_netif_hdr_t*) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+        nethdr_wa = (gnrc_netif_hdr_t*)(gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF)->data);
 
         /* Construct NETIF header and insert address for WA packet */
         gnrc_netif_hdr_init(nethdr_wa, 0, gnrc_netdev2->rx.l2_addr.len);
