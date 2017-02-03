@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-/* Foward declaration */
+/* Forward lwmac declaration */
 typedef struct lwmac lwmac_t;
 
 typedef enum {

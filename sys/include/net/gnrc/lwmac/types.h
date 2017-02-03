@@ -28,8 +28,6 @@
 extern "C" {
 #endif
 
-/******************************************************************************/
-
 #define LWMAC_EVENT_RTT_TYPE            (0x4300)
 #define LWMAC_EVENT_RTT_START           (0x4301)
 #define LWMAC_EVENT_RTT_STOP            (0x4302)
@@ -39,8 +37,9 @@ extern "C" {
 #define LWMAC_EVENT_RTT_SLEEP_PENDING   (0x4306)
 #define LWMAC_EVENT_TIMEOUT_TYPE        (0x4400)
 
-/******************************************************************************/
-
+/**
+ * @brief   Internal states of Lwmac
+ */
 typedef enum {
     UNDEF = -1,
     STOPPED,
@@ -48,14 +47,15 @@ typedef enum {
     STOP,
     RESET,
     LISTENING,
-    RECEIVING,      /* RX is handled in own state machine */
-    TRANSMITTING,   /* TX is handled in own state machine */
+    RECEIVING,      /**< RX is handled in own state machine */
+    TRANSMITTING,   /**< TX is handled in own state machine */
     SLEEPING,
     STATE_COUNT
 } lwmac_state_t;
 
-/******************************************************************************/
-
+/**
+ * @brief   TX states of Lwmac
+ */
 typedef enum {
     TX_STATE_STOPPED = 0,
     TX_STATE_INIT,          /**< Initiate transmission */
@@ -70,8 +70,9 @@ typedef enum {
 } lwmac_tx_state_t;
 #define LWMAC_TX_STATE_INIT TX_STATE_STOPPED
 
-/******************************************************************************/
-
+/**
+ * @brief   RX states of Lwmac
+ */
 typedef enum {
     RX_STATE_STOPPED = 0,
     RX_STATE_INIT,          /**< Initiate reception */
@@ -84,8 +85,6 @@ typedef enum {
 } lwmac_rx_state_t;
 #define LWMAC_RX_STATE_INIT RX_STATE_STOPPED
 
-/******************************************************************************/
-
 #define LWMAC_RX_INIT { \
 /* rx::state */             LWMAC_RX_STATE_INIT, \
 /* rx::queue */             {}, \
@@ -94,15 +93,10 @@ typedef enum {
 /* rx::dispatch_buffer */   {}, \
 }
 
-/******************************************************************************/
-
 #define LWMAX_NEIGHBOUR_INIT        { LWMAC_L2_ADDR_INIT, {}, 0 }
 
 #define LWMAC_PHASE_UNINITIALIZED   (0)
 #define LWMAC_PHASE_MAX             (-1)
-
-/******************************************************************************/
-
 
 #define LWMAC_TX_INIT { \
 /* tx::state */             LWMAC_TX_STATE_INIT, \
@@ -115,8 +109,9 @@ typedef enum {
 /* tx:bcast_seqnr */        0, \
 }
 
-/******************************************************************************/
-
+/**
+ * @brief   Internal unit for store states of Lwmac
+ */
 typedef struct lwmac {
     /* PID of lwMAC thread */
     kernel_pid_t pid;
