@@ -27,7 +27,7 @@
 #include <kernel_types.h>
 #include <net/gnrc/netdev2.h>
 
-/* Foward declaration */
+/* Forward gnrc_netdev2 declaration */
 typedef struct gnrc_netdev2 gnrc_netdev2_t;
 
 #ifdef __cplusplus
@@ -126,7 +126,6 @@ extern "C" {
 #define LWMAC_DISPATCH_BUFFER_SIZE      (4U)
 #endif
 
-
 /**
  * @brief   Set the default message queue size for LWMAC layer
  */
@@ -179,7 +178,7 @@ extern "C" {
  * @return                  -ENODEV if *dev* is invalid
  */
 kernel_pid_t gnrc_lwmac_init(char *stack, int stacksize, char priority,
-						   const char *name, gnrc_netdev2_t *dev);
+                             const char *name, gnrc_netdev2_t *dev);
 
 #ifdef __cplusplus
 }

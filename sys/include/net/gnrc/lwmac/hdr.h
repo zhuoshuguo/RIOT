@@ -28,24 +28,21 @@
 extern "C" {
 #endif
 
-/******************************************************************************/
-
 typedef struct {
-    uint8_t  addr[IEEE802154_LONG_ADDRESS_LEN];// __attribute__ ((aligned (LWMAC_MAX_L2_ADDR_LEN)));
+    uint8_t  addr[IEEE802154_LONG_ADDRESS_LEN];
     uint8_t  len;
 } l2_addr_t;
 #define LWMAC_L2_ADDR_INIT      { {0}, 0 }
 
-/******************************************************************************/
-
+/**
+ * @brief   lwMAC frame types
+ */
 typedef enum {
     FRAMETYPE_WR = 1,
     FRAMETYPE_WA,
     FRAMETYPE_DATA,
     FRAMETYPE_BROADCAST,
 } lwmac_frame_type_t;
-
-/******************************************************************************/
 
 /**
  * @brief   lwMAC header
