@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2015 Daniel Krebs
+ *               2016 INRIA
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -7,12 +8,14 @@
  */
 
 /**
- * @{
  * @ingroup     net_lwmac
+ * @{
+ *
  * @file
  * @brief       Implementation of the LWMAC protocol
  *
  * @author      Daniel Krebs <github@daniel-krebs.net>
+ * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  * @}
  */
 
@@ -38,7 +41,6 @@
 #include "include/tx_state_machine.h"
 #include "include/rx_state_machine.h"
 #include "include/lwmac_internal.h"
-//#include "include/lwmac_types.h"
 #include <net/gnrc/lwmac/timeout.h>
 
 #define ENABLE_DEBUG    (0)
