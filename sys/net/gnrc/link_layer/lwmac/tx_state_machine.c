@@ -115,7 +115,8 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
-        if(_packet_is_broadcast(gnrc_netdev2->tx.packet)) {
+        /* check if the packet is for broadcast */
+        if(gnrc_netif_hdr_get_flag(gnrc_netdev2->tx.packet) & GNRC_NETIF_HDR_FLAGS_BROADCAST) {
             /* Set CSMA retries as configured and enable */
             uint8_t csma_retries = LWMAC_BROADCAST_CSMA_RETRIES;
             gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA_RETRIES,
@@ -243,7 +244,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 
         /* We wouldn't get here if adding the NETIF header had failed, so no
            sanity checks needed */
-        nethdr = (gnrc_netif_hdr_t*) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+        nethdr = (gnrc_netif_hdr_t*) (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
 
         /* Construct NETIF header and insert address for WR packet */
         gnrc_netif_hdr_init(nethdr, 0, 0);
@@ -418,7 +419,8 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             /* calculate the phase of the receiver based on WA */
             gnrc_netdev2->tx.timestamp = _phase_now();
             lwmac_frame_wa_t* wa_hdr;
-            wa_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_LWMAC);
+            wa_hdr = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_LWMAC))->data;
+
             if(gnrc_netdev2->tx.timestamp >= wa_hdr->current_phase){
             	gnrc_netdev2->tx.timestamp = gnrc_netdev2->tx.timestamp - wa_hdr->current_phase;
             }else{
