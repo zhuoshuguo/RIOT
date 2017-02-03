@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2015 Daniel Krebs
+ *               2016 INRIA
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -7,14 +8,14 @@
  */
 
 /**
- * @defgroup    net_lwmac Simplest possible MAC layer
- * @ingroup     net
+ * @ingroup     net_lwmac
  * @{
  *
  * @file
  * @brief       Header definition LWMAC
- *
+ * @internal
  * @author      Daniel Krebs <github@daniel-krebs.net>
+ * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  */
 
 #ifndef GNRC_LWMAC_HDR_H_
@@ -22,7 +23,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-//#include <net/gnrc/lwmac/lwmac.h>
 
 #ifdef __cplusplus
 extern "C" {
