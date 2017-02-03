@@ -53,18 +53,6 @@ typedef struct {
  */
 int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[]);
 
-/* @brief Find the first pktsnip of @p type
- *
- * Will search linearly through the packet buffer @p pkt and yield
- * gnrc_pktsnip_t::data of the first pktsnip match the type @p type.
- *
- * @param[in]   pkt     pktsnip that will be searched
- * @param[in]   type    type to search for
- *
- * @return              pointer to data, NULL is not found
- */
-void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type);
-
 /* @brief Parse an incoming packet and extract important information
  *
  * Copies addresses into @p info, but header points inside @p pkt.
@@ -92,17 +80,6 @@ netopt_state_t _get_netdev_state(gnrc_netdev2_t* gnrc_netdev2);
  * @param[in]   devstate        new state for netdev
  */
 void _set_netdev_state(gnrc_netdev2_t* gnrc_netdev2, netopt_state_t devstate);
-
-/* @brief Check if packet is broadcast
- *
- * @param[in]   pkt             packet to check
- */
-static inline bool _packet_is_broadcast(gnrc_pktsnip_t* pkt)
-{
-    gnrc_netif_hdr_t* netif_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
-    return ( (netif_hdr == NULL) ? false :
-                              (netif_hdr->flags & (GNRC_NETIF_HDR_FLAGS_BROADCAST | GNRC_NETIF_HDR_FLAGS_MULTICAST)) );
-}
 
 /* RTT phase calculation */
 uint32_t _ticks_to_phase(uint32_t ticks);

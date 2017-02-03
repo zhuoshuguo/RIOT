@@ -45,21 +45,6 @@ int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[])
 }
 
 /******************************************************************************/
-
-/* Find a payload based on it's protocol type */
-void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type)
-{
-    while(pkt != NULL)
-    {
-        if(pkt->type == type) {
-            return pkt->data;
-        }
-        pkt = pkt->next;
-    }
-    return NULL;
-}
-
-/******************************************************************************/
 /* TODO: maybe static inline */
 uint32_t _ticks_to_phase(uint32_t ticks)
 {
@@ -158,7 +143,7 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
     assert(info != NULL);
     assert(pkt != NULL);
 
-    netif_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+    netif_hdr = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
     if(netif_hdr == NULL) {
         return -1;
     }
