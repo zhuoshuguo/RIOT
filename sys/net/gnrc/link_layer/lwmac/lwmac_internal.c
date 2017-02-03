@@ -29,14 +29,6 @@
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
-/******************************************************************************/
-/* TODO: maybe static inline */
-uint32_t _ticks_to_phase(uint32_t ticks)
-{
-    return (ticks % RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
-}
-
-/******************************************************************************/
 /* TODO: maybe static inline */
 uint32_t _phase_to_ticks(uint32_t phase)
 {
@@ -54,28 +46,6 @@ uint32_t _phase_to_ticks(uint32_t phase)
     /* Advance to phase */
     return (rtt_now + phase);
 }
-
-/******************************************************************************/
-/* TODO: maybe static inline */
-uint32_t _phase_now(void)
-{
-    return _ticks_to_phase(rtt_get_counter());
-}
-
-/******************************************************************************/
-/* TODO: maybe static inline */
-uint32_t _ticks_until_phase(uint32_t phase)
-{
-    long int tmp = phase - _phase_now();
-    if(tmp < 0) {
-        /* Phase in next interval */
-        tmp += RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US);
-    }
-
-    return (uint32_t)tmp;
-}
-
-/******************************************************************************/
 
 /* Find the neighbour that has a packet queued and is next for sending */
 gnrc_mac_tx_neighbor_t* _next_tx_neighbour(gnrc_netdev2_t* gnrc_netdev2)

@@ -74,10 +74,28 @@ netopt_state_t _get_netdev_state(gnrc_netdev2_t* gnrc_netdev2);
 void _set_netdev_state(gnrc_netdev2_t* gnrc_netdev2, netopt_state_t devstate);
 
 /* RTT phase calculation */
-uint32_t _ticks_to_phase(uint32_t ticks);
+static inline uint32_t _ticks_to_phase(uint32_t ticks)
+{
+    return (ticks % RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
+}
+
+static inline uint32_t _phase_now(void)
+{
+    return _ticks_to_phase(rtt_get_counter());
+}
+
+static inline uint32_t _ticks_until_phase(uint32_t phase)
+{
+    long int tmp = phase - _phase_now();
+    if(tmp < 0) {
+        /* Phase in next interval */
+        tmp += RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US);
+    }
+
+    return (uint32_t)tmp;
+}
+
 uint32_t _phase_to_ticks(uint32_t phase);
-uint32_t _phase_now(void);
-uint32_t _ticks_until_phase(uint32_t phase);
 
 gnrc_mac_tx_neighbor_t* _next_tx_neighbour(gnrc_netdev2_t* gnrc_netdev2);
 int _time_until_tx_us(gnrc_netdev2_t* gnrc_netdev2);
