@@ -112,7 +112,6 @@ uint32_t _ticks_until_phase(uint32_t phase);
 
 gnrc_mac_tx_neighbor_t* _next_tx_neighbour(gnrc_netdev2_t* gnrc_netdev2);
 int _time_until_tx_us(gnrc_netdev2_t* gnrc_netdev2);
-bool _queue_tx_packet(gnrc_netdev2_t* gnrc_netdev2,  gnrc_pktsnip_t* pkt);
 uint32_t _next_inphase_event(uint32_t last, uint32_t interval);
 
 int _dispatch_defer(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt);
