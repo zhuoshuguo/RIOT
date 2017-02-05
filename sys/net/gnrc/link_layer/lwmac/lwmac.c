@@ -59,13 +59,9 @@
 #define LOG_INFO(...) LOG(LOG_INFO, "[lwmac] " __VA_ARGS__)
 #define LOG_DEBUG(...) LOG(LOG_DEBUG, "[lwmac] " __VA_ARGS__)
 
-/******************************************************************************/
-
 /* Internal state of lwMAC */
 //static lwmac_t lwmac = LWMAC_INIT;
 kernel_pid_t lwmac_pid;
-
-/******************************************************************************/
 
 static bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2);
 static void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate);
@@ -73,33 +69,25 @@ static void lwmac_schedule_update(gnrc_netdev2_t* gnrc_netdev2);
 static bool lwmac_needs_update(gnrc_netdev2_t* gnrc_netdev2);
 static void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2);
 
-/******************************************************************************/
-
-// TODO: Don't use global variables
 inline void lwmac_schedule_update(gnrc_netdev2_t* gnrc_netdev2)
 {
-	gnrc_netdev2->lwmac.needs_rescheduling = true;
+    gnrc_netdev2->lwmac.needs_rescheduling = true;
 }
 
-/******************************************************************************/
-
-// TODO: Don't use global variables
 inline bool lwmac_needs_update(gnrc_netdev2_t* gnrc_netdev2)
 {
     return gnrc_netdev2->lwmac.needs_rescheduling;
 }
 
-/******************************************************************************/
-
-// TODO: Don't use global variables
 void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
 {
     lwmac_state_t oldstate = gnrc_netdev2->lwmac.state;
 
-    if(newstate == oldstate)
+    if (newstate == oldstate) {
         return;
+    }
 
-    if(newstate >= STATE_COUNT) {
+    if (newstate >= STATE_COUNT) {
         LOG_ERROR("Trying to set invalid state %u\n", newstate);
         return;
     }
@@ -108,7 +96,7 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
     gnrc_netdev2->lwmac.state = newstate;
 
     /* Actions when leaving old state */
-    switch(oldstate)
+    switch (oldstate)
     {
     case RECEIVING:
     case TRANSMITTING:
@@ -125,7 +113,7 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
     }
 
     /* Actions when entering new state */
-    switch(newstate)
+    switch (newstate)
     {
     /*********************** Operation states *********************************/
     case LISTENING:
@@ -182,33 +170,30 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
     lwmac_schedule_update(gnrc_netdev2);
 }
 
-/******************************************************************************/
-
 /* Main state machine. Call whenever something happens */
-// TODO: Don't use global variables
 bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
 {
-	gnrc_netdev2->lwmac.needs_rescheduling = false;
+    gnrc_netdev2->lwmac.needs_rescheduling = false;
 
-    switch(gnrc_netdev2->lwmac.state)
+    switch (gnrc_netdev2->lwmac.state)
     {
     case SLEEPING:
 
         /* If a packet is scheduled, no other (possible earlier) packet can be
          * sent before the first one is handled, even no broadcast
          */
-        if( !lwmac_timeout_is_running(&gnrc_netdev2->lwmac, TIMEOUT_WAIT_FOR_DEST_WAKEUP) ) {
+        if (!lwmac_timeout_is_running(&gnrc_netdev2->lwmac, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
 
             /* Check if there are broadcasts to send and transmit immediately */
-            if(gnrc_priority_pktqueue_length(&(gnrc_netdev2->tx.neighbors[0].queue)) > 0) {
-            	gnrc_netdev2->tx.current_neighbor = &(gnrc_netdev2->tx.neighbors[0]);
+            if (gnrc_priority_pktqueue_length(&(gnrc_netdev2->tx.neighbors[0].queue)) > 0) {
+                gnrc_netdev2->tx.current_neighbor = &(gnrc_netdev2->tx.neighbors[0]);
                 lwmac_set_state(gnrc_netdev2, TRANSMITTING);
                 break;
             }
 
             gnrc_mac_tx_neighbor_t* neighbour = _next_tx_neighbour(gnrc_netdev2);
 
-            if(neighbour != NULL) {
+            if (neighbour != NULL) {
                 /* Offset in microseconds when the earliest (phase) destination
                  * node wakes up that we have packets for. */
                 int time_until_tx = RTT_TICKS_TO_US(_ticks_until_phase(neighbour->phase));
@@ -234,7 +219,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                 /* LOG_WARNING("Nothing to send, why did we get called?\n"); */
             }
         } else {
-            if(lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
+            if (lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
                 LOG_DEBUG("Got timeout for dest wakeup, ticks: %"PRIu32"\n", rtt_get_counter());
                 lwmac_set_state(gnrc_netdev2, TRANSMITTING);
             } else {
@@ -246,15 +231,15 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
     case LISTENING:
         /* Set timeout for if there's no successful rx transaction that will
          * change state to SLEEPING. */
-        if(!lwmac_timeout_is_running(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD)) {
+        if (!lwmac_timeout_is_running(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD)) {
             lwmac_set_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD, LWMAC_WAKEUP_DURATION_US);
-        } else if(lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD)) {
+        } else if (lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD)) {
             /* Dispatch first as there still may be broadcast packets. */
             _dispatch(gnrc_netdev2->rx.dispatch_buffer);
             lwmac_set_state(gnrc_netdev2, SLEEPING);
         }
 
-        if(gnrc_priority_pktqueue_length(&gnrc_netdev2->rx.queue) > 0) {
+        if (gnrc_priority_pktqueue_length(&gnrc_netdev2->rx.queue) > 0) {
             lwmac_set_state(gnrc_netdev2, RECEIVING);
         }
         break;
@@ -263,7 +248,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
     {
         lwmac_rx_state_t state_rx = gnrc_netdev2->rx.state;
 
-        switch(state_rx)
+        switch (state_rx)
         {
         case RX_STATE_STOPPED:
         {
@@ -292,7 +277,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
         }
 
         /* If state has changed, reschedule main state machine */
-        if(state_rx != gnrc_netdev2->rx.state)
+        if (state_rx != gnrc_netdev2->rx.state)
         {
             lwmac_schedule_update(gnrc_netdev2);
         }
@@ -303,15 +288,13 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
         char* tx_success = "";
         lwmac_tx_state_t state_tx = gnrc_netdev2->tx.state;
 
-        switch(state_tx)
+        switch (state_tx)
         {
         case TX_STATE_STOPPED:
         {
             gnrc_pktsnip_t* pkt;
 
-//            assert(lwmac.tx.current_neighbour);
-
-            if((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev2->tx.current_neighbor->queue)))
+            if ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev2->tx.current_neighbor->queue)))
             {
                 lwmac_tx_start(gnrc_netdev2, pkt, gnrc_netdev2->tx.current_neighbor);
                 lwmac_tx_update(gnrc_netdev2);
@@ -331,7 +314,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
              * automatic resending here, we did our best.
              */
         case TX_STATE_SUCCESSFUL:
-            if(gnrc_netdev2->tx.current_neighbor == &(gnrc_netdev2->tx.neighbors[0])) {
+            if (gnrc_netdev2->tx.current_neighbor == &(gnrc_netdev2->tx.neighbors[0])) {
                 LOG_INFO("Broadcast transmission done\n");
             } else {
                 LOG_INFO("Transmission was %ssuccessful (%"PRIu32" WRs sent)\n",
@@ -345,7 +328,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
         }
 
         /* If state has changed, reschedule main state machine */
-        if(state_tx != gnrc_netdev2->tx.state)
+        if (state_tx != gnrc_netdev2->tx.state)
         {
             lwmac_schedule_update(gnrc_netdev2);
         }
@@ -357,8 +340,6 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
 
     return gnrc_netdev2->lwmac.needs_rescheduling;
 }
-
-/******************************************************************************/
 
 static void rtt_cb(void* arg)
 {
@@ -372,16 +353,13 @@ static void rtt_cb(void* arg)
     }
 }
 
-/******************************************************************************/
-
-// TODO: Don't use global variables
 void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
 {
     uint32_t alarm;
-    switch(event & 0xffff)
+    switch (event & 0xffff)
     {
     case LWMAC_EVENT_RTT_WAKEUP_PENDING:
-    	gnrc_netdev2->lwmac.last_wakeup = rtt_get_alarm();
+        gnrc_netdev2->lwmac.last_wakeup = rtt_get_alarm();
         alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US));
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_SLEEP_PENDING);
         lwmac_set_state(gnrc_netdev2, LISTENING);
@@ -417,107 +395,104 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
     }
 }
 
-/******************************************************************************/
-
 /**
  * @brief   Function called by the device driver on device events
  *
  * @param[in] event         type of event
  * @param[in] data          optional parameter
  */
-// TODO: Don't use global variables
 static void _event_cb(netdev2_t* dev, netdev2_event_t event)
 {
-	gnrc_netdev2_t *gnrc_netdev2 = (gnrc_netdev2_t*) dev->context;
+    gnrc_netdev2_t *gnrc_netdev2 = (gnrc_netdev2_t*) dev->context;
 
-	if (event == NETDEV2_EVENT_ISR) {
-		msg_t msg;
+    if (event == NETDEV2_EVENT_ISR) {
+        msg_t msg;
 
-		msg.type = NETDEV2_MSG_TYPE_EVENT;
-		msg.content.ptr = (void*) gnrc_netdev2;
+        msg.type = NETDEV2_MSG_TYPE_EVENT;
+        msg.content.ptr = (void*) gnrc_netdev2;
 
-		if (msg_send(&msg, gnrc_netdev2->pid) <= 0) {
-			puts("gnrc_netdev2: possibly lost interrupt.");
-		}
-	} else {
+        if (msg_send(&msg, gnrc_netdev2->pid) <= 0) {
+            puts("gnrc_netdev2: possibly lost interrupt.");
+        }
+    } else {
 
-		DEBUG("gnrc_netdev2: event triggered -> %i\n", event);
-		switch(event)
-		{
-		case NETDEV2_EVENT_RX_STARTED:
-			LOG_DEBUG("NETDEV_EVENT_RX_STARTED\n");
-			//lwmac.rx_started = true;
-			gnrc_netdev2_set_rx_started(gnrc_netdev2,true);
-			break;
-		case NETDEV2_EVENT_RX_COMPLETE:
-		{
-			LOG_DEBUG("NETDEV_EVENT_RX_COMPLETE\n");
+        DEBUG("gnrc_netdev2: event triggered -> %i\n", event);
+        switch (event)
+        {
+        case NETDEV2_EVENT_RX_STARTED:
+            LOG_DEBUG("NETDEV_EVENT_RX_STARTED\n");
+            //lwmac.rx_started = true;
+            gnrc_netdev2_set_rx_started(gnrc_netdev2,true);
+            break;
+            case NETDEV2_EVENT_RX_COMPLETE:
+        {
+            LOG_DEBUG("NETDEV_EVENT_RX_COMPLETE\n");
 
-			gnrc_pktsnip_t *pkt = gnrc_netdev2->recv(gnrc_netdev2);
+            gnrc_pktsnip_t *pkt = gnrc_netdev2->recv(gnrc_netdev2);
 
-			/* Prevent packet corruption when a packet is sent before the previous
-			 * received packet has been downloaded. This happens e.g. when a timeout
-			 * expires that causes the tx state machine to send a packet. When a
-			 * packet arrives after the timeout, the notification is queued but the
-			 * tx state machine continues to send and then destroys the received
-			 * packet in the frame buffer. After completion, the queued notification
-			 * will be handled a corrupted packet will be downloaded. Therefore
-			 * keep track that RX_STARTED is followed by RX_COMPLETE.
-			 *
-			 * TODO: transceivers might have 2 frame buffers, so make this optional
-			 */
-            if(pkt == NULL){
-            	gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
+            /* Prevent packet corruption when a packet is sent before the previous
+             * received packet has been downloaded. This happens e.g. when a timeout
+             * expires that causes the tx state machine to send a packet. When a
+             * packet arrives after the timeout, the notification is queued but the
+             * tx state machine continues to send and then destroys the received
+             * packet in the frame buffer. After completion, the queued notification
+             * will be handled a corrupted packet will be downloaded. Therefore
+             * keep track that RX_STARTED is followed by RX_COMPLETE.
+             *
+             * TODO: transceivers might have 2 frame buffers, so make this optional
+             */
+            if (pkt == NULL){
+                gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
                 break;
             }
 
-			if(!gnrc_netdev2_get_rx_started(gnrc_netdev2)) {
-				LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
-				gnrc_pktbuf_release(pkt);
-				gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
-				break;
-			}
+            if (!gnrc_netdev2_get_rx_started(gnrc_netdev2)) {
+                LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
+                gnrc_pktbuf_release(pkt);
+                gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
+                break;
+            }
 
-			gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
+            gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
 
-			if(!gnrc_mac_queue_rx_packet(&gnrc_netdev2->rx, 0, pkt))
-			{
-				LOG_ERROR("Can't push RX packet @ %p, memory full?\n", pkt);
-				gnrc_pktbuf_release(pkt);
-				break;
-			}
-			lwmac_schedule_update(gnrc_netdev2);
-			break;
-		}
-		case NETDEV2_EVENT_TX_STARTED:
+            if(!gnrc_mac_queue_rx_packet(&gnrc_netdev2->rx, 0, pkt))
+            {
+                LOG_ERROR("Can't push RX packet @ %p, memory full?\n", pkt);
+                gnrc_pktbuf_release(pkt);
+                break;
+            }
+            lwmac_schedule_update(gnrc_netdev2);
+            break;
+        }
+        case NETDEV2_EVENT_TX_STARTED:
             //lwmac.tx_feedback = TX_FEEDBACK_UNDEF;
             gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_UNDEF);
             gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
-	//        lwmac_schedule_update();
-			break;
-		case NETDEV2_EVENT_TX_COMPLETE:
-			//lwmac.tx_feedback = TX_FEEDBACK_SUCCESS;
-			gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_SUCCESS);
-			gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
-			lwmac_schedule_update(gnrc_netdev2);
-			break;
-		case NETDEV2_EVENT_TX_NOACK:
-			//lwmac.tx_feedback = TX_FEEDBACK_NOACK;
-			gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_NOACK);
-			gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
-			lwmac_schedule_update(gnrc_netdev2);
-			break;
-		case NETDEV2_EVENT_TX_MEDIUM_BUSY:
-			//lwmac.tx_feedback = TX_FEEDBACK_BUSY;
-			gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_BUSY);
-			gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
-			lwmac_schedule_update(gnrc_netdev2);
-			break;
+            //lwmac_schedule_update();
+            break;
+        case NETDEV2_EVENT_TX_COMPLETE:
+            //lwmac.tx_feedback = TX_FEEDBACK_SUCCESS;
+            gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_SUCCESS);
+            gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
+            lwmac_schedule_update(gnrc_netdev2);
+            break;
+        case NETDEV2_EVENT_TX_NOACK:
+            //lwmac.tx_feedback = TX_FEEDBACK_NOACK;
+            gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_NOACK);
+            gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
+            lwmac_schedule_update(gnrc_netdev2);
+            break;
+        case NETDEV2_EVENT_TX_MEDIUM_BUSY:
+            //lwmac.tx_feedback = TX_FEEDBACK_BUSY;
+            gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_BUSY);
+            gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
+            lwmac_schedule_update(gnrc_netdev2);
+            break;
 
-		default:
-			LOG_WARNING("Unhandled netdev event: %u\n", event);
-		}
-	}
+        default:
+            LOG_WARNING("Unhandled netdev event: %u\n", event);
+        }
+    }
 }
 
 /**
@@ -530,10 +505,10 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
 // TODO: Don't use global variables
 static void *_lwmac_thread(void *args)
 {
-	gnrc_netdev2_t* gnrc_netdev2 = (gnrc_netdev2_t *)args;
-	netdev2_t* dev = gnrc_netdev2->dev;
+    gnrc_netdev2_t* gnrc_netdev2 = (gnrc_netdev2_t *)args;
+    netdev2_t* dev = gnrc_netdev2->dev;
 
-	gnrc_netdev2->pid = thread_getpid();
+    gnrc_netdev2->pid = thread_getpid();
 
     gnrc_netapi_opt_t* opt;
     int res;
@@ -551,15 +526,15 @@ static void *_lwmac_thread(void *args)
     /* setup the MAC layers message queue */
     msg_init_queue(msg_queue, LWMAC_IPC_MSG_QUEUE_SIZE);
 
-	/* initialize low-level driver */
-	dev->driver->init(dev);
+    /* initialize low-level driver */
+    dev->driver->init(dev);
 
-	/* register the device to the network stack*/
-	gnrc_netif_add(thread_getpid());
+    /* register the device to the network stack*/
+    gnrc_netif_add(thread_getpid());
 
-	/* register the event callback with the device driver */
-	dev->event_callback = _event_cb;
-	dev->context = (void*) gnrc_netdev2;
+    /* register the event callback with the device driver */
+    dev->event_callback = _event_cb;
+    dev->context = (void*) gnrc_netdev2;
 
     /* Enable RX- and TX-started interrupts  */
     netopt_enable_t enable = NETOPT_ENABLE;
@@ -583,16 +558,6 @@ static void *_lwmac_thread(void *args)
      * to board */
     gnrc_netdev2->tx.bcast_seqnr = gnrc_netdev2->l2_addr[0];
 
-    /* First neighbour queue is supposed to be broadcast queue
-    int broadcast_queue_id = _alloc_neighbour(&lwmac);
-    assert(broadcast_queue_id == 0);
-    */
-
-    /* Setup broadcast tx queue
-    uint8_t broadcast_addr[] = {0xff, 0xff};
-    _init_neighbour(_get_neighbour(&lwmac, 0), broadcast_addr, sizeof(broadcast_addr));
-    */
-
     /* Reset all timeouts just to be sure */
     lwmac_reset_timeouts(&gnrc_netdev2->lwmac);
 
@@ -609,7 +574,7 @@ static void *_lwmac_thread(void *args)
 
         /* RTT raised an interrupt */
         case LWMAC_EVENT_RTT_TYPE:
-            if(gnrc_netdev2->lwmac.dutycycling_active) {
+            if (gnrc_netdev2->lwmac.dutycycling_active) {
                 rtt_handler(msg.content.value, gnrc_netdev2);
                 lwmac_schedule_update(gnrc_netdev2);
             } else {
@@ -626,10 +591,10 @@ static void *_lwmac_thread(void *args)
         }
 
         /* Transceiver raised an interrupt */
-		case NETDEV2_MSG_TYPE_EVENT:
+        case NETDEV2_MSG_TYPE_EVENT:
             LOG_DEBUG("GNRC_NETDEV_MSG_TYPE_EVENT received\n");
             /* Forward event back to driver */
-			dev->driver->isr(dev);
+            dev->driver->isr(dev);
             break;
 
         /* TX: Queue for sending */
@@ -652,14 +617,14 @@ static void *_lwmac_thread(void *args)
             opt = (gnrc_netapi_opt_t *)msg.content.ptr;
 
             /* Depending on option forward to NETDEV or handle here */
-            switch(opt->opt)
+            switch (opt->opt)
             {
             /* Handle state change requests */
             case NETOPT_STATE:
             {
                 netopt_state_t* state = (netopt_state_t*) opt->data;
                 res = opt->data_len;
-                switch(*state)
+                switch (*state)
                 {
                 case NETOPT_STATE_OFF:
                     lwmac_set_state(gnrc_netdev2, STOP);
@@ -673,7 +638,7 @@ static void *_lwmac_thread(void *args)
                 default:
                     res = -EINVAL;
                     LOG_ERROR("NETAPI tries to set unsupported state %u\n",
-                          *state);
+                              *state);
                 }
                 lwmac_schedule_update(gnrc_netdev2);
                 break;
@@ -712,7 +677,7 @@ static void *_lwmac_thread(void *args)
         }
 
         /* Execute main state machine because something just happend*/
-        while(lwmac_needs_update(gnrc_netdev2)) {
+        while (lwmac_needs_update(gnrc_netdev2)) {
             lwmac_update(gnrc_netdev2);
         }
     }
@@ -729,7 +694,7 @@ kernel_pid_t gnrc_lwmac_init(char *stack, int stacksize, char priority,
     kernel_pid_t res;
 
     /* check if given netdev device is defined and the driver is set */
-	if (dev == NULL || dev->dev == NULL) {
+    if (dev == NULL || dev->dev == NULL) {
         LOG_ERROR("No netdev supplied or driver not set\n");
         return -ENODEV;
     }
@@ -739,7 +704,7 @@ kernel_pid_t gnrc_lwmac_init(char *stack, int stacksize, char priority,
 
     /* create new LWMAC thread */
     res = thread_create(stack, stacksize, priority, THREAD_CREATE_STACKTEST,
-                         _lwmac_thread, (void *)dev, name);
+                        _lwmac_thread, (void *)dev, name);
     if (res <= 0) {
         LOG_ERROR("Couldn't create thread\n");
         //lpm_prevent_sleep &= ~(LWMAC_LPM_MASK);
