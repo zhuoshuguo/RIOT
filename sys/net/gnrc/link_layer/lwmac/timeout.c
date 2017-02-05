@@ -27,8 +27,6 @@
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
-/******************************************************************************/
-
 #if ENABLE_DEBUG
 char* lwmac_timeout_names[] = {
     [TIMEOUT_DISABLED]              = "DISABLED",
@@ -41,8 +39,6 @@ char* lwmac_timeout_names[] = {
 };
 #endif
 
-/******************************************************************************/
-
 static inline void _lwmac_clear_timeout(lwmac_timeout_t* timeout)
 {
     assert(timeout);
@@ -51,22 +47,19 @@ static inline void _lwmac_clear_timeout(lwmac_timeout_t* timeout)
     timeout->type = TIMEOUT_DISABLED;
 }
 
-/******************************************************************************/
-
 /* Return index >= 0 if found, -ENONENT if not found */
 static int _lwmac_find_timeout(lwmac_t* lwmac, lwmac_timeout_type_t type)
 {
     assert(lwmac);
 
-    for(unsigned i = 0; i < LWMAC_TIMEOUT_COUNT; i++)
+    for (unsigned i = 0; i < LWMAC_TIMEOUT_COUNT; i++)
     {
-        if(lwmac->timeouts[i].type == type)
+        if (lwmac->timeouts[i].type == type) {
             return i;
+        }
     }
     return -ENOENT;
 }
-
-/******************************************************************************/
 
 inline bool lwmac_timeout_is_running(lwmac_t* lwmac, lwmac_timeout_type_t type)
 {
@@ -74,29 +67,27 @@ inline bool lwmac_timeout_is_running(lwmac_t* lwmac, lwmac_timeout_type_t type)
     return (_lwmac_find_timeout(lwmac, type) >= 0);
 }
 
-/******************************************************************************/
-
 bool lwmac_timeout_is_expired(lwmac_t* lwmac, lwmac_timeout_type_t type)
 {
     assert(lwmac);
 
     int index = _lwmac_find_timeout(lwmac, type);
-    if(index >= 0) {
-        if(lwmac->timeouts[index].expired)
+    if (index >= 0) {
+        if (lwmac->timeouts[index].expired) {
             _lwmac_clear_timeout(&lwmac->timeouts[index]);
+        }
         return lwmac->timeouts[index].expired;
     }
     return false;
 }
 
-/******************************************************************************/
-
 lwmac_timeout_t* _lwmac_acquire_timeout(lwmac_t* lwmac, lwmac_timeout_type_t type)
 {
     assert(lwmac);
 
-    if(lwmac_timeout_is_running(lwmac, type))
+    if (lwmac_timeout_is_running(lwmac, type)) {
         return NULL;
+    }
 
     for(unsigned i = 0; i < LWMAC_TIMEOUT_COUNT; i++)
     {
@@ -109,8 +100,6 @@ lwmac_timeout_t* _lwmac_acquire_timeout(lwmac_t* lwmac, lwmac_timeout_type_t typ
     return NULL;
 }
 
-/******************************************************************************/
-
 void lwmac_timeout_make_expire(lwmac_timeout_t* timeout)
 {
     assert(timeout);
@@ -119,28 +108,25 @@ void lwmac_timeout_make_expire(lwmac_timeout_t* timeout)
     timeout->expired = true;
 }
 
-/******************************************************************************/
-
 void lwmac_clear_timeout(lwmac_t* lwmac, lwmac_timeout_type_t type)
 {
     assert(lwmac);
 
     int index = _lwmac_find_timeout(lwmac, type);
-    if(index >= 0)
+    if (index >= 0) {
         _lwmac_clear_timeout(&lwmac->timeouts[index]);
+    }
 }
-
-/******************************************************************************/
 
 void lwmac_set_timeout(lwmac_t* lwmac, lwmac_timeout_type_t type, uint32_t offset)
 {
     assert(lwmac);
 
     lwmac_timeout_t* timeout;
-    if( (timeout = _lwmac_acquire_timeout(lwmac, type)) )
+    if ((timeout = _lwmac_acquire_timeout(lwmac, type)))
     {
         DEBUG("[lwmac] Set timeout %s in %"PRIu32" us\n",
-                lwmac_timeout_names[type], offset);
+              lwmac_timeout_names[type], offset);
         timeout->expired = false;
         timeout->msg.type = LWMAC_EVENT_TIMEOUT_TYPE;
         timeout->msg.content.ptr = (void*) timeout;
@@ -148,19 +134,18 @@ void lwmac_set_timeout(lwmac_t* lwmac, lwmac_timeout_type_t type, uint32_t offse
                        &(timeout->msg), lwmac->pid);
     } else {
         DEBUG("[lwmac] Cannot set timeout %s, too many concurrent timeouts\n",
-                lwmac_timeout_names[type]);
+              lwmac_timeout_names[type]);
     }
 }
-
-/******************************************************************************/
 
 void lwmac_reset_timeouts(lwmac_t* lwmac)
 {
     assert(lwmac);
 
-    for(unsigned i = 0; i < LWMAC_TIMEOUT_COUNT; i++)
+    for (unsigned i = 0; i < LWMAC_TIMEOUT_COUNT; i++)
     {
-        if(lwmac->timeouts[i].type != TIMEOUT_DISABLED)
+        if (lwmac->timeouts[i].type != TIMEOUT_DISABLED) {
             _lwmac_clear_timeout(&lwmac->timeouts[i]);
+        }
     }
 }
