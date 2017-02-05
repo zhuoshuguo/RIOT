@@ -13,7 +13,7 @@ RIOTBASE ?= $(CURDIR)/../..
 #RIOTBOARD ?= $(CURDIR)/../../RIOT/thirdparty_boards
 
 # Uncomment this to enable scheduler statistics for ps:
-#USEMODULE += schedstatistics
+#CFLAGS += -DSCHEDSTATISTICS
 
 # If you want to use native with valgrind, you should recompile native
 # with the target all-valgrind instead of all:
@@ -51,14 +51,16 @@ ifneq (,$(filter $(BOARD),$(BOARD_PROVIDES_NETIF)))
   USEMODULE += gnrc_txtsnd
   # the application dumps received packets to stdout
   USEMODULE += gnrc_pktdump
-
+  USEMODULE += gnrc_mac
+  USEMODULE += gnrc_priority_pktqueue
+  USEMODULE += gnrc_lwmac
   # We use only the lower layers of the GNRC network stack, hence, we can
   # reduce the size of the packet buffer a bit
   CFLAGS += -DGNRC_PKTBUF_SIZE=512
 endif
 
 FEATURES_OPTIONAL += config
-FEATURES_OPTIONAL += periph_rtc
+#FEATURES_OPTIONAL += periph_rtc
 
 ifneq (,$(filter msb-430,$(BOARD)))
   USEMODULE += sht11
