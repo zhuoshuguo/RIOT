@@ -39,7 +39,7 @@ uint32_t _phase_to_ticks(uint32_t phase)
     rtt_now -= phase_now;
 
     /* Phase only in next interval */
-    if(phase < phase_now) {
+    if (phase < phase_now) {
         rtt_now += RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US);
     }
 
@@ -55,16 +55,16 @@ gnrc_mac_tx_neighbor_t* _next_tx_neighbour(gnrc_netdev2_t* gnrc_netdev2)
     uint32_t phase_check;
     uint32_t phase_nearest = LWMAC_PHASE_MAX;
 
-    for(int i = 0; i < LWMAC_NEIGHBOUR_COUNT; i++) {
+    for (int i = 0; i < LWMAC_NEIGHBOUR_COUNT; i++) {
 
-        if(gnrc_priority_pktqueue_length(&gnrc_netdev2->tx.neighbors[i].queue) > 0) {
+        if (gnrc_priority_pktqueue_length(&gnrc_netdev2->tx.neighbors[i].queue) > 0) {
 
             /* Unknown destinations are initialized with their phase at the end
              * of the local interval, so known destinations that still wakeup
              * in this interval will be preferred. */
             phase_check = _ticks_until_phase(gnrc_netdev2->tx.neighbors[i].phase);
 
-            if(phase_check <= phase_nearest) {
+            if (phase_check <= phase_nearest) {
                 next = i;
                 phase_nearest = phase_check;
                 DEBUG("[lwmac-int] Advancing queue #%d\n", i);
@@ -75,19 +75,15 @@ gnrc_mac_tx_neighbor_t* _next_tx_neighbour(gnrc_netdev2_t* gnrc_netdev2)
     return (next < 0) ? NULL : &(gnrc_netdev2->tx.neighbors[next]);
 }
 
-/******************************************************************************/
-
 int _time_until_tx_us(gnrc_netdev2_t* gnrc_netdev2)
 {
-	gnrc_mac_tx_neighbor_t* neighbour = _next_tx_neighbour(gnrc_netdev2);
+    gnrc_mac_tx_neighbor_t* neighbour = _next_tx_neighbour(gnrc_netdev2);
 
-    if(neighbour == NULL) {
+    if (neighbour == NULL) {
         return -1;
     }
     return RTT_TICKS_TO_US(_ticks_until_phase(neighbour->phase));
 }
-
-/******************************************************************************/
 
 int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
 {
@@ -99,7 +95,7 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
     assert(pkt != NULL);
 
     netif_hdr = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
-    if(netif_hdr == NULL) {
+    if (netif_hdr == NULL) {
         return -1;
     }
 
@@ -107,7 +103,7 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
 
     /* every frame has header as first member */
     lwmac_hdr = (lwmac_hdr_t*) pkt->data;
-    switch(lwmac_hdr->type) {
+    switch (lwmac_hdr->type) {
     case FRAMETYPE_WR:
         lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_wr_t), GNRC_NETTYPE_LWMAC);
         break;
@@ -127,22 +123,22 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
     /* Memory location may have changed while marking */
     lwmac_hdr = lwmac_snip->data;
 
-    if(netif_hdr->dst_l2addr_len > sizeof(info->dst_addr)) {
+    if (netif_hdr->dst_l2addr_len > sizeof(info->dst_addr)) {
         return -3;
     }
 
-    if(netif_hdr->src_l2addr_len > sizeof(info->src_addr)) {
+    if (netif_hdr->src_l2addr_len > sizeof(info->src_addr)) {
         return -4;
     }
 
-    if(lwmac_hdr->type == FRAMETYPE_WA) {
+    if (lwmac_hdr->type == FRAMETYPE_WA) {
         /* WA is broadcast, so get dst address out of header instead of netif */
         info->dst_addr = ((lwmac_frame_wa_t*)lwmac_hdr)->dst_addr;
-    }else if(lwmac_hdr->type == FRAMETYPE_WR){
+    } else if (lwmac_hdr->type == FRAMETYPE_WR){
         /* WR is broadcast, so get dst address out of header instead of netif */
         info->dst_addr = ((lwmac_frame_wr_t*)lwmac_hdr)->dst_addr;
-    }else {
-        if(netif_hdr->dst_l2addr_len) {
+    } else {
+        if (netif_hdr->dst_l2addr_len) {
             info->dst_addr.len = netif_hdr->dst_l2addr_len;
             memcpy(info->dst_addr.addr,
                    gnrc_netif_hdr_get_dst_addr(netif_hdr),
@@ -150,7 +146,7 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
         }
     }
 
-    if(netif_hdr->src_l2addr_len) {
+    if (netif_hdr->src_l2addr_len) {
         info->src_addr.len = netif_hdr->src_l2addr_len;
         memcpy(info->src_addr.addr,
                gnrc_netif_hdr_get_src_addr(netif_hdr),
@@ -162,23 +158,18 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
     return 0;
 }
 
-/******************************************************************************/
-
-// TODO: Don't use global variables
 void _set_netdev_state(gnrc_netdev2_t* gnrc_netdev2, netopt_state_t devstate)
 {
-	gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev,
+    gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev,
                                    NETOPT_STATE,
                                    &devstate,
                                    sizeof(devstate));
 }
 
-/******************************************************************************/
-
 netopt_state_t _get_netdev_state(gnrc_netdev2_t* gnrc_netdev2)
 {
     netopt_state_t state;
-	if (0 < gnrc_netdev2->dev->driver->get(gnrc_netdev2->dev,
+    if (0 < gnrc_netdev2->dev->driver->get(gnrc_netdev2->dev,
                                            NETOPT_STATE,
                                            &state,
                                            sizeof(state))) {
@@ -187,13 +178,11 @@ netopt_state_t _get_netdev_state(gnrc_netdev2_t* gnrc_netdev2)
     return -1;
 }
 
-/******************************************************************************/
-
 /* Parameters in rtt timer ticks */
 uint32_t _next_inphase_event(uint32_t last, uint32_t interval)
 {
     /* Counter did overflow since last wakeup */
-    if(rtt_get_counter() < last)
+    if (rtt_get_counter() < last)
     {
         /* TODO: Not sure if this was tested :) */
         uint32_t tmp = -last;
@@ -203,7 +192,7 @@ uint32_t _next_inphase_event(uint32_t last, uint32_t interval)
     }
 
     /* Add margin to next wakeup so that it will be at least 2ms in the future */
-    while(last < (rtt_get_counter() + LWMAC_RTT_EVENT_MARGIN_TICKS))
+    while (last < (rtt_get_counter() + LWMAC_RTT_EVENT_MARGIN_TICKS))
     {
         last += interval;
     }
@@ -211,14 +200,12 @@ uint32_t _next_inphase_event(uint32_t last, uint32_t interval)
     return last;
 }
 
-/******************************************************************************/
-
 void lwmac_print_hdr(lwmac_hdr_t* hdr)
 {
     assert(hdr != NULL);
 
     printf("LwMAC header:\n  Type: ");
-    switch(hdr->type) {
+    switch (hdr->type) {
     case FRAMETYPE_WR:
         puts("Wakeup request (WR)");
         break;
@@ -227,9 +214,9 @@ void lwmac_print_hdr(lwmac_hdr_t* hdr)
         puts("Wakeup acknowledge (WA)");
         printf("  Src addr:");
         lwmac_frame_wa_t* wa = (lwmac_frame_wa_t*) hdr;
-        for(int i = 0; i < wa->dst_addr.len; i++) {
+        for (int i = 0; i < wa->dst_addr.len; i++) {
             printf("0x%02x", wa->dst_addr.addr[i]);
-            if(i < (wa->dst_addr.len - 1)) {
+            if (i < (wa->dst_addr.len - 1)) {
                 printf(":");
             }
         }
@@ -248,8 +235,6 @@ void lwmac_print_hdr(lwmac_hdr_t* hdr)
     }
 }
 
-/******************************************************************************/
-
 int _dispatch_defer(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt)
 {
     assert(buffer != NULL);
@@ -260,18 +245,18 @@ int _dispatch_defer(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt)
     assert(pkt->next->next->type == GNRC_NETTYPE_NETIF);
 
     lwmac_frame_broadcast_t* bcast = NULL;
-    if(((lwmac_hdr_t*)pkt->next->data)->type == FRAMETYPE_BROADCAST) {
+    if (((lwmac_hdr_t*)pkt->next->data)->type == FRAMETYPE_BROADCAST) {
         bcast = pkt->next->data;
     }
 
-    for(unsigned i = 0; i < LWMAC_DISPATCH_BUFFER_SIZE; i++) {
+    for (unsigned i = 0; i < LWMAC_DISPATCH_BUFFER_SIZE; i++) {
         /* Buffer will be filled bottom-up and emptied completely so no holes */
-        if(buffer[i] == NULL) {
+        if (buffer[i] == NULL) {
             buffer[i] = pkt;
             return 0;
         } else {
             /* Filter same broadcasts, compare sequence number */
-            if(bcast &&
+            if (bcast &&
                (((lwmac_hdr_t*)buffer[i]->next->data)->type == FRAMETYPE_BROADCAST) &&
                (bcast->seq_nr == ((lwmac_frame_broadcast_t*)buffer[i]->next->data)->seq_nr))
             {
@@ -280,10 +265,10 @@ int _dispatch_defer(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt)
                 hdr_queued = buffer[i]->next->next->data;
 
                 /* Sequence numbers match, compare source addresses */
-                if(hdr_new->src_l2addr_len == hdr_queued->src_l2addr_len) {
-                    if(memcmp(gnrc_netif_hdr_get_src_addr(hdr_new),
-                              gnrc_netif_hdr_get_src_addr(hdr_queued),
-                              hdr_new->src_l2addr_len) == 0) {
+                if (hdr_new->src_l2addr_len == hdr_queued->src_l2addr_len) {
+                    if (memcmp(gnrc_netif_hdr_get_src_addr(hdr_new),
+                               gnrc_netif_hdr_get_src_addr(hdr_queued),
+                               hdr_new->src_l2addr_len) == 0) {
                         /* Source addresses match, same packet */
                         DEBUG("[lwmac] Found duplicate broadcast packet, dropping\n");
                         gnrc_pktbuf_release(pkt);
@@ -300,14 +285,12 @@ int _dispatch_defer(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt)
     return -1;
 }
 
-/******************************************************************************/
-
 void _dispatch(gnrc_pktsnip_t* buffer[])
 {
     assert(buffer != NULL);
 
-    for(unsigned i = 0; i < LWMAC_DISPATCH_BUFFER_SIZE; i++) {
-        if(buffer[i]) {
+    for (unsigned i = 0; i < LWMAC_DISPATCH_BUFFER_SIZE; i++) {
+        if (buffer[i]) {
 
             /* save pointer to netif header */
             gnrc_pktsnip_t* netif = buffer[i]->next->next;
