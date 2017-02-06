@@ -37,6 +37,15 @@ extern "C" {
 #define LWMAC_EVENT_RTT_SLEEP_PENDING   (0x4306)
 #define LWMAC_EVENT_TIMEOUT_TYPE        (0x4400)
 
+
+/**
+ * @brief   Enable/disable duty-cycle record and print out.
+ *          Set "1" to enable, set "0" to disable.
+ */
+#ifndef LWMAC_ENABLE_DUTYCYLE_RECORD
+#define LWMAC_ENABLE_DUTYCYLE_RECORD             (1U)
+#endif
+
 /**
  * @brief   Internal states of Lwmac
  */
@@ -129,6 +138,15 @@ typedef struct lwmac {
 
     /* Store timeouts used for protocol */
     lwmac_timeout_t timeouts[LWMAC_TIMEOUT_COUNT];
+
+#if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
+    /* parameters for recording duty-cycle */
+    bool radio_is_on;
+    uint32_t last_radio_on_time;
+    uint32_t radio_off_time;
+    uint32_t system_start_time;
+    uint32_t awake_duration_sum;
+#endif
 } lwmac_t;
 
 #ifdef __cplusplus
