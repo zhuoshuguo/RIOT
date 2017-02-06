@@ -162,6 +162,14 @@ extern "C" {
 #endif
 
 /**
+ * @brief   Enable/disable duty-cycle record and print out.
+ *          Set "1" to enable, set "0" to disable.
+ */
+#ifndef LWMAC_ENABLE_DUTYCYLE_RECORD
+#define LWMAC_ENABLE_DUTYCYLE_RECORD             (1U)
+#endif
+
+/**
  * @brief   Initialize an instance of the LWMAC layer
  *
  * The initialization starts a new thread that connects to the given netdev

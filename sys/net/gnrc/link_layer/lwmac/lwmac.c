@@ -38,6 +38,7 @@
 #include <net/gnrc/lwmac/types.h>
 #include <net/gnrc/mac/internal.h>
 
+
 #include "include/tx_state_machine.h"
 #include "include/rx_state_machine.h"
 #include "include/lwmac_internal.h"
@@ -102,6 +103,14 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
     case TRANSMITTING:
         /* Enable duty cycling again */
         rtt_handler(LWMAC_EVENT_RTT_RESUME, gnrc_netdev2);
+
+#if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
+        /* Output duty-cycle ratio */
+        uint64_t duty;
+        duty = (uint64_t)xtimer_now_usec();
+        duty = ((uint64_t) gnrc_netdev2->lwmac.awake_duration_sum)*100 / (duty - (uint64_t)gnrc_netdev2->lwmac.system_start_time);
+        printf("Device achieved duty-cycle: %lu %% \n", (uint32_t)duty);
+#endif
         break;
 
     case SLEEPING:
@@ -563,6 +572,13 @@ static void *_lwmac_thread(void *args)
 
     /* Start duty cycling */
     lwmac_set_state(gnrc_netdev2, START);
+
+#if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
+    /* Start duty cycle recording */
+    gnrc_netdev2->lwmac.system_start_time = xtimer_now_usec();
+    gnrc_netdev2->lwmac.awake_duration_sum = 0;
+    gnrc_netdev2->lwmac.radio_is_on = true;
+#endif
 
     /* start the event loop */
     while (1) {
