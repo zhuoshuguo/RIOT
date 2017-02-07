@@ -100,20 +100,6 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 		//iqueuemac->sub_channel_num = 11 + random_channel;
 		iqueuemac->sub_channel_num = 13;
 
-	}else{
-		iqueuemac->node_states.node_basic_state = N_INIT; //N_LISTENNING;
-		iqueuemac->node_states.node_init_state = N_INIT_PREPARE;
-
-		iqueuemac->node_states.node_listen_state = N_LISTEN_CP_INIT;
-		iqueuemac->node_states.node_trans_state = N_TRANS_TO_UNKOWN;
-
-		iqueuemac->father_router_addr.len = 0;
-		iqueuemac->father_router_addr.addr[0] = 0;
-		iqueuemac->father_router_addr.addr[1] = 0;
-
-		iqueuemac->node_states.in_cp_period = false;
-
-		iqueuemac->node_states.node_new_cycle = false;
 	}
 
 	iqueuemac->pub_channel_1 = 26;
@@ -225,56 +211,6 @@ void rtt_handler(uint32_t event)
 
           iqueuemac.need_update = true;
 
-      }break;
-
-      /******************************* Node new RTT management***************************/
-      case IQUEUEMAC_EVENT_RTT_N_NEW_CYCLE:{
-
-         if(iqueuemac.duty_cycle_started == false){
-          	 iqueuemac.duty_cycle_started = true;
-
-             /*** record the starting phase of iQueuemac ***/
-             iqueuemac.last_wakeup = rtt_get_counter();
-         }else{
-             iqueuemac.node_states.node_new_cycle = true;
-             iqueuemac.last_wakeup = rtt_get_alarm(); //rtt_get_counter();
-             // iqueuemac_stop_lpm();
-         }
-
-         lpm_prevent_sleep |= IQUEUEMAC_LPM_MASK;
-
-         alarm = iqueuemac.last_wakeup + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-         rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_NEW_CYCLE);
-
-         iqueuemac.need_update = true;
-
-      }break;
-      /*******************************Node RTT management***************************/
-      case IQUEUEMAC_EVENT_RTT_N_ENTER_CP:{
-
-    	  if(iqueuemac.duty_cycle_started == false){
-    	   	  iqueuemac.duty_cycle_started = true;
-    	   	  rtt_set_counter(0);
-    	  }
-
-    	  rtt_set_counter(0);
-
-    	  //alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
-    	  alarm = RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
-    	  rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP);
-
-    	  iqueuemac.node_states.in_cp_period = true;
-
-    	  iqueuemac.need_update = true;
-      }break;
-
-      case IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP:{
-    	  //alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_CP_DURATION_US);
-    	  alarm = RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-    	  rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_ENTER_CP);
-    	  iqueuemac.node_states.in_cp_period = false;
-
-    	  iqueuemac.need_update = true;
       }break;
 
       /********************************************************/
@@ -427,43 +363,6 @@ void iqueuemac_device_broadcast_end(iqueuemac_t* iqueuemac){
 	    iqueuemac_trun_off_radio(iqueuemac);
 
 	    //puts("iqueuemac: router is in broadcast end, switching back to sleeping period");
-	}else{
-		iqueuemac->node_states.node_basic_state = N_LISTENNING;
-
-		iqueuemac->node_states.node_new_cycle = false;
-
-		/*********** judge and update the states before switch back to CP listening period   ***********/
-		uint32_t current_phase;
-		current_phase = _phase_now(iqueuemac);
-
-		if(current_phase < RTT_US_TO_TICKS(IQUEUEMAC_QUIT_CP_MARGIN_US)){   ///iqueuemac->node_states.in_cp_period == true
-			/** if there is no buffered packet to send, then we are sure to go to listen state!! **/
-			if(iqueue_mac_find_next_tx_neighbor(iqueuemac) == false){
-			    iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-			    //puts("iqueuemac: node (device) is in t-2-u end, turn to listen.");
-			}else{/** if there is buffered packet to send, then judge the receiver's phase.
-                      if the phase is too far from now, then still go to listen state, otherwise, go to transmit state **/
-				if(iqueuemac->tx.current_neighbour->mac_type == UNKNOWN){
-					iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-				}else{/** if the receiver is not unknown type, check how far its phase from now! **/
-				    uint32_t wait_phase_duration;
-				    wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
-				    wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
-
-				    if(wait_phase_duration > (2*IQUEUEMAC_CP_DURATION_US)){
-				    	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-				    }else{
-				    	iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
-				    }
-				}
-			}
-			//iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-		    //puts("iqueuemac: node is in broadcast end and switch to listen's CP");
-	    }else{
-		    iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
-		    iqueuemac_trun_off_radio(iqueuemac);
-		    //puts("iqueuemac: node is in broadcast end and switch to listen's sleep");
-	    }
 	}
 	iqueuemac->need_update = true;
 }
@@ -603,252 +502,6 @@ void iqueuemac_init_update(iqueuemac_t* iqueuemac){
 		default: break;
 	}
 }
-
-
-void iqueuemac_node_init_prepare(iqueuemac_t* iqueuemac){
-
-	rtt_clear_alarm();
-
-	uint32_t random_wait_period;
-
-	random_wait_period = random_uint32_range(0, IQUEUEMAC_SUPERFRAME_DURATION_US);
-
-	iqueuemac_trun_off_radio(iqueuemac);
-
-	packet_queue_flush(&iqueuemac->rx.queue);
-
-	/******set TIMEOUT_COLLECT_BEACON_END timeout ******/
-	iqueuemac_set_timeout(iqueuemac, TIMEOUT_COLLECT_BEACON_END, random_wait_period);
-
-	iqueuemac->node_states.node_init_state = N_INIT_WAIT_TIMEOUT;
-	iqueuemac->need_update = true;
-
-}
-
-void iqueuemac_node_init_wait_timeout(iqueuemac_t* iqueuemac){
-
-	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_COLLECT_BEACON_END)){
-		//puts("iqueuemac: random ends.");
-		iqueuemac->node_states.node_init_state = N_INIT_END;
-		iqueuemac->need_update = true;
-	}
-}
-
-
-void iqueuemac_node_init_end(iqueuemac_t* iqueuemac){
-
-	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_COLLECT_BEACON_END);
-
-	iqueuemac->node_states.node_init_state = N_INIT_PREPARE;
-	/*** switch to duty-cycle operation ***/
-	iqueuemac->node_states.node_basic_state = N_LISTENNING;
-	iqueuemac->node_states.node_init_state = N_LISTEN_CP_INIT;
-
-	/*** start duty-cycle ***/
-	iqueuemac->duty_cycle_started = false;
-	rtt_handler(IQUEUEMAC_EVENT_RTT_N_NEW_CYCLE);
-	iqueuemac->need_update = true;
-}
-
-void iqueuemac_node_init_update(iqueuemac_t* iqueuemac){
-
-	switch(iqueuemac->node_states.node_init_state)
-	{
-		case N_INIT_PREPARE: iqueuemac_node_init_prepare(iqueuemac);break;
-		case N_INIT_WAIT_TIMEOUT: iqueuemac_node_init_wait_timeout(iqueuemac);break;
-		case N_INIT_END: iqueuemac_node_init_end(iqueuemac);break;
-		default: break;
-	}
-}
-
-
-/****************** iQueue-MAC transmission to node state machines *****/
-
-void iqueuemac_t2n_init(iqueuemac_t* iqueuemac){
-
-	iqueuemac_trun_off_radio(iqueuemac);
-
-	/*** set timer for the targeted node! ***/
-	uint32_t wait_phase_duration;
-	wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
-
-	wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
-	iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
-/*
-	printf("iqueuemac: the wait phase time is %lu us .\n" , wait_phase_duration);
-	wait_phase_duration = RTT_TICKS_TO_US(iqueuemac->tx.current_neighbour->cp_phase);
-	printf("iqueuemac: the dest's phase is %lu us .\n" , wait_phase_duration);
-*/
-	/*** flush the rx-queue here to reduce possible buffered packet in RIOT!! ***/
-	packet_queue_flush(&iqueuemac->rx.queue);
-
-	iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_WAIT_CP;
-	iqueuemac->need_update = true;
-}
-
-void iqueuemac_t2n_wait_cp(iqueuemac_t* iqueuemac){
-
-	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_CP)){
-		iqueuemac->tx.cp_retries = 0;
-
-		iqueuemac_trun_on_radio(iqueuemac);
-		iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_TRANS_IN_CP;
-		iqueuemac->need_update = true;
-	}
-}
-
-void iqueuemac_t2n_trans_in_cp(iqueuemac_t* iqueuemac){
-
-	/******Use CSMA here, and send_packet() will release the pkt itself !!!!******/
-	iqueuemac_send_data_packet(iqueuemac, NETOPT_ENABLE);
-
-	/*** here, must set to NULL!! don't know why!!  ***/
-	//iqueuemac->tx.tx_packet = NULL;
-
-	iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_WAIT_CPTRANS_FEEDBACK;
-	iqueuemac->need_update = true;
-
-}
-
-void iqueuemac_t2n_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
-
-	/*** add another condition here in the future: the tx-feedback must be ACK-got,
-			 * namely, completed, to ensure router gets the data correctly***/
-	if(iqueuemac->tx.tx_finished == true){
-
-		switch(iqueuemac->tx.tx_feedback){
-			case TX_FEEDBACK_SUCCESS:{
-				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
-				iqueuemac->tx.tx_packet = NULL;
-
-				iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_TRANS_END;
-			}break;
-
-			/*** if NOACK, regards it as phase-lock failed ***/
-			case TX_FEEDBACK_NOACK:{
-				//puts("phase-lock failed.");
-				iqueuemac->tx.current_neighbour->mac_type = UNKNOWN;
-
-				iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_RE_PHASE_LOCK, (IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_RE_PHASE_LOCK_ADVANCE_US));
-				iqueuemac_trun_off_radio(iqueuemac);
-				iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_RE_PHASE_LOCK_PREPARE;
-			}break;
-
-			/*** if BUSY, regards it as channel busy ***/
-			case TX_FEEDBACK_BUSY:{
-				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
-				iqueuemac->tx.tx_packet = NULL;
-
-				iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_TRANS_END;
-			}break;
-
-			default:{
-				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
-				iqueuemac->tx.tx_packet = NULL;
-				iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_TRANS_END;
-			}break;
-		}
-		iqueuemac->need_update = true;
-	}
-}
-
-void iqueuemac_t2n_re_phase_lock_prepare(iqueuemac_t* iqueuemac){
-
-	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_RE_PHASE_LOCK)){
-		/*** leaving t-2-n, so initiate the state ***/
-		iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_WAIT_CP_INIT;
-
-		if(iqueuemac->mac_type == ROUTER){
-			iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
-		}else{
-			iqueuemac->node_states.node_trans_state = N_TRANS_TO_UNKOWN;
-		}
-
-		iqueuemac->need_update = true;
-	}
-}
-
-
-void iqueuemac_t2n_end(iqueuemac_t* iqueuemac){
-
-	if(iqueuemac->tx.tx_packet){
-		gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
-		iqueuemac->tx.tx_packet = NULL;
-	}
-
-	iqueuemac->tx.current_neighbour = NULL;
-
-	/*** clear all timeouts ***/
-	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_CP);
-	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_WAIT_RE_PHASE_LOCK);
-
-	iqueuemac->device_states.iqueuemac_device_t2n_state = DEVICE_T2N_WAIT_CP_INIT;
-
-	if(iqueuemac->mac_type == ROUTER){
-		/*********** judge and update the states before switch back to CP listening period   ***********/
-		iqueuemac->router_states.router_basic_state = R_LISTENNING;
-	    iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING;
-	    iqueuemac->router_states.router_new_cycle = false;
-
-	    iqueuemac_trun_off_radio(iqueuemac);
-	    //puts("iqueuemac: router (device) is in t-2-n end.");
-	}else{
-		iqueuemac->node_states.node_basic_state = N_LISTENNING;
-
-		iqueuemac->node_states.node_new_cycle = false;
-
-		/*********** judge and update the states before switch back to CP listening period ***********/
-		uint32_t current_phase;
-		current_phase = _phase_now(iqueuemac);
-
-		if(current_phase < RTT_US_TO_TICKS(IQUEUEMAC_QUIT_CP_MARGIN_US)){   ///iqueuemac->node_states.in_cp_period == true
-			/** if there is no buffered packet to send, then we are sure to go to listen state!! **/
-			if(iqueue_mac_find_next_tx_neighbor(iqueuemac) == false){
-			    iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-			    //puts("iqueuemac: node (device) is in t-2-u end, turn to listen.");
-			}else{/** if there is buffered packet to send, then judge the receiver's phase.
-                      if the phase is too far from now, then still go to listen state, otherwise, go to transmit state **/
-				if(iqueuemac->tx.current_neighbour->mac_type == UNKNOWN){
-					iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-				}else{/** if the receiver is not unknown type, check how far its phase from now! **/
-				    uint32_t wait_phase_duration;
-				    wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
-				    wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
-
-				    if(wait_phase_duration > (2*IQUEUEMAC_CP_DURATION_US)){
-				    	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-				    }else{
-				    	iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
-				    }
-				}
-			}
-			//iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-			//puts("iqueuemac: node (device) is in t2n end, switch to listen's CP");
-		}else{
-			iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
-			iqueuemac_trun_off_radio(iqueuemac);
-			//puts("iqueuemac: node (device) is in t2u end, switch to listen's sleep");
-		}
-	}
-
-	iqueuemac->need_update = true;
-}
-
-
-void iqueuemac_t2n_update(iqueuemac_t* iqueuemac)
-{
-	switch(iqueuemac->device_states.iqueuemac_device_t2n_state)
-	{
-	 case DEVICE_T2N_WAIT_CP_INIT: iqueuemac_t2n_init(iqueuemac);break;
-     case DEVICE_T2N_WAIT_CP: iqueuemac_t2n_wait_cp(iqueuemac); break;
-	 case DEVICE_T2N_TRANS_IN_CP: iqueuemac_t2n_trans_in_cp(iqueuemac); break;
-	 case DEVICE_T2N_WAIT_CPTRANS_FEEDBACK: iqueuemac_t2n_wait_cp_transfeedback(iqueuemac); break;
-	 case DEVICE_T2N_RE_PHASE_LOCK_PREPARE: iqueuemac_t2n_re_phase_lock_prepare(iqueuemac); break;
-	 case DEVICE_T2N_TRANS_END:iqueuemac_t2n_end(iqueuemac);break;
-	 default: break;
-	}
-}
-
 
 /****************** iQueuemac: Transmit to router *****/
 void iqueuemac_t2r_init(iqueuemac_t* iqueuemac){
@@ -1046,8 +699,6 @@ void iqueuemac_t2r_re_phase_lock_prepare(iqueuemac_t* iqueuemac){
 
 		if(iqueuemac->mac_type == ROUTER){
 			iqueuemac->router_states.router_trans_state = R_TRANS_TO_UNKOWN;
-		}else{
-			iqueuemac->node_states.node_trans_state = N_TRANS_TO_UNKOWN;
 		}
 
 		iqueuemac->need_update = true;
@@ -1309,43 +960,6 @@ void iqueuemac_t2r_end(iqueuemac_t* iqueuemac){
 
 		/* set up auto-ack for packet reception! */
 		iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
-	}else{
-		iqueuemac->node_states.node_basic_state = N_LISTENNING;
-
-		iqueuemac->node_states.node_new_cycle = false;
-
-		/*********** judge and update the states before switch back to CP listening period ***********/
-		uint32_t current_phase;
-		current_phase = _phase_now(iqueuemac);
-
-		if(current_phase < RTT_US_TO_TICKS(IQUEUEMAC_QUIT_CP_MARGIN_US)){   ///iqueuemac->node_states.in_cp_period == true
-			/** if there is no buffered packet to send, then we are sure to go to listen state!! **/
-			if(iqueue_mac_find_next_tx_neighbor(iqueuemac) == false){
-			    iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-			    //puts("iqueuemac: node (device) is in t-2-u end, turn to listen.");
-			}else{/** if there is buffered packet to send, then judge the receiver's phase.
-                      if the phase is too far from now, then still go to listen state, otherwise, go to transmit state **/
-				if(iqueuemac->tx.current_neighbour->mac_type == UNKNOWN){
-					iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-				}else{/** if the receiver is not unknown type, check how far its phase from now! **/
-				    uint32_t wait_phase_duration;
-				    wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
-				    wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
-
-				    if(wait_phase_duration > (2*IQUEUEMAC_CP_DURATION_US)){
-				    	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-				    }else{
-				    	iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
-				    }
-				}
-			}
-			//iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-			//puts("iqueuemac: node (device) is in t-2-r end, turn to listen.");
-		}else{
-			iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
-			iqueuemac_trun_off_radio(iqueuemac);
-			//puts("iqueuemac: node (device) is in t-2-r end, turn to sleep.");
-		}
 	}
 	iqueuemac->need_update = true;
 }
@@ -1739,8 +1353,6 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 
 	    		if(iqueuemac->mac_type == ROUTER){
 	    			iqueuemac->router_states.router_trans_state = R_TRANS_TO_ROUTER;
-	    		}else{
-	    		   	iqueuemac->node_states.node_trans_state = N_TRANS_TO_ROUTER;
 	    		}
 
 	    	}else{
@@ -1806,41 +1418,6 @@ void iqueuemac_t2u_end(iqueuemac_t* iqueuemac){
 
 		iqueuemac_trun_off_radio(iqueuemac);
 		//puts("iqueuemac: router (device) is in t-2-u end.");
-	}else{
-		iqueuemac->node_states.node_basic_state = N_LISTENNING;
-
-		iqueuemac->node_states.node_new_cycle = false;
-
-		/*********** judge and update the states before switch back to CP listening period ***********/
-		uint32_t current_phase;
-		current_phase = _phase_now(iqueuemac);
-
-		if(current_phase < RTT_US_TO_TICKS(IQUEUEMAC_QUIT_CP_MARGIN_US)){   ///iqueuemac->node_states.in_cp_period == true
-			/** if there is no buffered packet to send, then we are sure to go to listen state!! **/
-			if(iqueue_mac_find_next_tx_neighbor(iqueuemac) == false){
-			    iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-			    //puts("iqueuemac: node (device) is in t-2-u end, turn to listen.");
-			}else{/** if there is buffered packet to send, then judge the receiver's phase.
-                      if the phase is too far from now, then still go to listen state, otherwise, go to transmit state **/
-				if(iqueuemac->tx.current_neighbour->mac_type == UNKNOWN){
-					iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-				}else{/** if the receiver is not unknown type, check how far its phase from now! **/
-				    uint32_t wait_phase_duration;
-				    wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
-				    wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
-
-				    if(wait_phase_duration > (2*IQUEUEMAC_CP_DURATION_US)){
-				    	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-				    }else{
-				    	iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
-				    }
-				}
-			}
-		}else{
-			iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
-			iqueuemac_trun_off_radio(iqueuemac);
-			//puts("iqueuemac: node (device) is in t-2-u end, turn to sleep.");
-		}
 	}
 	iqueuemac->need_update = true;
 }
@@ -2317,7 +1894,6 @@ void iqueue_mac_router_transmit_update(iqueuemac_t* iqueuemac){
    {
 	case R_TRANS_TO_UNKOWN: iqueuemac_t2u_update(iqueuemac);break; //iqueuemac_router_t2u_update(iqueuemac); break;
 	case R_TRANS_TO_ROUTER: iqueuemac_t2r_update(iqueuemac);break;//iqueuemac_router_t2r_update(iqueuemac);
-	case R_TRANS_TO_NODE: iqueuemac_t2n_update(iqueuemac);break; //iqueuemac_router_t2n_update(iqueuemac);
 	case R_BROADCAST: iqueuemac_device_broadcast_update(iqueuemac);break;
 	default: break;
    }
@@ -2335,189 +1911,10 @@ void iqueue_mac_router_update(iqueuemac_t* iqueuemac){
    }
 }
 
-/******************************node state machinies**********************************/
-void iqueue_mac_node_listen_cp_init(iqueuemac_t* iqueuemac){
-
-	iqueuemac->node_states.node_new_cycle = false;
-
-	iqueuemac_trun_on_radio(iqueuemac);
-
-	/******set cp timeout ******/
-	iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
-
-	iqueuemac->quit_current_cycle = false;
-
-	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_LISTEN;
-	iqueuemac->need_update = true;
-
-	packet_queue_flush(&iqueuemac->rx.queue);
-	//puts("iqueuemac: node is now entering CP");
-}
-
-void iqueue_mac_node_listen_cp_listen(iqueuemac_t* iqueuemac){
-
-	/**** add packet received process function here to flush the rx_queue, otherwise may overflow!!!  ****/
-	if(iqueuemac->packet_received == true){
-
-	    iqueuemac->packet_received = false;
-	    iqueue_node_cp_receive_packet_process(iqueuemac);
-/*
-	    if(iqueuemac->quit_current_cycle == true){
-	    	iqueuemac_trun_off_radio(iqueuemac);
-	    	puts("iqueuemac: node quits this CP");
-	    }*/
-	}
-
-	/** add a if judgement on rx_started event! don't quit CP if a reception is not completed! **/
-	if((iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END))||(iqueuemac->quit_current_cycle == true)){
-		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
-		iqueuemac->node_states.node_listen_state = N_LISTEN_CP_END;
-		iqueuemac->need_update = true;
-	}
-
-    /*
-	if(iqueuemac->node_states.in_cp_period == false)
-	{
-		iqueuemac->node_states.node_listen_state = N_LISTEN_CP_END;
-		iqueuemac->need_update = true;
-	}
-	*/
-}
-
-void iqueue_mac_node_listen_cp_end(iqueuemac_t* iqueuemac){
-
-	packet_queue_flush(&iqueuemac->rx.queue);
-	_dispatch(iqueuemac->rx.dispatch_buffer);
-
-	//puts("iqueuemac: node end of cp, check queue-length ");
-	if(iqueuemac->quit_current_cycle == true){
-		iqueuemac->quit_current_cycle = false;
-		iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING_INIT;
-		iqueuemac->need_update = true;
-		return;
-	}
-
-	if(iqueue_mac_find_next_tx_neighbor(iqueuemac)){
-		iqueuemac->node_states.node_basic_state = N_TRANSMITTING;
-
-		if(iqueuemac->tx.current_neighbour == &iqueuemac->tx.neighbours[0]){
-			iqueuemac->node_states.node_trans_state = N_BROADCAST;
-		}else{
-			switch(iqueuemac->tx.current_neighbour->mac_type){
-			  case UNKNOWN: iqueuemac->node_states.node_trans_state = N_TRANS_TO_UNKOWN;break;
-			  case ROUTER: {
-				  iqueuemac->node_states.node_trans_state = N_TRANS_TO_ROUTER;
-				  //puts("iqueuemac: node turn to send to router ");
-
-		 	 }break;
-		 	 case NODE: iqueuemac->node_states.node_trans_state = N_TRANS_TO_NODE;break;
-		 	 default:break;
-			}
-		}
-		iqueuemac->need_update = true;
-	}else{
-	    iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING_INIT;
-	    iqueuemac->need_update = true;
-	}
-}
-
-void iqueue_mac_node_sleep_init(iqueuemac_t* iqueuemac){
-
-	iqueuemac_trun_off_radio(iqueuemac);
-	iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING;
-	iqueuemac->need_update = true;
-
-	//puts("iqueuemac: node is now entering sleeping period");
-
-}
-
-void iqueue_mac_node_sleep(iqueuemac_t* iqueuemac){
-
-#if 0
-	if(iqueue_mac_find_next_tx_neighbor(iqueuemac)){
-		/*  stop lpm mode */
-		lpm_prevent_sleep |= IQUEUEMAC_LPM_MASK;
-
-		iqueuemac->node_states.node_basic_state = N_TRANSMITTING;
-
-		if(iqueuemac->tx.current_neighbour == &iqueuemac->tx.neighbours[0]){
-			iqueuemac->node_states.node_trans_state = N_BROADCAST;
-		}else{
-			switch(iqueuemac->tx.current_neighbour->mac_type){
-			  case UNKNOWN: iqueuemac->node_states.node_trans_state = N_TRANS_TO_UNKOWN;break;
-			  case ROUTER:  iqueuemac->node_states.node_trans_state = N_TRANS_TO_ROUTER;break;
-		 	  case NODE: iqueuemac->node_states.node_trans_state = N_TRANS_TO_NODE;break;
-		 	 default:break;
-			}
-		}
-		iqueuemac->need_update = true;
-		//puts("iqueuemac: node start sending in sleep.");
-	}else{
-		if(iqueuemac->node_states.node_new_cycle == false){
-			/*  enable lpm mode, now enter the sleep mode */
-			lpm_prevent_sleep &= ~(IQUEUEMAC_LPM_MASK);
-			//puts("iqueuemac: enter real sleep.");
-		} /** No need_update!! **/
-	}
-#endif
-
-	if(iqueuemac->node_states.node_new_cycle == true){
-		iqueuemac->node_states.node_listen_state = N_LISTEN_SLEEPING_END;
-		iqueuemac->need_update = true;
-	}
-}
-
-void iqueue_mac_node_sleep_end(iqueuemac_t* iqueuemac){
-
-	iqueuemac->node_states.node_listen_state = N_LISTEN_CP_INIT;
-	iqueuemac->need_update = true;
-}
-
-void iqueue_mac_node_listen_update(iqueuemac_t* iqueuemac){
-
-	switch(iqueuemac->node_states.node_listen_state)
-   {
-	case N_LISTEN_CP_INIT: iqueue_mac_node_listen_cp_init(iqueuemac); break;
-	case N_LISTEN_CP_LISTEN: iqueue_mac_node_listen_cp_listen(iqueuemac); break;
-	case N_LISTEN_CP_END: iqueue_mac_node_listen_cp_end(iqueuemac); break;
-	case N_LISTEN_SLEEPING_INIT: iqueue_mac_node_sleep_init(iqueuemac); break;
-	case N_LISTEN_SLEEPING: iqueue_mac_node_sleep(iqueuemac); break;
-	case N_LISTEN_SLEEPING_END: iqueue_mac_node_sleep_end(iqueuemac); break;
-	default: break;
-   }
-}
-
-
-void iqueue_mac_node_transmit_update(iqueuemac_t* iqueuemac){
-
-	switch(iqueuemac->node_states.node_trans_state)
-   {
-	case N_TRANS_TO_UNKOWN: iqueuemac_t2u_update(iqueuemac);break; //iqueue_mac_node_t2u_update(iqueuemac); break;
-	case N_TRANS_TO_ROUTER: iqueuemac_t2r_update(iqueuemac);break; //iqueue_mac_node_t2r_update(iqueuemac); break;
-	case N_TRANS_TO_NODE: iqueuemac_t2n_update(iqueuemac); break; //iqueuemac_node_t2n_update(iqueuemac); break;
-	case N_BROADCAST: iqueuemac_device_broadcast_update(iqueuemac);break;
-	default: break;
-   }
-
-}
-
-void iqueue_mac_node_update(iqueuemac_t* iqueuemac){
-
-	switch(iqueuemac->node_states.node_basic_state)
-   {
-	case N_INIT: iqueuemac_node_init_update(iqueuemac);break;
-	case N_LISTENNING: iqueue_mac_node_listen_update(iqueuemac); break;
-	case N_TRANSMITTING: iqueue_mac_node_transmit_update(iqueuemac); break;
-	default: break;
-   }
-}
-
 void iqueue_mac_update(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac->mac_type == ROUTER){
 	  iqueue_mac_router_update(iqueuemac);
-	}else{
-	  iqueue_mac_node_update(iqueuemac);
 	}
 }
 

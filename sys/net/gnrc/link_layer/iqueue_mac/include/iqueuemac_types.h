@@ -193,76 +193,6 @@ typedef enum {
 } iqueuemac_router_state_t;
 
 /******************************node state machinies**********************************/
-typedef enum {
-/*    UNDEF = -1,
-    STOPPED,
-    START,
-    STOP,
-    RESET,  */
-	/*Basic mode of simple mode*/
-	N_LISTENNING,
-	N_TRANSMITTING,
-	N_INIT,
-} mac_node_basic_state_t;
-
-typedef enum {
-	/*Listening states of simple mode*/
-	N_INIT_PREPARE,
-	N_INIT_WAIT_TIMEOUT,
-	N_INIT_END
-} mac_node_init_state_t;
-
-typedef enum {
-	/*Listening states of simple mode*/
-	N_LISTEN_CP_INIT,
-	N_LISTEN_CP_LISTEN,
-	N_LISTEN_CP_END,
-	N_LISTEN_SLEEPING_INIT,
-	N_LISTEN_SLEEPING,
-	N_LISTEN_SLEEPING_END
-} mac_node_listen_state_t;
-
-typedef enum {
-	/*Transmitting states of simple mode*/
-	N_TRANS_TO_UNKOWN,
-	N_TRANS_TO_ROUTER,
-	N_TRANS_TO_NODE,
-	N_BROADCAST
-} mac_node_trans_state_t;
-
-typedef enum {
-	N_T2U_SEND_PREAMBLE_INIT = 0,
-	N_T2U_SEND_PREAMBLE,
-	N_T2U_WAIT_PREAMBLE_ACK,
-	N_T2U_SEND_DATA,
-	N_T2U_END
-} mac_node_t2u_state_t;
-
-typedef enum {
-	/*Transmitting states of simple mode*/
-	N_T2R_WAIT_CP_INIT = 0,
-	N_T2R_WAIT_CP,
-	N_T2R_TRANS_IN_CP,
-	N_T2R_WAIT_CPTRANS_FEEDBACK,
-	N_T2R_WAIT_BEACON,
-	N_T2R_WAIT_OWN_SLOTS,
-	N_T2R_TRANS_IN_VTDMA,
-	N_T2R_WAIT_VTDMATRANS_FEEDBACK,
-	N_T2R_TRANS_END
-	/*Listening states of simple mode*/
-} mac_node_t2r_state_t;
-
-typedef enum {
-	/*Transmitting states of router*/
-	N_T2N_WAIT_CP_INIT = 0,
-	N_T2N_WAIT_CP,
-	N_T2N_TRANS_IN_CP,
-	N_T2N_WAIT_CPTRANS_FEEDBACK,
-	N_T2N_TRANS_END
-} mac_node_t2n_state_t;
-
-
-/******************************************************************************/
 
 typedef enum {
     TX_FEEDBACK_UNDEF = -1,
@@ -294,20 +224,6 @@ typedef struct {
     uint16_t cur_pub_channel;
 
 } iqueuemac_tx_neighbour_t;
-
-typedef struct {
-
-	mac_node_basic_state_t node_basic_state;
-	mac_node_init_state_t node_init_state;
-
-	mac_node_listen_state_t node_listen_state;
-	mac_node_trans_state_t node_trans_state;
-
-	bool in_cp_period;
-	bool node_new_cycle;
-
-} node_states_t;
-
 
 typedef struct {
 
@@ -439,7 +355,6 @@ typedef struct iqueuemac {
 	iqueuemac_type_t mac_type;
 	iqueuemac_router_state_t router_state;
 
-	node_states_t   node_states;
 	router_states_t router_states;
 	device_states_t device_states;
 
