@@ -34,10 +34,14 @@ typedef struct gnrc_netdev2 gnrc_netdev2_t;
 extern "C" {
 #endif
 
+#ifndef LWMACMAC_DUTYCYCLE_RECORD_US
+#define LWMACMAC_DUTYCYCLE_RECORD_US        (100000U * 1000)
+#endif
+
 /* Time between consecutive wakeups. This parameter governs power consumption,
  * latency and throughput! */
 #ifndef LWMAC_WAKEUP_INTERVAL_US
-#define LWMAC_WAKEUP_INTERVAL_US        (100U * 1000)
+#define LWMAC_WAKEUP_INTERVAL_US        (67U * 1000)
 #endif
 
 /* The Maximum WR duration time */
@@ -131,7 +135,7 @@ extern "C" {
  * @brief   Count of parallel timeouts. Shouldn't needed to be changed.
  */
 #ifndef LWMAC_TIMEOUT_COUNT
-#define LWMAC_TIMEOUT_COUNT             (3U)
+#define LWMAC_TIMEOUT_COUNT             (4U)
 #endif
 
 /**

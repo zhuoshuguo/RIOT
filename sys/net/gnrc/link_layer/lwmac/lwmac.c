@@ -104,7 +104,7 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
         /* Enable duty cycling again */
         rtt_handler(LWMAC_EVENT_RTT_RESUME, gnrc_netdev2);
 
-#if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
+#if 0
         /* Output duty-cycle ratio */
         uint64_t duty;
         duty = (uint64_t) rtt_get_counter();
@@ -378,6 +378,18 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
         alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_WAKEUP_PENDING);
         lwmac_set_state(gnrc_netdev2, SLEEPING);
+
+        if(lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, DUTYCYCLE_RECORD)){
+        	/* Output duty-cycle ratio */
+        	uint64_t duty;
+        	duty = (uint64_t)xtimer_now_usec();
+
+        	printf("Device awake_duration_sum: %lu us \n", gnrc_netdev2->lwmac.awake_duration_sum);
+        	printf("Device life time : %lu us \n", (uint32_t)(duty - (uint64_t)gnrc_netdev2->lwmac.system_start_time));
+
+        	duty = ((uint64_t) gnrc_netdev2->lwmac.awake_duration_sum)*100 / (duty - (uint64_t)gnrc_netdev2->lwmac.system_start_time);
+        	printf("Device achieved duty-cycle: %lu %% \n", (uint32_t)duty);
+        }
         break;
 
     /* Set initial wakeup alarm that starts the cycle */
@@ -574,6 +586,7 @@ static void *_lwmac_thread(void *args)
     lwmac_set_state(gnrc_netdev2, START);
 
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
+    lwmac_set_timeout(&gnrc_netdev2->lwmac, DUTYCYCLE_RECORD, LWMACMAC_DUTYCYCLE_RECORD_US);
     /* Start duty cycle recording */
     gnrc_netdev2->lwmac.system_start_time_ticks = rtt_get_counter();
     gnrc_netdev2->lwmac.last_radio_on_time_ticks = gnrc_netdev2->lwmac.system_start_time_ticks;
