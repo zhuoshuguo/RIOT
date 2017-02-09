@@ -22,6 +22,7 @@
 #include <stdbool.h>
 #include <periph/rtt.h>
 #include <net/gnrc.h>
+#include "net/gnrc/mac/mac.h"
 #include <net/gnrc/lwmac/lwmac.h>
 
 #include "include/lwmac_internal.h"
@@ -55,7 +56,7 @@ gnrc_mac_tx_neighbor_t* _next_tx_neighbour(gnrc_netdev2_t* gnrc_netdev2)
     uint32_t phase_check;
     uint32_t phase_nearest = LWMAC_PHASE_MAX;
 
-    for (int i = 0; i < LWMAC_NEIGHBOUR_COUNT; i++) {
+    for (int i = 0; i < GNRC_MAC_NEIGHBOR_COUNT; i++) {
 
         if (gnrc_priority_pktqueue_length(&gnrc_netdev2->tx.neighbors[i].queue) > 0) {
 
@@ -265,7 +266,7 @@ int _dispatch_defer(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt)
         bcast = pkt->next->data;
     }
 
-    for (unsigned i = 0; i < LWMAC_DISPATCH_BUFFER_SIZE; i++) {
+    for (unsigned i = 0; i < GNRC_MAC_DISPATCH_BUFFER_SIZE; i++) {
         /* Buffer will be filled bottom-up and emptied completely so no holes */
         if (buffer[i] == NULL) {
             buffer[i] = pkt;
@@ -305,7 +306,7 @@ void _dispatch(gnrc_pktsnip_t* buffer[])
 {
     assert(buffer != NULL);
 
-    for (unsigned i = 0; i < LWMAC_DISPATCH_BUFFER_SIZE; i++) {
+    for (unsigned i = 0; i < GNRC_MAC_DISPATCH_BUFFER_SIZE; i++) {
         if (buffer[i]) {
 
             /* save pointer to netif header */

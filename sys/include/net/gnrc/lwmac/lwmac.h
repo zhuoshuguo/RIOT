@@ -120,12 +120,6 @@ extern "C" {
 #define LWMAC_BROADCAST_CSMA_RETRIES    (3U)
 #endif
 
-/* Store incoming BROADCAST packets until unicast transaction has finished.
- * This buffer will also store the received DATA packets at the same time. */
-#ifndef LWMAC_DISPATCH_BUFFER_SIZE
-#define LWMAC_DISPATCH_BUFFER_SIZE      (4U)
-#endif
-
 /**
  * @brief   Set the default message queue size for LWMAC layer
  */
@@ -138,27 +132,6 @@ extern "C" {
  */
 #ifndef LWMAC_TIMEOUT_COUNT
 #define LWMAC_TIMEOUT_COUNT             (3U)
-#endif
-
-/**
- * @brief   Count of nodes in one-hop distance whose wakeup phase is tracked
- */
-#ifndef LWMAC_NEIGHBOUR_COUNT
-#define LWMAC_NEIGHBOUR_COUNT           (8U)
-#endif
-
-/**
- * @brief   Set the default queue size for packets coming from higher layers
- */
-#ifndef LWMAC_TX_QUEUE_SIZE
-#define LWMAC_TX_QUEUE_SIZE             (8U)
-#endif
-
-/**
- * @brief   Set the default queue size for incoming packets
- */
-#ifndef LWMAC_RX_QUEUE_SIZE
-#define LWMAC_RX_QUEUE_SIZE             (8U)
 #endif
 
 /**
