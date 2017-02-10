@@ -43,7 +43,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_SUPERFRAME_DURATION_US
-#define IQUEUEMAC_SUPERFRAME_DURATION_US        (150U * 1000)
+#define IQUEUEMAC_SUPERFRAME_DURATION_US        (3000U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_CP_DURATION_US
@@ -72,7 +72,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_MAX_PREAM_INTERVAL_US
-#define IQUEUEMAC_MAX_PREAM_INTERVAL_US        (3U * 1000)
+#define IQUEUEMAC_MAX_PREAM_INTERVAL_US        (5U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_WAIT_RX_END_US
@@ -80,7 +80,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_PREAMBLE_INTERVAL_US
-#define IQUEUEMAC_PREAMBLE_INTERVAL_US        (1U * 1000)
+#define IQUEUEMAC_PREAMBLE_INTERVAL_US        (3U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_BROADCAST_INTERVAL_US
@@ -146,7 +146,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_MAX_L2_ADDR_LEN
-#define IQUEUEMAC_MAX_L2_ADDR_LEN           (2U)
+#define IQUEUEMAC_MAX_L2_ADDR_LEN           (8U)
 #endif
 
 #ifndef IQUEUEMAC_NEIGHBOUR_COUNT

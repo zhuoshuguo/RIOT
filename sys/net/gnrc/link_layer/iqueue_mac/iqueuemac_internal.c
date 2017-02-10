@@ -1173,7 +1173,7 @@ void iqueuemac_init_choose_subchannel(iqueuemac_t* iqueuemac){
 
 	memcpy(&own_id,
 	       iqueuemac->own_addr.addr,
-		   iqueuemac->own_addr.len);
+		   2);
 
 	/* range from 12 to 25 */
 	//own_id = 12;

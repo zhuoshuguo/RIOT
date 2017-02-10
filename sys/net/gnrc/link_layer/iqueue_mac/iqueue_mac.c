@@ -71,7 +71,7 @@ static iqueuemac_t iqueuemac;
 void iqueuemac_init(iqueuemac_t* iqueuemac)
 {
 
-	iqueuemac->own_addr.len = iqueuemac->netdev->dev->driver->get(iqueuemac->netdev->dev, NETOPT_ADDRESS, iqueuemac->own_addr.addr, sizeof(iqueuemac->own_addr.addr));
+	iqueuemac->own_addr.len = iqueuemac->netdev->dev->driver->get(iqueuemac->netdev->dev, NETOPT_ADDRESS_LONG, iqueuemac->own_addr.addr, sizeof(iqueuemac->own_addr.addr));
 
 	//printf("iqueuemac: iqueuemac's own addrs is: %d, %d . \n ", iqueuemac->own_addr.addr[1], iqueuemac->own_addr.addr[0]);
 
@@ -118,6 +118,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
     iqueuemac->netdev->dev->driver->set(iqueuemac->netdev->dev, NETOPT_RX_START_IRQ, &enable, sizeof(enable));
     iqueuemac->netdev->dev->driver->set(iqueuemac->netdev->dev, NETOPT_TX_START_IRQ, &enable, sizeof(enable));
     iqueuemac->netdev->dev->driver->set(iqueuemac->netdev->dev, NETOPT_TX_END_IRQ, &enable, sizeof(enable));
+
 
     /* Enable preloading, so packet will only be sent when netdev state will be
      * set to NETOPT_STATE_TX */
@@ -2026,14 +2027,6 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
         		 }
         	}break;*/
 
-#ifdef MODULE_NETSTATS_L2
-            case NETDEV2_EVENT_TX_MEDIUM_BUSY:
-                dev->stats.tx_failed++;
-                break;
-            case NETDEV2_EVENT_TX_COMPLETE:
-                dev->stats.tx_success++;
-                break;
-#endif
             default: break;
 
                 DEBUG("gnrc_netdev2: warning: unhandled event %u.\n", event);
