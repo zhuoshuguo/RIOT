@@ -119,6 +119,7 @@ typedef enum {
 	R_INIT_WAIT_BUSY_END,
 	R_INIT_ANNOUNCE_SUBCHANNEL,
 	R_INIT_WAIT_ANNOUNCE_FEEDBACK,
+	R_INIT_WAIT_EXP_START,
 	R_INIT_END
 } mac_router_init_state_t;
 
@@ -402,6 +403,7 @@ typedef struct iqueuemac {
     uint32_t radio_off_time;
     uint32_t system_start_time;
 
+    uint16_t exp_duration;
 
    
 } iqueuemac_t;

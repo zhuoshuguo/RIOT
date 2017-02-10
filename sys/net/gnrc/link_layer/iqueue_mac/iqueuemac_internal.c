@@ -688,6 +688,10 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
             iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(iqueuemac_frame_broadcast_t), GNRC_NETTYPE_IQUEUEMAC);
     }break;
 
+    case FRAMETYPE_EXP_SETTING:{
+            iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(iqueuemac_frame_expset_t), GNRC_NETTYPE_IQUEUEMAC);
+    }break;
+
     default:
         return -2;
     }
@@ -731,6 +735,12 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
           	info->dst_addr.len = 2;
           	info->dst_addr.addr[0] = 0xff;
            	info->dst_addr.addr[1] = 0xff;
+        }break;
+
+        case FRAMETYPE_EXP_SETTING:{
+        	info->dst_addr.len = 2;
+        	info->dst_addr.addr[0] = 0xff;
+        	info->dst_addr.addr[1] = 0xff;
         }break;
 
         default:break;
@@ -1124,6 +1134,40 @@ void iqueuemac_update_subchannel_occu_flags(iqueuemac_t* iqueuemac, gnrc_pktsnip
 
 }
 
+bool iqueuemac_packet_process_init_waitexpstart(iqueuemac_t* iqueuemac){
+	gnrc_pktsnip_t* pkt;
+
+	iqueuemac_packet_info_t receive_packet_info;
+
+    while( (pkt = packet_queue_pop(&iqueuemac->rx.queue)) != NULL ) {
+
+    	/* parse the packet */
+    	int res = _parse_packet(pkt, &receive_packet_info);
+    	if(res != 0) {
+            //LOG_DEBUG("Packet could not be parsed: %i\n", ret);
+            gnrc_pktbuf_release(pkt);
+            continue;
+        }
+
+    	switch(receive_packet_info.header->type){
+            case FRAMETYPE_EXP_SETTING:{
+            	uint16_t *payload;
+
+                payload = pkt->data;
+                iqueuemac->exp_duration = payload[1];
+
+
+        		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+        		_dispatch(iqueuemac->rx.dispatch_buffer);
+            	return true;
+            }break;
+            default:gnrc_pktbuf_release(pkt);break;
+  	    }
+
+    }/* end of while loop */
+
+    return false;
+}
 
 void iqueuemac_packet_process_in_init(iqueuemac_t* iqueuemac){
 	gnrc_pktsnip_t* pkt;

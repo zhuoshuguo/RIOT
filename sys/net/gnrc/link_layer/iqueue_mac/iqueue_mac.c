@@ -385,7 +385,6 @@ void iqueuemac_device_broadcast_update(iqueuemac_t* iqueuemac){
 
 /****************** iQueue-MAC transmission to node state machines *****/
 
-
 void iqueuemac_init_prepare(iqueuemac_t* iqueuemac){
 
 	rtt_clear_alarm();
@@ -466,13 +465,25 @@ void iqueuemac_init_wait_announce_feedback(iqueuemac_t* iqueuemac){
 		 * namely, completed, to ensure router gets the data correctly***/
 		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
 			packet_queue_flush(&iqueuemac->rx.queue);
-			iqueuemac->router_states.router_init_state = R_INIT_END;
+			iqueuemac->router_states.router_init_state = R_INIT_WAIT_EXP_START;
 			iqueuemac->need_update = true;
 			return;
 		}else{ //if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_BUSY)
 			iqueuemac->router_states.router_init_state = R_INIT_PREPARE;
 			iqueuemac->need_update = true;
 		}
+	}
+}
+
+void iqueuemac_init_wait_exp_start(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac->packet_received == true){
+	   	iqueuemac->packet_received = false;
+
+	   	if(iqueuemac_packet_process_init_waitexpstart(iqueuemac)) {
+	   		iqueuemac->router_states.router_init_state = R_INIT_END;
+	   		iqueuemac->need_update = true;
+	   	}
 	}
 }
 
@@ -493,7 +504,7 @@ void iqueuemac_init_end(iqueuemac_t* iqueuemac){
 
 	iqueuemac_trun_off_radio(iqueuemac);
 
-	iqueuemac_set_timeout(iqueuemac, DUTYCYCLE_RECORD, IQUEUEMAC_DUTYCYCLE_RECORD_US);
+	iqueuemac_set_timeout(iqueuemac, DUTYCYCLE_RECORD, ((uint32_t) iqueuemac->exp_duration * (1000000)));
 
 	iqueuemac->system_start_time = xtimer_now();
 	iqueuemac->last_radio_on_time = iqueuemac->system_start_time;
@@ -509,6 +520,7 @@ void iqueuemac_init_update(iqueuemac_t* iqueuemac){
 		case R_INIT_WAIT_BUSY_END: iqueuemac_init_wait_busy_end(iqueuemac);break;
 		case R_INIT_ANNOUNCE_SUBCHANNEL: iqueuemac_init_announce_subchannel(iqueuemac);break;
 		case R_INIT_WAIT_ANNOUNCE_FEEDBACK: iqueuemac_init_wait_announce_feedback(iqueuemac);break;
+		case R_INIT_WAIT_EXP_START: iqueuemac_init_wait_exp_start(iqueuemac);break;
 		case R_INIT_END: iqueuemac_init_end(iqueuemac);break;
 		default: break;
 	}
