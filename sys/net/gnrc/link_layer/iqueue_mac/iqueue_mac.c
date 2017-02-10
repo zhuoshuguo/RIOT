@@ -385,6 +385,7 @@ void iqueuemac_device_broadcast_update(iqueuemac_t* iqueuemac){
 
 /****************** iQueue-MAC transmission to node state machines *****/
 
+
 void iqueuemac_init_prepare(iqueuemac_t* iqueuemac){
 
 	rtt_clear_alarm();
