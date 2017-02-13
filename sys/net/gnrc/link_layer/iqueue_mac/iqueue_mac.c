@@ -169,7 +169,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	iqueuemac->radio_is_on = false;
 
 
-	iqueuemac->exp_duration = 300; //seconds
+	iqueuemac->exp_duration = 10; //seconds
     iqueuemac->cycle_duration = 100;  //ms
     iqueuemac->cp_duration = 8; //ms
 
@@ -1934,6 +1934,22 @@ void iqueue_mac_router_sleep_end(iqueuemac_t* iqueuemac){
 		duty = ((uint64_t) iqueuemac->awake_duration_sum)*100 / (duty - (uint64_t)iqueuemac->system_start_time);
 		printf("Device achieved duty-cycle: %lu %% \n", (uint32_t)duty);
 
+		/* tell dump that exp is over! */
+		uint32_t over[2];
+		gnrc_pktsnip_t* pkt;
+
+		over[0] = 0xffffffff;
+		over[1] = 0xffffffff;
+
+	    pkt = gnrc_pktbuf_add(NULL, over, 2 * sizeof(uint32_t), GNRC_NETTYPE_UNDEF);
+	    if(pkt == NULL) {
+	    	puts("iqueuemac: over generate error.");
+	    }
+
+        if (!gnrc_netapi_dispatch_receive(pkt->type, GNRC_NETREG_DEMUX_CTX_ALL, pkt)) {
+            gnrc_pktbuf_release(pkt);
+            puts("dispatch pkt fail, drop it");
+        }
 	}
 }
 

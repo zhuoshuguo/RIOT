@@ -134,6 +134,13 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
     found_id = false;
 
+    if(payload[1] == 0xffffffff) {
+
+    	puts("start exp results process");
+    	gnrc_pktbuf_release(pkt);
+    	return;
+    }
+
     int i=0;
     /* find id exist or not */
     for(i=0;i<20;i++){
@@ -188,7 +195,7 @@ static void *_eventloop(void *arg)
 
         switch (msg.type) {
             case GNRC_NETAPI_MSG_TYPE_RCV:
-                //puts("PKTDUMP: data received:");
+                //puts("PKTDUMP: over data received:");
             	received_pkt_counter ++;
                 _dump(msg.content.ptr, received_pkt_counter);
                 break;
