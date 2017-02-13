@@ -32,6 +32,8 @@
 #include "net/gnrc.h"
 #include "net/gnrc/netif.h"
 #include "net/gnrc/netapi.h"
+#include "net/gnrc/netreg.h"
+#include "net/gnrc/nettype.h"
 #include "xtimer.h"
 
 /*
@@ -232,8 +234,16 @@ static void generate_and_send_pkt(void){
 void *sender_thread(void *arg)
 {
     (void) arg;
+    msg_t msg;
+    msg_t msg_queue[8];
 
-    //printf("shuguo-app thread started, pid: %" PRIkernel_pid "\n", thread_getpid());
+    uint16_t data_rate;
+    uint16_t total_gene_num;
+    data_rate = 0;
+    total_gene_num = 0;
+
+    /* setup the message queue */
+    msg_init_queue(msg_queue, 8);
 
     send_counter = 0;
     send_counter1 = 0;
@@ -258,20 +268,46 @@ void *sender_thread(void *arg)
 
     printf("own add is %lx.\n", own_address2);
 
-    xtimer_sleep(17);
+    gnrc_netreg_entry_t  me_reg = { .demux_ctx = GNRC_NETREG_DEMUX_CTX_ALL, .pid = thread_getpid() };
+    gnrc_netreg_register(GNRC_NETTYPE_APP, &me_reg);
 
-    while (1) {
 
-    	//xtimer_sleep(1);
-    	xtimer_usleep(250000);
+   while (1) {
 
-    	if(send_counter <300000){
-    		for(int i=0; i<1; i++){
-    			generate_and_send_pkt();
-    		}
-    	}
+        msg_receive(&msg);
 
+        switch (msg.type) {
+            case GNRC_NETAPI_MSG_TYPE_RCV: {
+            	gnrc_pktsnip_t *pkt;
+            	pkt = msg.content.ptr;
+            	uint16_t *payload;
+
+            	payload = pkt->data;
+            	data_rate = payload[0];
+            	total_gene_num = payload[2];
+
+            	gnrc_pktbuf_release(pkt);
+
+            } break;
+
+            default:
+                puts("PKTDUMP: received something unexpected");
+                break;
+        }
+
+        break;
     }
+
+   while (1) {
+   	//xtimer_sleep(1);
+   	xtimer_usleep((uint32_t) data_rate * 1000);
+
+   	if(send_counter < total_gene_num){
+   		for(int i=0; i<1; i++){
+   			generate_and_send_pkt();
+   		}
+   	}
+   }
 
     return NULL;
 }

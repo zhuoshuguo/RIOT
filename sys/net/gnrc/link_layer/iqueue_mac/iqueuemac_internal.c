@@ -1156,9 +1156,13 @@ bool iqueuemac_packet_process_init_waitexpstart(iqueuemac_t* iqueuemac){
                 payload = pkt->data;
                 iqueuemac->exp_duration = payload[1];
 
+                if (!gnrc_netapi_dispatch_receive(GNRC_NETTYPE_APP, GNRC_NETREG_DEMUX_CTX_ALL, pkt)) {
+                    gnrc_pktbuf_release(pkt);
+                    puts("dispatch pkt fail, drop it");
+                }
 
-        		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
-        		_dispatch(iqueuemac->rx.dispatch_buffer);
+        		//iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+        		//_dispatch(iqueuemac->rx.dispatch_buffer);
             	return true;
             }break;
             default:gnrc_pktbuf_release(pkt);break;

@@ -509,6 +509,7 @@ void iqueuemac_init_end(iqueuemac_t* iqueuemac){
 	iqueuemac->system_start_time = xtimer_now();
 	iqueuemac->last_radio_on_time = iqueuemac->system_start_time;
 	iqueuemac->awake_duration_sum = 0;
+
 }
 
 void iqueuemac_init_update(iqueuemac_t* iqueuemac){
@@ -2147,7 +2148,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
     iqueuemac.mac_type = MAC_TYPE;
 
-    //xtimer_sleep(5);
+    xtimer_sleep(5);
 
     iqueuemac_init(&iqueuemac);
 

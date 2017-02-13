@@ -224,7 +224,7 @@ static void *_eventloop(void *arg)
 
         switch (msg.type) {
             case GNRC_NETAPI_MSG_TYPE_RCV:
-                //puts("PKTDUMP: data received:");
+                 //puts("PKTDUMP: data received:");
                 _dump(msg.content.ptr);
                 break;
             case GNRC_NETAPI_MSG_TYPE_SND:
