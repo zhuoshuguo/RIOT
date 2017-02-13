@@ -688,6 +688,10 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
             iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(iqueuemac_frame_broadcast_t), GNRC_NETTYPE_IQUEUEMAC);
     }break;
 
+    case FRAMETYPE_EXP_SETTING:{
+            iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(iqueuemac_frame_expset_t), GNRC_NETTYPE_IQUEUEMAC);
+    }break;
+
     default:
         return -2;
     }
@@ -729,6 +733,12 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
 
         case FRAMETYPE_ANNOUNCE:{
           	info->dst_addr.len = 2;
+          	info->dst_addr.addr[0] = 0xff;
+           	info->dst_addr.addr[1] = 0xff;
+        }break;
+
+        case FRAMETYPE_EXP_SETTING:{
+           	info->dst_addr.len = 2;
           	info->dst_addr.addr[0] = 0xff;
            	info->dst_addr.addr[1] = 0xff;
         }break;
@@ -1124,6 +1134,43 @@ void iqueuemac_update_subchannel_occu_flags(iqueuemac_t* iqueuemac, gnrc_pktsnip
 
 }
 
+bool iqueuemac_packet_process_init_waitexpstart(iqueuemac_t* iqueuemac){
+	gnrc_pktsnip_t* pkt;
+
+	iqueuemac_packet_info_t receive_packet_info;
+
+    while( (pkt = packet_queue_pop(&iqueuemac->rx.queue)) != NULL ) {
+
+    	/* parse the packet */
+    	int res = _parse_packet(pkt, &receive_packet_info);
+    	if(res != 0) {
+            //LOG_DEBUG("Packet could not be parsed: %i\n", ret);
+            gnrc_pktbuf_release(pkt);
+            continue;
+        }
+
+    	switch(receive_packet_info.header->type){
+            case FRAMETYPE_EXP_SETTING:{
+            	//iqueuemac_update_subchannel_occu_flags(iqueuemac,pkt,&receive_packet_info);
+            	uint16_t *payload;
+
+                payload = pkt->data;
+
+                iqueuemac->exp_duration = payload[1];
+                iqueuemac->cycle_duration = payload[3];
+                iqueuemac->cp_duration = payload[4];
+
+        		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+        		_dispatch(iqueuemac->rx.dispatch_buffer);
+            	return true;
+            }break;
+            default:gnrc_pktbuf_release(pkt);break;
+  	    }
+
+    }/* end of while loop */
+
+    return false;
+}
 
 void iqueuemac_packet_process_in_init(iqueuemac_t* iqueuemac){
 	gnrc_pktsnip_t* pkt;
@@ -1211,6 +1258,75 @@ void iqueuemac_init_choose_subchannel(iqueuemac_t* iqueuemac){
 
 	iqueuemac->sub_channel_num = subchannel_seq;
 	//printf("iqueuemac: the final selected subchannel is %d .\n", subchannel_seq);
+}
+
+
+int iqueuemac_send_exp_setting(iqueuemac_t* iqueuemac)
+{
+	/****** assemble and send the beacon ******/
+	gnrc_pktsnip_t* pkt;
+	gnrc_netif_hdr_t* nethdr_expset;
+	gnrc_pktsnip_t* pkt_iqmac;
+
+	uint16_t  expset[5];
+
+	/* Assemble expset packet */
+	iqueuemac_frame_expset_t iqueuemac_expset_hdr;
+	iqueuemac_expset_hdr.header.type = FRAMETYPE_EXP_SETTING;
+
+	/* data rate */
+	expset[0] = 1000;
+
+	/* exp duration */
+	expset[1] = 10;
+
+	/* exp total generate packet number */
+	expset[2] = 0;
+
+
+    /**** add the setting ****/
+    pkt = gnrc_pktbuf_add(NULL, expset, 5 * sizeof(uint16_t), GNRC_NETTYPE_IQUEUEMAC);
+    if(pkt == NULL) {
+    	puts("iqueuemac: expset add failed.");
+    	return -ENOBUFS;
+    }
+    pkt_iqmac = pkt;
+
+
+	pkt = gnrc_pktbuf_add(pkt, &iqueuemac_expset_hdr, sizeof(iqueuemac_expset_hdr), GNRC_NETTYPE_IQUEUEMAC);
+	if(pkt == NULL) {
+		puts("iqueuemac: expset buf add failed.");
+		return -ENOBUFS;
+	}
+	pkt_iqmac = pkt;
+
+	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
+	if(pkt == NULL) {
+		puts("iqueuemac: expset netif add failed.");
+		gnrc_pktbuf_release(pkt_iqmac);
+		return -ENOBUFS;
+	}
+	pkt_iqmac = pkt;
+
+	/* We wouldn't get here if add the NETIF header had failed, so no
+		sanity checks needed */
+	nethdr_expset = (gnrc_netif_hdr_t*) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+
+	/* Construct NETIF header and initiate address fields */
+	gnrc_netif_hdr_init(nethdr_expset, 0, 0);
+	//gnrc_netif_hdr_set_dst_addr(nethdr_wa, lwmac->rx.l2_addr.addr, lwmac->rx.l2_addr.len);
+
+	/* Send WA as broadcast*/
+	nethdr_expset->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
+
+	int res;
+
+	res = iqueuemac_send(iqueuemac, pkt, NETOPT_DISABLE);
+    if(res < 0){
+		puts("iqueuemac: send expset failed in iqueue_mac_send_preamble().");
+    	gnrc_pktbuf_release(pkt_iqmac);
+    }
+	return res;
 }
 
 int iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)

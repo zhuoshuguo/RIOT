@@ -44,7 +44,8 @@ typedef enum {
     FRAMETYPE_PREAMBLE,
 	FRAMETYPE_PREAMBLE_ACK,
     FRAMETYPE_BROADCAST,
-	FRAMETYPE_ANNOUNCE
+	FRAMETYPE_ANNOUNCE,
+	FRAMETYPE_EXP_SETTING,
 } iqueuemac_frame_type_t;
 
 /******************************************************************************/
@@ -74,6 +75,10 @@ typedef struct __attribute__((packed)) {
 	iqueuemac_hdr_t header;
 	uint8_t queue_indicator;  /* The first bit of the indicator is used to indicate MAC type: router or dimple node*/
 } iqueuemac_frame_data_t;
+
+typedef struct __attribute__((packed)) {
+ 	iqueuemac_hdr_t header;
+} iqueuemac_frame_expset_t;
 
 typedef struct __attribute__((packed)) {
 	iqueuemac_hdr_t header;

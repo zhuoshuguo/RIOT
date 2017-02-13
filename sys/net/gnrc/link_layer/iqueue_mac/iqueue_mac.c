@@ -168,6 +168,11 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 
 	iqueuemac->radio_is_on = false;
 
+
+	iqueuemac->exp_duration = 300; //seconds
+    iqueuemac->cycle_duration = 100;  //ms
+    iqueuemac->cp_duration = 8; //ms
+
 }
 
 static void rtt_cb(void* arg)
@@ -454,7 +459,7 @@ void iqueuemac_init_announce_subchannel(iqueuemac_t* iqueuemac){
 	iqueuemac_send_announce(iqueuemac,NETOPT_ENABLE);
 
 	iqueuemac->router_states.router_init_state = R_INIT_WAIT_ANNOUNCE_FEEDBACK;
-	iqueuemac->need_update = true;
+	iqueuemac->need_update = false;
 }
 
 void iqueuemac_init_wait_announce_feedback(iqueuemac_t* iqueuemac){
@@ -465,13 +470,43 @@ void iqueuemac_init_wait_announce_feedback(iqueuemac_t* iqueuemac){
 		 * namely, completed, to ensure router gets the data correctly***/
 		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
 			packet_queue_flush(&iqueuemac->rx.queue);
-			iqueuemac->router_states.router_init_state = R_INIT_END;
+			iqueuemac->router_states.router_init_state = R_INIT_WAIT_EXP_START;
 			iqueuemac->need_update = true;
 			return;
 		}else{ //if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_BUSY)
 			iqueuemac->router_states.router_init_state = R_INIT_PREPARE;
 			iqueuemac->need_update = true;
 		}
+	}
+}
+
+void iqueuemac_init_wait_exp_start(iqueuemac_t* iqueuemac){
+
+	if(1) {
+
+		xtimer_sleep(1);
+		iqueuemac_send_exp_setting(iqueuemac);
+
+		iqueuemac->router_states.router_init_state = R_INIT_WAIT_EXP_SENDEND;
+		iqueuemac->need_update = false;
+
+	} else {
+		if(iqueuemac->packet_received == true){
+			iqueuemac->packet_received = false;
+
+			if(iqueuemac_packet_process_init_waitexpstart(iqueuemac)) {
+				iqueuemac->router_states.router_init_state = R_INIT_END;
+				iqueuemac->need_update = true;
+			}
+		}
+	}
+}
+
+void iqueuemac_init_wait_exp_sendend(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac->tx.tx_finished == true){
+		iqueuemac->router_states.router_init_state = R_INIT_END;
+		iqueuemac->need_update = true;
 	}
 }
 
@@ -490,9 +525,10 @@ void iqueuemac_init_end(iqueuemac_t* iqueuemac){
 	rtt_handler(IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
 	iqueuemac->need_update = true;
 
+
 	iqueuemac_trun_off_radio(iqueuemac);
 
-	iqueuemac_set_timeout(iqueuemac, DUTYCYCLE_RECORD, IQUEUEMAC_DUTYCYCLE_RECORD_US);
+	iqueuemac_set_timeout(iqueuemac, DUTYCYCLE_RECORD, ((uint32_t) iqueuemac->exp_duration * (1000000)));
 
 	iqueuemac->system_start_time = xtimer_now();
 	iqueuemac->last_radio_on_time = iqueuemac->system_start_time;
@@ -508,6 +544,8 @@ void iqueuemac_init_update(iqueuemac_t* iqueuemac){
 		case R_INIT_WAIT_BUSY_END: iqueuemac_init_wait_busy_end(iqueuemac);break;
 		case R_INIT_ANNOUNCE_SUBCHANNEL: iqueuemac_init_announce_subchannel(iqueuemac);break;
 		case R_INIT_WAIT_ANNOUNCE_FEEDBACK: iqueuemac_init_wait_announce_feedback(iqueuemac);break;
+		case R_INIT_WAIT_EXP_START: iqueuemac_init_wait_exp_start(iqueuemac);break;
+		case R_INIT_WAIT_EXP_SENDEND: iqueuemac_init_wait_exp_sendend(iqueuemac);break;
 		case R_INIT_END: iqueuemac_init_end(iqueuemac);break;
 		default: break;
 	}
@@ -1496,7 +1534,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac_trun_on_radio(iqueuemac);
 
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_LISTEN;
-	iqueuemac->need_update = true;
+	iqueuemac->need_update = false;
 
 	//puts("CP");
 
@@ -2134,7 +2172,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
     iqueuemac.mac_type = MAC_TYPE;
 
-    //xtimer_sleep(5);
+    //xtimer_sleep(3);
 
     iqueuemac_init(&iqueuemac);
 

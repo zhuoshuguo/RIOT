@@ -137,6 +137,9 @@ void iqueuemac_set_promiscuousmode(iqueuemac_t* iqueuemac, netopt_enable_t enabl
 void iqueuemac_turn_radio_channel(iqueuemac_t* iqueuemac, uint16_t channel_num);
 void iqueuemac_set_raddio_to_listen_mode(iqueuemac_t* iqueuemac);
 
+bool iqueuemac_packet_process_init_waitexpstart(iqueuemac_t* iqueuemac);
+int iqueuemac_send_exp_setting(iqueuemac_t* iqueuemac);
+
 bool iqueuemac_check_duplicate(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* pa_info);
 int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable);
 int iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* info);
