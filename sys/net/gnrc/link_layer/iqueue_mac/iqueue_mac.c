@@ -510,6 +510,8 @@ void iqueuemac_init_end(iqueuemac_t* iqueuemac){
 	iqueuemac->last_radio_on_time = iqueuemac->system_start_time;
 	iqueuemac->awake_duration_sum = 0;
 
+	printf("Init systime is %lu \n", (xtimer_now() - iqueuemac->system_start_time));
+
 }
 
 void iqueuemac_init_update(iqueuemac_t* iqueuemac){
@@ -1513,6 +1515,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->need_update = true;
 
 	//puts("CP");
+	printf("CP local is %lu \n", (xtimer_now() - iqueuemac->system_start_time));
 
 	iqueuemac->cp_backoff_counter = 0;
 	iqueuemac->quit_current_cycle = false;
