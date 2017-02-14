@@ -32,10 +32,14 @@
 #include "net/udp.h"
 #include "net/sixlowpan.h"
 #include "od.h"
+#include <xtimer.h>
 
 
 uint32_t idlist[20];
 uint32_t reception_list[20];
+
+uint64_t delay_sum;
+uint32_t system_start_time = 0;
 
 /**
  * @brief   PID of the pktdump thread
@@ -122,6 +126,14 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     //printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
 
 	uint32_t *payload;
+
+	uint32_t this_pkt_delay;
+
+	uint32_t local_systime;
+
+	this_pkt_delay = 0;
+	local_systime = 0;
+
     //gnrc_netif_hdr_t *netif_hdr;
 
     //uint8_t* addr;
@@ -134,12 +146,41 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
     found_id = false;
 
+
+    if(payload[1] == 0x22222222) {
+
+    	system_start_time = payload[0];
+    	gnrc_pktbuf_release(pkt);
+
+    	//printf("Dump: sys-start-time is %lu \n", system_start_time);
+    	return;
+    }
+
     if(payload[1] == 0xffffffff) {
 
     	puts("start exp results process");
+
+    	received_pkt_counter -= 2;
+
+    	printf("total received packet number is %lu \n", received_pkt_counter);
+
     	gnrc_pktbuf_release(pkt);
     	return;
     }
+
+
+    local_systime = xtimer_now() - system_start_time;
+
+    printf("local_systime is %lu \n", local_systime);
+
+    printf("pkt genera time is %lu \n", (payload[5] - payload[4]));
+
+    this_pkt_delay = local_systime - (payload[5] - payload[4]);
+
+    printf("this_pkt_delay is %lu \n", this_pkt_delay);
+
+    delay_sum += (uint64_t) this_pkt_delay;
+
 
     int i=0;
     /* find id exist or not */
@@ -174,10 +215,11 @@ static void *_eventloop(void *arg)
     msg_t msg, reply;
     msg_t msg_queue[GNRC_PKTDUMP_MSG_QUEUE_SIZE];
 
-
-
     uint32_t received_pkt_counter;
     received_pkt_counter = 0;
+    system_start_time = 0;
+
+    delay_sum = 0;
 
     /* setup the message queue */
     msg_init_queue(msg_queue, GNRC_PKTDUMP_MSG_QUEUE_SIZE);

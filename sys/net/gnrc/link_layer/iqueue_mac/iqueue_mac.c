@@ -525,14 +525,35 @@ void iqueuemac_init_end(iqueuemac_t* iqueuemac){
 	rtt_handler(IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
 	iqueuemac->need_update = true;
 
+	iqueuemac->system_start_time = xtimer_now();
+    /////// upload sys_start_time to dump
+	uint32_t starttime[2];
+	gnrc_pktsnip_t* pkt;
+
+	starttime[0] = iqueuemac->system_start_time;
+	starttime[1] = 0x22222222;
+
+    pkt = gnrc_pktbuf_add(NULL, starttime, 2 * sizeof(uint32_t), GNRC_NETTYPE_UNDEF);
+    if(pkt == NULL) {
+    	puts("iqueuemac: starttime generate error.");
+    }
+
+    if (!gnrc_netapi_dispatch_receive(pkt->type, GNRC_NETREG_DEMUX_CTX_ALL, pkt)) {
+        gnrc_pktbuf_release(pkt);
+        puts("dispatch pkt fail, drop it");
+    }
+    ///////////////////////
+
 
 	iqueuemac_trun_off_radio(iqueuemac);
 
 	iqueuemac_set_timeout(iqueuemac, DUTYCYCLE_RECORD, ((uint32_t) iqueuemac->exp_duration * (1000000)));
 
-	iqueuemac->system_start_time = xtimer_now();
+
 	iqueuemac->last_radio_on_time = iqueuemac->system_start_time;
 	iqueuemac->awake_duration_sum = 0;
+
+	printf("Init systime is %lu \n", (xtimer_now() - iqueuemac->system_start_time));
 }
 
 void iqueuemac_init_update(iqueuemac_t* iqueuemac){
@@ -1538,6 +1559,8 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
 	//puts("CP");
 
+	printf("CP local is %lu \n", (xtimer_now() - iqueuemac->system_start_time));
+
 	iqueuemac->cp_backoff_counter = 0;
 	iqueuemac->quit_current_cycle = false;
 	iqueuemac->get_other_preamble = false;
@@ -2188,7 +2211,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
     iqueuemac.mac_type = MAC_TYPE;
 
-    //xtimer_sleep(3);
+    xtimer_sleep(8);
 
     iqueuemac_init(&iqueuemac);
 
