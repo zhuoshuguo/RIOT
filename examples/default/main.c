@@ -55,6 +55,7 @@ uint32_t send_counter;
 uint32_t send_counter1;
 uint32_t send_counter2;
 uint32_t own_address2;
+uint32_t exp_start_time;
 
 static void generate_and_send_pkt(void){
 
@@ -65,11 +66,13 @@ static void generate_and_send_pkt(void){
 	    int16_t dev2;
 
 	    gnrc_pktsnip_t* pkt;
-	    uint32_t payload[5];
+	    uint32_t payload[8];
 
 	    send_counter++;
 
 	    payload[1] = own_address2;
+	    payload[4] = exp_start_time;
+	    payload[5] = xtimer_now();
 
 	    dev2 = 4;
 	    /* parse interface */
@@ -77,6 +80,17 @@ static void generate_and_send_pkt(void){
 
 	    addr_len = 2;
 
+	    if(own_address2 == 0x103e) {
+
+	    		payload[3] = 0x00005ad6;
+		        addr[0] = 0x5a;
+		        addr[1] = 0xd6;
+
+		        payload[0] = send_counter;
+		        printf("%lx: %lu.\n", payload[3],send_counter);
+	    }
+
+#if 0
 	    if(own_address2 == 0xbcc6) {
 	    	if((send_counter%2)==0){
 	    		payload[3] = 0x000052d2;
@@ -190,15 +204,8 @@ static void generate_and_send_pkt(void){
 		        printf("%lx: %lu.\n", payload[3],send_counter2);
 	    	}
 	    }
+#endif
 
-	    //addr[0] = 0x10;
-	    //addr[1] = 0x3e;
-
-	    //addr[0] = 0x6f;
-	    //addr[1] = 0x46;
-
-	    //addr[0] = 0xa3;
-	    //addr[1] = 0x12;
 
 	    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
 	    if(hdr == NULL){
@@ -237,8 +244,8 @@ void *sender_thread(void *arg)
     msg_t msg;
     msg_t msg_queue[8];
 
-    uint16_t data_rate;
-    uint16_t total_gene_num;
+    uint32_t data_rate;
+    uint32_t total_gene_num;
     data_rate = 0;
     total_gene_num = 0;
 
@@ -280,11 +287,15 @@ void *sender_thread(void *arg)
             case GNRC_NETAPI_MSG_TYPE_RCV: {
             	gnrc_pktsnip_t *pkt;
             	pkt = msg.content.ptr;
-            	uint16_t *payload;
+            	uint32_t *payload;
 
             	payload = pkt->data;
             	data_rate = payload[0];
             	total_gene_num = payload[2];
+            	exp_start_time = payload[5];
+
+            	//printf("the exp-data_rate is %lu. \n", data_rate);
+            	//printf("the exp-total_gene_num is %lu. \n", total_gene_num);
 
             	gnrc_pktbuf_release(pkt);
 

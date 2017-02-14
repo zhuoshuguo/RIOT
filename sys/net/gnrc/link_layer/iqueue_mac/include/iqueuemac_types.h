@@ -403,7 +403,7 @@ typedef struct iqueuemac {
     uint32_t radio_off_time;
     uint32_t system_start_time;
 
-    uint16_t exp_duration;
+    uint32_t exp_duration;
 
    
 } iqueuemac_t;

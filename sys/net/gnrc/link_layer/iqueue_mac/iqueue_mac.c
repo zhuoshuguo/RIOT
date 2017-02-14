@@ -506,7 +506,7 @@ void iqueuemac_init_end(iqueuemac_t* iqueuemac){
 
 	iqueuemac_set_timeout(iqueuemac, DUTYCYCLE_RECORD, ((uint32_t) iqueuemac->exp_duration * (1000000)));
 
-	iqueuemac->system_start_time = xtimer_now();
+
 	iqueuemac->last_radio_on_time = iqueuemac->system_start_time;
 	iqueuemac->awake_duration_sum = 0;
 

@@ -1151,10 +1151,15 @@ bool iqueuemac_packet_process_init_waitexpstart(iqueuemac_t* iqueuemac){
 
     	switch(receive_packet_info.header->type){
             case FRAMETYPE_EXP_SETTING:{
-            	uint16_t *payload;
+            	uint32_t *payload;
+
+            	iqueuemac->system_start_time = xtimer_now();
 
                 payload = pkt->data;
                 iqueuemac->exp_duration = payload[1];
+                payload[5] = iqueuemac->system_start_time;
+
+                //printf("the exp-duration is %lu seconds. \n", iqueuemac->exp_duration);
 
                 if (!gnrc_netapi_dispatch_receive(GNRC_NETTYPE_APP, GNRC_NETREG_DEMUX_CTX_ALL, pkt)) {
                     gnrc_pktbuf_release(pkt);
