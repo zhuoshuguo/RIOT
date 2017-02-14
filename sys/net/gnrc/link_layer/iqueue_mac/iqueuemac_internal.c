@@ -1152,7 +1152,7 @@ bool iqueuemac_packet_process_init_waitexpstart(iqueuemac_t* iqueuemac){
     	switch(receive_packet_info.header->type){
             case FRAMETYPE_EXP_SETTING:{
             	//iqueuemac_update_subchannel_occu_flags(iqueuemac,pkt,&receive_packet_info);
-            	uint16_t *payload;
+            	uint32_t *payload;
 
                 payload = pkt->data;
 
@@ -1268,7 +1268,7 @@ int iqueuemac_send_exp_setting(iqueuemac_t* iqueuemac)
 	gnrc_netif_hdr_t* nethdr_expset;
 	gnrc_pktsnip_t* pkt_iqmac;
 
-	uint16_t  expset[5];
+	uint32_t  expset[8];
 
 	/* Assemble expset packet */
 	iqueuemac_frame_expset_t iqueuemac_expset_hdr;
@@ -1281,11 +1281,11 @@ int iqueuemac_send_exp_setting(iqueuemac_t* iqueuemac)
 	expset[1] = 10;
 
 	/* exp total generate packet number */
-	expset[2] = 0;
+	expset[2] = 3;
 
 
     /**** add the setting ****/
-    pkt = gnrc_pktbuf_add(NULL, expset, 5 * sizeof(uint16_t), GNRC_NETTYPE_IQUEUEMAC);
+    pkt = gnrc_pktbuf_add(NULL, expset, 8 * sizeof(uint32_t), GNRC_NETTYPE_IQUEUEMAC);
     if(pkt == NULL) {
     	puts("iqueuemac: expset add failed.");
     	return -ENOBUFS;
