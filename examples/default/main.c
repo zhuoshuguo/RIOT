@@ -57,6 +57,7 @@ uint32_t send_counter1;
 uint32_t send_counter2;
 uint32_t own_address2;
 uint32_t exp_start_time;
+uint32_t exp_duration_ticks;
 
 static void generate_and_send_pkt(void){
 
@@ -88,7 +89,7 @@ static void generate_and_send_pkt(void){
 		        addr[1] = 0xd6;
 
 		        payload[0] = send_counter;
-		        printf("%lx: %lu.\n", payload[3],send_counter);
+		        //printf("%lx: %lu.\n", payload[3],send_counter);
 	    }
 
 #if 0
@@ -244,6 +245,7 @@ void *sender_thread(void *arg)
     (void) arg;
     msg_t msg;
     msg_t msg_queue[8];
+    bool exp_end;
 
     uint32_t data_rate;
     uint32_t total_gene_num;
@@ -294,6 +296,9 @@ void *sender_thread(void *arg)
             	data_rate = payload[0];
             	total_gene_num = payload[2];
             	exp_start_time = payload[5];
+            	exp_duration_ticks = payload[1];
+            	exp_duration_ticks = exp_duration_ticks * 1000000;
+            	exp_duration_ticks = RTT_US_TO_TICKS(exp_duration_ticks);
 
             	//printf("the exp-data_rate is %lu. \n", data_rate);
             	//printf("the exp-total_gene_num is %lu. \n", total_gene_num);
@@ -310,15 +315,26 @@ void *sender_thread(void *arg)
         break;
     }
 
+   exp_end = false;
+
    while (1) {
    	//xtimer_sleep(1);
    	xtimer_usleep((uint32_t) data_rate * 1000);
 
-   	if(send_counter < total_gene_num){
+   	if((send_counter < total_gene_num) && (rtt_get_counter() < exp_duration_ticks)){
    		for(int i=0; i<1; i++){
    			generate_and_send_pkt();
    		}
+   	}else {
+   	   	if(exp_end == false) {
+   	   		printf("sender totally generated pkt num %lu .\n", send_counter);
+   	   		exp_end =  false;
+   	   	}
+   	    exp_end = true;
    	}
+
+
+
    }
 
     return NULL;
