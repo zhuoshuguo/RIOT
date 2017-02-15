@@ -35,6 +35,7 @@
 #include "net/gnrc/netreg.h"
 #include "net/gnrc/nettype.h"
 #include "xtimer.h"
+#include <periph/rtt.h>
 
 /*
 #if FEATURE_PERIPH_RTC
@@ -72,7 +73,7 @@ static void generate_and_send_pkt(void){
 
 	    payload[1] = own_address2;
 	    payload[4] = exp_start_time;
-	    payload[5] = xtimer_now();
+	    payload[5] = rtt_get_counter();
 
 	    dev2 = 4;
 	    /* parse interface */

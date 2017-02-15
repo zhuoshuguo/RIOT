@@ -269,7 +269,7 @@ void iqueuemac_trun_on_radio(iqueuemac_t* iqueuemac)
 	                              sizeof(devstate));
 
 	if(iqueuemac->radio_is_on == false) {
-		iqueuemac->last_radio_on_time = xtimer_now();
+		iqueuemac->last_radio_on_time = rtt_get_counter();
 		iqueuemac->radio_is_on = true;
    	}
 
@@ -285,7 +285,7 @@ void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac)
 	                              sizeof(devstate));
 
 	if(iqueuemac->radio_is_on == true) {
-		iqueuemac->radio_off_time = xtimer_now();
+		iqueuemac->radio_off_time = rtt_get_counter();
 		iqueuemac->awake_duration_sum += (iqueuemac->radio_off_time - iqueuemac->last_radio_on_time);
 		iqueuemac->radio_is_on = false;
 	}
@@ -1153,7 +1153,8 @@ bool iqueuemac_packet_process_init_waitexpstart(iqueuemac_t* iqueuemac){
             case FRAMETYPE_EXP_SETTING:{
             	uint32_t *payload;
 
-            	iqueuemac->system_start_time = xtimer_now();
+            	rtt_set_counter(0);
+            	iqueuemac->system_start_time = rtt_get_counter();
 
                 payload = pkt->data;
                 iqueuemac->exp_duration = payload[1];

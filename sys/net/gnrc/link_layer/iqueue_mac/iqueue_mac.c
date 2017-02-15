@@ -168,6 +168,8 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 
 	iqueuemac->radio_is_on = false;
 
+	iqueuemac->exp_end = false;
+
 }
 
 static void rtt_cb(void* arg)
@@ -491,10 +493,16 @@ void iqueuemac_init_end(iqueuemac_t* iqueuemac){
 
 	iqueuemac_clear_timeout(iqueuemac,TIMEOUT_COLLECT_BEACON_END);
 
+	//printf("Init systime is %lu \n", RTT_TICKS_TO_US((rtt_get_counter() - iqueuemac->system_start_time)));
+
 	iqueuemac->router_states.router_init_state = R_INIT_PREPARE;
 	/*** switch to duty-cycle operation ***/
 	iqueuemac->router_states.router_basic_state = R_LISTENNING;
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_INIT;
+
+	//uint32_t listen_period;
+	//listen_period = random_uint32_range(200, IQUEUEMAC_SUPERFRAME_DURATION_US);
+	//xtimer_usleep(IQUEUEMAC_SUPERFRAME_DURATION_US/2);
 
 	//puts("router random ends.");
 	/*** start duty-cycle ***/
@@ -504,13 +512,8 @@ void iqueuemac_init_end(iqueuemac_t* iqueuemac){
 
 	iqueuemac_trun_off_radio(iqueuemac);
 
-	iqueuemac_set_timeout(iqueuemac, DUTYCYCLE_RECORD, ((uint32_t) iqueuemac->exp_duration * (1000000)));
-
-
 	iqueuemac->last_radio_on_time = iqueuemac->system_start_time;
 	iqueuemac->awake_duration_sum = 0;
-
-	printf("Init systime is %lu \n", (xtimer_now() - iqueuemac->system_start_time));
 
 }
 
@@ -1515,7 +1518,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 	iqueuemac->need_update = true;
 
 	//puts("CP");
-	printf("CP local is %lu \n", (xtimer_now() - iqueuemac->system_start_time));
+	//printf("CP is %lu \n", RTT_TICKS_TO_US((rtt_get_counter() - iqueuemac->system_start_time)));
 
 	iqueuemac->cp_backoff_counter = 0;
 	iqueuemac->quit_current_cycle = false;
@@ -1902,13 +1905,16 @@ void iqueue_mac_router_sleep_end(iqueuemac_t* iqueuemac){
     printf("dutycycle is %lu \n", duty);
     */
 
-	if(iqueuemac_timeout_is_expired(iqueuemac, DUTYCYCLE_RECORD)){
+	if(!iqueuemac->exp_end && (RTT_TICKS_TO_US(rtt_get_counter()) > (iqueuemac->exp_duration * (1000000)))){
+
+		iqueuemac->exp_end = true;
+
 		/* Output duty-cycle ratio */
 		uint64_t duty;
-		duty = (uint64_t)xtimer_now();
+		duty = (uint64_t) rtt_get_counter();
 
-		printf("Device awake_duration_sum: %lu us \n", iqueuemac->awake_duration_sum);
-		printf("Device life time : %lu us \n", (uint32_t)(duty - (uint64_t)iqueuemac->system_start_time));
+		printf("Device awake_duration_sum: %lu us \n", RTT_TICKS_TO_US(iqueuemac->awake_duration_sum));
+		printf("Device life time : %lu us \n", RTT_TICKS_TO_US((rtt_get_counter() - iqueuemac->system_start_time)));
 
 		duty = ((uint64_t) iqueuemac->awake_duration_sum)*100 / (duty - (uint64_t)iqueuemac->system_start_time);
 		printf("Device achieved duty-cycle: %lu %% \n", (uint32_t)duty);

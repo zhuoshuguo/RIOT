@@ -405,6 +405,8 @@ typedef struct iqueuemac {
 
     uint32_t exp_duration;
 
+    bool exp_end;
+
    
 } iqueuemac_t;
 
