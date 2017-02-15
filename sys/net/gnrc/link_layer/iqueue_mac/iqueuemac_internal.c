@@ -1928,6 +1928,13 @@ void iqueuemac_figure_tx_neighbor_phase(iqueuemac_t* iqueuemac){
     			long int tmp = iqueuemac->tx.neighbours[i].cp_phase - iqueuemac->backoff_phase_ticks;
     		    if(tmp < 0) {
     		        tmp += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+
+    		        /* update the neighbor's cur_pub_channel if tmp < 0 */
+        	        if(iqueuemac->tx.neighbours[i].cur_pub_channel == iqueuemac->pub_channel_1) {
+        		        iqueuemac->tx.neighbours[i].cur_pub_channel = iqueuemac->pub_channel_2;
+        	        }else{
+        		        iqueuemac->tx.neighbours[i].cur_pub_channel = iqueuemac->pub_channel_1;
+        	        }
     		    }
     		    iqueuemac->tx.neighbours[i].cp_phase = (uint32_t)tmp;
     		}
