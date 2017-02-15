@@ -269,7 +269,7 @@ void iqueuemac_trun_on_radio(iqueuemac_t* iqueuemac)
 	                              sizeof(devstate));
 
 	if(iqueuemac->radio_is_on == false) {
-		iqueuemac->last_radio_on_time = xtimer_now();
+		iqueuemac->last_radio_on_time = rtt_get_counter();
 		iqueuemac->radio_is_on = true;
    	}
 
@@ -285,7 +285,7 @@ void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac)
 	                              sizeof(devstate));
 
 	if(iqueuemac->radio_is_on == true) {
-		iqueuemac->radio_off_time = xtimer_now();
+		iqueuemac->radio_off_time = rtt_get_counter();
 		iqueuemac->awake_duration_sum += (iqueuemac->radio_off_time - iqueuemac->last_radio_on_time);
 		iqueuemac->radio_is_on = false;
 	}
@@ -1274,14 +1274,17 @@ int iqueuemac_send_exp_setting(iqueuemac_t* iqueuemac)
 	iqueuemac_frame_expset_t iqueuemac_expset_hdr;
 	iqueuemac_expset_hdr.header.type = FRAMETYPE_EXP_SETTING;
 
+
+
 	/* data rate */
-	expset[0] = 1000;
+	expset[0] = 300;
 
 	/* exp duration */
-	expset[1] = 10;
+	iqueuemac->exp_duration = 10;
+	expset[1] = iqueuemac->exp_duration;
 
 	/* exp total generate packet number */
-	expset[2] = 0;
+	expset[2] = 100;
 
 
     /**** add the setting ****/

@@ -32,7 +32,7 @@
 #include "net/udp.h"
 #include "net/sixlowpan.h"
 #include "od.h"
-#include <xtimer.h>
+#include <periph/rtt.h>
 
 
 uint32_t idlist[20];
@@ -140,12 +140,10 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     bool found_id;
 
     payload = pkt->data;
-    //netif_hdr = pkt->next->data;
 
-    //addr = gnrc_netif_hdr_get_src_addr(netif_hdr);
+    received_pkt_counter -= 1;
 
     found_id = false;
-
 
     if(payload[1] == 0x22222222) {
 
@@ -160,7 +158,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
     	puts("start exp results process");
 
-    	received_pkt_counter -= 2;
+    	received_pkt_counter -= 1;
 
     	printf("total received packet number is %lu \n", received_pkt_counter);
 
@@ -168,16 +166,15 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     	return;
     }
 
+    local_systime = rtt_get_counter() - system_start_time;
 
-    local_systime = xtimer_now() - system_start_time;
+    printf("local_systime is %lu \n", RTT_TICKS_TO_US(local_systime));
 
-    printf("local_systime is %lu \n", local_systime);
-
-    printf("pkt genera time is %lu \n", (payload[5] - payload[4]));
+    printf("pkt genera time is %lu \n", RTT_TICKS_TO_US(payload[5] - payload[4]));
 
     this_pkt_delay = local_systime - (payload[5] - payload[4]);
 
-    printf("this_pkt_delay is %lu \n", this_pkt_delay);
+    printf("this_pkt_delay is %lu \n", RTT_TICKS_TO_US(this_pkt_delay));
 
     delay_sum += (uint64_t) this_pkt_delay;
 

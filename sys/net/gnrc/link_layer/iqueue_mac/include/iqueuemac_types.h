@@ -404,9 +404,11 @@ typedef struct iqueuemac {
     uint32_t radio_off_time;
     uint32_t system_start_time;
 
-    uint16_t exp_duration;
-    uint16_t cycle_duration;
-    uint16_t cp_duration;
+    uint32_t exp_duration;
+    uint32_t cycle_duration;
+    uint32_t cp_duration;
+
+    bool exp_end;
    
 } iqueuemac_t;
 
