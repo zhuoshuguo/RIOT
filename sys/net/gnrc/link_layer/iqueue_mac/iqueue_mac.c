@@ -275,7 +275,7 @@ void iqueuemac_device_broadcast_init(iqueuemac_t* iqueuemac){
 
 	pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_broadcast_hdr, sizeof(iqueuemac_broadcast_hdr), GNRC_NETTYPE_IQUEUEMAC);
 	if(pkt == NULL) {
-		puts("iqueuemac: pktbuf add failed in iqueuemac_device_broadcast_init.");
+		//puts("iqueuemac: pktbuf add failed in iqueuemac_device_broadcast_init.");
 		//relase the broadcast pkt and go to listen state??.
 	}
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_BROADCAST_FINISH, IQUEUEMAC_SUPERFRAME_DURATION_US);
@@ -662,9 +662,9 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				 * since it (turn-off radio func here) is mainly for debug */
 				iqueuemac_trun_off_radio(iqueuemac);
 				if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_BUSY) {
-				    puts("t2r:busy");
+				    //puts("t2r:busy");
 				}else if (iqueuemac->tx.tx_feedback == TX_FEEDBACK_NOACK){
-					puts("t2r:noack");
+					//puts("t2r:noack");
 				}
 				iqueuemac->tx.no_ack_contuer ++;
 
@@ -782,7 +782,7 @@ void iqueuemac_t2r_wait_beacon(iqueuemac_t* iqueuemac){
     				iqueuemac->tx.tx_packet = pkt;
     				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
     			}else{
-    				puts("iqueueMAC-Error: NUll pktbuf!");
+    				//puts("iqueueMAC-Error: NUll pktbuf!");
     				iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
     			}
 
@@ -797,7 +797,7 @@ void iqueuemac_t2r_wait_beacon(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_BEACON)){
 		packet_queue_flush(&iqueuemac->rx.queue);
-		puts("t2r:no beacon");
+		//puts("t2r:no beacon");
 		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 		iqueuemac->need_update = true;
 	}
@@ -815,7 +815,7 @@ void iqueuemac_t2r_wait_own_slots(iqueuemac_t* iqueuemac){
 			iqueuemac->tx.tx_packet = pkt;
 			iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
 		}else{
-			puts("iqueueMAC-Error: NUll pktbuf, drop!");
+			//puts("iqueueMAC-Error: NUll pktbuf, drop!");
 			iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 		}
 		iqueuemac->need_update = true;
@@ -869,7 +869,7 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 		if(iqueuemac->tx.tx_packet != NULL) {
 			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 			iqueuemac->tx.tx_packet = NULL;
-			puts("v3:drop pkt");
+			//puts("v3:drop pkt");
 			iqueuemac->tx.current_neighbour = NULL;
 		}
 
@@ -902,7 +902,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 						iqueuemac->tx.tx_packet = pkt;
 						iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
 					}else{
-						puts("iqueueMAC-Error: NUll pktbuf!");
+						//puts("iqueueMAC-Error: NUll pktbuf!");
 						iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 					}
 				}else{
@@ -927,12 +927,12 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 
 				/*** do not release the pkt here, continue sending the same pkt ***/
 				if(iqueuemac->tx.vtdma_para.slots_num > 0){
-					puts("v1");
+					//puts("v1");
 
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
 
 				}else{ /* if no slots for sending, queue the pkt for retry in next cycle */
-					puts("v2");
+					//puts("v2");
 
 		            /****  vtdma period ends, switch back to the public channel ****/
 					//iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
@@ -953,7 +953,7 @@ void iqueuemac_t2r_end(iqueuemac_t* iqueuemac){
 	/* if t-2-r success or IQUEUEMAC_REPHASELOCK_THRESHOLD has been reached,
 	 * clean the tx current_neighbour address. */
 	if((iqueuemac->tx.tx_packet != NULL)&&(iqueuemac->tx.no_ack_contuer == 0)){
-		puts("t2r:drop pkt");
+		//puts("t2r:drop pkt");
 		gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 		iqueuemac->tx.tx_packet = NULL;
 	}
@@ -1016,7 +1016,7 @@ void iqueuemac_t2r_update(iqueuemac_t* iqueuemac)
 /****************** device state machines - Transmit to Unknown *****/
 void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 
-	puts("r");
+	//puts("r");
 	/* in case that rx_started was left as true during last t-2-u ending, so set it to false. */
 	iqueuemac->rx_started = false;
 
@@ -1078,7 +1078,7 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 	if(iqueuemac->rx_memory_full == true){
 		iqueuemac->rx_memory_full = false;
 
-		puts("memory full, drop one pkt");
+		//puts("memory full, drop one pkt");
 
 		if(iqueuemac->tx.tx_packet != NULL){
 			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
@@ -1091,7 +1091,7 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 		if(pkt != NULL){
 			iqueuemac->tx.tx_packet = pkt;
 		}else{
-			puts("iqueueMAC: NUll pkt, goto t2u end");
+			//puts("iqueueMAC: NUll pkt, goto t2u end");
 			iqueuemac->tx.current_neighbour = NULL;
 			iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 			iqueuemac->need_update = true;
@@ -1127,7 +1127,7 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 
 	// to be filt in! for example, add receive other's broadcast and preamble handle codes here!!!
 	if(iqueuemac->quit_current_cycle == true){
-		puts("q t2u");
+		//puts("q t2u");
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_MAX_PREAM_INTERVAL);
@@ -1167,7 +1167,7 @@ void iqueuemac_t2u_send_preamble(iqueuemac_t* iqueuemac)
 
 	/* in case that memery is full, quit t-2-u and release pkt. */
 	if(res == -ENOBUFS){
-		puts("iq: nobuf for preamble, send preamble failed.");
+		//puts("iq: nobuf for preamble, send preamble failed.");
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
 
@@ -1206,7 +1206,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 	if(iqueuemac->rx_memory_full == true){
 		iqueuemac->rx_memory_full = false;
 
-		puts("memory full, drop one pkt");
+		//puts("memory full, drop one pkt");
 
 		if(iqueuemac->tx.tx_packet != NULL){
 			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
@@ -1219,7 +1219,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 		if(pkt != NULL){
 			iqueuemac->tx.tx_packet = pkt;
 		}else{
-			puts("iqueueMAC: NUll pkt, goto t2u end");
+			//puts("iqueueMAC: NUll pkt, goto t2u end");
 			iqueuemac->tx.current_neighbour = NULL;
 			iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 			iqueuemac->need_update = true;
@@ -1253,7 +1253,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 
 	// to be filt in! for example, add receive other's broadcast and preamble handle codes here!!!
 	if(iqueuemac->quit_current_cycle == true){
-		puts("q t2u");
+		//puts("q t2u");
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE_DURATION);
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_MAX_PREAM_INTERVAL);
@@ -1286,7 +1286,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 		iqueuemac->tx.t2u_retry_contuer ++;
 
 		if(iqueuemac->tx.t2u_retry_contuer >= IQUEUEMAC_T2U_RETYR_THRESHOLD) {
-			puts("no preamble-ack, drop pkt.");
+			//puts("no preamble-ack, drop pkt.");
 			iqueuemac->tx.t2u_retry_contuer = 0;
 			iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_PREAMBLE);
@@ -1297,7 +1297,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 		    netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
 		    iqueuemac->tx.tx_seq = device_state->seq - 1;
 
-			puts("t2u no-preamack, rety");
+			//puts("t2u no-preamack, rety");
 			/* thus not to set current_neighbour to NULL in t2u-end */
 			iqueuemac->quit_current_cycle = true;
 			iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
@@ -1426,7 +1426,7 @@ void iqueuemac_t2u_end(iqueuemac_t* iqueuemac){
 			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 			iqueuemac->tx.tx_packet = NULL;
 			iqueuemac->tx.no_ack_contuer = 0;
-			puts("drop pkt");
+			//puts("drop pkt");
 		}
 		iqueuemac->tx.current_neighbour = NULL;
 	}
@@ -1720,7 +1720,7 @@ void iqueuemac_router_wait_beacon_feedback(iqueuemac_t* iqueuemac){
 						iqueuemac->router_states.router_trans_state = R_TRANS_TO_NODE;
 					}break;
 				 	default:{
-						puts("iqueuemac: error! Unknow MAC type.");break;
+						//puts("iqueuemac: error! Unknow MAC type.");break;
 					}
 					}
 				}
@@ -1825,7 +1825,7 @@ void iqueue_mac_router_vtdma_end(iqueuemac_t* iqueuemac){
 				  iqueuemac->router_states.router_trans_state = R_TRANS_TO_NODE;
 			  }break;
 			 default:{
-				 puts("iqueuemac: error! Unknow MAC type.");break;
+				 //puts("iqueuemac: error! Unknow MAC type.");break;
 			 }
 			}
 		}
@@ -2012,7 +2012,7 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
 
                     if(pkt == NULL){
                     	iqueuemac.rx_memory_full = true;
-                    	puts("rx: pkt is NULL, memory full?");
+                    	//puts("rx: pkt is NULL, memory full?");
                     	iqueuemac.packet_received = false;
                     	iqueuemac.rx_started = false;
                     	break;
@@ -2020,7 +2020,7 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
 
                     if(!iqueuemac.rx_started) {
        				   //LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
-                    	puts("rx_pkt corrupted?");
+                    	//puts("rx_pkt corrupted?");
        				    gnrc_pktbuf_release(pkt);
        				    iqueuemac.rx_started = false;
                         break;
@@ -2038,7 +2038,7 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                     if(!packet_queue_push(&iqueuemac.rx.queue, pkt, 0))
                    	{
                     	//LOG_ERROR("Can't push RX packet @ %p, memory full?\n", pkt);
-                    	puts("can't push rx-pkt, memory full?");
+                    	//puts("can't push rx-pkt, memory full?");
                     	gnrc_pktbuf_release(pkt);
                     	iqueuemac.packet_received = false;
                     	break;
@@ -2231,7 +2231,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
               //gnrc_netdev2->send(gnrc_netdev2, pkt);
 
               if(!_queue_tx_packet(&iqueuemac,  pkt)){
-            	  puts("push pkt fail.");
+            	  //puts("push pkt fail.");
               }
               iqueuemac.need_update = true;
 
