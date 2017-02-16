@@ -500,9 +500,9 @@ void iqueuemac_init_end(iqueuemac_t* iqueuemac){
 	iqueuemac->router_states.router_basic_state = R_LISTENNING;
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_INIT;
 
-	//uint32_t listen_period;
-	//listen_period = random_uint32_range(200, IQUEUEMAC_SUPERFRAME_DURATION_US);
-	//xtimer_usleep(IQUEUEMAC_SUPERFRAME_DURATION_US/2);
+	uint32_t listen_period;
+	listen_period = random_uint32_range(0, IQUEUEMAC_SUPERFRAME_DURATION_US);
+	xtimer_usleep(listen_period);
 
 	//puts("router random ends.");
 	/*** start duty-cycle ***/

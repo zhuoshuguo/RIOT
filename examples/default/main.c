@@ -333,8 +333,6 @@ void *sender_thread(void *arg)
    	    exp_end = true;
    	}
 
-
-
    }
 
     return NULL;
