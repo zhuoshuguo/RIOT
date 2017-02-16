@@ -315,6 +315,8 @@ void *sender_thread(void *arg)
         break;
     }
 
+   xtimer_usleep(500000);
+
    exp_end = false;
 
    while (1) {
