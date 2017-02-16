@@ -17,7 +17,6 @@
  *
  * @}
  */
-
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -137,22 +136,24 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     //gnrc_netif_hdr_t *netif_hdr;
 
     //uint8_t* addr;
-    bool found_id;
+    //bool found_id;
 
     payload = pkt->data;
 
     received_pkt_counter -= 1;
 
-    found_id = false;
+    //found_id = false;
 
     if(payload[1] == 0x22222222) {
 
     	system_start_time = payload[0];
     	gnrc_pktbuf_release(pkt);
+    	delay_sum = 0;
 
     	//printf("Dump: sys-start-time is %lu \n", system_start_time);
     	return;
     }
+
 
     if(payload[1] == 0xffffffff) {
 
@@ -160,7 +161,21 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
     	received_pkt_counter -= 1;
 
-    	printf("total received packet number is %lu \n", received_pkt_counter);
+    	//delay_sum = 0x123456789abcdef0;
+
+    	uint32_t delausum_low, delausum_high;
+    	delausum_low = delay_sum;
+    	delausum_high = delay_sum >> 32;
+
+
+    	printf("pkt delay sum hex (high): %lx \n", delausum_high);
+    	printf("pkt delay sum hex (low): %lx \n", delausum_low);
+
+    	delay_sum = (delay_sum / (uint64_t) received_pkt_counter);
+
+    	printf("total received packet number: %lu \n", received_pkt_counter);
+
+    	printf("average pkt delay: %lu \n", (uint32_t)delay_sum);
 
     	gnrc_pktbuf_release(pkt);
     	return;
@@ -168,17 +183,17 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
     local_systime = rtt_get_counter() - system_start_time;
 
-    printf("local_systime is %lu \n", RTT_TICKS_TO_US(local_systime));
+    //printf("local_systime is %lu \n", RTT_TICKS_TO_US(local_systime));
 
-    printf("pkt genera time is %lu \n", RTT_TICKS_TO_US(payload[5] - payload[4]));
+    //printf("pkt genera time is %lu \n", RTT_TICKS_TO_US(payload[5] - payload[4]));
 
     this_pkt_delay = local_systime - (payload[5] - payload[4]);
 
-    printf("this_pkt_delay is %lu \n", RTT_TICKS_TO_US(this_pkt_delay));
+    //printf("this_pkt_delay is %lu \n", RTT_TICKS_TO_US(this_pkt_delay));
 
-    delay_sum += (uint64_t) this_pkt_delay;
+    delay_sum += (uint64_t) RTT_TICKS_TO_US(this_pkt_delay);
 
-
+#if 0
     int i=0;
     /* find id exist or not */
     for(i=0;i<20;i++){
@@ -198,10 +213,11 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     		}
     	}
     }
+#endif
 
    // printf("s: %x, g: %lu, r: %lu, t: %lu. \n", addr[1], payload[0], reception_list[i], received_pkt_counter);
 
-    printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], reception_list[i], received_pkt_counter);
+    //printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], reception_list[i], received_pkt_counter);
 
     gnrc_pktbuf_release(pkt);
 }

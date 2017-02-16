@@ -1284,7 +1284,7 @@ int iqueuemac_send_exp_setting(iqueuemac_t* iqueuemac)
 	expset[1] = iqueuemac->exp_duration;
 
 	/* exp total generate packet number */
-	expset[2] = 100;
+	expset[2] = 100000;
 
 
     /**** add the setting ****/
