@@ -68,7 +68,7 @@ static void generate_and_send_pkt(void){
 	    int16_t dev2;
 
 	    gnrc_pktsnip_t* pkt;
-	    uint32_t payload[8];
+	    uint32_t payload[20];
 
 	    send_counter++;
 
