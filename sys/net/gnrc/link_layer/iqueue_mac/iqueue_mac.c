@@ -1016,7 +1016,7 @@ void iqueuemac_t2r_update(iqueuemac_t* iqueuemac)
 /****************** device state machines - Transmit to Unknown *****/
 void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 
-	//puts("r");
+	puts("r");
 	/* in case that rx_started was left as true during last t-2-u ending, so set it to false. */
 	iqueuemac->rx_started = false;
 
