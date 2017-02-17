@@ -379,15 +379,18 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_WAKEUP_PENDING);
         lwmac_set_state(gnrc_netdev2, SLEEPING);
 
-        if(lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, DUTYCYCLE_RECORD)){
+        if(((rtt_get_counter()-gnrc_netdev2->lwmac.system_start_time_ticks) > RTT_US_TO_TICKS(LWMACMAC_DUTYCYCLE_RECORD_US))
+        		&&(!gnrc_netdev2->lwmac.exp_end)){
         	/* Output duty-cycle ratio */
         	uint64_t duty;
-        	duty = (uint64_t)xtimer_now_usec();
+        	duty = (uint64_t)rtt_get_counter();
 
-        	printf("Device awake_duration_sum: %lu us \n", gnrc_netdev2->lwmac.awake_duration_sum);
-        	printf("Device life time : %lu us \n", (uint32_t)(duty - (uint64_t)gnrc_netdev2->lwmac.system_start_time));
+        	gnrc_netdev2->lwmac.exp_end = true;
 
-        	duty = ((uint64_t) gnrc_netdev2->lwmac.awake_duration_sum)*100 / (duty - (uint64_t)gnrc_netdev2->lwmac.system_start_time);
+        	printf("Device awake_duration_sum: %lu us \n", RTT_TICKS_TO_US(gnrc_netdev2->lwmac.awake_duration_sum_ticks));
+        	printf("Device life time : %lu us \n", RTT_TICKS_TO_US((uint32_t)(duty - (uint64_t)gnrc_netdev2->lwmac.system_start_time_ticks)));
+
+        	duty = ((uint64_t) gnrc_netdev2->lwmac.awake_duration_sum_ticks)*100 / (duty - (uint64_t)gnrc_netdev2->lwmac.system_start_time_ticks);
         	printf("Device achieved duty-cycle: %lu %% \n", (uint32_t)duty);
         }
         break;
@@ -586,12 +589,13 @@ static void *_lwmac_thread(void *args)
     lwmac_set_state(gnrc_netdev2, START);
 
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
-    lwmac_set_timeout(&gnrc_netdev2->lwmac, DUTYCYCLE_RECORD, LWMACMAC_DUTYCYCLE_RECORD_US);
     /* Start duty cycle recording */
+    rtt_set_counter(0);
     gnrc_netdev2->lwmac.system_start_time_ticks = rtt_get_counter();
     gnrc_netdev2->lwmac.last_radio_on_time_ticks = gnrc_netdev2->lwmac.system_start_time_ticks;
     gnrc_netdev2->lwmac.awake_duration_sum_ticks = 0;
     gnrc_netdev2->lwmac.radio_is_on = true;
+    gnrc_netdev2->lwmac.exp_end = false;
 #endif
 
     /* start the event loop */

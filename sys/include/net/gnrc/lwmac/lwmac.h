@@ -35,13 +35,13 @@ extern "C" {
 #endif
 
 #ifndef LWMACMAC_DUTYCYCLE_RECORD_US
-#define LWMACMAC_DUTYCYCLE_RECORD_US        (100000U * 1000)
+#define LWMACMAC_DUTYCYCLE_RECORD_US        (10000U * 1000)
 #endif
 
 /* Time between consecutive wakeups. This parameter governs power consumption,
  * latency and throughput! */
 #ifndef LWMAC_WAKEUP_INTERVAL_US
-#define LWMAC_WAKEUP_INTERVAL_US        (67U * 1000)
+#define LWMAC_WAKEUP_INTERVAL_US        (100U * 1000)
 #endif
 
 /* The Maximum WR duration time */
