@@ -169,14 +169,14 @@ void _set_netdev_state(gnrc_netdev2_t* gnrc_netdev2, netopt_state_t devstate)
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
     if (devstate == NETOPT_STATE_IDLE) {
     	if(gnrc_netdev2->lwmac.radio_is_on == false) {
-            gnrc_netdev2->lwmac.last_radio_on_time = xtimer_now_usec();
+            gnrc_netdev2->lwmac.last_radio_on_time_ticks = rtt_get_counter();
             gnrc_netdev2->lwmac.radio_is_on = true;
     	}
     	return;
     } else if (devstate == NETOPT_STATE_SLEEP) {
     	if(gnrc_netdev2->lwmac.radio_is_on == true) {
-            gnrc_netdev2->lwmac.radio_off_time = xtimer_now_usec();
-            gnrc_netdev2->lwmac.awake_duration_sum += (gnrc_netdev2->lwmac.radio_off_time - gnrc_netdev2->lwmac.last_radio_on_time);
+            gnrc_netdev2->lwmac.radio_off_time_ticks = rtt_get_counter();
+            gnrc_netdev2->lwmac.awake_duration_sum_ticks += (gnrc_netdev2->lwmac.radio_off_time_ticks - gnrc_netdev2->lwmac.last_radio_on_time_ticks);
             gnrc_netdev2->lwmac.radio_is_on = false;
     	}
     }
