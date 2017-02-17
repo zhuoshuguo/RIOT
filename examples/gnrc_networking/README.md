@@ -116,6 +116,7 @@ In a second terminal, start a second RIOT instance, this time listening on `tap1
 In the RIOT shell, you can now send a message to the first RIOT instance:
 
     > udp send fe80::ccf5:e1ff:fec5:f75 8808 testmessage
+    udp send fe80::7b67:357e:543a:79f6 8808 testmessage
 
 *(Make sure to copy the actual
 [link-local address](https://en.wikipedia.org/wiki/Link-local_address) of your first

@@ -254,7 +254,9 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
         /* Set timeout for expected data arrival */
         lwmac_set_timeout(&gnrc_netdev2->lwmac, TIMEOUT_DATA, LWMAC_DATA_DELAY_US);
 
-        GOTO_RX_STATE(RX_STATE_WAIT_FOR_DATA, false);
+        _set_netdev_state(gnrc_netdev2, NETOPT_STATE_IDLE);
+        GOTO_RX_STATE(RX_STATE_WAIT_FOR_DATA, true);
+
     }
     case RX_STATE_WAIT_FOR_DATA:
     {
