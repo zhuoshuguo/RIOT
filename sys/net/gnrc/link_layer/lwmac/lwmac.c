@@ -107,8 +107,8 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
         /* Output duty-cycle ratio */
         uint64_t duty;
-        duty = (uint64_t)xtimer_now_usec();
-        duty = ((uint64_t) gnrc_netdev2->lwmac.awake_duration_sum)*100 / (duty - (uint64_t)gnrc_netdev2->lwmac.system_start_time);
+        duty = (uint64_t) rtt_get_counter();
+        duty = ((uint64_t) gnrc_netdev2->lwmac.awake_duration_sum_ticks)*100 / (duty - (uint64_t)gnrc_netdev2->lwmac.system_start_time_ticks);
         printf("Device achieved duty-cycle: %lu %% \n", (uint32_t)duty);
 #endif
         break;
@@ -575,8 +575,9 @@ static void *_lwmac_thread(void *args)
 
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
     /* Start duty cycle recording */
-    gnrc_netdev2->lwmac.system_start_time = xtimer_now_usec();
-    gnrc_netdev2->lwmac.awake_duration_sum = 0;
+    gnrc_netdev2->lwmac.system_start_time_ticks = rtt_get_counter();
+    gnrc_netdev2->lwmac.last_radio_on_time_ticks = gnrc_netdev2->lwmac.system_start_time_ticks;
+    gnrc_netdev2->lwmac.awake_duration_sum_ticks = 0;
     gnrc_netdev2->lwmac.radio_is_on = true;
 #endif
 
