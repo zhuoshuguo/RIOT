@@ -115,7 +115,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         }
 
         /* check if the packet is for broadcast */
-        if (gnrc_netif_hdr_get_flag(gnrc_netdev2->tx.packet) & GNRC_NETIF_HDR_FLAGS_BROADCAST) {
+        if (gnrc_netif_hdr_get_flag(gnrc_netdev2->tx.packet) & (GNRC_NETIF_HDR_FLAGS_BROADCAST | GNRC_NETIF_HDR_FLAGS_MULTICAST)) {
             /* Set CSMA retries as configured and enable */
             uint8_t csma_retries = LWMAC_BROADCAST_CSMA_RETRIES;
             gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA_RETRIES,
@@ -334,6 +334,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         LOG_DEBUG("Phase when sent was:   %"PRIu32"\n", _ticks_to_phase(gnrc_netdev2->tx.timestamp));
         LOG_DEBUG("Ticks when sent was:   %"PRIu32"\n", gnrc_netdev2->tx.timestamp);
 
+        _set_netdev_state(gnrc_netdev2, NETOPT_STATE_IDLE);
         GOTO_TX_STATE(TX_STATE_WAIT_FOR_WA, false);
     }
     case TX_STATE_WAIT_FOR_WA:
