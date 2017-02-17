@@ -535,15 +535,15 @@ static void *_lwmac_thread(void *args)
     /* setup the MAC layers message queue */
     msg_init_queue(msg_queue, LWMAC_IPC_MSG_QUEUE_SIZE);
 
-    /* initialize low-level driver */
-    dev->driver->init(dev);
+    /* register the event callback with the device driver */
+    dev->event_callback = _event_cb;
+    dev->context = (void*) gnrc_netdev2;
 
     /* register the device to the network stack*/
     gnrc_netif_add(thread_getpid());
 
-    /* register the event callback with the device driver */
-    dev->event_callback = _event_cb;
-    dev->context = (void*) gnrc_netdev2;
+    /* initialize low-level driver */
+    dev->driver->init(dev);
 
     /* Enable RX- and TX-started interrupts  */
     netopt_enable_t enable = NETOPT_ENABLE;
