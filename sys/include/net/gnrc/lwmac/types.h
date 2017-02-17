@@ -142,10 +142,10 @@ typedef struct lwmac {
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
     /* parameters for recording duty-cycle */
     bool radio_is_on;
-    uint32_t last_radio_on_time;
-    uint32_t radio_off_time;
-    uint32_t system_start_time;
-    uint32_t awake_duration_sum;
+    uint32_t last_radio_on_time_ticks;
+    uint32_t radio_off_time_ticks;
+    uint32_t system_start_time_ticks;
+    uint32_t awake_duration_sum_ticks;
 #endif
 } lwmac_t;
 
