@@ -42,7 +42,7 @@ extern "C" {
 
 /* The Maximum WR duration time */
 #ifndef LWMAC_PREAMBLE_DURATION_US
-#define LWMAC_PREAMBLE_DURATION_US      ((21*LWMAC_WAKEUP_INTERVAL_US)/10)
+#define LWMAC_PREAMBLE_DURATION_US      ((12*LWMAC_WAKEUP_INTERVAL_US)/10)
 #endif
 
 #ifndef LWMAC_RANDOM_BEFORE_WR_US
