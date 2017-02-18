@@ -43,7 +43,7 @@ extern "C" {
  *          Set "1" to enable, set "0" to disable.
  */
 #ifndef LWMAC_ENABLE_DUTYCYLE_RECORD
-#define LWMAC_ENABLE_DUTYCYLE_RECORD             (0U)
+#define LWMAC_ENABLE_DUTYCYLE_RECORD             (1U)
 #endif
 
 /**
@@ -146,6 +146,7 @@ typedef struct lwmac {
     uint32_t radio_off_time_ticks;
     uint32_t system_start_time_ticks;
     uint32_t awake_duration_sum_ticks;
+    uint32_t pkt_start_sending_time_ticks;
 #endif
 } lwmac_t;
 

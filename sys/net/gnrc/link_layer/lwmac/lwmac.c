@@ -109,7 +109,7 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
         uint64_t duty;
         duty = (uint64_t) rtt_get_counter();
         duty = ((uint64_t) gnrc_netdev2->lwmac.awake_duration_sum_ticks)*100 / (duty - (uint64_t)gnrc_netdev2->lwmac.system_start_time_ticks);
-        printf("Device achieved duty-cycle: %lu %% \n", (uint32_t)duty);
+        printf("[lwmac-tx]: achieved duty-cycle: %lu %% \n", (uint32_t)duty);
 #endif
         break;
 
