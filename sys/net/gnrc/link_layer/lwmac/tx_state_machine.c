@@ -65,7 +65,10 @@ void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2, gnrc_pktsnip_t* pkt, gnrc_mac_
     gnrc_netdev2->tx.current_neighbor = neighbour;
     gnrc_netdev2->tx.state = TX_STATE_INIT;
     gnrc_netdev2->tx.wr_sent = 0;
+
+#if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
     gnrc_netdev2->lwmac.pkt_start_sending_time_ticks = rtt_get_counter();
+#endif
 }
 
 void lwmac_tx_stop(gnrc_netdev2_t* gnrc_netdev2)
@@ -507,8 +510,11 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         gnrc_netdev2->tx.packet = NULL;
 
         DEBUG("[lwmac-tx]: spent %lu WR in TX\n", gnrc_netdev2->tx.wr_sent);
+
+#if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
         gnrc_netdev2->lwmac.pkt_start_sending_time_ticks = rtt_get_counter() - gnrc_netdev2->lwmac.pkt_start_sending_time_ticks;
         DEBUG("[lwmac-tx]: pkt sending delay in TX: %lu us\n", RTT_TICKS_TO_US(gnrc_netdev2->lwmac.pkt_start_sending_time_ticks));
+#endif
 
         GOTO_TX_STATE(TX_STATE_WAIT_FEEDBACK, false);
     }
