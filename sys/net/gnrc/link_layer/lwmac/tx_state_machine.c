@@ -29,7 +29,7 @@
 #include "include/tx_state_machine.h"
 #include "include/lwmac_internal.h"
 
-#define ENABLE_DEBUG    (0)
+#define ENABLE_DEBUG    (1)
 #include "debug.h"
 
 #define LOG_LEVEL LOG_WARNING
@@ -65,6 +65,7 @@ void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2, gnrc_pktsnip_t* pkt, gnrc_mac_
     gnrc_netdev2->tx.current_neighbor = neighbour;
     gnrc_netdev2->tx.state = TX_STATE_INIT;
     gnrc_netdev2->tx.wr_sent = 0;
+    gnrc_netdev2->lwmac.pkt_start_sending_time_ticks = rtt_get_counter();
 }
 
 void lwmac_tx_stop(gnrc_netdev2_t* gnrc_netdev2)
@@ -504,6 +505,10 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 
         /* Packet has been released by netdev, so drop pointer */
         gnrc_netdev2->tx.packet = NULL;
+
+        DEBUG("[lwmac-tx]: spent %lu WR in TX\n", gnrc_netdev2->tx.wr_sent);
+        gnrc_netdev2->lwmac.pkt_start_sending_time_ticks = rtt_get_counter() - gnrc_netdev2->lwmac.pkt_start_sending_time_ticks;
+        DEBUG("[lwmac-tx]: pkt sending delay in TX: %lu us\n", RTT_TICKS_TO_US(gnrc_netdev2->lwmac.pkt_start_sending_time_ticks));
 
         GOTO_TX_STATE(TX_STATE_WAIT_FEEDBACK, false);
     }
