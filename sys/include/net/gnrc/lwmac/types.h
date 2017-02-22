@@ -149,7 +149,6 @@ typedef struct lwmac {
     uint32_t pkt_start_sending_time_ticks;
 
     bool exp_end;
->>>>>>> rebase duty-cycle record exp to rtt
 #endif
 } lwmac_t;
 
