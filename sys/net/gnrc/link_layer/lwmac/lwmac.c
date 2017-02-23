@@ -30,6 +30,7 @@
 #include <msg.h>
 #include <thread.h>
 #include <timex.h>
+#include <random.h>
 #include <periph/rtt.h>
 #include <net/gnrc.h>
 #include <net/netdev2.h>
@@ -447,7 +448,7 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
 
         lwmac_set_state(gnrc_netdev2, SLEEPING);
 
-        if(((rtt_get_counter()-gnrc_netdev2->lwmac.system_start_time_ticks) > RTT_US_TO_TICKS(LWMACMAC_DUTYCYCLE_RECORD_US))
+        if(((rtt_get_counter()-gnrc_netdev2->lwmac.system_start_time_ticks) > RTT_US_TO_TICKS(((gnrc_netdev2->lwmac.exp_duration) * (1000000))) )
         		&&(!gnrc_netdev2->lwmac.exp_end)){
         	/* Output duty-cycle ratio */
         	uint64_t duty;
@@ -466,7 +467,8 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
     /* Set initial wakeup alarm that starts the cycle */
     case LWMAC_EVENT_RTT_START:
         LOG_DEBUG("RTT: Initialize duty cycling\n");
-        alarm = rtt_get_counter() + RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US);
+        gnrc_netdev2->lwmac.last_wakeup = rtt_get_counter();
+        alarm = gnrc_netdev2->lwmac.last_wakeup + RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US);
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_SLEEP_PENDING);
         gnrc_netdev2->lwmac.dutycycling_active = true;
         break;
@@ -653,9 +655,7 @@ static void *_lwmac_thread(void *args)
     /* Reset all timeouts just to be sure */
     lwmac_reset_timeouts(&gnrc_netdev2->lwmac);
 
-    /* Start duty cycling */
-    lwmac_set_state(gnrc_netdev2, START);
-
+    rtt_handler(LWMAC_EVENT_RTT_STOP, gnrc_netdev2);
 
     xtimer_sleep(5);
 
@@ -752,14 +752,35 @@ static void *_lwmac_thread(void *args)
 
     	            if (info.header->type == FRAMETYPE_EXP_SETTING) {
 
-    	            	puts("get expset command");
-    	    	        uint16_t *payload;
+    	            	rtt_set_counter(0);
+
+    	            	//puts("get expset command");
+    	    	        uint32_t *payload;
 
     	    	        payload = pkt_exp->data;
+
+
+
+    	    	        gnrc_netdev2->lwmac.system_start_time_ticks = rtt_get_counter();
 
     	    	        gnrc_netdev2->lwmac.exp_duration = payload[1];
     	    	        gnrc_netdev2->lwmac.cycle_duration = payload[3];
     	    	        gnrc_netdev2->lwmac.cp_duration = payload[4];
+
+
+    	    	        payload[5] = gnrc_netdev2->lwmac.system_start_time_ticks;
+
+
+    	    	        //printf("lwmac: gene_num is %lu. \n", (long unsigned int) payload[2]);
+
+    	    	        /// add random cycle phase backoff.
+    	    	    	uint32_t listen_period;
+    	    	    	listen_period = random_uint32_range(0, LWMAC_WAKEUP_INTERVAL_US);
+    	    	    	xtimer_usleep(listen_period);
+
+    	    	        rtt_clear_alarm();
+    	    	        /* Start duty cycling */
+    	    	        lwmac_set_state(gnrc_netdev2, START);
 
     	                if (!gnrc_netapi_dispatch_receive(GNRC_NETTYPE_APP, GNRC_NETREG_DEMUX_CTX_ALL, pkt_exp)) {
     	                    gnrc_pktbuf_release(pkt_exp);
@@ -775,17 +796,14 @@ static void *_lwmac_thread(void *args)
 
     }
 
-#if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
+
     /* Start duty cycle recording */
-    rtt_set_counter(0);
-    gnrc_netdev2->lwmac.system_start_time_ticks = rtt_get_counter();
     gnrc_netdev2->lwmac.last_radio_on_time_ticks = gnrc_netdev2->lwmac.system_start_time_ticks;
     gnrc_netdev2->lwmac.awake_duration_sum_ticks = 0;
     gnrc_netdev2->lwmac.radio_is_on = true;
     gnrc_netdev2->lwmac.exp_end = false;
-#endif
 
-    //puts("start exp");
+    //puts("ss");
     /* start the event loop */
     while (1) {
 

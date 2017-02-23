@@ -29,7 +29,7 @@
 #include "include/tx_state_machine.h"
 #include "include/lwmac_internal.h"
 
-#define ENABLE_DEBUG    (1)
+#define ENABLE_DEBUG    (0)
 #include "debug.h"
 
 #define LOG_LEVEL LOG_WARNING
@@ -55,6 +55,7 @@ void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2, gnrc_pktsnip_t* pkt, gnrc_mac_
     assert(gnrc_netdev2 != NULL);
     assert(pkt != NULL);
     assert(neighbour != NULL);
+
 
     if (gnrc_netdev2->tx.packet) {
         LOG_WARNING("Starting but tx.packet is still set\n");
@@ -270,18 +271,6 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         netopt_enable_t autoack = NETOPT_DISABLE;
         gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
 
-        /* Prepare WR, this will discard any frame in the transceiver that has
-         * possibly arrived in the meantime but we don't care at this point. */
-        int res = gnrc_netdev2->send(gnrc_netdev2, pkt);
-        if (res < 0){
-            LOG_ERROR("Send WR failed.");
-            if (pkt != NULL){
-                gnrc_pktbuf_release(pkt);
-            }
-            gnrc_netdev2->lwmac.extend_tx = false;
-            GOTO_TX_STATE(TX_STATE_FAILED, true);
-        }
-
 #if 0
         /* First WR, try to catch wakeup phase */
         if ((gnrc_netdev2->tx.wr_sent == 0) && (gnrc_netdev2->lwmac.extend_tx == false)) {
@@ -301,6 +290,19 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             while (rtt_get_counter() < wait_until);
         }
 #endif
+
+        /* Prepare WR, this will discard any frame in the transceiver that has
+         * possibly arrived in the meantime but we don't care at this point. */
+        int res = gnrc_netdev2->send(gnrc_netdev2, pkt);
+        if (res < 0){
+            LOG_ERROR("Send WR failed.");
+            if (pkt != NULL){
+                gnrc_pktbuf_release(pkt);
+            }
+            gnrc_netdev2->lwmac.extend_tx = false;
+            GOTO_TX_STATE(TX_STATE_FAILED, true);
+        }
+
         /* Trigger sending frame */
         _set_netdev_state(gnrc_netdev2, NETOPT_STATE_TX);
 

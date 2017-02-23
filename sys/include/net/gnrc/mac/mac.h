@@ -53,7 +53,7 @@ extern "C" {
  * @brief   The default queue size for transmission packets coming from higher layers
  */
 #ifndef GNRC_MAC_TX_QUEUE_SIZE
-#define GNRC_MAC_TX_QUEUE_SIZE             (8U)
+#define GNRC_MAC_TX_QUEUE_SIZE             (55U)
 #endif
 
 #ifndef LWMAC_TIMEOUT_COUNT
