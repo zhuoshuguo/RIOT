@@ -56,7 +56,6 @@ void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2, gnrc_pktsnip_t* pkt, gnrc_mac_
     assert(pkt != NULL);
     assert(neighbour != NULL);
 
-
     if (gnrc_netdev2->tx.packet) {
         LOG_WARNING("Starting but tx.packet is still set\n");
         gnrc_pktbuf_release(gnrc_netdev2->tx.packet);
@@ -271,6 +270,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         netopt_enable_t autoack = NETOPT_DISABLE;
         gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
 
+
 #if 0
         /* First WR, try to catch wakeup phase */
         if ((gnrc_netdev2->tx.wr_sent == 0) && (gnrc_netdev2->lwmac.extend_tx == false)) {
@@ -300,9 +300,9 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
                 gnrc_pktbuf_release(pkt);
             }
             gnrc_netdev2->lwmac.extend_tx = false;
+
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
-
         /* Trigger sending frame */
         _set_netdev_state(gnrc_netdev2, NETOPT_STATE_TX);
 

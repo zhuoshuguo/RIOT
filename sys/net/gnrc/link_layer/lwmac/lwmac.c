@@ -210,6 +210,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
 
             	/* if phase unkown, send immediately after CP. */
             	if(neighbour->phase >= RTT_TICKS_TO_US(LWMAC_WAKEUP_INTERVAL_US)) {
+            		//puts("Unkonw neighbor, long preamble.");
             	    gnrc_netdev2->tx.current_neighbor = neighbour;
 
             	    gnrc_netdev2->lwmac.extend_tx = false;
@@ -426,6 +427,7 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
     switch (event & 0xffff)
     {
     case LWMAC_EVENT_RTT_WAKEUP_PENDING:
+    	//puts("c");
         gnrc_netdev2->lwmac.last_wakeup = rtt_get_alarm();
         alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US));
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_SLEEP_PENDING);
@@ -448,7 +450,7 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
 
         lwmac_set_state(gnrc_netdev2, SLEEPING);
 
-        if(((rtt_get_counter()-gnrc_netdev2->lwmac.system_start_time_ticks) > RTT_US_TO_TICKS(((gnrc_netdev2->lwmac.exp_duration) * (1000000))) )
+        if(((rtt_get_counter()-gnrc_netdev2->lwmac.system_start_time_ticks) > RTT_US_TO_TICKS(((gnrc_netdev2->lwmac.exp_duration+5) * (1000000))) )
         		&&(!gnrc_netdev2->lwmac.exp_end)){
         	/* Output duty-cycle ratio */
         	uint64_t duty;
@@ -540,12 +542,13 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
                 break;
             }
 
+            /*
             if (!gnrc_netdev2_get_rx_started(gnrc_netdev2)) {
                 LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
                 gnrc_pktbuf_release(pkt);
                 gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
                 break;
-            }
+            }*/
 
             gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
 
@@ -671,9 +674,9 @@ static void *_lwmac_thread(void *args)
     printf("seed: %lx\n",seed);
 
     /* Start exp setting */
-    gnrc_netdev2->lwmac.exp_duration = 300; //seconds
-    gnrc_netdev2->lwmac.cycle_duration = 100;  //ms
-    gnrc_netdev2->lwmac.cp_duration = 8; //ms
+    //gnrc_netdev2->lwmac.exp_duration = 300; //seconds
+    //gnrc_netdev2->lwmac.cycle_duration = 100;  //ms
+    //gnrc_netdev2->lwmac.cp_duration = 8; //ms
 
     if(0) {
 
@@ -759,17 +762,13 @@ static void *_lwmac_thread(void *args)
 
     	    	        payload = pkt_exp->data;
 
-
-
     	    	        gnrc_netdev2->lwmac.system_start_time_ticks = rtt_get_counter();
 
     	    	        gnrc_netdev2->lwmac.exp_duration = payload[1];
     	    	        gnrc_netdev2->lwmac.cycle_duration = payload[3];
     	    	        gnrc_netdev2->lwmac.cp_duration = payload[4];
 
-
     	    	        payload[5] = gnrc_netdev2->lwmac.system_start_time_ticks;
-
 
     	    	        //printf("lwmac: gene_num is %lu. \n", (long unsigned int) payload[2]);
 
