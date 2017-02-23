@@ -351,14 +351,16 @@ int lwmac_send_exp_setting(gnrc_netdev2_t* gnrc_netdev2)
 	lwmac_frame_expset_t iqueuemac_expset_hdr;
 	iqueuemac_expset_hdr.header.type = FRAMETYPE_EXP_SETTING;
 
+
 	/* data rate */
 	expset[0] = 500;
 
 	/* exp duration */
-	expset[1] = 10;
+	gnrc_netdev2->lwmac.exp_duration = 500; //seconds
+	expset[1] = gnrc_netdev2->lwmac.exp_duration;
 
 	/* exp total generate packet number */
-	expset[2] = 3;
+	expset[2] = 100000;
 
 
     /**** add the setting ****/

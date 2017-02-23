@@ -447,7 +447,7 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
 
         lwmac_set_state(gnrc_netdev2, SLEEPING);
 
-        if(((rtt_get_counter()-gnrc_netdev2->lwmac.system_start_time_ticks) > RTT_US_TO_TICKS(LWMACMAC_DUTYCYCLE_RECORD_US))
+        if(((rtt_get_counter()-gnrc_netdev2->lwmac.system_start_time_ticks) > RTT_US_TO_TICKS(((gnrc_netdev2->lwmac.exp_duration+2) * (1000000))) )
         		&&(!gnrc_netdev2->lwmac.exp_end)){
         	/* Output duty-cycle ratio */
         	uint64_t duty;
@@ -460,6 +460,24 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
 
         	duty = ((uint64_t) gnrc_netdev2->lwmac.awake_duration_sum_ticks)*100 / (duty - (uint64_t)gnrc_netdev2->lwmac.system_start_time_ticks);
         	printf("Device achieved duty-cycle: %lu %% \n", (uint32_t)duty);
+
+    		/* tell dump that exp is over! */
+    		uint32_t over[2];
+    		gnrc_pktsnip_t* pkt;
+
+    		over[0] = 0xffffffff;
+    		over[1] = 0xffffffff;
+
+    	    pkt = gnrc_pktbuf_add(NULL, over, 2 * sizeof(uint32_t), GNRC_NETTYPE_UNDEF);
+    	    if(pkt == NULL) {
+    	    	//puts("iqueuemac: over generate error.");
+    	    }
+
+            if (!gnrc_netapi_dispatch_receive(pkt->type, GNRC_NETREG_DEMUX_CTX_ALL, pkt)) {
+                gnrc_pktbuf_release(pkt);
+                puts("dispatch exp-end fail, drop it");
+            }
+
         }
         break;
 
@@ -671,11 +689,11 @@ static void *_lwmac_thread(void *args)
     printf("seed: %lx\n",seed);
 
     /* Start exp setting */
-    gnrc_netdev2->lwmac.exp_duration = 300; //seconds
-    gnrc_netdev2->lwmac.cycle_duration = 100;  //ms
-    gnrc_netdev2->lwmac.cp_duration = 8; //ms
+    //gnrc_netdev2->lwmac.exp_duration = 300; //seconds
+    //gnrc_netdev2->lwmac.cycle_duration = 100;  //ms
+    //gnrc_netdev2->lwmac.cp_duration = 8; //ms
 
-    if(0) {
+    if(1) {
 
     	lwmac_send_exp_setting(gnrc_netdev2);
 
@@ -785,7 +803,27 @@ static void *_lwmac_thread(void *args)
     gnrc_netdev2->lwmac.exp_end = false;
 #endif
 
-    //puts("start exp");
+	/*** start duty-cycle ***/
+    /////// upload sys_start_time to dump
+	uint32_t starttime[2];
+	gnrc_pktsnip_t* pkt;
+
+	starttime[0] = gnrc_netdev2->lwmac.system_start_time_ticks;
+	starttime[1] = 0x22222222;
+
+    pkt = gnrc_pktbuf_add(NULL, starttime, 2 * sizeof(uint32_t), GNRC_NETTYPE_UNDEF);
+    if(pkt == NULL) {
+    	//puts("iqueuemac: starttime generate error.");
+    }
+
+    if (!gnrc_netapi_dispatch_receive(pkt->type, GNRC_NETREG_DEMUX_CTX_ALL, pkt)) {
+        gnrc_pktbuf_release(pkt);
+        //puts("dispatch pkt fail, drop it");
+    }
+    ///////////////////////
+
+
+    //puts("ss");
     /* start the event loop */
     while (1) {
 
