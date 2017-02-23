@@ -425,6 +425,7 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
     switch (event & 0xffff)
     {
     case LWMAC_EVENT_RTT_WAKEUP_PENDING:
+    	//puts("c");
         gnrc_netdev2->lwmac.last_wakeup = rtt_get_alarm();
         alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US));
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_SLEEP_PENDING);
@@ -447,7 +448,7 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
 
         lwmac_set_state(gnrc_netdev2, SLEEPING);
 
-        if(((rtt_get_counter()-gnrc_netdev2->lwmac.system_start_time_ticks) > RTT_US_TO_TICKS(((gnrc_netdev2->lwmac.exp_duration+2) * (1000000))) )
+        if(((rtt_get_counter()-gnrc_netdev2->lwmac.system_start_time_ticks) > RTT_US_TO_TICKS(((gnrc_netdev2->lwmac.exp_duration+7) * (1000000))) )
         		&&(!gnrc_netdev2->lwmac.exp_end)){
         	/* Output duty-cycle ratio */
         	uint64_t duty;
@@ -671,9 +672,6 @@ static void *_lwmac_thread(void *args)
     /* Reset all timeouts just to be sure */
     lwmac_reset_timeouts(&gnrc_netdev2->lwmac);
 
-    /* Start duty cycling */
-    lwmac_set_state(gnrc_netdev2, START);
-
 
     xtimer_sleep(5);
 
@@ -684,7 +682,7 @@ static void *_lwmac_thread(void *args)
     seed = seed << 8;
     seed |= gnrc_netdev2->l2_addr[7];
 
-    random_init(seed);
+    //random_init(seed);
 
     printf("seed: %lx\n",seed);
 
@@ -793,15 +791,18 @@ static void *_lwmac_thread(void *args)
 
     }
 
-#if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
     /* Start duty cycle recording */
     rtt_set_counter(0);
     gnrc_netdev2->lwmac.system_start_time_ticks = rtt_get_counter();
+
+    /* Start duty cycling */
+    lwmac_set_state(gnrc_netdev2, START);
+
     gnrc_netdev2->lwmac.last_radio_on_time_ticks = gnrc_netdev2->lwmac.system_start_time_ticks;
     gnrc_netdev2->lwmac.awake_duration_sum_ticks = 0;
     gnrc_netdev2->lwmac.radio_is_on = true;
     gnrc_netdev2->lwmac.exp_end = false;
-#endif
+
 
 	/*** start duty-cycle ***/
     /////// upload sys_start_time to dump
