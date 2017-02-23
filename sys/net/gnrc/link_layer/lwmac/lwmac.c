@@ -588,6 +588,114 @@ static void *_lwmac_thread(void *args)
     /* Start duty cycling */
     lwmac_set_state(gnrc_netdev2, START);
 
+
+    xtimer_sleep(5);
+
+    /* Start exp setting */
+    gnrc_netdev2->lwmac.exp_duration = 300; //seconds
+    gnrc_netdev2->lwmac.cycle_duration = 100;  //ms
+    gnrc_netdev2->lwmac.cp_duration = 8; //ms
+
+    if(0) {
+
+    	lwmac_send_exp_setting(gnrc_netdev2);
+
+    } else {
+
+    	puts("wait for expset message");
+    	/* Wait for exp setting message */
+    	 while (1) {
+
+    	        msg_receive(&msg);
+
+    	        /* Handle NETDEV, NETAPI, RTT and TIMEOUT messages */
+    	        switch (msg.type) {
+    	        /* Transceiver raised an interrupt */
+    	        case NETDEV2_MSG_TYPE_EVENT:
+    	            LOG_DEBUG("GNRC_NETDEV_MSG_TYPE_EVENT received\n");
+    	            /* Forward event back to driver */
+    	            dev->driver->isr(dev);
+    	            break;
+    	            /* NETAPI set/get. Can't this be refactored away from here? */
+    	            /* RTT raised an interrupt */
+    	        case LWMAC_EVENT_RTT_TYPE: {
+    	                LOG_DEBUG("Ignoring late RTT event while dutycycling is off\n");
+    	        }break;
+
+    	        case GNRC_NETAPI_MSG_TYPE_SET:
+    	        {
+    	            LOG_DEBUG("GNRC_NETAPI_MSG_TYPE_SET received\n");
+    	            opt = (gnrc_netapi_opt_t *)msg.content.ptr;
+
+	                /* set option for device driver */
+	                res = dev->driver->set(dev, opt->opt, opt->data, opt->data_len);
+	                LOG_DEBUG("Response of netdev->set: %i\n", res);
+    	            /* send reply to calling thread */
+    	            reply.type = GNRC_NETAPI_MSG_TYPE_ACK;
+    	            reply.content.value = (uint32_t)res;
+    	            msg_reply(&msg, &reply);
+    	            break;
+    	        }
+
+    	        case GNRC_NETAPI_MSG_TYPE_GET:
+    	            /* TODO: filter out MAC layer options -> for now forward
+    	                     everything to the device driver */
+    	            LOG_DEBUG("GNRC_NETAPI_MSG_TYPE_GET received\n");
+    	            /* read incoming options */
+    	            opt = (gnrc_netapi_opt_t *)msg.content.ptr;
+    	            /* get option from device driver */
+    	            res = dev->driver->get(dev, opt->opt, opt->data, opt->data_len);
+    	            LOG_DEBUG("Response of netdev->get: %i\n", res);
+    	            /* send reply to calling thread */
+    	            reply.type = GNRC_NETAPI_MSG_TYPE_ACK;
+    	            reply.content.value = (uint32_t)res;
+    	            msg_reply(&msg, &reply);
+    	            break;
+
+    	        default:
+    	            LOG_ERROR("Unknown command %" PRIu16 "\n", msg.type);
+    	            break;
+    	        }
+
+    	        gnrc_pktsnip_t* pkt_exp;
+    	        if ((pkt_exp = gnrc_priority_pktqueue_pop(&gnrc_netdev2->rx.queue)) != NULL)
+    	        {
+    	            LOG_DEBUG("Inspecting pkt @ %p\n", pkt_exp);
+
+    	            /* Parse packet */
+    	            lwmac_packet_info_t info;
+    	            int ret = _parse_packet(pkt_exp, &info);
+
+    	            if (ret != 0) {
+    	                LOG_DEBUG("Packet could not be parsed: %i\n", ret);
+    	                gnrc_pktbuf_release(pkt_exp);
+    	            }
+
+    	            if (info.header->type == FRAMETYPE_EXP_SETTING) {
+
+    	            	puts("get expset command");
+    	    	        uint16_t *payload;
+
+    	    	        payload = pkt_exp->data;
+
+    	    	        gnrc_netdev2->lwmac.exp_duration = payload[1];
+    	    	        gnrc_netdev2->lwmac.cycle_duration = payload[3];
+    	    	        gnrc_netdev2->lwmac.cp_duration = payload[4];
+
+    	                if (!gnrc_netapi_dispatch_receive(GNRC_NETTYPE_APP, GNRC_NETREG_DEMUX_CTX_ALL, pkt_exp)) {
+    	                    gnrc_pktbuf_release(pkt_exp);
+    	                    puts("dispatch pkt fail, drop it");
+    	                }
+
+    	                break;
+
+    	            }
+    	        }// end of pkt process
+
+    	 } //end of while(1)
+
+    }
+
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
     /* Start duty cycle recording */
     rtt_set_counter(0);
@@ -598,6 +706,7 @@ static void *_lwmac_thread(void *args)
     gnrc_netdev2->lwmac.exp_end = false;
 #endif
 
+    //puts("start exp");
     /* start the event loop */
     while (1) {
 

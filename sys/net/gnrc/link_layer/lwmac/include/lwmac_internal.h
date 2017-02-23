@@ -105,6 +105,10 @@ int _dispatch_defer(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt);
 
 void _dispatch(gnrc_pktsnip_t* buffer[]);
 
+bool lwmac_packet_process_init_waitexpstart(gnrc_netdev2_t* gnrc_netdev2);
+int lwmac_send_exp_setting(gnrc_netdev2_t* gnrc_netdev2);
+
+
 #ifdef __cplusplus
 }
 #endif

@@ -150,6 +150,11 @@ typedef struct lwmac {
 
     bool exp_end;
 #endif
+
+    uint32_t exp_duration;
+    uint32_t cycle_duration;
+    uint32_t cp_duration;
+
 } lwmac_t;
 
 #ifdef __cplusplus

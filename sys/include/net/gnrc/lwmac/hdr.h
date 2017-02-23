@@ -42,6 +42,7 @@ typedef enum {
     FRAMETYPE_WA,
     FRAMETYPE_DATA,
     FRAMETYPE_BROADCAST,
+	FRAMETYPE_EXP_SETTING,
 } lwmac_frame_type_t;
 
 /**
@@ -83,6 +84,9 @@ typedef struct __attribute__((packed)) {
     lwmac_hdr_t header;
 } lwmac_frame_data_t;
 
+typedef struct __attribute__((packed)) {
+    lwmac_hdr_t header;
+} lwmac_frame_expset_t;
 
 void lwmac_print_hdr(lwmac_hdr_t* hdr);
 

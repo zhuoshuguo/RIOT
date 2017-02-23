@@ -117,6 +117,10 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
     case FRAMETYPE_BROADCAST:
         lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_broadcast_t), GNRC_NETTYPE_LWMAC);
         break;
+    case FRAMETYPE_EXP_SETTING:
+        lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_expset_t), GNRC_NETTYPE_LWMAC);
+        break;
+
     default:
         return -2;
     }
@@ -138,6 +142,11 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
     } else if (lwmac_hdr->type == FRAMETYPE_WR){
         /* WR is broadcast, so get dst address out of header instead of netif */
         info->dst_addr = ((lwmac_frame_wr_t*)lwmac_hdr)->dst_addr;
+    } else if (lwmac_hdr->type == FRAMETYPE_EXP_SETTING){
+        /* EXP is broadcast, so get dst address out of header instead of netif */
+        info->dst_addr.len = 2;
+        info->dst_addr.addr[0] = 0xff;
+        info->dst_addr.addr[1] = 0xff;
     } else {
         if (netif_hdr->dst_l2addr_len) {
             info->dst_addr.len = netif_hdr->dst_l2addr_len;
@@ -326,4 +335,74 @@ void _dispatch(gnrc_pktsnip_t* buffer[])
             buffer[i] = NULL;
         }
     }
+}
+
+int lwmac_send_exp_setting(gnrc_netdev2_t* gnrc_netdev2)
+{
+	/****** assemble and send the beacon ******/
+	gnrc_pktsnip_t* pkt;
+	gnrc_netif_hdr_t* nethdr_expset;
+	gnrc_pktsnip_t* pkt_lwmac;
+
+	uint32_t  expset[5];
+
+	/* Assemble expset packet */
+	lwmac_frame_expset_t iqueuemac_expset_hdr;
+	iqueuemac_expset_hdr.header.type = FRAMETYPE_EXP_SETTING;
+
+	/* data rate */
+	expset[0] = 500;
+
+	/* exp duration */
+	expset[1] = 10;
+
+	/* exp total generate packet number */
+	expset[2] = 3;
+
+
+    /**** add the setting ****/
+    pkt = gnrc_pktbuf_add(NULL, expset, 5 * sizeof(uint32_t), GNRC_NETTYPE_LWMAC);
+    if(pkt == NULL) {
+    	puts("lwmac: expset add failed.");
+    	return -ENOBUFS;
+    }
+    pkt_lwmac = pkt;
+
+
+	pkt = gnrc_pktbuf_add(pkt, &iqueuemac_expset_hdr, sizeof(iqueuemac_expset_hdr), GNRC_NETTYPE_LWMAC);
+	if(pkt == NULL) {
+		puts("lwmac: expset buf add failed.");
+		return -ENOBUFS;
+	}
+	pkt_lwmac = pkt;
+
+	pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
+	if(pkt == NULL) {
+		puts("lwmac: expset netif add failed.");
+		gnrc_pktbuf_release(pkt_lwmac);
+		return -ENOBUFS;
+	}
+	pkt_lwmac = pkt;
+
+	/* We wouldn't get here if add the NETIF header had failed, so no
+		sanity checks needed */
+	//nethdr_expset = (gnrc_netif_hdr_t*) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+
+	nethdr_expset = (gnrc_netif_hdr_t*) (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
+
+	/* Construct NETIF header and initiate address fields */
+	gnrc_netif_hdr_init(nethdr_expset, 0, 0);
+	//gnrc_netif_hdr_set_dst_addr(nethdr_wa, lwmac->rx.l2_addr.addr, lwmac->rx.l2_addr.len);
+
+	/* Send WA as broadcast*/
+	nethdr_expset->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
+
+    /* Send data */
+    int res = gnrc_netdev2->send(gnrc_netdev2, pkt);
+    if (res < 0){
+        puts("Send exp data failed.");
+    }
+    _set_netdev_state(gnrc_netdev2, NETOPT_STATE_TX);
+
+	return res;
 }
