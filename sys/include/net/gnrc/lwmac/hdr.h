@@ -28,6 +28,9 @@
 extern "C" {
 #endif
 
+/**
+ * @brief   lwMAC internal L2 address structure
+ */
 typedef struct {
     uint8_t  addr[IEEE802154_LONG_ADDRESS_LEN];
     uint8_t  len;
