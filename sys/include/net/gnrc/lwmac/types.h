@@ -28,15 +28,45 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Lwmac RTT event type.
+ */
 #define LWMAC_EVENT_RTT_TYPE            (0x4300)
-#define LWMAC_EVENT_RTT_START           (0x4301)
-#define LWMAC_EVENT_RTT_STOP            (0x4302)
-#define LWMAC_EVENT_RTT_PAUSE           (0x4303)
-#define LWMAC_EVENT_RTT_RESUME          (0x4304)
-#define LWMAC_EVENT_RTT_WAKEUP_PENDING  (0x4305)
-#define LWMAC_EVENT_RTT_SLEEP_PENDING   (0x4306)
-#define LWMAC_EVENT_TIMEOUT_TYPE        (0x4400)
 
+/**
+ * @brief Lwmac RTT start event type.
+ */
+#define LWMAC_EVENT_RTT_START           (0x4301)
+
+/**
+ * @brief Lwmac RTT stop event type.
+ */
+#define LWMAC_EVENT_RTT_STOP            (0x4302)
+
+/**
+ * @brief Lwmac RTT pause event type.
+ */    
+#define LWMAC_EVENT_RTT_PAUSE           (0x4303)
+
+/**
+ * @brief Lwmac RTT resume event type.
+ */
+#define LWMAC_EVENT_RTT_RESUME          (0x4304)
+
+/**
+ * @brief Lwmac RTT wakeup pending event type.
+ */
+#define LWMAC_EVENT_RTT_WAKEUP_PENDING  (0x4305)
+
+/**
+ * @brief Lwmac RTT sleep pending event type.
+ */
+#define LWMAC_EVENT_RTT_SLEEP_PENDING   (0x4306)
+
+/**
+ * @brief Lwmac timeout event type.
+ */
+#define LWMAC_EVENT_TIMEOUT_TYPE        (0x4400)
 
 /**
  * @brief   Enable/disable duty-cycle record and print out.
@@ -94,59 +124,39 @@ typedef enum {
 } lwmac_rx_state_t;
 #define LWMAC_RX_STATE_INIT RX_STATE_STOPPED
 
-#define LWMAC_RX_INIT { \
-/* rx::state */             LWMAC_RX_STATE_INIT, \
-/* rx::queue */             {}, \
-/* rx::_queue_nodes */      {}, \
-/* rx::l2_addr */           LWMAC_L2_ADDR_INIT, \
-/* rx::dispatch_buffer */   {}, \
-}
-
-#define LWMAX_NEIGHBOUR_INIT        { LWMAC_L2_ADDR_INIT, {}, 0 }
-
+/**
+ * @brief Lwmac uninitialized phase value
+ */
 #define LWMAC_PHASE_UNINITIALIZED   (0)
-#define LWMAC_PHASE_MAX             (-1)
 
-#define LWMAC_TX_INIT { \
-/* tx::state */             LWMAC_TX_STATE_INIT, \
-/* tx::neighbours */        { LWMAX_NEIGHBOUR_INIT }, \
-/* tx::_queue_nodes */      {}, \
-/* tx::wr_sent */           0, \
-/* tx::packet */            NULL, \
-/* tx::current_neighbour */ NULL, \
-/* tx::timestamp */         0, \
-/* tx:bcast_seqnr */        0, \
-}
+/**
+ * @brief Lwmac max phase value
+ */
+#define LWMAC_PHASE_MAX             (-1)
 
 /**
  * @brief   Internal unit for store states of Lwmac
  */
 typedef struct lwmac {
-    /* PID of lwMAC thread */
-    kernel_pid_t pid;
-
-    /* Internal state of MAC layer */
-    lwmac_state_t state;
-
-    /* Used to calculate wakeup times */
-    uint32_t last_wakeup;
-    /* Keep track of duty cycling to avoid late RTT events after stopping */
-    bool dutycycling_active;
-    /* Used internally for rescheduling state machine update, e.g. after state
-     * transition caused in update */
-    bool needs_rescheduling;
-
-    /* Store timeouts used for protocol */
-    lwmac_timeout_t timeouts[LWMAC_TIMEOUT_COUNT];
+    kernel_pid_t pid;                              /**< PID of lwMAC thread */
+    lwmac_state_t state;                           /**< Internal state of MAC layer */
+    uint32_t last_wakeup;                          /**< Used to calculate wakeup times */
+    bool dutycycling_active;                       /**< Keep track of duty cycling to avoid 
+                                                        late RTT events after stopping */
+    bool needs_rescheduling;                       /**< Used internally for rescheduling state
+                                                        machine update, e.g. after state 
+                                                        transition caused in update */
+    lwmac_timeout_t timeouts[LWMAC_TIMEOUT_COUNT]; /**< Store timeouts used for protocol */
 
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
     /* parameters for recording duty-cycle */
-    bool radio_is_on;
-    uint32_t last_radio_on_time_ticks;
-    uint32_t radio_off_time_ticks;
-    uint32_t system_start_time_ticks;
-    uint32_t awake_duration_sum_ticks;
-    uint32_t pkt_start_sending_time_ticks;
+    bool radio_is_on;                             /**< check if radio is on */
+    uint32_t last_radio_on_time_ticks;            /**< the last time in ticks when radio is on */
+    uint32_t radio_off_time_ticks;                /**< the time in ticks when radio is off */
+    uint32_t system_start_time_ticks;             /**< the time in ticks when chip is started */
+    uint32_t awake_duration_sum_ticks;            /**< the sum of time in ticks when radio is on */
+    uint32_t pkt_start_sending_time_ticks;        /**< the time in ticks when the packet is started 
+                                                       to be sent */
 #endif
 } lwmac_t;
 
