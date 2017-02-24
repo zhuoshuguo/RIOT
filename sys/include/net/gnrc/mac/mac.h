@@ -56,6 +56,9 @@ extern "C" {
 #define GNRC_MAC_TX_QUEUE_SIZE             (8U)
 #endif
 
+/**
+ * @brief   The default largest number of running timeouts in lwmac
+ */
 #ifndef LWMAC_TIMEOUT_COUNT
 #define LWMAC_TIMEOUT_COUNT             (3U)
 #endif
