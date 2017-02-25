@@ -50,11 +50,11 @@
                                             reschedule = do_resched; \
                                             break
 
-void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2, gnrc_pktsnip_t* pkt, gnrc_mac_tx_neighbor_t* neighbour)
+void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2, gnrc_pktsnip_t* pkt, gnrc_mac_tx_neighbor_t* neighbor)
 {
     assert(gnrc_netdev2 != NULL);
     assert(pkt != NULL);
-    assert(neighbour != NULL);
+    assert(neighbor != NULL);
 
     if (gnrc_netdev2->tx.packet) {
         LOG_WARNING("Starting but tx.packet is still set\n");
@@ -62,7 +62,7 @@ void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2, gnrc_pktsnip_t* pkt, gnrc_mac_
     }
 
     gnrc_netdev2->tx.packet = pkt;
-    gnrc_netdev2->tx.current_neighbor = neighbour;
+    gnrc_netdev2->tx.current_neighbor = neighbor;
     gnrc_netdev2->tx.state = TX_STATE_INIT;
     gnrc_netdev2->tx.wr_sent = 0;
 
