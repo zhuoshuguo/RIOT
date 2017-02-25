@@ -505,7 +505,6 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
  *
  * @return                  never returns
  */
-// TODO: Don't use global variables
 static void *_lwmac_thread(void *args)
 {
     gnrc_netdev2_t* gnrc_netdev2 = (gnrc_netdev2_t *)args;
@@ -708,15 +707,11 @@ kernel_pid_t gnrc_lwmac_init(char *stack, int stacksize, char priority,
         return -ENODEV;
     }
 
-    /* Prevent sleeping until first RTT alarm is set */
-    //lpm_prevent_sleep |= LWMAC_LPM_MASK;
-
     /* create new LWMAC thread */
     res = thread_create(stack, stacksize, priority, THREAD_CREATE_STACKTEST,
                         _lwmac_thread, (void *)dev, name);
     if (res <= 0) {
         LOG_ERROR("Couldn't create thread\n");
-        //lpm_prevent_sleep &= ~(LWMAC_LPM_MASK);
         return -EINVAL;
     }
 
