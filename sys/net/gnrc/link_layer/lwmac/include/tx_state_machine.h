@@ -29,10 +29,30 @@
 extern "C" {
 #endif
 
-void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2, gnrc_pktsnip_t* pkt, gnrc_mac_tx_neighbor_t* neighbour);
+/**
+ * @brief Start Lwmac TX procedure to transmit packet @p pkt to @p neighbor
+ *
+ * @param[in,out]   gnrc_netdev2   gnrc_netdev2 structure
+ * @param[in]       pkt            packet to transmit
+ * @param[in]       neighbor       Tx neighbor
+ *
+ */
+void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2, gnrc_pktsnip_t* pkt, gnrc_mac_tx_neighbor_t* neighbor);
 
+/**
+ * @brief Stop Lwmac TX procedure
+ *
+ * @param[in,out]   gnrc_netdev2   gnrc_netdev2 structure
+ *
+ */
 void lwmac_tx_stop(gnrc_netdev2_t* gnrc_netdev2);
 
+/**
+ * @brief Update Lwmac TX procedure for transmission
+ *
+ * @param[in,out]   gnrc_netdev2   gnrc_netdev2 structure
+ *
+ */
 void lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2);
 
 #ifdef __cplusplus

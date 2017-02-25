@@ -31,17 +31,12 @@ extern "C" {
 #endif
 
 /**
- * @brief Forward lwmac declaration
- */
-typedef struct lwmac lwmac_t;
-
-/**
  * @brief Forward gnrc_netdev2 declaration
  */
 typedef struct gnrc_netdev2 gnrc_netdev2_t;
 
 /**
- * @brief lwmac timeout types
+ * @brief Lwmac timeout types
  */
 typedef enum {
     TIMEOUT_DISABLED = 0,

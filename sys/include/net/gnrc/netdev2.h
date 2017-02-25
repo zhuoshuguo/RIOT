@@ -133,7 +133,7 @@ typedef struct gnrc_netdev2 {
 
 #ifdef MODULE_GNRC_LWMAC
     /**
-     * @brief Lwmac specific structure object for storing internal states.
+     * @brief Lwmac specific structure object for storing Lwmac internal states.
      */
     lwmac_t lwmac;
 #endif

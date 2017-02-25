@@ -101,7 +101,7 @@ static inline uint32_t _phase_now(void)
 }
 
 /**
- * @brief Calculate how many ticks remaining to the targeted phase in future
+ * @brief Calculate how many ticks remaining to the targeted phase in the future
  *
  * @param[in]   phase    device phase
  *
@@ -152,7 +152,7 @@ uint32_t _next_inphase_event(uint32_t last, uint32_t interval);
  *        duplicate packets.
  *
  * @param[in,out]   buffer      RX dispatch packet buffer
- * @param[in]   pkt         received packet
+ * @param[in]       pkt         received packet
  *
  * @return                      0 if correctly stored
  * @return                      <0 on error
