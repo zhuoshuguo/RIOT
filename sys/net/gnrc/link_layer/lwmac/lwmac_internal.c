@@ -22,9 +22,8 @@
 #include <stdbool.h>
 #include <periph/rtt.h>
 #include <net/gnrc.h>
-#include "net/gnrc/mac/mac.h"
+#include <net/gnrc/mac/mac.h>
 #include <net/gnrc/lwmac/lwmac.h>
-
 #include "include/lwmac_internal.h"
 
 #define ENABLE_DEBUG    (0)
@@ -48,8 +47,7 @@ uint32_t _phase_to_ticks(uint32_t phase)
     return (rtt_now + phase);
 }
 
-/* Find the neighbour that has a packet queued and is next for sending */
-gnrc_mac_tx_neighbor_t* _next_tx_neighbour(gnrc_netdev2_t* gnrc_netdev2)
+gnrc_mac_tx_neighbor_t* _next_tx_neighbor(gnrc_netdev2_t* gnrc_netdev2)
 {
     int next = -1;
 
@@ -74,16 +72,6 @@ gnrc_mac_tx_neighbor_t* _next_tx_neighbour(gnrc_netdev2_t* gnrc_netdev2)
     }
 
     return (next < 0) ? NULL : &(gnrc_netdev2->tx.neighbors[next]);
-}
-
-int _time_until_tx_us(gnrc_netdev2_t* gnrc_netdev2)
-{
-    gnrc_mac_tx_neighbor_t* neighbour = _next_tx_neighbour(gnrc_netdev2);
-
-    if (neighbour == NULL) {
-        return -1;
-    }
-    return RTT_TICKS_TO_US(_ticks_until_phase(neighbour->phase));
 }
 
 int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
@@ -195,7 +183,6 @@ netopt_state_t _get_netdev_state(gnrc_netdev2_t* gnrc_netdev2)
     return -1;
 }
 
-/* Parameters in rtt timer ticks */
 uint32_t _next_inphase_event(uint32_t last, uint32_t interval)
 {
     /* Counter did overflow since last wakeup */

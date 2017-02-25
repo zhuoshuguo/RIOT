@@ -35,6 +35,10 @@ typedef struct {
     uint8_t  addr[IEEE802154_LONG_ADDRESS_LEN];
     uint8_t  len;
 } l2_addr_t;
+
+/**
+ * @brief Static initializer for l2_addr_t.
+ */
 #define LWMAC_L2_ADDR_INIT      { {0}, 0 }
 
 /**
@@ -86,7 +90,11 @@ typedef struct __attribute__((packed)) {
     lwmac_hdr_t header;
 } lwmac_frame_data_t;
 
-
+/**
+ * @brief Print out the Lwmac header information.
+ *
+ * @param[in] hdr  lwmac header
+ */
 void lwmac_print_hdr(lwmac_hdr_t* hdr);
 
 #ifdef __cplusplus

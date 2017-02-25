@@ -42,7 +42,7 @@
 #include "include/tx_state_machine.h"
 #include "include/rx_state_machine.h"
 #include "include/lwmac_internal.h"
-#include <net/gnrc/lwmac/timeout.h>
+#include "net/gnrc/lwmac/timeout.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
@@ -200,7 +200,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                 break;
             }
 
-            gnrc_mac_tx_neighbor_t* neighbour = _next_tx_neighbour(gnrc_netdev2);
+            gnrc_mac_tx_neighbor_t* neighbour = _next_tx_neighbor(gnrc_netdev2);
 
             if (neighbour != NULL) {
                 /* Offset in microseconds when the earliest (phase) destination

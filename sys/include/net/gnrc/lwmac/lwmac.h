@@ -27,7 +27,9 @@
 #include <kernel_types.h>
 #include <net/gnrc/netdev2.h>
 
-/* Forward gnrc_netdev2 declaration */
+/**
+ * @brief Forward gnrc_netdev2 declaration
+ */
 typedef struct gnrc_netdev2 gnrc_netdev2_t;
 
 #ifdef __cplusplus
@@ -132,7 +134,7 @@ extern "C" {
 
 /**
  * @brief CSMA retries for DATA packet after WR->WA was successful. Too many retries
- *         may timeout the receiver, refer LWMAC_DATA_DELAY_US.
+ *        may timeout the receiver, refer LWMAC_DATA_DELAY_US.
  */
 #ifndef LWMAC_DATA_CSMA_RETRIES
 #define LWMAC_DATA_CSMA_RETRIES         (3U)

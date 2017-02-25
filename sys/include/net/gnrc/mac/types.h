@@ -69,8 +69,7 @@ typedef struct {
 
 #ifdef MODULE_GNRC_LWMAC
     l2_addr_t l2_addr;
-    /* Internal state of reception state machine */
-    lwmac_rx_state_t state;
+    lwmac_rx_state_t state;         /**< Lwmac specific internal reception state */
 #endif
 } gnrc_mac_rx_t;
 
@@ -165,16 +164,10 @@ typedef struct {
 #endif /* (GNRC_MAC_TX_QUEUE_SIZE != 0) || defined(DOXYGEN) */
 
 #ifdef MODULE_GNRC_LWMAC
-    /* Internal state of transmission state machine */
-    lwmac_tx_state_t state;
-
-    /* Count how many WRs were sent until WA received */
-    uint32_t wr_sent;
-
+    lwmac_tx_state_t state;            /**< Lwmac specific internal transmission state */
+    uint32_t wr_sent;                  /**< Count how many WRs were sent until WA received */
     uint32_t timestamp;
-
-    /* Sequence number for broadcast data to filter at receiver */
-    uint8_t bcast_seqnr;
+    uint8_t bcast_seqnr;               /**< Sequence number for broadcast data to filter at receiver */
 #endif
 } gnrc_mac_tx_t;
 
