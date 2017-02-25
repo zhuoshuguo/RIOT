@@ -29,7 +29,6 @@
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
-/* TODO: maybe static inline */
 uint32_t _phase_to_ticks(uint32_t phase)
 {
     uint32_t rtt_now = rtt_get_counter();
