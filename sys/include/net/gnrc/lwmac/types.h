@@ -69,15 +69,15 @@ extern "C" {
 #define LWMAC_EVENT_TIMEOUT_TYPE        (0x4400)
 
 /**
- * @brief   Enable/disable duty-cycle record and print out.
- *          Set "1" to enable, set "0" to disable.
+ * @brief Enable/disable duty-cycle record and print out.
+ *        Set "1" to enable, set "0" to disable.
  */
 #ifndef LWMAC_ENABLE_DUTYCYLE_RECORD
 #define LWMAC_ENABLE_DUTYCYLE_RECORD             (1U)
 #endif
 
 /**
- * @brief   Internal states of Lwmac
+ * @brief Internal states of Lwmac
  */
 typedef enum {
     UNDEF = -1,
@@ -93,7 +93,7 @@ typedef enum {
 } lwmac_state_t;
 
 /**
- * @brief   TX states of Lwmac
+ * @brief TX states of Lwmac
  */
 typedef enum {
     TX_STATE_STOPPED = 0,
@@ -114,7 +114,7 @@ typedef enum {
 #define LWMAC_TX_STATE_INIT TX_STATE_STOPPED
 
 /**
- * @brief   RX states of Lwmac
+ * @brief RX states of Lwmac
  */
 typedef enum {
     RX_STATE_STOPPED = 0,

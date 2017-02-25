@@ -26,7 +26,6 @@
 #include <stdbool.h>
 
 #include <kernel_types.h>
-//#include <lpm.h>
 #include <msg.h>
 #include <thread.h>
 #include <timex.h>
@@ -60,8 +59,9 @@
 #define LOG_INFO(...) LOG(LOG_INFO, "[lwmac] " __VA_ARGS__)
 #define LOG_DEBUG(...) LOG(LOG_DEBUG, "[lwmac] " __VA_ARGS__)
 
-/* Internal state of lwMAC */
-//static lwmac_t lwmac = LWMAC_INIT;
+/**
+ * @brief  Lwmac thread's PID
+ */
 kernel_pid_t lwmac_pid;
 
 static bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2);
@@ -430,7 +430,6 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
         {
         case NETDEV2_EVENT_RX_STARTED:
             LOG_DEBUG("NETDEV_EVENT_RX_STARTED\n");
-            //lwmac.rx_started = true;
             gnrc_netdev2_set_rx_started(gnrc_netdev2,true);
             break;
             case NETDEV2_EVENT_RX_COMPLETE:
@@ -474,25 +473,20 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
             break;
         }
         case NETDEV2_EVENT_TX_STARTED:
-            //lwmac.tx_feedback = TX_FEEDBACK_UNDEF;
             gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_UNDEF);
             gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
-            //lwmac_schedule_update();
             break;
         case NETDEV2_EVENT_TX_COMPLETE:
-            //lwmac.tx_feedback = TX_FEEDBACK_SUCCESS;
             gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_SUCCESS);
             gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
             lwmac_schedule_update(gnrc_netdev2);
             break;
         case NETDEV2_EVENT_TX_NOACK:
-            //lwmac.tx_feedback = TX_FEEDBACK_NOACK;
             gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_NOACK);
             gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
             lwmac_schedule_update(gnrc_netdev2);
             break;
         case NETDEV2_EVENT_TX_MEDIUM_BUSY:
-            //lwmac.tx_feedback = TX_FEEDBACK_BUSY;
             gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_BUSY);
             gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
             lwmac_schedule_update(gnrc_netdev2);

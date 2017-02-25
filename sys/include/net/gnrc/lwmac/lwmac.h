@@ -156,21 +156,6 @@ extern "C" {
 #endif
 
 /**
- * @brief Count of parallel timeouts. Shouldn't needed to be changed.
- */
-#ifndef LWMAC_TIMEOUT_COUNT
-#define LWMAC_TIMEOUT_COUNT             (3U)
-#endif
-
-/**
- * @brief Enable/disable duty-cycle record and print out.
- *        Set "1" to enable, set "0" to disable.
- */
-#ifndef LWMAC_ENABLE_DUTYCYLE_RECORD
-#define LWMAC_ENABLE_DUTYCYLE_RECORD             (1U)
-#endif
-
-/**
  * @brief Initialize an instance of the LWMAC layer
  *
  * The initialization starts a new thread that connects to the given netdev
