@@ -114,7 +114,7 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
         break;
 
     case SLEEPING:
-        lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD);
+        lwmac_clear_timeout(gnrc_netdev2, TIMEOUT_WAKEUP_PERIOD);
         break;
 
     default:
@@ -133,7 +133,7 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
         /* Put transceiver to sleep */
         _set_netdev_state(gnrc_netdev2, NETOPT_STATE_SLEEP);
         /* We may have come here through RTT handler, so timeout may still be active */
-        lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD);
+        lwmac_clear_timeout(gnrc_netdev2, TIMEOUT_WAKEUP_PERIOD);
         /* Return immediately, so no rescheduling */
         return;
 
@@ -191,7 +191,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
         /* If a packet is scheduled, no other (possible earlier) packet can be
          * sent before the first one is handled, even no broadcast
          */
-        if (!lwmac_timeout_is_running(&gnrc_netdev2->lwmac, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
+        if (!lwmac_timeout_is_running(gnrc_netdev2, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
 
             /* Check if there are broadcasts to send and transmit immediately */
             if (gnrc_priority_pktqueue_length(&(gnrc_netdev2->tx.neighbors[0].queue)) > 0) {
@@ -214,7 +214,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                 }
 
                 time_until_tx -= LWMAC_WR_PREPARATION_US;
-                lwmac_set_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAIT_FOR_DEST_WAKEUP, time_until_tx);
+                lwmac_set_timeout(gnrc_netdev2, TIMEOUT_WAIT_FOR_DEST_WAKEUP, time_until_tx);
 
                 /* Register neighbour to be the next */
                 gnrc_netdev2->tx.current_neighbor = neighbour;
@@ -228,7 +228,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                 /* LOG_WARNING("Nothing to send, why did we get called?\n"); */
             }
         } else {
-            if (lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
+            if (lwmac_timeout_is_expired(gnrc_netdev2, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
                 LOG_DEBUG("Got timeout for dest wakeup, ticks: %"PRIu32"\n", rtt_get_counter());
                 lwmac_set_state(gnrc_netdev2, TRANSMITTING);
             } else {
@@ -240,9 +240,9 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
     case LISTENING:
         /* Set timeout for if there's no successful rx transaction that will
          * change state to SLEEPING. */
-        if (!lwmac_timeout_is_running(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD)) {
-            lwmac_set_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD, LWMAC_WAKEUP_DURATION_US);
-        } else if (lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD)) {
+        if (!lwmac_timeout_is_running(gnrc_netdev2, TIMEOUT_WAKEUP_PERIOD)) {
+            lwmac_set_timeout(gnrc_netdev2, TIMEOUT_WAKEUP_PERIOD, LWMAC_WAKEUP_DURATION_US);
+        } else if (lwmac_timeout_is_expired(gnrc_netdev2, TIMEOUT_WAKEUP_PERIOD)) {
             /* Dispatch first as there still may be broadcast packets. */
             _dispatch(gnrc_netdev2->rx.dispatch_buffer);
             lwmac_set_state(gnrc_netdev2, SLEEPING);
@@ -530,7 +530,6 @@ static void *_lwmac_thread(void *args)
 
     /* Store pid globally, so that IRQ can use it to send msg */
     lwmac_pid = thread_getpid();
-    gnrc_netdev2->lwmac.pid = lwmac_pid;
 
     /* setup the MAC layers message queue */
     msg_init_queue(msg_queue, LWMAC_IPC_MSG_QUEUE_SIZE);
@@ -559,7 +558,6 @@ static void *_lwmac_thread(void *args)
     dev->driver->set(dev, NETOPT_SRC_LEN, &src_len, sizeof(src_len));
 
     /* Get own address from netdev */
-    //lwmac.l2_addr.len = dev->driver->get(dev, NETOPT_ADDRESS_LONG, &lwmac.l2_addr.addr, sizeof(lwmac.l2_addr.addr));
     gnrc_netdev2->l2_addr_len = dev->driver->get(dev, NETOPT_ADDRESS_LONG, &gnrc_netdev2->l2_addr, IEEE802154_LONG_ADDRESS_LEN);
     assert(gnrc_netdev2->l2_addr_len > 0);
 
@@ -568,7 +566,7 @@ static void *_lwmac_thread(void *args)
     gnrc_netdev2->tx.bcast_seqnr = gnrc_netdev2->l2_addr[0];
 
     /* Reset all timeouts just to be sure */
-    lwmac_reset_timeouts(&gnrc_netdev2->lwmac);
+    lwmac_reset_timeouts(gnrc_netdev2);
 
     /* Start duty cycling */
     lwmac_set_state(gnrc_netdev2, START);
