@@ -138,7 +138,6 @@ typedef enum {
  * @brief   Internal unit for store states of Lwmac
  */
 typedef struct lwmac {
-    kernel_pid_t pid;                              /**< PID of lwMAC thread */
     lwmac_state_t state;                           /**< Internal state of MAC layer */
     uint32_t last_wakeup;                          /**< Used to calculate wakeup times */
     bool dutycycling_active;                       /**< Keep track of duty cycling to avoid 

@@ -70,7 +70,7 @@ void lwmac_rx_stop(gnrc_netdev2_t* gnrc_netdev2)
         return;
     }
 
-    lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_DATA);
+    lwmac_clear_timeout(gnrc_netdev2, TIMEOUT_DATA);
     gnrc_netdev2->rx.state = RX_STATE_STOPPED;
     gnrc_netdev2->rx.l2_addr.len = 0;
 }
@@ -87,7 +87,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
     switch (gnrc_netdev2->rx.state)
     {
     case RX_STATE_INIT:
-        lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_DATA);
+        lwmac_clear_timeout(gnrc_netdev2, TIMEOUT_DATA);
         GOTO_RX_STATE(RX_STATE_WAIT_FOR_WR, true);
 
     case RX_STATE_WAIT_FOR_WR:
@@ -252,7 +252,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
         */
 
         /* Set timeout for expected data arrival */
-        lwmac_set_timeout(&gnrc_netdev2->lwmac, TIMEOUT_DATA, LWMAC_DATA_DELAY_US);
+        lwmac_set_timeout(gnrc_netdev2, TIMEOUT_DATA, LWMAC_DATA_DELAY_US);
 
         _set_netdev_state(gnrc_netdev2, NETOPT_STATE_IDLE);
         GOTO_RX_STATE(RX_STATE_WAIT_FOR_DATA, false);
@@ -299,14 +299,14 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
             /* Sender maybe didn't get the WA */
             if (info.header->type == FRAMETYPE_WR) {
                 LOG_INFO("Found a WR while waiting for DATA\n");
-                lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_DATA);
+                lwmac_clear_timeout(gnrc_netdev2, TIMEOUT_DATA);
                 found_wr = true;
                 break;
             }
 
             if (info.header->type == FRAMETYPE_DATA) {
                 LOG_DEBUG("Found DATA!\n");
-                lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_DATA);
+                lwmac_clear_timeout(gnrc_netdev2, TIMEOUT_DATA);
                 found_data = true;
                 break;
             }
@@ -333,7 +333,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
          * TODO: Checking for expiration only works once and clears the timeout.
          *       If this is a false positive (other packet than DATA), we're
          *       stuck. */
-        if ((lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_DATA)) &&
+        if ((lwmac_timeout_is_expired(gnrc_netdev2, TIMEOUT_DATA)) &&
             (!gnrc_netdev2_get_rx_started(gnrc_netdev2))) {
             LOG_INFO("DATA timed out\n");
             gnrc_pktbuf_release(pkt);
