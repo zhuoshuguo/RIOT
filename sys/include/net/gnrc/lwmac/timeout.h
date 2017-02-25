@@ -56,7 +56,7 @@ typedef enum {
 } lwmac_timeout_type_t;
 
  /**
- * @brief lwmac timeout structre
+ * @brief Lwmac timeout structure
  */
 typedef struct {
     xtimer_t timer;
@@ -64,56 +64,57 @@ typedef struct {
     bool expired;              /**< If type != DISABLED, this indicates if timeout has expired */
     lwmac_timeout_type_t type;
 } lwmac_timeout_t;
+
 /**
  * @brief Static initializer for lwmac_timeout_t.
  */
 #define LWMAC_TIMEOUT_INIT  { {}, {}, false, TIMEOUT_DISABLED }
 
 /**
- * @brief Set lwmac timeout of type @type of offset @p offset.
+ * @brief Set Lwmac timeout of type @type of offset @p offset.
  *
- * @param[in,out] gnrc_netdev2  gnrc_netdev2 struct
- * @param[in]     type          lwmac timeout type
+ * @param[in,out] gnrc_netdev2  gnrc_netdev2 structure
+ * @param[in]     type          Lwmac timeout type
  * @param[in]     offset        timeout offset
  */
 void lwmac_set_timeout(gnrc_netdev2_t* gnrc_netdev2, lwmac_timeout_type_t type, uint32_t offset);
 
 /**
- * @brief Clear lwmac timeout of type @type.
+ * @brief Clear Lwmac timeout of type @type.
  *
- * @param[in,out] gnrc_netdev2  gnrc_netdev2 struct
- * @param[in]     type          lwmac timeout type
+ * @param[in,out] gnrc_netdev2  gnrc_netdev2 structure
+ * @param[in]     type          Lwmac timeout type
  */
 void lwmac_clear_timeout(gnrc_netdev2_t* gnrc_netdev2, lwmac_timeout_type_t type);
 
 /**
- * @brief Check whether lwmac timeout of type @type is running.
+ * @brief Check whether Lwmac timeout of type @type is running.
  *
- * @param[in]     gnrc_netdev2  gnrc_netdev2 struct
- * @param[in]     type          lwmac timeout type
+ * @param[in]     gnrc_netdev2  gnrc_netdev2 structure
+ * @param[in]     type          Lwmac timeout type
  */
 bool lwmac_timeout_is_running(gnrc_netdev2_t* gnrc_netdev2, lwmac_timeout_type_t type);
 
 /**
- * @brief Check whether lwmac timeout of type @type is expired. It will clear
+ * @brief Check whether Lwmac timeout of type @type is expired. It will clear
  *        the timeout once it is found expired.
  *
- * @param[in,out] gnrc_netdev2  gnrc_netdev2 struct
- * @param[in]     type          lwmac timeout type
+ * @param[in,out] gnrc_netdev2  gnrc_netdev2 structure
+ * @param[in]     type          Lwmac timeout type
  */
 bool lwmac_timeout_is_expired(gnrc_netdev2_t* gnrc_netdev2, lwmac_timeout_type_t type);
 
 /**
- * @brief Reset all lwmac timeouts.
+ * @brief Reset all Lwmac timeouts.
  *
- * @param[in,out] gnrc_netdev2  gnrc_netdev2 struct
+ * @param[in,out] gnrc_netdev2  gnrc_netdev2 structure
  */
 void lwmac_reset_timeouts(gnrc_netdev2_t* gnrc_netdev2);
 
 /**
- * @brief Make a specific lwmac timeout expired.
+ * @brief Make a specific Lwmac timeout expired.
  *
- * @param[in,out] timeout   lwmac tiemout
+ * @param[in,out] timeout   Lwmac tiemout
  */
 void lwmac_timeout_make_expire(lwmac_timeout_t* timeout);
 

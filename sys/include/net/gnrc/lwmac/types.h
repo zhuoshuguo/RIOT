@@ -107,6 +107,10 @@ typedef enum {
     TX_STATE_SUCCESSFUL,    /**< Transmission has finished successfully */
     TX_STATE_FAILED         /**< Payload data couldn't be delivered to dest */
 } lwmac_tx_state_t;
+
+/**
+ * @brief Static initializer for lwmac_tx_state_t.
+ */
 #define LWMAC_TX_STATE_INIT TX_STATE_STOPPED
 
 /**
@@ -122,6 +126,10 @@ typedef enum {
     RX_STATE_SUCCESSFUL,    /**< Recption has finished successfully */
     RX_STATE_FAILED         /**< Reception over, but nothing received */
 } lwmac_rx_state_t;
+
+/**
+ * @brief Static initializer for lwmac_rx_state_t.
+ */
 #define LWMAC_RX_STATE_INIT RX_STATE_STOPPED
 
 /**
@@ -135,7 +143,7 @@ typedef enum {
 #define LWMAC_PHASE_MAX             (-1)
 
 /**
- * @brief   Internal unit for store states of Lwmac
+ * @brief Lwmac specific structure for storing internal states.
  */
 typedef struct lwmac {
     lwmac_state_t state;                           /**< Internal state of MAC layer */
