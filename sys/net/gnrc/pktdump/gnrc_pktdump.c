@@ -147,8 +147,8 @@ static void _dump(gnrc_pktsnip_t *pkt)
 	   		addr[1] = 0xd2;
 	   	}
 	}else if(own_addess == 0xa312) {
-	         addr[0] = 0xe2;
-	         addr[1] = 0x1a;
+	         addr[0] = 0x10;
+	         addr[1] = 0x3e;
 	}else if(own_addess == 0xe21a) {
 	    if(payload[3] == 0x0000447e){
 	    	addr[0] = 0x44;
@@ -159,11 +159,18 @@ static void _dump(gnrc_pktsnip_t *pkt)
 	    }
 	}else if(own_addess == 0x6f46) {
 	    	if(payload[3] == 0x0000103e){
-	    		addr[0] = 0x10;
-	    		addr[1] = 0x3e;
-	    	}else if(payload[3] == 0x000052d2){
-	    		addr[0] = 0xe2;
+	    		addr[0] = 0x1b;
 	    		addr[1] = 0x1a;
+	    	}
+	}else if(own_addess == 0x1b1a) {
+    	if(payload[3] == 0x0000103e){
+    		addr[0] = 0x44;
+    		addr[1] = 0x7e;
+    	}
+    }else if(own_addess == 0x447e) {
+	    	if(payload[3] == 0x0000103e){
+	    		addr[0] = 0xa3;
+	    		addr[1] = 0x12;
 	    	}
 	}
 

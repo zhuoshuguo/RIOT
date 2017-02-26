@@ -1905,7 +1905,7 @@ void iqueue_mac_router_sleep_end(iqueuemac_t* iqueuemac){
     printf("dutycycle is %lu \n", duty);
     */
 
-	if(!iqueuemac->exp_end && (RTT_TICKS_TO_US(rtt_get_counter()) > (iqueuemac->exp_duration * (1000000)))){
+	if(!iqueuemac->exp_end && (RTT_TICKS_TO_US(rtt_get_counter()) > ((iqueuemac->exp_duration+4) * (1000000)))){
 
 		iqueuemac->exp_end = true;
 

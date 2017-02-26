@@ -89,7 +89,7 @@ static void generate_and_send_pkt(void){
 		        addr[1] = 0x46;
 
 		        payload[0] = send_counter;
-		        printf("%lx: %lu.\n", payload[3],send_counter);
+		       //printf("%lx: %lu.\n", payload[3],send_counter);
 	    }
 
 #if 0
