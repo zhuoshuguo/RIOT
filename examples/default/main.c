@@ -82,14 +82,14 @@ static void generate_and_send_pkt(void){
 
 	    addr_len = 2;
 
-	    if(own_address2 == 0x103e) {
+	    if(own_address2 == 0x5ad6) {
 
-	    		payload[3] = 0x00005ad6;
-		        addr[0] = 0x5a;
-		        addr[1] = 0xd6;
+	    		payload[3] = 0x0000103e;
+		        addr[0] = 0x6f;
+		        addr[1] = 0x46;
 
 		        payload[0] = send_counter;
-		        //printf("%lx: %lu.\n", payload[3],send_counter);
+		        printf("%lx: %lu.\n", payload[3],send_counter);
 	    }
 
 #if 0
@@ -294,7 +294,12 @@ void *sender_thread(void *arg)
 
             	payload = pkt->data;
             	data_rate = payload[0];
-            	total_gene_num = payload[2];
+
+            	if(own_address2 == 0x5ad6) {
+            	    total_gene_num = payload[2];
+            	}else {
+            		total_gene_num = 0;
+            	}
             	exp_start_time = payload[5];
             	exp_duration_ticks = payload[1];
             	exp_duration_ticks = exp_duration_ticks * 1000000;

@@ -158,9 +158,9 @@ static void _dump(gnrc_pktsnip_t *pkt)
 	    	addr[1] = 0xd2;
 	    }
 	}else if(own_addess == 0x6f46) {
-	    	if(payload[3] == 0x0000447e){
-	    		addr[0] = 0x44;
-	    		addr[1] = 0x7e;
+	    	if(payload[3] == 0x0000103e){
+	    		addr[0] = 0x10;
+	    		addr[1] = 0x3e;
 	    	}else if(payload[3] == 0x000052d2){
 	    		addr[0] = 0xe2;
 	    		addr[1] = 0x1a;
@@ -179,7 +179,7 @@ static void _dump(gnrc_pktsnip_t *pkt)
 	   	return;
 	}
 
-	printf("%lx: %lu\n",payload[1], payload[0]);
+	//printf("%lx: %lu\n",payload[1], payload[0]);
 
 	LL_PREPEND(pkt, hdr);
 
