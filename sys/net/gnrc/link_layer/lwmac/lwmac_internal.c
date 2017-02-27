@@ -111,6 +111,7 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
     case FRAMETYPE_WA:
         lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_wa_t), GNRC_NETTYPE_LWMAC);
         break;
+    case FRAMETYPE_DATA_PENDING:
     case FRAMETYPE_DATA:
         lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_data_t), GNRC_NETTYPE_LWMAC);
         break;

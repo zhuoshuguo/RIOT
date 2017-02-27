@@ -139,6 +139,9 @@ typedef struct lwmac {
     /* Store timeouts used for protocol */
     lwmac_timeout_t timeouts[LWMAC_TIMEOUT_COUNT];
 
+    bool extend_wakeup;
+    bool extend_tx;
+
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
     /* parameters for recording duty-cycle */
     bool radio_is_on;

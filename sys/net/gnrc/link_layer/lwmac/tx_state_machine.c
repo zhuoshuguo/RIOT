@@ -88,7 +88,11 @@ void lwmac_tx_stop(gnrc_netdev2_t* gnrc_netdev2)
         gnrc_pktbuf_release(gnrc_netdev2->tx.packet);
         gnrc_netdev2->tx.packet = NULL;
     }
-    gnrc_netdev2->tx.current_neighbor = NULL;
+
+    if (gnrc_netdev2->lwmac.extend_tx == false) {
+    	gnrc_netdev2->tx.current_neighbor = NULL;
+    }
+
 }
 
 /* Returns whether rescheduling is needed or not */
@@ -115,6 +119,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
             /* drop pointer so it wont be free'd */
             gnrc_netdev2->tx.packet = NULL;
+            gnrc_netdev2->lwmac.extend_tx = false;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
@@ -164,6 +169,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             if (pkt->next == NULL) {
                 LOG_ERROR("Cannot allocate pktbuf of type FRAMETYPE_BROADCAST\n");
                 gnrc_netdev2->tx.packet->next = pkt_payload;
+                gnrc_netdev2->lwmac.extend_tx = false;
                 GOTO_TX_STATE(TX_STATE_FAILED, true);
             }
 
@@ -182,6 +188,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             int res = gnrc_netdev2->send(gnrc_netdev2, pkt);
             if (res < 0){
                 LOG_ERROR("Send broadcast pkt failed.");
+                gnrc_netdev2->lwmac.extend_tx = false;
                 GOTO_TX_STATE(TX_STATE_FAILED, true);
             }
             _set_netdev_state(gnrc_netdev2, NETOPT_STATE_TX);
@@ -212,6 +219,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
             /* drop pointer so it wont be free'd */
             gnrc_netdev2->tx.packet = NULL;
+            gnrc_netdev2->lwmac.extend_tx = false;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
@@ -232,6 +240,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         pkt = gnrc_pktbuf_add(NULL, &wr_hdr, sizeof(wr_hdr), GNRC_NETTYPE_LWMAC);
         if (pkt == NULL) {
             LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_LWMAC\n");
+            gnrc_netdev2->lwmac.extend_tx = false;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
@@ -242,6 +251,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         if (pkt == NULL) {
             LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_NETIF\n");
             gnrc_pktbuf_release(pkt_lwmac);
+            gnrc_netdev2->lwmac.extend_tx = false;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
@@ -268,11 +278,12 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             if (pkt != NULL){
                 gnrc_pktbuf_release(pkt);
             }
+            gnrc_netdev2->lwmac.extend_tx = false;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
         /* First WR, try to catch wakeup phase */
-        if (gnrc_netdev2->tx.wr_sent == 0) {
+        if ((gnrc_netdev2->tx.wr_sent == 0) && (gnrc_netdev2->lwmac.extend_tx == false)) {
 
             /* Calculate wakeup time */
             uint32_t wait_until;
@@ -287,6 +298,8 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 
             /* Wait until calculated wakeup time of destination */
             while (rtt_get_counter() < wait_until);
+        } else {
+            gnrc_netdev2->lwmac.extend_tx = false;
         }
 
         /* Trigger sending frame */
@@ -309,6 +322,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         if (gnrc_netdev2_get_tx_feedback(gnrc_netdev2) == TX_FEEDBACK_BUSY) {
             gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
             gnrc_netdev2->tx.packet = NULL;
+            gnrc_netdev2->lwmac.extend_tx = false;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
             break;
         }
@@ -352,6 +366,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 
         if (lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_NO_RESPONSE)) {
             LOG_DEBUG("No response from destination\n");
+            gnrc_netdev2->lwmac.extend_tx = false;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
@@ -450,6 +465,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         }
 
         if (postponed) {
+        	gnrc_netdev2->lwmac.extend_tx = false;
             LOG_INFO("Destination is talking to another node, postpone\n");
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
@@ -490,11 +506,19 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         pkt_payload = pkt->next;
 
         /* Insert lwMAC header above NETIF header */
-        lwmac_hdr_t hdr = {FRAMETYPE_DATA};
+        lwmac_hdr_t hdr;
+        if (gnrc_priority_pktqueue_length(&gnrc_netdev2->tx.current_neighbor->queue) > 0) {
+            hdr.type = FRAMETYPE_DATA_PENDING;
+            gnrc_netdev2->lwmac.extend_tx = true;
+        } else {
+            hdr.type = FRAMETYPE_DATA;
+        }
+
         pkt->next = gnrc_pktbuf_add(pkt->next, &hdr, sizeof(hdr), GNRC_NETTYPE_LWMAC);
         if (pkt->next == NULL){
             LOG_ERROR("Cannot allocate pktbuf of type FRAMETYPE_DATA\n");
             gnrc_netdev2->tx.packet->next = pkt_payload;
+            gnrc_netdev2->lwmac.extend_tx = false;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
@@ -502,6 +526,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         int res = gnrc_netdev2->send(gnrc_netdev2, pkt);
         if (res < 0){
             LOG_ERROR("Send data failed.");
+            gnrc_netdev2->lwmac.extend_tx = false;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
         _set_netdev_state(gnrc_netdev2, NETOPT_STATE_TX);
@@ -527,13 +552,16 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             GOTO_TX_STATE(TX_STATE_SUCCESSFUL, true);
         } else if (gnrc_netdev2_get_tx_feedback(gnrc_netdev2) == TX_FEEDBACK_NOACK) {
             LOG_ERROR("Not ACKED\n");
+            gnrc_netdev2->lwmac.extend_tx = false;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         } else if (gnrc_netdev2_get_tx_feedback(gnrc_netdev2) == TX_FEEDBACK_BUSY) {
             LOG_ERROR("Channel busy \n");
+            gnrc_netdev2->lwmac.extend_tx = false;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
         LOG_ERROR("Tx feedback unhandled: %i\n", gnrc_netdev2_get_tx_feedback(gnrc_netdev2));
+        gnrc_netdev2->lwmac.extend_tx = false;
         GOTO_TX_STATE(TX_STATE_FAILED, true);
     }
     case TX_STATE_SUCCESSFUL:

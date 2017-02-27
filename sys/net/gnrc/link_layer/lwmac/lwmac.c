@@ -230,6 +230,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
         } else {
             if (lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
                 LOG_DEBUG("Got timeout for dest wakeup, ticks: %"PRIu32"\n", rtt_get_counter());
+                gnrc_netdev2->lwmac.extend_tx = false;
                 lwmac_set_state(gnrc_netdev2, TRANSMITTING);
             } else {
                 /* LOG_DEBUG("Nothing to do, why did we get called?\n"); */
@@ -238,6 +239,13 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
         break;
 
     case LISTENING:
+
+        /* Restart Listen if found extended transmissions */
+        if(gnrc_netdev2->lwmac.extend_wakeup == true) {
+            gnrc_netdev2->lwmac.extend_wakeup = false;
+            lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD);
+        }
+
         /* Set timeout for if there's no successful rx transaction that will
          * change state to SLEEPING. */
         if (!lwmac_timeout_is_running(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD)) {
@@ -330,7 +338,13 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                          tx_success, gnrc_netdev2->tx.wr_sent);
             }
             lwmac_tx_stop(gnrc_netdev2);
-            lwmac_set_state(gnrc_netdev2, SLEEPING);
+
+            if (gnrc_netdev2->lwmac.extend_tx == true) {
+            	lwmac_schedule_update(gnrc_netdev2);
+            } else {
+                lwmac_set_state(gnrc_netdev2, SLEEPING);
+            }
+
             break;
         default:
             lwmac_tx_update(gnrc_netdev2);
@@ -371,6 +385,7 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
         gnrc_netdev2->lwmac.last_wakeup = rtt_get_alarm();
         alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US));
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_SLEEP_PENDING);
+        gnrc_netdev2->lwmac.extend_wakeup = false;
         lwmac_set_state(gnrc_netdev2, LISTENING);
         break;
 
