@@ -188,6 +188,9 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
     {
     case SLEEPING:
 
+    	if(gnrc_netdev2->lwmac.quit_tx == true) {
+    		return false;
+    	}
         /* If a packet is scheduled, no other (possible earlier) packet can be
          * sent before the first one is handled, even no broadcast
          */
@@ -240,6 +243,10 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
 
     case LISTENING:
 
+    	if (_next_tx_neighbour(gnrc_netdev2) != NULL) {
+    	    rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev2);
+    	}
+
         /* Restart Listen if found extended transmissions */
         if(gnrc_netdev2->lwmac.extend_wakeup == true) {
             gnrc_netdev2->lwmac.extend_wakeup = false;
@@ -253,7 +260,19 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
         } else if (lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD)) {
             /* Dispatch first as there still may be broadcast packets. */
             _dispatch(gnrc_netdev2->rx.dispatch_buffer);
-            lwmac_set_state(gnrc_netdev2, SLEEPING);
+
+            gnrc_netdev2->lwmac.state = SLEEPING;
+            /* Enable duty cycling again */
+            rtt_handler(LWMAC_EVENT_RTT_RESUME, gnrc_netdev2);
+
+            _set_netdev_state(gnrc_netdev2, NETOPT_STATE_SLEEP);
+            lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD);
+
+            gnrc_mac_tx_neighbor_t* neighbour = _next_tx_neighbour(gnrc_netdev2);
+            if (neighbour != NULL) {
+             	lwmac_schedule_update(gnrc_netdev2);
+                break;
+            }
         }
 
         if (gnrc_priority_pktqueue_length(&gnrc_netdev2->rx.queue) > 0) {
@@ -326,6 +345,8 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
         }
 
         case TX_STATE_FAILED:
+        	gnrc_netdev2->lwmac.quit_tx = true;
+        	gnrc_netdev2->lwmac.extend_tx = false;
             tx_success = "NOT ";
             /* Intended fall-through, TX packet will therefore be dropped. No
              * automatic resending here, we did our best.
@@ -342,6 +363,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             if (gnrc_netdev2->lwmac.extend_tx == true) {
             	lwmac_schedule_update(gnrc_netdev2);
             } else {
+            	gnrc_netdev2->lwmac.quit_tx = true;
                 lwmac_set_state(gnrc_netdev2, SLEEPING);
             }
 
@@ -386,6 +408,7 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
         alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US));
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_SLEEP_PENDING);
         gnrc_netdev2->lwmac.extend_wakeup = false;
+        gnrc_netdev2->lwmac.quit_tx = false;
         lwmac_set_state(gnrc_netdev2, LISTENING);
         break;
 

@@ -141,6 +141,7 @@ typedef struct lwmac {
 
     bool extend_wakeup;
     bool extend_tx;
+    bool quit_tx;
 
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
     /* parameters for recording duty-cycle */

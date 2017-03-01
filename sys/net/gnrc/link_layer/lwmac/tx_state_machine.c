@@ -367,6 +367,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         if (lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_NO_RESPONSE)) {
             LOG_DEBUG("No response from destination\n");
             gnrc_netdev2->lwmac.extend_tx = false;
+            gnrc_netdev2->lwmac.quit_tx = true;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
@@ -465,6 +466,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         }
 
         if (postponed) {
+            gnrc_netdev2->lwmac.quit_tx = true;
         	gnrc_netdev2->lwmac.extend_tx = false;
             LOG_INFO("Destination is talking to another node, postpone\n");
             GOTO_TX_STATE(TX_STATE_FAILED, true);
@@ -512,6 +514,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             gnrc_netdev2->lwmac.extend_tx = true;
         } else {
             hdr.type = FRAMETYPE_DATA;
+            gnrc_netdev2->lwmac.extend_tx = false;
         }
 
         pkt->next = gnrc_pktbuf_add(pkt->next, &hdr, sizeof(hdr), GNRC_NETTYPE_LWMAC);
