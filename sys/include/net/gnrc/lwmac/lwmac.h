@@ -138,6 +138,12 @@ extern "C" {
 #define LWMAC_TIMEOUT_COUNT             (4U)
 #endif
 
+/* Time between consecutive wakeups. This parameter governs power consumption,
+ * latency and throughput! */
+#ifndef LWMAC_MAX_TX_BURST_PKT_NUM
+#define LWMAC_MAX_TX_BURST_PKT_NUM        (4U)
+#endif
+
 /**
  * @brief   Enable/disable duty-cycle record and print out.
  *          Set "1" to enable, set "0" to disable.

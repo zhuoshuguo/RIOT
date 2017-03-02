@@ -206,6 +206,17 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             gnrc_mac_tx_neighbor_t* neighbour = _next_tx_neighbour(gnrc_netdev2);
 
             if (neighbour != NULL) {
+
+            	/* if phase unkown, send immediately after CP. */
+            	if(neighbour->phase >= RTT_TICKS_TO_US(LWMAC_WAKEUP_INTERVAL_US)) {
+            	    gnrc_netdev2->tx.current_neighbor = neighbour;
+
+            	    gnrc_netdev2->lwmac.extend_tx = false;
+            	    gnrc_netdev2->lwmac.max_tx_num = 0;
+            	    lwmac_set_state(gnrc_netdev2, TRANSMITTING);
+            	    break;
+            	}
+
                 /* Offset in microseconds when the earliest (phase) destination
                  * node wakes up that we have packets for. */
                 int time_until_tx = RTT_TICKS_TO_US(_ticks_until_phase(neighbour->phase));
@@ -273,6 +284,9 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             if (neighbour != NULL) {
              	lwmac_schedule_update(gnrc_netdev2);
                 break;
+            } else {
+            	/* only try to send pkt after CP-check is clear */
+                gnrc_netdev2->lwmac.quit_tx = true;
             }
         }
 
@@ -361,6 +375,12 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             }
             lwmac_tx_stop(gnrc_netdev2);
 
+            if (gnrc_netdev2->lwmac.max_tx_num >= LWMAC_MAX_TX_BURST_PKT_NUM) {
+                gnrc_netdev2->lwmac.quit_tx = true;
+                lwmac_set_state(gnrc_netdev2, SLEEPING);
+                break;
+            }
+
             if (gnrc_netdev2->lwmac.extend_tx == true) {
             	lwmac_schedule_update(gnrc_netdev2);
             } else {
@@ -416,6 +436,15 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
     case LWMAC_EVENT_RTT_SLEEP_PENDING:
         alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_WAKEUP_PENDING);
+
+        if (_next_tx_neighbour(gnrc_netdev2) != NULL) {
+            lwmac_schedule_update(gnrc_netdev2);
+            break;
+        } else {
+       	    /* only try to send pkt after CP-check is free*/
+            gnrc_netdev2->lwmac.quit_tx = true;
+        }
+
         lwmac_set_state(gnrc_netdev2, SLEEPING);
 
         if(((rtt_get_counter()-gnrc_netdev2->lwmac.system_start_time_ticks) > RTT_US_TO_TICKS(LWMACMAC_DUTYCYCLE_RECORD_US))
