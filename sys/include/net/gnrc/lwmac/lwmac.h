@@ -41,7 +41,7 @@ extern "C" {
 /* Time between consecutive wakeups. This parameter governs power consumption,
  * latency and throughput! */
 #ifndef LWMAC_WAKEUP_INTERVAL_US
-#define LWMAC_WAKEUP_INTERVAL_US        (500U * 1000)
+#define LWMAC_WAKEUP_INTERVAL_US        (200U * 1000)
 #endif
 
 /* The Maximum WR duration time */
@@ -98,7 +98,7 @@ extern "C" {
  * beginning of the packet if the transceiver supports RX_STARTED event (this
  * can be important for big packets). */
 #ifndef LWMAC_DATA_DELAY_US
-#define LWMAC_DATA_DELAY_US             (5000U)
+#define LWMAC_DATA_DELAY_US             (15000U)
 #endif
 
 /* How long BROADCAST packets will be sent to make sure every participant has

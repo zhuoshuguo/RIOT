@@ -219,7 +219,7 @@ static void _dump(gnrc_pktsnip_t *pkt)
 	   	return;
 	}
 
-	//printf("%lx: %lu\n",payload[1], payload[0]);
+	printf("%lx: %lu\n",payload[1], payload[0]);
 
 	LL_PREPEND(pkt, hdr);
 
