@@ -91,7 +91,7 @@ extern "C" {
  * is done, it will busy wait (block the whole system) until the WR has been
  * dispatched to the driver. */
 #ifndef LWMAC_WR_PREPARATION_US
-#define LWMAC_WR_PREPARATION_US         (7000U + LWMAC_WR_BEFORE_PHASE_US)
+#define LWMAC_WR_PREPARATION_US         (2000U + LWMAC_WR_BEFORE_PHASE_US)
 #endif
 
 /* How long to wait after a WA for data to come in. It's enough to catch the

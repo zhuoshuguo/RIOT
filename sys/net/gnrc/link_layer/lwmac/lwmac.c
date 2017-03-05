@@ -648,7 +648,7 @@ static void *_lwmac_thread(void *args)
 
     /* Initialize broadcast sequence number. This at least differs from board
      * to board */
-    gnrc_netdev2->tx.bcast_seqnr = gnrc_netdev2->l2_addr[0];
+    gnrc_netdev2->tx.bcast_seqnr = gnrc_netdev2->l2_addr[7];
 
     /* Reset all timeouts just to be sure */
     lwmac_reset_timeouts(&gnrc_netdev2->lwmac);
@@ -658,6 +658,17 @@ static void *_lwmac_thread(void *args)
 
 
     xtimer_sleep(5);
+
+    uint32_t seed;
+
+    seed = 0;
+    seed = gnrc_netdev2->l2_addr[6];
+    seed = seed << 8;
+    seed |= gnrc_netdev2->l2_addr[7];
+
+    random_init(seed);
+
+    printf("seed: %lx\n",seed);
 
     /* Start exp setting */
     gnrc_netdev2->lwmac.exp_duration = 300; //seconds
