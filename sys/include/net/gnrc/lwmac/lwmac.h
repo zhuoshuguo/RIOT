@@ -41,7 +41,7 @@ extern "C" {
 /* Time between consecutive wakeups. This parameter governs power consumption,
  * latency and throughput! */
 #ifndef LWMAC_WAKEUP_INTERVAL_US
-#define LWMAC_WAKEUP_INTERVAL_US        (500U * 1000)
+#define LWMAC_WAKEUP_INTERVAL_US        (200U * 1000)
 #endif
 
 /* The Maximum WR duration time */
