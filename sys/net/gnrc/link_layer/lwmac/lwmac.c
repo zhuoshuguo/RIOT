@@ -450,7 +450,7 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
 
         lwmac_set_state(gnrc_netdev2, SLEEPING);
 
-        if(((rtt_get_counter()-gnrc_netdev2->lwmac.system_start_time_ticks) > RTT_US_TO_TICKS(((gnrc_netdev2->lwmac.exp_duration+5) * (1000000))) )
+        if(((rtt_get_counter()-gnrc_netdev2->lwmac.system_start_time_ticks) > RTT_US_TO_TICKS(((gnrc_netdev2->lwmac.exp_duration+4) * (1000000))) )
         		&&(!gnrc_netdev2->lwmac.exp_end)){
         	/* Output duty-cycle ratio */
         	uint64_t duty;

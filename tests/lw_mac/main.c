@@ -100,6 +100,20 @@ static void generate_and_send_pkt(void){
 		        addr[6] = 0x4c;
 		        addr[7] = 0x66;
 
+				/*
+				//79:67:08:77:01:9f:33:1e
+		        addr[0] = 0x79;
+		        addr[1] = 0x67;
+
+		        addr[2] = 0x08;
+		        addr[3] = 0x77;
+
+		        addr[4] = 0x01;
+		        addr[5] = 0x9f;
+
+		        addr[6] = 0x33;
+		        addr[7] = 0x1e;
+                */
 		        payload[0] = send_counter;
 		        //printf("%lx: %lu.\n", payload[3],send_counter);
 	    }else if(own_address2 == 0xc13a) {  //e21a
