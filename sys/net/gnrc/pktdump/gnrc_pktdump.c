@@ -126,7 +126,7 @@ static void _dump(gnrc_pktsnip_t *pkt)
 	uint8_t addr[8];
 	size_t addr_len;
 	gnrc_pktsnip_t *hdr;
-	uint32_t *payload;
+	//uint32_t *payload;
 
 	int16_t dev2;
 
@@ -134,59 +134,12 @@ static void _dump(gnrc_pktsnip_t *pkt)
 	/* parse interface */
 	dev = (kernel_pid_t)dev2;
 
-	payload = pkt->data;
+	//payload = pkt->data;
 
 	addr_len = 8;
 
-	if(own_addess == 0x4c66) {// 6f46
-	  	if(payload[3] == 0x0000331e){
+	if(own_addess == 0x675e) {  //447e
 
-
-	        addr[0] = 0x79;
-	        addr[1] = 0x67;
-
-	        addr[2] = 0x19;
-	        addr[3] = 0x62;
-
-	        addr[4] = 0xf5;
-	        addr[5] = 0x60;
-
-	        addr[6] = 0x38;
-	        addr[7] = 0x3a;
-
-
-	  		/*
-			//79:67:08:77:01:9f:33:1e
-	        addr[0] = 0x79;
-	        addr[1] = 0x67;
-
-	        addr[2] = 0x08;
-	        addr[3] = 0x77;
-
-	        addr[4] = 0x01;
-	        addr[5] = 0x9f;
-
-	        addr[6] = 0x33;
-	        addr[7] = 0x1e;
-	        */
-
-	   	}
-	}else if(own_addess == 0x383a) {  //1b1a
-
-
-        addr[0] = 0x79;
-        addr[1] = 0x76;
-
-        addr[2] = 0x43;
-        addr[3] = 0x7f;
-
-        addr[4] = 0x72;
-        addr[5] = 0x2a;
-
-        addr[6] = 0x67;
-        addr[7] = 0x5e;
-
-		/*
         addr[0] = 0x79;
         addr[1] = 0x67;
 
@@ -198,40 +151,10 @@ static void _dump(gnrc_pktsnip_t *pkt)
 
         addr[6] = 0x33;
         addr[7] = 0x1e;
-        */
-
-	}else if(own_addess == 0x675e) {  //447e
-  //79:67:3c:7c:2b:2a:c1:3a
-
-        addr[0] = 0x79;
-        addr[1] = 0x67;
-
-        addr[2] = 0x3c;
-        addr[3] = 0x7c;
-
-        addr[4] = 0x2b;
-        addr[5] = 0x2a;
-
-        addr[6] = 0xc1;
-        addr[7] = 0x3a;
-
-        /*
-        addr[0] = 0x79;
-        addr[1] = 0x67;
-
-        addr[2] = 0x08;
-        addr[3] = 0x77;
-
-        addr[4] = 0x01;
-        addr[5] = 0x9f;
-
-        addr[6] = 0x33;
-        addr[7] = 0x1e;
-*/
 
 	}else if(own_addess == 0xc13a) {  //e21a
 		//79:67:08:77:01:9f:33:1e
-		/*
+
         addr[0] = 0x79;
         addr[1] = 0x67;
 
@@ -243,24 +166,8 @@ static void _dump(gnrc_pktsnip_t *pkt)
 
         addr[6] = 0x33;
         addr[7] = 0x1e;
-        */
 
-        //79:67:0f:73:f6:73:80:32
-
-        addr[0] = 0x79;
-        addr[1] = 0x67;
-
-        addr[2] = 0x0f;
-        addr[3] = 0x73;
-
-        addr[4] = 0xf6;
-        addr[5] = 0x73;
-
-        addr[6] = 0x80;
-        addr[7] = 0x32;
-
-
-	} else if(own_addess == 0x8032) {  //a312
+	} else if(own_addess == 0x9fe6) {  //bcc6
 		//79:67:08:77:01:9f:33:1e
         addr[0] = 0x79;
         addr[1] = 0x67;
@@ -274,18 +181,12 @@ static void _dump(gnrc_pktsnip_t *pkt)
         addr[6] = 0x33;
         addr[7] = 0x1e;
 
+	} else {
+		puts("not relay node!");
+		gnrc_pktbuf_release(pkt);
+		return;
 	}
-	else if(own_addess == 0x1b1a) {
-    	if(payload[3] == 0x0000103e){
-    		addr[0] = 0x44;
-    		addr[1] = 0x7e;
-    	}
-    }else if(own_addess == 0x447e) {
-	    	if(payload[3] == 0x0000103e){
-	    		addr[0] = 0xa3;
-	    		addr[1] = 0x12;
-	    	}
-	}
+
 
 	/** release old netif header **/
 	gnrc_pktbuf_release(pkt->next);
