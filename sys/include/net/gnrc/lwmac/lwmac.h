@@ -141,7 +141,7 @@ extern "C" {
 /* Time between consecutive wakeups. This parameter governs power consumption,
  * latency and throughput! */
 #ifndef LWMAC_MAX_TX_BURST_PKT_NUM
-#define LWMAC_MAX_TX_BURST_PKT_NUM        (4U)
+#define LWMAC_MAX_TX_BURST_PKT_NUM        (LWMAC_WAKEUP_INTERVAL_US/15000)
 #endif
 
 /**
