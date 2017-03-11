@@ -83,23 +83,23 @@ static void generate_and_send_pkt(void){
 
 	    addr_len = 8;
 
-	    if(own_address2 == 0x79f6) {  //51d6
+	    if(own_address2 == 0x79f6) {  //5ad6
 
 	    	//79:67:08:77:01:9f:33:1e
 
 	    		payload[3] = 0x0000331e;
 
 	            addr[0] = 0x79;
-	            addr[1] = 0x76;
+	            addr[1] = 0x67;
 
-	            addr[2] = 0x43;
-	            addr[3] = 0x7f;
+	            addr[2] = 0x08;
+	            addr[3] = 0x77;
 
-	            addr[4] = 0x72;
-	            addr[5] = 0x2a;
+	            addr[4] = 0x01;
+	            addr[5] = 0x9f;
 
-	            addr[6] = 0x67;
-	            addr[7] = 0x5e;
+	            addr[6] = 0x33;
+	            addr[7] = 0x1e;
 
 		        payload[0] = send_counter;
 		        //printf("%lx: %lu.\n", payload[3],send_counter);
@@ -107,102 +107,85 @@ static void generate_and_send_pkt(void){
 			//79:67:08:77:01:9f:33:1e
 	    	payload[3] = 0x0000331e;
 
-            addr[0] = 0x79;
-            addr[1] = 0x76;
+	        addr[0] = 0x79;
+	        addr[1] = 0x67;
 
-            addr[2] = 0x43;
-            addr[3] = 0x7f;
+	        addr[2] = 0x08;
+	        addr[3] = 0x77;
 
-            addr[4] = 0x72;
-            addr[5] = 0x2a;
+	        addr[4] = 0x01;
+	        addr[5] = 0x9f;
 
-            addr[6] = 0x67;
-            addr[7] = 0x5e;
+	        addr[6] = 0x33;
+	        addr[7] = 0x1e;
 
-		}else if(own_address2 == 0x383a) {  //1b1a
+		}else if(own_address2 == 0x675e) {  //447e
 			//79:67:08:77:01:9f:33:1e
 	    	payload[3] = 0x0000331e;
 
-            addr[0] = 0x79;
-            addr[1] = 0x76;
+	        addr[0] = 0x79;
+	        addr[1] = 0x67;
 
-            addr[2] = 0x43;
-            addr[3] = 0x7f;
+	        addr[2] = 0x08;
+	        addr[3] = 0x77;
 
-            addr[4] = 0x72;
-            addr[5] = 0x2a;
+	        addr[4] = 0x01;
+	        addr[5] = 0x9f;
 
-            addr[6] = 0x67;
-            addr[7] = 0x5e;
+	        addr[6] = 0x33;
+	        addr[7] = 0x1e;
             //////////////////////////////////////////////////////////
 
-		}else if(own_address2 == 0x8032) {  //a312
+		}else if(own_address2 == 0x9fe6) {  //bcc6
 			//79:67:3c:7c:2b:2a:c1:3a
 	    	payload[3] = 0x0000331e;
 
-            addr[0] = 0x79;
-            addr[1] = 0x67;
+	        addr[0] = 0x79;
+	        addr[1] = 0x67;
 
-            addr[2] = 0x3c;
-            addr[3] = 0x7c;
+	        addr[2] = 0x08;
+	        addr[3] = 0x77;
 
-            addr[4] = 0x2b;
-            addr[5] = 0x2a;
+	        addr[4] = 0x01;
+	        addr[5] = 0x9f;
 
-            addr[6] = 0xc1;
-            addr[7] = 0x3a;
-
-		}else if(own_address2 == 0x71f2) {  //52d2
-			//79:67:3c:7c:2b:2a:c1:3a
-	    	payload[3] = 0x0000331e;
-
-            addr[0] = 0x79;
-            addr[1] = 0x67;
-
-            addr[2] = 0x3c;
-            addr[3] = 0x7c;
-
-            addr[4] = 0x2b;
-            addr[5] = 0x2a;
-
-            addr[6] = 0xc1;
-            addr[7] = 0x3a;
-            //////////////////////////////////////////////////////////
+	        addr[6] = 0x33;
+	        addr[7] = 0x1e;
 
 		}else if(own_address2 == 0x2c02) {  //0f22
-			//79:67:27:72:f4:57:9f:e6
+			//79:67:3c:7c:2b:2a:c1:3a
 	    	payload[3] = 0x0000331e;
 
-            addr[0] = 0x79;
-            addr[1] = 0x67;
+	        addr[0] = 0x79;
+	        addr[1] = 0x67;
 
-            addr[2] = 0x27;
-            addr[3] = 0x72;
+	        addr[2] = 0x08;
+	        addr[3] = 0x77;
 
-            addr[4] = 0xf4;
-            addr[5] = 0x57;
+	        addr[4] = 0x01;
+	        addr[5] = 0x9f;
 
-            addr[6] = 0x9f;
-            addr[7] = 0xe6;
+	        addr[6] = 0x33;
+	        addr[7] = 0x1e;
+            //////////////////////////////////////////////////////////
 
 		}else if(own_address2 == 0x4262) {  //6142
 			//79:67:27:72:f4:57:9f:e6
 	    	payload[3] = 0x0000331e;
 
-            addr[0] = 0x79;
-            addr[1] = 0x67;
+	        addr[0] = 0x79;
+	        addr[1] = 0x67;
 
-            addr[2] = 0x27;
-            addr[3] = 0x72;
+	        addr[2] = 0x08;
+	        addr[3] = 0x77;
 
-            addr[4] = 0xf4;
-            addr[5] = 0x57;
+	        addr[4] = 0x01;
+	        addr[5] = 0x9f;
 
-            addr[6] = 0x9f;
-            addr[7] = 0xe6;
+	        addr[6] = 0x33;
+	        addr[7] = 0x1e;
 
 		}
-
 
 	    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
 	    if(hdr == NULL){
@@ -298,20 +281,17 @@ void *sender_thread(void *arg)
             	} else if(own_address2 == 0x4c66) {
             		total_gene_num = payload[2];
 
-            	}else if(own_address2 == 0x383a) {
+            	}else if(own_address2 == 0x675e) {//447e
             		total_gene_num = payload[2];
                      /////////////////////////////////////////////////////////////////////
-            	}else if(own_address2 == 0x8032) {  //a312
+            	}else if(own_address2 == 0x9fe6) {  //bcc6
             		total_gene_num = payload[2];
 
-            	}else if(own_address2 == 0x71f2) {//52d2
+            	}else if(own_address2 == 0x2c02) {//0f22
             		total_gene_num = payload[2];
 
             		/////////////////////////////////////////////////////////////////////
-            	}else if(own_address2 == 0x2c02) {   //0f22
-            		total_gene_num = payload[2];
-
-            	}else if(own_address2 == 0x4262) {   //0f22
+            	}else if(own_address2 == 0x4262) {   //6142
             		total_gene_num = payload[2];
 
             	}else {
