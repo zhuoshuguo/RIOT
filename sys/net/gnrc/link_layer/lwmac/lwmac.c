@@ -263,6 +263,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
         if(gnrc_netdev2->lwmac.extend_wakeup == true) {
             gnrc_netdev2->lwmac.extend_wakeup = false;
             lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD);
+            //puts("ex");
         }
 
         /* Set timeout for if there's no successful rx transaction that will
@@ -279,6 +280,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
 
             _set_netdev_state(gnrc_netdev2, NETOPT_STATE_SLEEP);
             lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD);
+            //puts("end");
 
             gnrc_mac_tx_neighbor_t* neighbour = _next_tx_neighbour(gnrc_netdev2);
             if (neighbour != NULL) {
@@ -312,6 +314,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
              * every node in range. */
             LOG_DEBUG("Reception was NOT successful\n");
             lwmac_rx_stop(gnrc_netdev2);
+            gnrc_netdev2->lwmac.extend_wakeup = true;
             /* Restart */
             lwmac_set_state(gnrc_netdev2, LISTENING);
             break;
@@ -320,6 +323,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             lwmac_rx_stop(gnrc_netdev2);
             /* Dispatch received packets, timing is not critical anymore */
             _dispatch(gnrc_netdev2->rx.dispatch_buffer);
+            gnrc_netdev2->lwmac.extend_wakeup = true;
             /* Go back to Listen after successful transaction */
             lwmac_set_state(gnrc_netdev2, LISTENING);
             break;
