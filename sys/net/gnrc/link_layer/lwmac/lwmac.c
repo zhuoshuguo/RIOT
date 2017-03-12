@@ -314,6 +314,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
              * every node in range. */
             LOG_DEBUG("Reception was NOT successful\n");
             lwmac_rx_stop(gnrc_netdev2);
+            gnrc_netdev2->lwmac.extend_wakeup = true;
             /* Restart */
             lwmac_set_state(gnrc_netdev2, LISTENING);
             break;
@@ -322,6 +323,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             lwmac_rx_stop(gnrc_netdev2);
             /* Dispatch received packets, timing is not critical anymore */
             _dispatch(gnrc_netdev2->rx.dispatch_buffer);
+            gnrc_netdev2->lwmac.extend_wakeup = true;
             /* Go back to Listen after successful transaction */
             lwmac_set_state(gnrc_netdev2, LISTENING);
             break;
