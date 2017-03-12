@@ -56,6 +56,7 @@ void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2, gnrc_pktsnip_t* pkt, gnrc_mac_
     assert(pkt != NULL);
     assert(neighbour != NULL);
 
+    puts("s");
     if (gnrc_netdev2->tx.packet) {
         LOG_WARNING("Starting but tx.packet is still set\n");
         gnrc_pktbuf_release(gnrc_netdev2->tx.packet);
@@ -121,6 +122,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         /* if found ongoing transmission,
          * quit this cycle for collision avoidance. */
         if (_get_netdev_state(gnrc_netdev2) == NETOPT_STATE_RX){
+        	puts("bf0");
             gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
             /* drop pointer so it wont be free'd */
             gnrc_netdev2->tx.packet = NULL;
@@ -233,6 +235,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         /* if found ongoing transmission,
          * quit this cycle for collision avoidance. */
         if (_get_netdev_state(gnrc_netdev2) == NETOPT_STATE_RX) {
+        	puts("bf1");
             gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
             /* drop pointer so it wont be free'd */
             gnrc_netdev2->tx.packet = NULL;
@@ -348,6 +351,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         }
 
         if (gnrc_netdev2_get_tx_feedback(gnrc_netdev2) == TX_FEEDBACK_BUSY) {
+        	puts("bf2");
             gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
             gnrc_netdev2->tx.packet = NULL;
             gnrc_netdev2->lwmac.extend_tx = false;
@@ -404,6 +408,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 
         if (lwmac_timeout_is_expired(&gnrc_netdev2->lwmac, TIMEOUT_NO_RESPONSE)) {
             LOG_DEBUG("No response from destination\n");
+            puts("no response");
             gnrc_netdev2->lwmac.extend_tx = false;
             gnrc_netdev2->lwmac.quit_tx = true;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
@@ -457,6 +462,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
              * further now. */
             if (!(memcmp(&info.dst_addr.addr, &gnrc_netdev2->l2_addr, gnrc_netdev2->l2_addr_len) == 0) &&
                 from_expected_destination) {
+            	puts("bf4");
                 gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
                 /* drop pointer so it wont be free'd */
                 gnrc_netdev2->tx.packet = NULL;
@@ -472,6 +478,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             /* if found anther node is also trying to send data,
              * quit this cycle for collision avoidance. */
             if (info.header->type == FRAMETYPE_WR){
+            	puts("bfwr");
                 gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
                 /* drop pointer so it wont be free'd */
                 gnrc_netdev2->tx.packet = NULL;
@@ -514,6 +521,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         }
 
         if (postponed) {
+        	puts("pp");
             gnrc_netdev2->lwmac.quit_tx = true;
         	gnrc_netdev2->lwmac.extend_tx = false;
             LOG_INFO("Destination is talking to another node, postpone\n");

@@ -190,6 +190,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
     case SLEEPING:
 
     	if(gnrc_netdev2->lwmac.quit_tx == true) {
+    		//puts("qq");
     		return false;
     	}
         /* If a packet is scheduled, no other (possible earlier) packet can be
@@ -230,6 +231,14 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                 }
 
                 time_until_tx -= LWMAC_WR_PREPARATION_US;
+
+
+                /*
+                uint32_t random_backoff;
+                random_backoff = random_uint32_range(0, 7000);
+                time_until_tx = time_until_tx + random_backoff;
+                */
+
                 lwmac_set_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAIT_FOR_DEST_WAKEUP, time_until_tx);
 
                 /* Register neighbour to be the next */
@@ -287,6 +296,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
              	lwmac_schedule_update(gnrc_netdev2);
                 break;
             } else {
+            	puts("quit");
             	/* only try to send pkt after CP-check is clear */
                 gnrc_netdev2->lwmac.quit_tx = true;
             }
@@ -776,7 +786,7 @@ static void *_lwmac_thread(void *args)
 
     	    	        /// add random cycle phase backoff.
     	    	    	uint32_t listen_period;
-    	    	    	listen_period = random_uint32_range(0, LWMAC_WAKEUP_INTERVAL_US);
+    	    	    	listen_period = random_uint32_range(LWMAC_WAKEUP_INTERVAL_US/3, LWMAC_WAKEUP_INTERVAL_US);
     	    	    	xtimer_usleep(listen_period);
 
     	    	        rtt_clear_alarm();
