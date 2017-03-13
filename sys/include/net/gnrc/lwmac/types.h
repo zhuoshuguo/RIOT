@@ -142,6 +142,7 @@ typedef struct lwmac {
     bool extend_wakeup;
     bool extend_tx;
     bool quit_tx;
+    bool phase_backoff;
     uint8_t max_tx_num;
 
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)

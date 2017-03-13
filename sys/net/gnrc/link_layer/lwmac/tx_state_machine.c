@@ -493,8 +493,10 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
                 continue;
             }
 
+
             /* calculate the phase of the receiver based on WA */
             gnrc_netdev2->tx.timestamp = _phase_now();
+
             lwmac_frame_wa_t* wa_hdr;
             wa_hdr = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_LWMAC))->data;
 
@@ -503,6 +505,26 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             } else {
                 gnrc_netdev2->tx.timestamp += RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US);
                 gnrc_netdev2->tx.timestamp -= wa_hdr->current_phase;
+            }
+
+            uint32_t own_phase;
+            own_phase = _ticks_to_phase(gnrc_netdev2->lwmac.last_wakeup);
+
+            printf("nei: %lu\n",RTT_TICKS_TO_US(gnrc_netdev2->tx.timestamp));
+            printf("own: %lu\n",RTT_TICKS_TO_US(own_phase));
+
+            if(own_phase >= gnrc_netdev2->tx.timestamp) {
+            	own_phase = own_phase - gnrc_netdev2->tx.timestamp;
+            } else {
+            	own_phase = gnrc_netdev2->tx.timestamp - own_phase;
+            }
+
+            printf("gap: %lu\n",RTT_TICKS_TO_US(own_phase));
+
+            if((own_phase < RTT_US_TO_TICKS((3*LWMAC_WAKEUP_DURATION_US/2))) ||
+            		(own_phase > RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US - (3*LWMAC_WAKEUP_DURATION_US/2)))) {
+            	gnrc_netdev2->lwmac.phase_backoff = true;
+            	puts("phase close");
             }
 
             /* No need to keep pkt anymore */

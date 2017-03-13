@@ -65,6 +65,18 @@
 //static lwmac_t lwmac = LWMAC_INIT;
 kernel_pid_t lwmac_pid;
 
+static void rtt_cb(void* arg)
+{
+    msg_t msg;
+    msg.content.value = ((uint32_t) arg ) & 0xffff;
+    msg.type = LWMAC_EVENT_RTT_TYPE;
+    msg_send(&msg, lwmac_pid);
+
+    if (sched_context_switch_request) {
+        thread_yield();
+    }
+}
+
 static bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2);
 static void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate);
 static void lwmac_schedule_update(gnrc_netdev2_t* gnrc_netdev2);
@@ -135,6 +147,23 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
         _set_netdev_state(gnrc_netdev2, NETOPT_STATE_SLEEP);
         /* We may have come here through RTT handler, so timeout may still be active */
         lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD);
+
+        if(gnrc_netdev2->lwmac.phase_backoff == true) {
+	    	uint32_t random_backoff;
+	    	uint32_t alarm;
+
+	    	rtt_clear_alarm();
+
+	    	random_backoff = random_uint32_range(RTT_US_TO_TICKS((3*LWMAC_WAKEUP_DURATION_US/2)),
+	    			RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US - (3*LWMAC_WAKEUP_DURATION_US/2)));
+
+	    	gnrc_netdev2->lwmac.last_wakeup = gnrc_netdev2->lwmac.last_wakeup + random_backoff;
+
+	    	alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
+	    	rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_WAKEUP_PENDING);
+
+	    	printf("phase-backoff: %lu\n",RTT_TICKS_TO_US(random_backoff));
+        }
         /* Return immediately, so no rescheduling */
         return;
 
@@ -421,17 +450,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
     return gnrc_netdev2->lwmac.needs_rescheduling;
 }
 
-static void rtt_cb(void* arg)
-{
-    msg_t msg;
-    msg.content.value = ((uint32_t) arg ) & 0xffff;
-    msg.type = LWMAC_EVENT_RTT_TYPE;
-    msg_send(&msg, lwmac_pid);
 
-    if (sched_context_switch_request) {
-        thread_yield();
-    }
-}
 
 void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
 {
@@ -439,12 +458,13 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
     switch (event & 0xffff)
     {
     case LWMAC_EVENT_RTT_WAKEUP_PENDING:
-    	//puts("c");
+    	puts("c");
         gnrc_netdev2->lwmac.last_wakeup = rtt_get_alarm();
         alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US));
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_SLEEP_PENDING);
         gnrc_netdev2->lwmac.extend_wakeup = false;
         gnrc_netdev2->lwmac.quit_tx = false;
+        gnrc_netdev2->lwmac.phase_backoff = false;
         lwmac_set_state(gnrc_netdev2, LISTENING);
         break;
 
@@ -786,7 +806,7 @@ static void *_lwmac_thread(void *args)
 
     	    	        /// add random cycle phase backoff.
     	    	    	uint32_t listen_period;
-    	    	    	listen_period = random_uint32_range(LWMAC_WAKEUP_INTERVAL_US/3, LWMAC_WAKEUP_INTERVAL_US);
+    	    	    	listen_period = random_uint32_range(0, LWMAC_WAKEUP_INTERVAL_US);
     	    	    	xtimer_usleep(listen_period);
 
     	    	        rtt_clear_alarm();
