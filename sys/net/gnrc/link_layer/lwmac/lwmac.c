@@ -332,6 +332,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
         }
 
         if (gnrc_priority_pktqueue_length(&gnrc_netdev2->rx.queue) > 0) {
+        	lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD);
             lwmac_set_state(gnrc_netdev2, RECEIVING);
         }
         break;
