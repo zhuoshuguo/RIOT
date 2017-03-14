@@ -230,6 +230,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
         } else {
             if (lwmac_timeout_is_expired(gnrc_netdev2, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
                 LOG_DEBUG("Got timeout for dest wakeup, ticks: %"PRIu32"\n", rtt_get_counter());
+                gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
                 lwmac_set_state(gnrc_netdev2, TRANSMITTING);
             } else {
                 /* LOG_DEBUG("Nothing to do, why did we get called?\n"); */
@@ -318,6 +319,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
         }
 
         case TX_STATE_FAILED:
+            gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
             tx_success = "NOT ";
             /* Intended fall-through, TX packet will therefore be dropped. No
              * automatic resending here, we did our best.
@@ -330,7 +332,12 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                          tx_success, gnrc_netdev2->tx.wr_sent);
             }
             lwmac_tx_stop(gnrc_netdev2);
-            lwmac_set_state(gnrc_netdev2, SLEEPING);
+
+            if (gnrc_netdev2_get_tx_continue(gnrc_netdev2)) {
+                lwmac_schedule_update(gnrc_netdev2);
+            } else {
+                lwmac_set_state(gnrc_netdev2, SLEEPING);
+            }
             break;
         default:
             lwmac_tx_update(gnrc_netdev2);

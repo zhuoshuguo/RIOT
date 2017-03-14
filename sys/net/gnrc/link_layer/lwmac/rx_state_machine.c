@@ -304,7 +304,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
                 break;
             }
 
-            if (info.header->type == FRAMETYPE_DATA) {
+            if ((info.header->type == FRAMETYPE_DATA) || (info.header->type == FRAMETYPE_DATA_PENDING)) {
                 LOG_DEBUG("Found DATA!\n");
                 lwmac_clear_timeout(gnrc_netdev2, TIMEOUT_DATA);
                 found_data = true;

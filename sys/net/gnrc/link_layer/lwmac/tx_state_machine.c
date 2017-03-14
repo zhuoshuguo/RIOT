@@ -88,7 +88,10 @@ void lwmac_tx_stop(gnrc_netdev2_t* gnrc_netdev2)
         gnrc_pktbuf_release(gnrc_netdev2->tx.packet);
         gnrc_netdev2->tx.packet = NULL;
     }
-    gnrc_netdev2->tx.current_neighbor = NULL;
+
+    if (!gnrc_netdev2_get_tx_continue(gnrc_netdev2)) {
+        gnrc_netdev2->tx.current_neighbor = NULL;
+    }
 }
 
 /* Returns whether rescheduling is needed or not */
@@ -272,7 +275,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         }
 
         /* First WR, try to catch wakeup phase */
-        if (gnrc_netdev2->tx.wr_sent == 0) {
+        if ((gnrc_netdev2->tx.wr_sent == 0) && (gnrc_netdev2_get_tx_continue(gnrc_netdev2) == false)) {
 
             /* Calculate wakeup time */
             uint32_t wait_until;
@@ -287,6 +290,8 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 
             /* Wait until calculated wakeup time of destination */
             while (rtt_get_counter() < wait_until);
+        } else {
+        	gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
         }
 
         /* Trigger sending frame */
@@ -490,7 +495,14 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         pkt_payload = pkt->next;
 
         /* Insert lwMAC header above NETIF header */
-        lwmac_hdr_t hdr = {FRAMETYPE_DATA};
+        lwmac_hdr_t hdr;
+        if (gnrc_priority_pktqueue_length(&gnrc_netdev2->tx.current_neighbor->queue) > 0) {
+            hdr.type = FRAMETYPE_DATA_PENDING;
+            gnrc_netdev2_set_tx_continue(gnrc_netdev2,true);
+        } else {
+            hdr.type = FRAMETYPE_DATA;
+        }
+
         pkt->next = gnrc_pktbuf_add(pkt->next, &hdr, sizeof(hdr), GNRC_NETTYPE_LWMAC);
         if (pkt->next == NULL){
             LOG_ERROR("Cannot allocate pktbuf of type FRAMETYPE_DATA\n");
