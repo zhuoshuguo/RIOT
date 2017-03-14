@@ -70,6 +70,11 @@ extern "C" {
  */
 #define GNRC_NETDEV2_LWMAC_TX_CONTINUE        (0x0008U)
 
+/**
+ * @brief   Flag to track if the sender should quit Tx in current cycle.
+ */
+#define GNRC_NETDEV2_LWMAC_QUIT_TX        (0x0010U)
+
 #endif
 
 /**
@@ -243,6 +248,34 @@ static inline void gnrc_netdev2_set_tx_continue(gnrc_netdev2_t *dev, bool tx_con
 static inline bool gnrc_netdev2_get_tx_continue(gnrc_netdev2_t *dev)
 {
     return (dev->mac_info & GNRC_NETDEV2_LWMAC_TX_CONTINUE);
+}
+
+/**
+ * @brief set the quit-TX flag of the device
+ *
+ * @param[in] dev          ptr to netdev2 device
+ * @param[in] tx_continue  value for Lwmac quit-TX flag
+ *
+ */
+static inline void gnrc_netdev2_set_quit_tx(gnrc_netdev2_t *dev, bool tx_continue)
+{
+    if (tx_continue) {
+        dev->mac_info |= GNRC_NETDEV2_LWMAC_QUIT_TX;
+    }
+    else {
+        dev->mac_info &= ~GNRC_NETDEV2_LWMAC_QUIT_TX;
+    }
+}
+
+/**
+ * @brief get the quit-TX flag of the device
+ *
+ * @param[in] dev          ptr to netdev2 device
+ *
+ */
+static inline bool gnrc_netdev2_get_quit_tx(gnrc_netdev2_t *dev)
+{
+    return (dev->mac_info & GNRC_NETDEV2_LWMAC_QUIT_TX);
 }
 #endif /* MODULE_GNRC_LWMAC */
 #endif

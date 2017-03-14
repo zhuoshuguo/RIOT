@@ -131,6 +131,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 
             if (!(memcmp(&info.dst_addr.addr, &gnrc_netdev2->l2_addr, gnrc_netdev2->l2_addr_len) == 0)) {
                 LOG_DEBUG("Packet is WR but not for us\n");
+                gnrc_netdev2_set_quit_tx(gnrc_netdev2,true);
                 continue;
             }
 
@@ -286,12 +287,14 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 
             if (!(memcmp(&info.src_addr.addr, &gnrc_netdev2->rx.l2_addr.addr, gnrc_netdev2->rx.l2_addr.len) == 0)) {
                 LOG_DEBUG("Packet is not from destination\n");
+                gnrc_netdev2_set_quit_tx(gnrc_netdev2,true);
                 gnrc_pktbuf_release(pkt);
                 continue;
             }
 
             if (!(memcmp(&info.dst_addr.addr, &gnrc_netdev2->l2_addr, gnrc_netdev2->l2_addr_len) == 0)) {
                 LOG_DEBUG("Packet is not for us\n");
+                gnrc_netdev2_set_quit_tx(gnrc_netdev2,true);
                 gnrc_pktbuf_release(pkt);
                 continue;
             }
