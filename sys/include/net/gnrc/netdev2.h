@@ -63,6 +63,15 @@ extern "C" {
  */
 #define GNRC_NETDEV2_MAC_INFO_RX_STARTED        (0x0004U)
 
+#ifdef MODULE_GNRC_LWMAC
+/**
+ * @brief   Flag to track if the sender can continue to transmit packet to
+ *          the receiver in its TX procedure.
+ */
+#define GNRC_NETDEV2_LWMAC_TX_CONTINUE        (0x0008U)
+
+#endif
+
 /**
  * @brief Structure holding GNRC netdev2 adapter state
  *
@@ -206,6 +215,36 @@ static inline void gnrc_netdev2_set_tx_feedback(gnrc_netdev2_t *dev,
     dev->mac_info &= ~GNRC_NETDEV2_MAC_INFO_TX_FEEDBACK_MASK;
     dev->mac_info |= (uint16_t)(txf & GNRC_NETDEV2_MAC_INFO_TX_FEEDBACK_MASK);
 }
+
+#ifdef MODULE_GNRC_LWMAC
+/**
+ * @brief set the TX-continue flag of the device
+ *
+ * @param[in] dev          ptr to netdev2 device
+ * @param[in] tx_continue  value for Lwmac tx-continue flag
+ *
+ */
+static inline void gnrc_netdev2_set_tx_continue(gnrc_netdev2_t *dev, bool tx_continue)
+{
+    if (tx_continue) {
+        dev->mac_info |= GNRC_NETDEV2_LWMAC_TX_CONTINUE;
+    }
+    else {
+        dev->mac_info &= ~GNRC_NETDEV2_LWMAC_TX_CONTINUE;
+    }
+}
+
+/**
+ * @brief get the TX-continue flag of the device
+ *
+ * @param[in] dev          ptr to netdev2 device
+ *
+ */
+static inline bool gnrc_netdev2_get_tx_continue(gnrc_netdev2_t *dev)
+{
+    return (dev->mac_info & GNRC_NETDEV2_LWMAC_TX_CONTINUE);
+}
+#endif /* MODULE_GNRC_LWMAC */
 #endif
 
 /**
