@@ -290,8 +290,6 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 
             /* Wait until calculated wakeup time of destination */
             while (rtt_get_counter() < wait_until);
-        } else {
-        	gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
         }
 
         /* Trigger sending frame */
@@ -362,7 +360,16 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         }
 
         if (lwmac_timeout_is_expired(gnrc_netdev2, TIMEOUT_WR)) {
-            GOTO_TX_STATE(TX_STATE_SEND_WR, true);
+            if (gnrc_netdev2_get_tx_continue(gnrc_netdev2)) {
+            	LOG_DEBUG("tx burst fail\n");
+                gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
+                /* drop pointer so it wont be free'd */
+                gnrc_netdev2->tx.packet = NULL;
+
+                GOTO_TX_STATE(TX_STATE_FAILED, true);
+            } else {
+                GOTO_TX_STATE(TX_STATE_SEND_WR, true);
+            }
         }
 
         if (_get_netdev_state(gnrc_netdev2) == NETOPT_STATE_RX) {
@@ -499,7 +506,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         /* Insert lwMAC header above NETIF header */
         lwmac_hdr_t hdr;
         if ((gnrc_priority_pktqueue_length(&gnrc_netdev2->tx.current_neighbor->queue) > 0) &&
-            (gnrc_netdev2->tx.tx_burst_count <= 2)) {
+            (gnrc_netdev2->tx.tx_burst_count < LWMAC_MAX_TX_BURST_PKT_NUM)) {
             hdr.type = FRAMETYPE_DATA_PENDING;
             gnrc_netdev2_set_tx_continue(gnrc_netdev2,true);
             gnrc_netdev2->tx.tx_burst_count ++;

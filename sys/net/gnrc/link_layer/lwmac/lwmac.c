@@ -207,6 +207,16 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             gnrc_mac_tx_neighbor_t* neighbour = _next_tx_neighbor(gnrc_netdev2);
 
             if (neighbour != NULL) {
+
+                /* if phase is unknown, send immediately after wakeup period. */
+                if (neighbour->phase > RTT_TICKS_TO_US(LWMAC_WAKEUP_INTERVAL_US)) {
+                    gnrc_netdev2->tx.current_neighbor = neighbour;
+                    gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
+                    gnrc_netdev2->tx.tx_burst_count = 0;
+                    lwmac_set_state(gnrc_netdev2, TRANSMITTING);
+                    break;
+                }
+
                 /* Offset in microseconds when the earliest (phase) destination
                  * node wakes up that we have packets for. */
                 int time_until_tx = RTT_TICKS_TO_US(_ticks_until_phase(neighbour->phase));
@@ -269,6 +279,8 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             if (neighbour != NULL) {
                 lwmac_schedule_update(gnrc_netdev2);
                 break;
+            } else {
+                gnrc_netdev2_set_quit_tx(gnrc_netdev2,true);
             }
         }
 
@@ -357,7 +369,8 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             }
             lwmac_tx_stop(gnrc_netdev2);
 
-            if (gnrc_netdev2_get_tx_continue(gnrc_netdev2)) {
+            if ((gnrc_netdev2_get_tx_continue(gnrc_netdev2)) &&
+            	(gnrc_netdev2->tx.tx_burst_count < LWMAC_MAX_TX_BURST_PKT_NUM)) {
                 lwmac_schedule_update(gnrc_netdev2);
             } else {
                 gnrc_netdev2_set_quit_tx(gnrc_netdev2,true);
@@ -410,6 +423,8 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
     case LWMAC_EVENT_RTT_SLEEP_PENDING:
         alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_WAKEUP_PENDING);
+        /* if procedure arrives here, means there is no packet found to send in last wakeup period */
+        gnrc_netdev2_set_quit_tx(gnrc_netdev2,true);
         lwmac_set_state(gnrc_netdev2, SLEEPING);
         break;
 

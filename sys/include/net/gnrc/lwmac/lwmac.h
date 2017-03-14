@@ -141,6 +141,13 @@ extern "C" {
 #endif
 
 /**
+ * @brief MAX burst transmission packet number in one shot.
+ */
+#ifndef LWMAC_MAX_TX_BURST_PKT_NUM
+#define LWMAC_MAX_TX_BURST_PKT_NUM         (4U)
+#endif
+
+/**
  * @brief CSMA retries for BROADCAST packet, too many may lead to running out of
  *        destinations wakup period.
  */
