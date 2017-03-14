@@ -131,7 +131,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 
             if (!(memcmp(&info.dst_addr.addr, &gnrc_netdev2->l2_addr, gnrc_netdev2->l2_addr_len) == 0)) {
                 LOG_DEBUG("Packet is WR but not for us\n");
-                gnrc_netdev2->lwmac.quit_tx = true;
+                //gnrc_netdev2->lwmac.quit_tx = true;
                 continue;
             }
 
@@ -297,7 +297,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 
             if (!(memcmp(&info.src_addr.addr, &gnrc_netdev2->rx.l2_addr.addr, gnrc_netdev2->rx.l2_addr.len) == 0)) {
                 LOG_DEBUG("Packet is not from destination\n");
-                gnrc_netdev2->lwmac.quit_tx = true;
+                //gnrc_netdev2->lwmac.quit_tx = true;
                 gnrc_pktbuf_release(pkt);
 
                 lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_DATA);
@@ -306,7 +306,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
             }
 
             if (!(memcmp(&info.dst_addr.addr, &gnrc_netdev2->l2_addr, gnrc_netdev2->l2_addr_len) == 0)) {
-            	gnrc_netdev2->lwmac.quit_tx = true;
+            	//gnrc_netdev2->lwmac.quit_tx = true;
                 LOG_DEBUG("Packet is not for us\n");
                 gnrc_pktbuf_release(pkt);
                 lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_DATA);

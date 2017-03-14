@@ -56,7 +56,7 @@ void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2, gnrc_pktsnip_t* pkt, gnrc_mac_
     assert(pkt != NULL);
     assert(neighbour != NULL);
 
-    puts("s");
+    //puts("s");
     if (gnrc_netdev2->tx.packet) {
         LOG_WARNING("Starting but tx.packet is still set\n");
         gnrc_pktbuf_release(gnrc_netdev2->tx.packet);
@@ -410,7 +410,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             LOG_DEBUG("No response from destination\n");
             puts("no response");
             gnrc_netdev2->lwmac.extend_tx = false;
-            gnrc_netdev2->lwmac.quit_tx = true;
+            //gnrc_netdev2->lwmac.quit_tx = true;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
@@ -510,8 +510,8 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             uint32_t own_phase;
             own_phase = _ticks_to_phase(gnrc_netdev2->lwmac.last_wakeup);
 
-            printf("nei: %lu\n",RTT_TICKS_TO_US(gnrc_netdev2->tx.timestamp));
-            printf("own: %lu\n",RTT_TICKS_TO_US(own_phase));
+            //printf("nei: %lu\n",RTT_TICKS_TO_US(gnrc_netdev2->tx.timestamp));
+            //printf("own: %lu\n",RTT_TICKS_TO_US(own_phase));
 
             if(own_phase >= gnrc_netdev2->tx.timestamp) {
             	own_phase = own_phase - gnrc_netdev2->tx.timestamp;
@@ -519,12 +519,12 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             	own_phase = gnrc_netdev2->tx.timestamp - own_phase;
             }
 
-            printf("gap: %lu\n",RTT_TICKS_TO_US(own_phase));
+            //printf("gap: %lu\n",RTT_TICKS_TO_US(own_phase));
 
             if((own_phase < RTT_US_TO_TICKS((3*LWMAC_WAKEUP_DURATION_US/2))) ||
             		(own_phase > RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US - (3*LWMAC_WAKEUP_DURATION_US/2)))) {
             	gnrc_netdev2->lwmac.phase_backoff = true;
-            	puts("phase close");
+            	//puts("phase close");
             }
 
             /* No need to keep pkt anymore */
@@ -544,7 +544,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 
         if (postponed) {
         	puts("pp");
-            gnrc_netdev2->lwmac.quit_tx = true;
+            //gnrc_netdev2->lwmac.quit_tx = true;
         	gnrc_netdev2->lwmac.extend_tx = false;
             LOG_INFO("Destination is talking to another node, postpone\n");
             GOTO_TX_STATE(TX_STATE_FAILED, true);
@@ -604,7 +604,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         } else {
             hdr.type = FRAMETYPE_DATA;
             gnrc_netdev2->lwmac.extend_tx = false;
-            gnrc_netdev2->lwmac.quit_tx = true;
+            //gnrc_netdev2->lwmac.quit_tx = true;
 
         }
 

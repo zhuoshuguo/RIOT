@@ -325,9 +325,9 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
              	lwmac_schedule_update(gnrc_netdev2);
                 break;
             } else {
-            	puts("quit");
+            	//puts("quit");
             	/* only try to send pkt after CP-check is clear */
-                gnrc_netdev2->lwmac.quit_tx = true;
+                //gnrc_netdev2->lwmac.quit_tx = true;
             }
         }
 
@@ -420,7 +420,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             lwmac_tx_stop(gnrc_netdev2);
 
             if (gnrc_netdev2->lwmac.max_tx_num >= LWMAC_MAX_TX_BURST_PKT_NUM) {
-                gnrc_netdev2->lwmac.quit_tx = true;
+                //gnrc_netdev2->lwmac.quit_tx = true;
                 lwmac_set_state(gnrc_netdev2, SLEEPING);
                 break;
             }
@@ -428,7 +428,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             if (gnrc_netdev2->lwmac.extend_tx == true) {
             	lwmac_schedule_update(gnrc_netdev2);
             } else {
-            	gnrc_netdev2->lwmac.quit_tx = true;
+            	//gnrc_netdev2->lwmac.quit_tx = true;
                 lwmac_set_state(gnrc_netdev2, SLEEPING);
             }
 
@@ -459,7 +459,7 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
     switch (event & 0xffff)
     {
     case LWMAC_EVENT_RTT_WAKEUP_PENDING:
-    	puts("c");
+    	//puts("c");
         gnrc_netdev2->lwmac.last_wakeup = rtt_get_alarm();
         alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US));
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_SLEEP_PENDING);
@@ -478,7 +478,7 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
             break;
         } else {
        	    /* only try to send pkt after CP-check is free*/
-            gnrc_netdev2->lwmac.quit_tx = true;
+            //gnrc_netdev2->lwmac.quit_tx = true;
         }
 
         lwmac_set_state(gnrc_netdev2, SLEEPING);
