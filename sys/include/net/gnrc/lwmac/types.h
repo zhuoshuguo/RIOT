@@ -144,6 +144,7 @@ typedef struct lwmac {
     bool quit_tx;
     bool phase_backoff;
     uint8_t max_tx_num;
+    uint8_t tx_retry_num;
 
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
     /* parameters for recording duty-cycle */

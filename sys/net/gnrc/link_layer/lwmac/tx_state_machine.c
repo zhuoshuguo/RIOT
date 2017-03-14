@@ -88,9 +88,15 @@ void lwmac_tx_stop(gnrc_netdev2_t* gnrc_netdev2)
 
     /* Release packet in case of failure */
     if (gnrc_netdev2->tx.packet) {
-        gnrc_pktbuf_release(gnrc_netdev2->tx.packet);
-        gnrc_netdev2->tx.packet = NULL;
-        puts("drop pkt");
+    	if (gnrc_netdev2->lwmac.tx_retry_num > 3) {
+    		gnrc_netdev2->lwmac.tx_retry_num = 0;
+            gnrc_pktbuf_release(gnrc_netdev2->tx.packet);
+            gnrc_netdev2->tx.packet = NULL;
+            puts("finaly fail, drop pkt");
+    	}else {
+    		gnrc_netdev2->lwmac.tx_retry_num ++;
+    		return;
+    	}
     }
 
     if (gnrc_netdev2->lwmac.extend_tx == false) {
@@ -524,7 +530,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             if((own_phase < RTT_US_TO_TICKS((3*LWMAC_WAKEUP_DURATION_US/2))) ||
             		(own_phase > RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US - (3*LWMAC_WAKEUP_DURATION_US/2)))) {
             	gnrc_netdev2->lwmac.phase_backoff = true;
-            	//puts("phase close");
+            	puts("phase close");
             }
 
             /* No need to keep pkt anymore */

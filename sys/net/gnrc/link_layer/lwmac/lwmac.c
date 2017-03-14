@@ -149,6 +149,7 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
         lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD);
 
         if(gnrc_netdev2->lwmac.phase_backoff == true) {
+        	gnrc_netdev2->lwmac.phase_backoff = false;
 	    	uint32_t random_backoff;
 	    	uint32_t alarm;
 
@@ -234,7 +235,13 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                 break;
             }
 
-            gnrc_mac_tx_neighbor_t* neighbour = _next_tx_neighbour(gnrc_netdev2);
+            gnrc_mac_tx_neighbor_t* neighbour;
+
+            if(gnrc_netdev2->tx.current_neighbor != NULL) {
+            	neighbour= gnrc_netdev2->tx.current_neighbor;
+            } else {
+                neighbour = _next_tx_neighbour(gnrc_netdev2);
+            }
 
             if (neighbour != NULL) {
 
@@ -260,7 +267,6 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                 }
 
                 time_until_tx -= LWMAC_WR_PREPARATION_US;
-
 
                 /*
                 uint32_t random_backoff;
@@ -321,7 +327,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD);
 
             gnrc_mac_tx_neighbor_t* neighbour = _next_tx_neighbour(gnrc_netdev2);
-            if (neighbour != NULL) {
+            if ((neighbour != NULL) ||(gnrc_netdev2->tx.current_neighbor != NULL)) {
              	lwmac_schedule_update(gnrc_netdev2);
                 break;
             } else {
@@ -389,17 +395,30 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
         {
             gnrc_pktsnip_t* pkt;
 
-            if ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev2->tx.current_neighbor->queue)))
-            {
-                lwmac_tx_start(gnrc_netdev2, pkt, gnrc_netdev2->tx.current_neighbor);
+            if(gnrc_netdev2->tx.packet != NULL) {
+
+            	printf("t2r retry-%d\n", gnrc_netdev2->lwmac.tx_retry_num);
+                gnrc_netdev2->tx.state = TX_STATE_INIT;
+                gnrc_netdev2->tx.wr_sent = 0;
                 lwmac_tx_update(gnrc_netdev2);
+
             } else {
-                /* Shouldn't happen, but never observed this case */
-                int id = (gnrc_netdev2->tx.current_neighbor - gnrc_netdev2->tx.neighbors);
-                id /= sizeof(gnrc_netdev2->tx.current_neighbor);
-                LOG_ERROR("Packet from neighbour's queue (#%d) invalid\n", id);
-                lwmac_schedule_update(gnrc_netdev2);
+
+                if ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev2->tx.current_neighbor->queue)))
+                {
+                	gnrc_netdev2->lwmac.tx_retry_num = 0;
+                    lwmac_tx_start(gnrc_netdev2, pkt, gnrc_netdev2->tx.current_neighbor);
+                    lwmac_tx_update(gnrc_netdev2);
+                } else {
+                    /* Shouldn't happen, but never observed this case */
+                    int id = (gnrc_netdev2->tx.current_neighbor - gnrc_netdev2->tx.neighbors);
+                    id /= sizeof(gnrc_netdev2->tx.current_neighbor);
+                    LOG_ERROR("Packet from neighbour's queue (#%d) invalid\n", id);
+                    lwmac_schedule_update(gnrc_netdev2);
+                }
             }
+
+
             break;
         }
 

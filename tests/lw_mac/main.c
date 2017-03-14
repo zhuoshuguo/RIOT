@@ -88,18 +88,17 @@ static void generate_and_send_pkt(void){
 	    	//79:67:26:7e:69:76:4c:66
 
 	    		payload[3] = 0x0000331e;
+		        addr[0] = 0x79;
+		        addr[1] = 0x67;
 
-	            addr[0] = 0x79;
-	            addr[1] = 0x67;
+		        addr[2] = 0x08;
+		        addr[3] = 0x77;
 
-	            addr[2] = 0x26;
-	            addr[3] = 0x7e;
+		        addr[4] = 0x01;
+		        addr[5] = 0x9f;
 
-	            addr[4] = 0x69;
-	            addr[5] = 0x76;
-
-	            addr[6] = 0x4c;
-	            addr[7] = 0x66;
+		        addr[6] = 0x33;
+		        addr[7] = 0x1e;
 
 		        payload[0] = send_counter;
 		        //printf("%lx: %lu.\n", payload[3],send_counter);
@@ -278,7 +277,23 @@ void *sender_thread(void *arg)
             	if(own_address2 == 0x79f6) {
             	    total_gene_num = payload[2];
 
-            	} else {
+            	} else if(own_address2 == 0x4c66) {
+            		total_gene_num = payload[2];
+
+            	}else if(own_address2 == 0x675e) {//447e
+            		total_gene_num = payload[2];
+            		                   /////////////////////////////////////////////////////////////////////
+            	}else if(own_address2 == 0x9fe6) {  //bcc6
+            		total_gene_num = payload[2];
+
+            	}else if(own_address2 == 0x2c02) {//0f22
+            		total_gene_num = payload[2];
+
+            		/////////////////////////////////////////////////////////////////////
+            	}else if(own_address2 == 0x4262) {   //6142
+            		total_gene_num = payload[2];
+
+            	}else {
                     total_gene_num = 0;
             	}
 
