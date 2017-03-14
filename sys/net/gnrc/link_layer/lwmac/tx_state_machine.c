@@ -498,12 +498,15 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 
         /* Insert lwMAC header above NETIF header */
         lwmac_hdr_t hdr;
-        if (gnrc_priority_pktqueue_length(&gnrc_netdev2->tx.current_neighbor->queue) > 0) {
+        if ((gnrc_priority_pktqueue_length(&gnrc_netdev2->tx.current_neighbor->queue) > 0) &&
+            (gnrc_netdev2->tx.tx_burst_count <= 2)) {
             hdr.type = FRAMETYPE_DATA_PENDING;
             gnrc_netdev2_set_tx_continue(gnrc_netdev2,true);
+            gnrc_netdev2->tx.tx_burst_count ++;
         } else {
             hdr.type = FRAMETYPE_DATA;
             gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
+            gnrc_netdev2_set_quit_tx(gnrc_netdev2,true);
         }
 
         pkt->next = gnrc_pktbuf_add(pkt->next, &hdr, sizeof(hdr), GNRC_NETTYPE_LWMAC);
