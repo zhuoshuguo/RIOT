@@ -168,6 +168,7 @@ typedef struct {
     uint32_t wr_sent;                  /**< Count how many WRs were sent until WA received */
     uint32_t timestamp;
     uint8_t bcast_seqnr;               /**< Sequence number for broadcast data to filter at receiver */
+    uint8_t tx_burst_count;            /**< Count how many consecutive packets have been transmitted */
 #endif
 } gnrc_mac_tx_t;
 

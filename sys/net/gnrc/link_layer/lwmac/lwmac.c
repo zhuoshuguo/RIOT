@@ -235,6 +235,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             if (lwmac_timeout_is_expired(gnrc_netdev2, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
                 LOG_DEBUG("Got timeout for dest wakeup, ticks: %"PRIu32"\n", rtt_get_counter());
                 gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
+                gnrc_netdev2->tx.tx_burst_count = 0;
                 lwmac_set_state(gnrc_netdev2, TRANSMITTING);
             } else {
                 /* LOG_DEBUG("Nothing to do, why did we get called?\n"); */
