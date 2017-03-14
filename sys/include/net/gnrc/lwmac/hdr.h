@@ -48,6 +48,7 @@ typedef enum {
     FRAMETYPE_WR = 1,
     FRAMETYPE_WA,
     FRAMETYPE_DATA,
+    FRAMETYPE_DATA_PENDING,
     FRAMETYPE_BROADCAST,
 } lwmac_frame_type_t;
 
