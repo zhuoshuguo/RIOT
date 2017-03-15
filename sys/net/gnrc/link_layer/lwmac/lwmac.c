@@ -502,12 +502,14 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
                 break;
             }
 
+            /*
             if (!gnrc_netdev2_get_rx_started(gnrc_netdev2)) {
                 LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
                 gnrc_pktbuf_release(pkt);
                 gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
                 break;
             }
+            */
 
             gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
 
