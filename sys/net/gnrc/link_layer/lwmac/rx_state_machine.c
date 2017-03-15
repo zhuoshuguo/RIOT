@@ -274,6 +274,8 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
         bool found_data = false;
         bool found_wr = false;
 
+        pkt = NULL;
+
         while ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev2->rx.queue)) != NULL) {
             LOG_DEBUG("Inspecting pkt @ %p\n", pkt);
 
@@ -296,6 +298,8 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
                 LOG_DEBUG("Packet is not from destination\n");
                 gnrc_netdev2_set_quit_tx(gnrc_netdev2,true);
                 gnrc_pktbuf_release(pkt);
+                lwmac_clear_timeout(gnrc_netdev2, TIMEOUT_DATA);
+                lwmac_set_timeout(gnrc_netdev2, TIMEOUT_DATA, LWMAC_DATA_DELAY_US);
                 continue;
             }
 
@@ -303,6 +307,8 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
                 LOG_DEBUG("Packet is not for us\n");
                 gnrc_netdev2_set_quit_tx(gnrc_netdev2,true);
                 gnrc_pktbuf_release(pkt);
+                lwmac_clear_timeout(gnrc_netdev2, TIMEOUT_DATA);
+                lwmac_set_timeout(gnrc_netdev2, TIMEOUT_DATA, LWMAC_DATA_DELAY_US);
                 continue;
             }
 
@@ -346,7 +352,9 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
         if ((lwmac_timeout_is_expired(gnrc_netdev2, TIMEOUT_DATA)) &&
             (!gnrc_netdev2_get_rx_started(gnrc_netdev2))) {
             LOG_INFO("DATA timed out\n");
-            gnrc_pktbuf_release(pkt);
+            if(pkt != NULL) {
+                gnrc_pktbuf_release(pkt);
+            }
             GOTO_RX_STATE(RX_STATE_FAILED, true);
         }
 
