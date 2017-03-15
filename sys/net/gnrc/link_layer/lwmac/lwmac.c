@@ -663,7 +663,10 @@ static void *_lwmac_thread(void *args)
             LOG_DEBUG("GNRC_NETAPI_MSG_TYPE_SND received\n");
             gnrc_pktsnip_t* pkt = (gnrc_pktsnip_t*) msg.content.ptr;
 
-            gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, pkt);
+            if(!gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, pkt)) {
+                gnrc_pktbuf_release(pkt);
+                LOG_WARNING("TX queue full, drop packet\n");
+            }
 
             lwmac_schedule_update(gnrc_netdev2);
             break;
