@@ -41,7 +41,7 @@ extern "C" {
  *        latency and throughput!
  */
 #ifndef LWMAC_WAKEUP_INTERVAL_US
-#define LWMAC_WAKEUP_INTERVAL_US        (100U * 1000)
+#define LWMAC_WAKEUP_INTERVAL_US        (300U * 1000)
 #endif
 
 /**
@@ -138,6 +138,13 @@ extern "C" {
  */
 #ifndef LWMAC_DATA_CSMA_RETRIES
 #define LWMAC_DATA_CSMA_RETRIES         (3U)
+#endif
+
+/**
+ * @brief TX transmission retries for DATA packet in case of no response from the receiver.
+ */
+#ifndef LWMAC_DATA_TX_RETRIES
+#define LWMAC_DATA_TX_RETRIES         (3U)
 #endif
 
 /**

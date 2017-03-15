@@ -169,6 +169,7 @@ typedef struct {
     uint32_t timestamp;
     uint8_t bcast_seqnr;               /**< Sequence number for broadcast data to filter at receiver */
     uint8_t tx_burst_count;            /**< Count how many consecutive packets have been transmitted */
+    uint8_t tx_retry_count;            /**< Count how many Tx-retrials have been executed before packet drop */
 #endif
 } gnrc_mac_tx_t;
 
