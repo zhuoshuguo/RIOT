@@ -87,6 +87,7 @@ void lwmac_tx_stop(gnrc_netdev2_t* gnrc_netdev2)
     if (gnrc_netdev2->tx.packet) {
         gnrc_pktbuf_release(gnrc_netdev2->tx.packet);
         gnrc_netdev2->tx.packet = NULL;
+        LOG_WARNING("Drop TX packet\n");
     }
 
     if (!gnrc_netdev2_get_tx_continue(gnrc_netdev2)) {
@@ -374,7 +375,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         }
 
         if (_get_netdev_state(gnrc_netdev2) == NETOPT_STATE_RX) {
-            LOG_WARNING("Wait for completion of frame reception\n");
+            /* Wait for completion of frame reception */
             break;
         }
 

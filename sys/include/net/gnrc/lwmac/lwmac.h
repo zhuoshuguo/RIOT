@@ -114,7 +114,7 @@ extern "C" {
  *        can be important for big packets).
  */
 #ifndef LWMAC_DATA_DELAY_US
-#define LWMAC_DATA_DELAY_US             (5000U)
+#define LWMAC_DATA_DELAY_US             (10000U)
 #endif
 
 /**
