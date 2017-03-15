@@ -295,8 +295,6 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                 /* This triggers packet sending procedure in sleeping immediately. */
                 lwmac_schedule_update(gnrc_netdev2);
                 break;
-            } else {
-                gnrc_netdev2_set_quit_tx(gnrc_netdev2,true);
             }
         }
 
@@ -391,7 +389,6 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             	(gnrc_netdev2->tx.tx_burst_count < LWMAC_MAX_TX_BURST_PKT_NUM)) {
                 lwmac_schedule_update(gnrc_netdev2);
             } else {
-                gnrc_netdev2_set_quit_tx(gnrc_netdev2,true);
                 lwmac_set_state(gnrc_netdev2, SLEEPING);
             }
             break;
@@ -442,8 +439,6 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
     case LWMAC_EVENT_RTT_SLEEP_PENDING:
         alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_WAKEUP_PENDING);
-        /* if procedure arrives here, means there is no packet found to send in last wakeup period */
-        gnrc_netdev2_set_quit_tx(gnrc_netdev2,true);
         lwmac_set_state(gnrc_netdev2, SLEEPING);
         break;
 
