@@ -367,7 +367,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         bool from_expected_destination = false;
 
         if (lwmac_timeout_is_expired(gnrc_netdev2, TIMEOUT_NO_RESPONSE)) {
-            LOG_DEBUG("No response from destination\n");
+            LOG_WARNING("No response from destination\n");
             gnrc_netdev2_set_quit_tx(gnrc_netdev2,true);
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
@@ -458,6 +458,21 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             } else {
                 gnrc_netdev2->tx.timestamp += RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US);
                 gnrc_netdev2->tx.timestamp -= wa_hdr->current_phase;
+            }
+
+            uint32_t own_phase;
+            own_phase = _ticks_to_phase(gnrc_netdev2->lwmac.last_wakeup);
+
+            if(own_phase >= gnrc_netdev2->tx.timestamp) {
+                own_phase = own_phase - gnrc_netdev2->tx.timestamp;
+            } else {
+                own_phase = gnrc_netdev2->tx.timestamp - own_phase;
+            }
+
+            if((own_phase < RTT_US_TO_TICKS((3*LWMAC_WAKEUP_DURATION_US/2))) ||
+               (own_phase > RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US - (3*LWMAC_WAKEUP_DURATION_US/2)))) {
+            	gnrc_netdev2_set_phase_backoff(gnrc_netdev2,true);
+            	LOG_INFO("phase close\n");
             }
 
             /* No need to keep pkt anymore */
