@@ -172,7 +172,14 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
         lwmac_frame_wa_t lwmac_hdr;
         lwmac_hdr.header.type = FRAMETYPE_WA;
         lwmac_hdr.dst_addr = gnrc_netdev2->rx.l2_addr;
-        lwmac_hdr.current_phase = _phase_now();
+
+        uint32_t phase_now = _phase_now();
+
+        if(phase_now > _ticks_to_phase(gnrc_netdev2->lwmac.last_wakeup)) {
+            lwmac_hdr.current_phase = (phase_now - _ticks_to_phase(gnrc_netdev2->lwmac.last_wakeup));
+        } else {
+            lwmac_hdr.current_phase = (phase_now + RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US)) - _ticks_to_phase(gnrc_netdev2->lwmac.last_wakeup);
+        }
 
         pkt = gnrc_pktbuf_add(NULL, &lwmac_hdr, sizeof(lwmac_hdr), GNRC_NETTYPE_LWMAC);
         if (pkt == NULL) {
