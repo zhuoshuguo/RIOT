@@ -68,13 +68,17 @@ extern "C" {
  * @brief   Flag to track if the sender can continue to transmit packet to
  *          the receiver in its TX procedure.
  */
-#define GNRC_NETDEV2_LWMAC_TX_CONTINUE        (0x0008U)
+#define GNRC_NETDEV2_LWMAC_TX_CONTINUE          (0x0008U)
 
 /**
  * @brief   Flag to track if the sender should quit Tx in current cycle.
  */
-#define GNRC_NETDEV2_LWMAC_QUIT_TX        (0x0010U)
+#define GNRC_NETDEV2_LWMAC_QUIT_TX              (0x0010U)
 
+/**
+ * @brief   Flag to track if the device need to reselect a new phase.
+ */
+#define GNRC_NETDEV2_LWMAC_PHASE_BACKOFF        (0x0020U)
 #endif
 
 /**
@@ -254,12 +258,12 @@ static inline bool gnrc_netdev2_get_tx_continue(gnrc_netdev2_t *dev)
  * @brief set the quit-TX flag of the device
  *
  * @param[in] dev          ptr to netdev2 device
- * @param[in] tx_continue  value for Lwmac quit-TX flag
+ * @param[in] quit_tx      value for Lwmac quit-TX flag
  *
  */
-static inline void gnrc_netdev2_set_quit_tx(gnrc_netdev2_t *dev, bool tx_continue)
+static inline void gnrc_netdev2_set_quit_tx(gnrc_netdev2_t *dev, bool quit_tx)
 {
-    if (tx_continue) {
+    if (quit_tx) {
         dev->mac_info |= GNRC_NETDEV2_LWMAC_QUIT_TX;
     }
     else {
@@ -276,6 +280,34 @@ static inline void gnrc_netdev2_set_quit_tx(gnrc_netdev2_t *dev, bool tx_continu
 static inline bool gnrc_netdev2_get_quit_tx(gnrc_netdev2_t *dev)
 {
     return (dev->mac_info & GNRC_NETDEV2_LWMAC_QUIT_TX);
+}
+
+/**
+ * @brief set the phase-backoff flag of the device
+ *
+ * @param[in] dev          ptr to netdev2 device
+ * @param[in] tx_continue  value for Lwmac phase-backoff flag
+ *
+ */
+static inline void gnrc_netdev2_set_phase_backoff(gnrc_netdev2_t *dev, bool backoff)
+{
+    if (backoff) {
+        dev->mac_info |= GNRC_NETDEV2_LWMAC_PHASE_BACKOFF;
+    }
+    else {
+        dev->mac_info &= ~GNRC_NETDEV2_LWMAC_PHASE_BACKOFF;
+    }
+}
+
+/**
+ * @brief get the phase-backoff of the device
+ *
+ * @param[in] dev          ptr to netdev2 device
+ *
+ */
+static inline bool gnrc_netdev2_get_phase_backoff(gnrc_netdev2_t *dev)
+{
+    return (dev->mac_info & GNRC_NETDEV2_LWMAC_PHASE_BACKOFF);
 }
 #endif /* MODULE_GNRC_LWMAC */
 #endif
