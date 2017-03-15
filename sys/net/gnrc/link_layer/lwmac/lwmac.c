@@ -292,6 +292,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             /* if there is a packet for transmission, schedule update. */
             gnrc_mac_tx_neighbor_t* neighbour = _next_tx_neighbor(gnrc_netdev2);
             if (neighbour != NULL) {
+                /* This triggers packet sending procedure in sleeping immediately. */
                 lwmac_schedule_update(gnrc_netdev2);
                 break;
             } else {
@@ -300,6 +301,8 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
         }
 
         if (gnrc_priority_pktqueue_length(&gnrc_netdev2->rx.queue) > 0) {
+            /* Do wakeup extension after packet reception. */
+            lwmac_clear_timeout(gnrc_netdev2, TIMEOUT_WAKEUP_PERIOD);
             lwmac_set_state(gnrc_netdev2, RECEIVING);
         }
         break;
