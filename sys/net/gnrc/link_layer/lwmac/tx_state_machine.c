@@ -85,9 +85,15 @@ void lwmac_tx_stop(gnrc_netdev2_t* gnrc_netdev2)
 
     /* Release packet in case of failure */
     if (gnrc_netdev2->tx.packet) {
-        gnrc_pktbuf_release(gnrc_netdev2->tx.packet);
-        gnrc_netdev2->tx.packet = NULL;
-        LOG_WARNING("Drop TX packet\n");
+        if (gnrc_netdev2->tx.tx_retry_count >= LWMAC_DATA_TX_RETRIES) {
+            gnrc_netdev2->tx.tx_retry_count = 0;
+            gnrc_pktbuf_release(gnrc_netdev2->tx.packet);
+            gnrc_netdev2->tx.packet = NULL;
+            LOG_WARNING("Drop TX packet\n");
+        }else {
+            gnrc_netdev2->tx.tx_retry_count ++;
+            return;
+        }
     }
 
     if (!gnrc_netdev2_get_tx_continue(gnrc_netdev2)) {
@@ -238,6 +244,9 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         pkt = gnrc_pktbuf_add(NULL, &wr_hdr, sizeof(wr_hdr), GNRC_NETTYPE_LWMAC);
         if (pkt == NULL) {
             LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_LWMAC\n");
+            gnrc_pktbuf_release(gnrc_netdev2->tx.packet);
+            /* clear packet point to avoid TX retry */
+            gnrc_netdev2->tx.packet = NULL;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
@@ -248,6 +257,9 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         if (pkt == NULL) {
             LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_NETIF\n");
             gnrc_pktbuf_release(pkt_lwmac);
+            gnrc_pktbuf_release(gnrc_netdev2->tx.packet);
+            /* clear packet point to avoid TX retry */
+            gnrc_netdev2->tx.packet = NULL;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
@@ -310,10 +322,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 
         /* In case of no Tx-isr error, goto TX failure. */
         if (lwmac_timeout_is_expired(gnrc_netdev2, TIMEOUT_NO_RESPONSE)) {
-            gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
-            /* drop pointer so it wont be free'd */
-            gnrc_netdev2->tx.packet = NULL;
-            gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
+            LOG_WARNING("No response from destination\n");
             GOTO_TX_STATE(TX_STATE_FAILED, true);
             break;
         }
@@ -325,6 +334,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 
         if (gnrc_netdev2_get_tx_feedback(gnrc_netdev2) == TX_FEEDBACK_BUSY) {
             gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
+            /* clear packet point to avoid TX retry */
             gnrc_netdev2->tx.packet = NULL;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
             break;
@@ -471,7 +481,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             if((own_phase < RTT_US_TO_TICKS((3*LWMAC_WAKEUP_DURATION_US/2))) ||
                (own_phase > RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US - (3*LWMAC_WAKEUP_DURATION_US/2)))) {
             	gnrc_netdev2_set_phase_backoff(gnrc_netdev2,true);
-            	LOG_INFO("phase close\n");
+            	LOG_WARNING("phase close\n");
             }
 
             /* No need to keep pkt anymore */
@@ -545,6 +555,9 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         if (pkt->next == NULL){
             LOG_ERROR("Cannot allocate pktbuf of type FRAMETYPE_DATA\n");
             gnrc_netdev2->tx.packet->next = pkt_payload;
+            gnrc_pktbuf_release(gnrc_netdev2->tx.packet);
+            /* clear packet point to avoid TX retry */
+            gnrc_netdev2->tx.packet = NULL;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
@@ -552,6 +565,8 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         int res = gnrc_netdev2->send(gnrc_netdev2, pkt);
         if (res < 0){
             LOG_ERROR("Send data failed.");
+            /* clear packet point to avoid TX retry */
+            gnrc_netdev2->tx.packet = NULL;
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
         _set_netdev_state(gnrc_netdev2, NETOPT_STATE_TX);
@@ -572,7 +587,6 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
     {
         /* In case of no Tx-isr error, goto TX failure. */
         if (lwmac_timeout_is_expired(gnrc_netdev2, TIMEOUT_NO_RESPONSE)) {
-            gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
             GOTO_TX_STATE(TX_STATE_FAILED, true);
             break;
         }
