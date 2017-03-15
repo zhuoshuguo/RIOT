@@ -105,7 +105,7 @@ extern "C" {
  *        dispatched to the driver.
  */
 #ifndef LWMAC_WR_PREPARATION_US
-#define LWMAC_WR_PREPARATION_US         (7000U + LWMAC_WR_BEFORE_PHASE_US)
+#define LWMAC_WR_PREPARATION_US         (2000U + LWMAC_WR_BEFORE_PHASE_US)
 #endif
 
 /**

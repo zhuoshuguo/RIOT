@@ -274,6 +274,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             GOTO_TX_STATE(TX_STATE_FAILED, true);
         }
 
+#if 0
         /* First WR, try to catch wakeup phase */
         if ((gnrc_netdev2->tx.wr_sent == 0) && (gnrc_netdev2_get_tx_continue(gnrc_netdev2) == false)) {
 
@@ -291,7 +292,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             /* Wait until calculated wakeup time of destination */
             while (rtt_get_counter() < wait_until);
         }
-
+#endif
         /* Trigger sending frame */
         _set_netdev_state(gnrc_netdev2, NETOPT_STATE_TX);
 
