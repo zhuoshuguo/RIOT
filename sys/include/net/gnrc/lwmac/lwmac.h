@@ -144,7 +144,7 @@ extern "C" {
  * @brief MAX burst transmission packet number in one shot.
  */
 #ifndef LWMAC_MAX_TX_BURST_PKT_NUM
-#define LWMAC_MAX_TX_BURST_PKT_NUM         (4U)
+#define LWMAC_MAX_TX_BURST_PKT_NUM         (LWMAC_WAKEUP_INTERVAL_US/LWMAC_WAKEUP_DURATION_US)
 #endif
 
 /**
