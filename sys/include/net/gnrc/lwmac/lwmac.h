@@ -41,7 +41,7 @@ extern "C" {
  *        latency and throughput!
  */
 #ifndef LWMAC_WAKEUP_INTERVAL_US
-#define LWMAC_WAKEUP_INTERVAL_US        (300U * 1000)
+#define LWMAC_WAKEUP_INTERVAL_US        (200U * 1000)
 #endif
 
 /**
