@@ -137,6 +137,8 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             netopt_enable_t csma_disable = NETOPT_ENABLE;
             gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
 
+            lwmac_set_timeout(gnrc_netdev2, TIMEOUT_NO_RESPONSE, LWMAC_PREAMBLE_DURATION_US);
+
             GOTO_TX_STATE(TX_STATE_SEND_WR, true);
         }
     }
@@ -306,6 +308,16 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
     {
         LOG_DEBUG("TX_STATE_WAIT_WR_SENT\n");
 
+        /* In case of no Tx-isr error, goto TX failure. */
+        if (lwmac_timeout_is_expired(gnrc_netdev2, TIMEOUT_NO_RESPONSE)) {
+            gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, gnrc_netdev2->tx.packet);
+            /* drop pointer so it wont be free'd */
+            gnrc_netdev2->tx.packet = NULL;
+            gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
+            GOTO_TX_STATE(TX_STATE_FAILED, true);
+            break;
+        }
+
         if (gnrc_netdev2_get_tx_feedback(gnrc_netdev2) == TX_FEEDBACK_UNDEF) {
             LOG_DEBUG("WR not yet completely sent\n");
             break;
@@ -319,7 +331,6 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         }
 
         if (gnrc_netdev2->tx.wr_sent == 0) {
-            lwmac_set_timeout(gnrc_netdev2, TIMEOUT_NO_RESPONSE, LWMAC_PREAMBLE_DURATION_US);
             /* Only the first WR use CSMA */
             netopt_enable_t csma_disable = NETOPT_DISABLE;
             gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
@@ -459,7 +470,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 
             /* All checks passed so this must be a valid WA */
             lwmac_clear_timeout(gnrc_netdev2, TIMEOUT_WR);
-            lwmac_clear_timeout(gnrc_netdev2, TIMEOUT_NO_RESPONSE);
+
             found_wa = true;
             break;
         }
@@ -547,6 +558,13 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
     }
     case TX_STATE_WAIT_FEEDBACK:
     {
+        /* In case of no Tx-isr error, goto TX failure. */
+        if (lwmac_timeout_is_expired(gnrc_netdev2, TIMEOUT_NO_RESPONSE)) {
+            gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
+            GOTO_TX_STATE(TX_STATE_FAILED, true);
+            break;
+        }
+
         LOG_DEBUG("TX_STATE_WAIT_FEEDBACK\n");
         if (gnrc_netdev2_get_tx_feedback(gnrc_netdev2) == TX_FEEDBACK_UNDEF) {
             break;
