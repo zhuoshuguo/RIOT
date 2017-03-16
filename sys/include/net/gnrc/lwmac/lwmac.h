@@ -41,21 +41,26 @@ extern "C" {
  *        latency and throughput!
  */
 #ifndef LWMAC_WAKEUP_INTERVAL_US
-#define LWMAC_WAKEUP_INTERVAL_US        (200U * 1000)
+#define LWMAC_WAKEUP_INTERVAL_US        (200U * US_PER_MS)
 #endif
 
 /**
- * @brief The Maximum WR duration time.
+ * @brief The Maximum WR (preamble) duration time. The idea was to send WRs/preambles
+ *        for a slightly longer period than LWMAC_WAKEUP_INTERVAL_US in order to make
+ *        sure that at least one WR will be received by the destination.
  */
 #ifndef LWMAC_PREAMBLE_DURATION_US
 #define LWMAC_PREAMBLE_DURATION_US      ((13*LWMAC_WAKEUP_INTERVAL_US)/10)
 #endif
 
 /**
- * @brief The Maximum random backoff time before sending WR.
+ * @brief The Maximum random backoff time before actually sending each WR. This random
+ *        backoff duration is temporally (maybe removed in the future) introduced to increase the
+ *        probability of detection of WRs from other senders (i.e., two or more nearby senders
+ *        are sending WRs at the same time), thus to avoid WR collisions.
  */
 #ifndef LWMAC_RANDOM_BEFORE_WR_US
-#define LWMAC_RANDOM_BEFORE_WR_US        (1000U)
+#define LWMAC_RANDOM_BEFORE_WR_US       (1U * US_PER_MS)
 #endif
 
 /**
@@ -66,7 +71,7 @@ extern "C" {
  *        send a WR with the given hardware (including processor) and data rate.
  */
 #ifndef LWMAC_TIME_BETWEEN_WR_US
-#define LWMAC_TIME_BETWEEN_WR_US        (7000U)
+#define LWMAC_TIME_BETWEEN_WR_US        (7U * US_PER_MS)
 #endif
 
 /**
@@ -89,13 +94,14 @@ extern "C" {
 /**
  * @brief Start sending earlier then known phase. Therefore advance to beginning edge
  *        of destinations wakeup phase over time.
+ *
  * Note:  RTT tick is ~30us @ 32 kHz timer.
  *        There is a certain overhead from dispatching driver call until WR
  *        will be really sent that may depend on hardware and driver
  *        implementation.
  */
 #ifndef LWMAC_WR_BEFORE_PHASE_US
-#define LWMAC_WR_BEFORE_PHASE_US        (1300U)
+#define LWMAC_WR_BEFORE_PHASE_US        ((13 * US_PER_MS)/10)
 #endif
 
 /**
@@ -105,7 +111,7 @@ extern "C" {
  *        dispatched to the driver.
  */
 #ifndef LWMAC_WR_PREPARATION_US
-#define LWMAC_WR_PREPARATION_US         (2000U + LWMAC_WR_BEFORE_PHASE_US)
+#define LWMAC_WR_PREPARATION_US         ((2U * US_PER_MS) + LWMAC_WR_BEFORE_PHASE_US)
 #endif
 
 /**
@@ -114,7 +120,7 @@ extern "C" {
  *        can be important for big packets).
  */
 #ifndef LWMAC_DATA_DELAY_US
-#define LWMAC_DATA_DELAY_US             (10000U)
+#define LWMAC_DATA_DELAY_US             (10U * US_PER_MS)
 #endif
 
 /**
@@ -122,7 +128,7 @@ extern "C" {
  *        received at least one packet.
  */
 #ifndef LWMAC_BROADCAST_DURATION_US
-#define LWMAC_BROADCAST_DURATION_US     ((LWMAC_WAKEUP_INTERVAL_US * 1100) / 1000)
+#define LWMAC_BROADCAST_DURATION_US     ((LWMAC_WAKEUP_INTERVAL_US * 11) / 10)
 #endif
 
 /**
@@ -144,14 +150,14 @@ extern "C" {
  * @brief TX transmission retries for DATA packet in case of no response from the receiver.
  */
 #ifndef LWMAC_DATA_TX_RETRIES
-#define LWMAC_DATA_TX_RETRIES         (3U)
+#define LWMAC_DATA_TX_RETRIES           (3U)
 #endif
 
 /**
  * @brief MAX burst transmission packet number in one shot.
  */
 #ifndef LWMAC_MAX_TX_BURST_PKT_NUM
-#define LWMAC_MAX_TX_BURST_PKT_NUM         (LWMAC_WAKEUP_INTERVAL_US/LWMAC_WAKEUP_DURATION_US)
+#define LWMAC_MAX_TX_BURST_PKT_NUM      (LWMAC_WAKEUP_INTERVAL_US/LWMAC_WAKEUP_DURATION_US)
 #endif
 
 /**
