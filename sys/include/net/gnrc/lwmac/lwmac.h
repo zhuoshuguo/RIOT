@@ -162,7 +162,7 @@ extern "C" {
 
 /**
  * @brief CSMA retries for BROADCAST packet, too many may lead to running out of
- *        destinations wakup period.
+ *        destinations wakeup period.
  */
 #ifndef LWMAC_BROADCAST_CSMA_RETRIES
 #define LWMAC_BROADCAST_CSMA_RETRIES    (3U)
