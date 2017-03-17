@@ -96,6 +96,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 
         gnrc_pktsnip_t* pkt;
         bool found_wr = false;
+        bool found_bcast = false;
 
         while ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev2->rx.queue)) != NULL) {
             LOG_DEBUG("Inspecting pkt @ %p\n", pkt);
@@ -112,6 +113,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 
             if (info.header->type == FRAMETYPE_BROADCAST) {
                 _dispatch_defer(gnrc_netdev2->rx.dispatch_buffer, pkt);
+                found_bcast = true;
                 /* quit listening period to avoid receiving duplicate broadcast packets */
                 gnrc_netdev2_set_quit_rx(gnrc_netdev2,true);
                 continue;
@@ -141,6 +143,10 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 
             found_wr = true;
             break;
+        }
+
+        if (found_bcast) {
+            GOTO_RX_STATE(RX_STATE_SUCCESSFUL, true);
         }
 
         if (!found_wr) {
