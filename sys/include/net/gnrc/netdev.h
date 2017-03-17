@@ -82,6 +82,11 @@ extern "C" {
  * @brief   Flag to track if the device need to reselect a new phase.
  */
 #define GNRC_NETDEV2_LWMAC_PHASE_BACKOFF        (0x0020U)
+
+/**
+ * @brief   Flag to track if the device need to quit listening procedure.
+ */
+#define GNRC_NETDEV2_LWMAC_QUIT_RX              (0x0040U)
 #endif
 
 /**
@@ -289,7 +294,7 @@ static inline bool gnrc_netdev2_get_quit_tx(gnrc_netdev2_t *dev)
  * @brief set the phase-backoff flag of the device
  *
  * @param[in] dev          ptr to netdev2 device
- * @param[in] tx_continue  value for Lwmac phase-backoff flag
+ * @param[in] backoff      value for Lwmac phase-backoff flag
  *
  */
 static inline void gnrc_netdev2_set_phase_backoff(gnrc_netdev2_t *dev, bool backoff)
@@ -311,6 +316,34 @@ static inline void gnrc_netdev2_set_phase_backoff(gnrc_netdev2_t *dev, bool back
 static inline bool gnrc_netdev2_get_phase_backoff(gnrc_netdev2_t *dev)
 {
     return (dev->mac_info & GNRC_NETDEV2_LWMAC_PHASE_BACKOFF);
+}
+
+/**
+ * @brief set the quit-RX flag of the device
+ *
+ * @param[in] dev          ptr to netdev2 device
+ * @param[in] quit_rx      value for Lwmac quit-Rx flag
+ *
+ */
+static inline void gnrc_netdev2_set_quit_rx(gnrc_netdev2_t *dev, bool quit_rx)
+{
+    if (quit_rx) {
+        dev->mac_info |= GNRC_NETDEV2_LWMAC_QUIT_RX;
+    }
+    else {
+        dev->mac_info &= ~GNRC_NETDEV2_LWMAC_QUIT_RX;
+    }
+}
+
+/**
+ * @brief get the quit-RX flag of the device
+ *
+ * @param[in] dev          ptr to netdev2 device
+ *
+ */
+static inline bool gnrc_netdev2_get_quit_rx(gnrc_netdev2_t *dev)
+{
+    return (dev->mac_info & GNRC_NETDEV2_LWMAC_QUIT_RX);
 }
 #endif /* MODULE_GNRC_LWMAC */
 #endif

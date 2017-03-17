@@ -324,8 +324,18 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                      * every node in range. */
                     LOG_DEBUG("Reception was NOT successful\n");
                     lwmac_rx_stop(gnrc_netdev2);
-                    /* Restart */
-                    lwmac_set_state(gnrc_netdev2, LISTENING);
+
+                    if (gnrc_netdev2->rx.rx_exten_count >= LWMAC_MAX_RX_EXTENSION_NUM) {
+                        gnrc_netdev2_set_quit_rx(gnrc_netdev2,true);
+                    }
+
+                    if (gnrc_netdev2_get_quit_rx(gnrc_netdev2)) {
+                        lwmac_set_state(gnrc_netdev2, SLEEPING);
+                    }
+                    else {
+                        /* Restart */
+                        lwmac_set_state(gnrc_netdev2, LISTENING);
+                    }
                     break;
                 }
                 case RX_STATE_SUCCESSFUL: {
@@ -333,8 +343,14 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                     lwmac_rx_stop(gnrc_netdev2);
                     /* Dispatch received packets, timing is not critical anymore */
                     _dispatch(gnrc_netdev2->rx.dispatch_buffer);
-                    /* Go back to Listen after successful transaction */
-                    lwmac_set_state(gnrc_netdev2, LISTENING);
+
+                    if (gnrc_netdev2_get_quit_rx(gnrc_netdev2)) {
+                        lwmac_set_state(gnrc_netdev2, SLEEPING);
+                    }
+                    else {
+                        /* Go back to Listen after successful transaction */
+                        lwmac_set_state(gnrc_netdev2, LISTENING);
+                    }
                     break;
                 }
                 default:
@@ -442,7 +458,9 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
             alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US));
             rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_SLEEP_PENDING);
             gnrc_netdev2_set_quit_tx(gnrc_netdev2,false);
+            gnrc_netdev2_set_quit_rx(gnrc_netdev2,false);
             gnrc_netdev2_set_phase_backoff(gnrc_netdev2,false);
+            gnrc_netdev2->rx.rx_exten_count = 0;
             lwmac_set_state(gnrc_netdev2, LISTENING);
             break;
         }

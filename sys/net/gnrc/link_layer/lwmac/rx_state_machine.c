@@ -112,6 +112,8 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 
             if (info.header->type == FRAMETYPE_BROADCAST) {
                 _dispatch_defer(gnrc_netdev2->rx.dispatch_buffer, pkt);
+                /* quit listening period to avoid receiving duplicate broadcast packets */
+                gnrc_netdev2_set_quit_rx(gnrc_netdev2,true);
                 continue;
             }
 
@@ -143,6 +145,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 
         if (!found_wr) {
             LOG_DEBUG("No WR found, stop RX\n");
+            gnrc_netdev2->rx.rx_exten_count ++;
             GOTO_RX_STATE(RX_STATE_FAILED, true);
         }
 
@@ -164,6 +167,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
         /* if found ongoing transmission,
          * quit sending WA for collision avoidance. */
         if (_get_netdev_state(gnrc_netdev2) == NETOPT_STATE_RX){
+            gnrc_netdev2->rx.rx_exten_count ++;
             GOTO_RX_STATE(RX_STATE_FAILED, true);
         }
 
@@ -183,6 +187,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
         pkt = gnrc_pktbuf_add(NULL, &lwmac_hdr, sizeof(lwmac_hdr), GNRC_NETTYPE_LWMAC);
         if (pkt == NULL) {
             LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_LWMAC\n");
+            gnrc_netdev2_set_quit_rx(gnrc_netdev2,true);
             GOTO_RX_STATE(RX_STATE_FAILED, true);
         }
         pkt_lwmac = pkt;
@@ -191,6 +196,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
         if (pkt == NULL) {
             LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_NETIF\n");
             gnrc_pktbuf_release(pkt_lwmac);
+            gnrc_netdev2_set_quit_rx(gnrc_netdev2,true);
             GOTO_RX_STATE(RX_STATE_FAILED, true);
         }
 
@@ -230,6 +236,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
             if (pkt != NULL){
                 gnrc_pktbuf_release(pkt);
             }
+            gnrc_netdev2_set_quit_rx(gnrc_netdev2,true);
             GOTO_RX_STATE(RX_STATE_FAILED, true);
         }
         _set_netdev_state(gnrc_netdev2, NETOPT_STATE_TX);
@@ -352,6 +359,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
             if(pkt != NULL) {
                 gnrc_pktbuf_release(pkt);
             }
+            gnrc_netdev2->rx.rx_exten_count ++;
             GOTO_RX_STATE(RX_STATE_FAILED, true);
         }
 
