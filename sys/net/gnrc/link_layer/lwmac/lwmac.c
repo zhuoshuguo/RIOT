@@ -268,11 +268,11 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
 
                 time_until_tx -= LWMAC_WR_PREPARATION_US;
 
-                /*
+
                 uint32_t random_backoff;
-                random_backoff = random_uint32_range(0, 7000);
+                random_backoff = random_uint32_range(0, LWMAC_TIME_BETWEEN_WR_US);
                 time_until_tx = time_until_tx + random_backoff;
-                */
+
 
                 lwmac_set_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAIT_FOR_DEST_WAKEUP, time_until_tx);
 
