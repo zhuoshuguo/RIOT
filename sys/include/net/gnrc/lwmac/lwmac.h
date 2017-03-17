@@ -161,6 +161,13 @@ extern "C" {
 #endif
 
 /**
+ * @brief MAX unnecessary Listen period extensions allowed when the device is in wakeup period.
+ */
+#ifndef LWMAC_MAX_RX_EXTENSION_NUM
+#define LWMAC_MAX_RX_EXTENSION_NUM      (5U)
+#endif
+
+/**
  * @brief CSMA retries for BROADCAST packet, too many may lead to running out of
  *        destinations wakeup period.
  */
