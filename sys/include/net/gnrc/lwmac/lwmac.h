@@ -164,7 +164,7 @@ extern "C" {
  * @brief MAX unnecessary Listen period extensions allowed when the device is in wakeup period.
  */
 #ifndef LWMAC_MAX_RX_EXTENSION_NUM
-#define LWMAC_MAX_RX_EXTENSION_NUM      (5U)
+#define LWMAC_MAX_RX_EXTENSION_NUM      (3U)
 #endif
 
 /**
