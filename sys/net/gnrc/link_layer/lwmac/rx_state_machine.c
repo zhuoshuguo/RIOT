@@ -303,6 +303,8 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 
             if (info.header->type == FRAMETYPE_BROADCAST) {
                 _dispatch_defer(gnrc_netdev2->rx.dispatch_buffer, pkt);
+                /* quit listening period to avoid receiving duplicate broadcast packets */
+                gnrc_netdev2_set_quit_rx(gnrc_netdev2,true);
                 continue;
             }
 
