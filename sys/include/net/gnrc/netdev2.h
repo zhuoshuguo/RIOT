@@ -63,6 +63,12 @@ extern "C" {
  */
 #define GNRC_NETDEV2_MAC_INFO_RX_STARTED        (0x0004U)
 
+
+/**
+ * @brief   Flag to track if the device need to quit listening procedure.
+ */
+#define GNRC_NETDEV2_LWMAC_QUIT_RX              (0x0040U)
+
 /**
  * @brief Structure holding GNRC netdev2 adapter state
  *
@@ -203,6 +209,22 @@ static inline void gnrc_netdev2_set_tx_feedback(gnrc_netdev2_t *dev,
     dev->mac_info &= ~GNRC_NETDEV2_MAC_INFO_TX_FEEDBACK_MASK;
     dev->mac_info |= (uint16_t)(txf & GNRC_NETDEV2_MAC_INFO_TX_FEEDBACK_MASK);
 }
+
+static inline void gnrc_netdev2_set_quit_rx(gnrc_netdev2_t *dev, bool quit_rx)
+{
+    if (quit_rx) {
+        dev->mac_info |= GNRC_NETDEV2_LWMAC_QUIT_RX;
+    }
+    else {
+        dev->mac_info &= ~GNRC_NETDEV2_LWMAC_QUIT_RX;
+    }
+}
+
+static inline bool gnrc_netdev2_get_quit_rx(gnrc_netdev2_t *dev)
+{
+    return (dev->mac_info & GNRC_NETDEV2_LWMAC_QUIT_RX);
+}
+
 #endif
 
 /**

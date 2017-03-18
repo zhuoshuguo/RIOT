@@ -305,12 +305,6 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
     	    rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev2);
     	}
 
-        /* Restart Listen if found extended transmissions */
-        if(gnrc_netdev2->lwmac.extend_wakeup == true) {
-            gnrc_netdev2->lwmac.extend_wakeup = false;
-            lwmac_clear_timeout(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD);
-        }
-
         /* Set timeout for if there's no successful rx transaction that will
          * change state to SLEEPING. */
         if (!lwmac_timeout_is_running(&gnrc_netdev2->lwmac, TIMEOUT_WAKEUP_PERIOD)) {
@@ -360,18 +354,33 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
              * every node in range. */
             LOG_DEBUG("Reception was NOT successful\n");
             lwmac_rx_stop(gnrc_netdev2);
-            gnrc_netdev2->lwmac.extend_wakeup = true;
-            /* Restart */
-            lwmac_set_state(gnrc_netdev2, LISTENING);
+
+            if (gnrc_netdev2->rx.rx_exten_count >= LWMAC_MAX_RX_EXTENSION_NUM) {
+               gnrc_netdev2_set_quit_rx(gnrc_netdev2,true);
+            }
+
+            if (gnrc_netdev2_get_quit_rx(gnrc_netdev2)) {
+               lwmac_set_state(gnrc_netdev2, SLEEPING);
+            }
+             else {
+                 /* Restart */
+                lwmac_set_state(gnrc_netdev2, LISTENING);
+            }
+
             break;
         case RX_STATE_SUCCESSFUL:
             LOG_INFO("Reception was successful\n");
             lwmac_rx_stop(gnrc_netdev2);
             /* Dispatch received packets, timing is not critical anymore */
             _dispatch(gnrc_netdev2->rx.dispatch_buffer);
-            gnrc_netdev2->lwmac.extend_wakeup = true;
-            /* Go back to Listen after successful transaction */
-            lwmac_set_state(gnrc_netdev2, LISTENING);
+
+            if (gnrc_netdev2_get_quit_rx(gnrc_netdev2)) {
+                lwmac_set_state(gnrc_netdev2, SLEEPING);
+            }
+             else {
+                  /* Go back to Listen after successful transaction */
+                lwmac_set_state(gnrc_netdev2, LISTENING);
+            }
             break;
         default:
             lwmac_rx_update(gnrc_netdev2);
@@ -484,6 +493,8 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
         rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_SLEEP_PENDING);
         gnrc_netdev2->lwmac.extend_wakeup = false;
         gnrc_netdev2->lwmac.quit_tx = false;
+        gnrc_netdev2_set_quit_rx(gnrc_netdev2,false);
+        gnrc_netdev2->rx.rx_exten_count = 0;
         gnrc_netdev2->lwmac.phase_backoff = false;
         lwmac_set_state(gnrc_netdev2, LISTENING);
         break;

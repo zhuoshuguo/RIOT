@@ -71,6 +71,7 @@ typedef struct {
     l2_addr_t l2_addr;
     /* Internal state of reception state machine */
     lwmac_rx_state_t state;
+    uint8_t rx_exten_count;     /**< Count how many unnecessary RX extensions have been executed */
 #endif
 } gnrc_mac_rx_t;
 
