@@ -23,9 +23,11 @@
 #include "msg.h"
 #include "thread.h"
 
+
 #include "net/gnrc.h"
 #include "net/gnrc/nettype.h"
 #include "net/netdev2.h"
+#include <periph/rtt.h>
 
 #include "net/gnrc/netdev2.h"
 #include "net/ethernet/hdr.h"
@@ -124,6 +126,9 @@ static void *_gnrc_netdev2_thread(void *args)
     dev->event_callback = _event_cb;
     dev->context = (void*) gnrc_netdev2;
 
+    /* RTT is used for scheduling wakeup */
+    rtt_init();
+
     /* register the device to the network stack*/
     gnrc_netif_add(thread_getpid());
 
@@ -133,6 +138,10 @@ static void *_gnrc_netdev2_thread(void *args)
     /* Don't attempt to send a WA if channel is busy to get timings right */
     netopt_enable_t csma_disable = NETOPT_DISABLE;
     gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
+
+
+    uint32_t busy_start_time = 0;
+    uint32_t busy_current_time = 0;
 
     /* start the event loop */
     while (1) {
@@ -147,10 +156,30 @@ static void *_gnrc_netdev2_thread(void *args)
             case GNRC_NETAPI_MSG_TYPE_SND:
                 DEBUG("gnrc_netdev2: GNRC_NETAPI_MSG_TYPE_SND received\n");
                 gnrc_pktsnip_t *pkt = msg.content.ptr;
-                while(1){
-                	gnrc_pktbuf_hold(pkt, 1);
-                    gnrc_netdev2->send(gnrc_netdev2, pkt);
+
+                puts("p");
+
+                while (1) {
+                    busy_start_time = rtt_get_counter();
+
+                    while(1){
+
+                    	gnrc_pktbuf_hold(pkt, 1);
+                        gnrc_netdev2->send(gnrc_netdev2, pkt);
+
+                        if (rtt_get_counter() > (busy_start_time + RTT_US_TO_TICKS(100000))) {
+                        	break;
+                        }
+                    }
+
+                    while (1) {
+                    	busy_current_time = rtt_get_counter();
+                        if (busy_current_time > (busy_start_time + RTT_US_TO_TICKS(1000000))) {
+                        	break;
+                        }
+                    }
                 }
+
                 break;
             case GNRC_NETAPI_MSG_TYPE_SET:
                 /* read incoming options */

@@ -108,12 +108,12 @@ void *sender_thread(void *arg)
 
     send_counter = 0;
 
-    xtimer_sleep(5);
+    //xtimer_sleep(5);
 
     while (1) {
 
     	//xtimer_sleep(1);
-    	xtimer_usleep(500000);
+    	//xtimer_usleep(500000);
 
     	if(send_counter <1){
     		for(int i=0; i<1; i++){
