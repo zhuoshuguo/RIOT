@@ -1059,6 +1059,7 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             	iqueuemac->quit_current_cycle = true;
                 iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
                 _dispatch(iqueuemac->rx.dispatch_buffer);
+                puts("b");
                 //puts("iqueuemac: router receives a broadcast data !!");
            }break;
 

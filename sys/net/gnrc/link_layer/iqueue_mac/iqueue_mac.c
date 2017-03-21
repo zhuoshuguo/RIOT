@@ -263,6 +263,17 @@ void iqueuemac_device_broadcast_init(iqueuemac_t* iqueuemac){
 
 	iqueuemac_trun_on_radio(iqueuemac);
 
+	////////////////////////////////////////////////////////////////
+	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_1);
+	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
+
+	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_2);
+	iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
+
+	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_1);
+	iqueuemac->tx.t2u_on_public_1 = true;
+    ///////////////////////////////
+
 	/*** assemble broadcast packet ***/
 	gnrc_pktsnip_t* pkt = iqueuemac->tx.tx_packet;
 
@@ -275,7 +286,7 @@ void iqueuemac_device_broadcast_init(iqueuemac_t* iqueuemac){
 		puts("iqueuemac: pktbuf add failed in iqueuemac_device_broadcast_init.");
 		//relase the broadcast pkt and go to listen state??.
 	}
-	iqueuemac_set_timeout(iqueuemac, TIMEOUT_BROADCAST_FINISH, IQUEUEMAC_SUPERFRAME_DURATION_US);
+	iqueuemac_set_timeout(iqueuemac, TIMEOUT_BROADCAST_FINISH, (11*IQUEUEMAC_SUPERFRAME_DURATION_US/10));
 
 	iqueuemac->device_states.device_broadcast_state = DEVICE_SEND_BROADCAST;
 	iqueuemac->need_update = true;
@@ -303,12 +314,23 @@ void iqueuemac_device_send_broadcast(iqueuemac_t* iqueuemac){
 	iqueuemac_send(iqueuemac, iqueuemac->tx.tx_packet, NETOPT_DISABLE);
 
 	/* Enable Auto ACK again for data reception */
-	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
+	//iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
-	iqueuemac_set_timeout(iqueuemac, TIMEOUT_BROADCAST_INTERVAL, IQUEUEMAC_BROADCAST_INTERVAL_US);
+	//iqueuemac_set_timeout(iqueuemac, TIMEOUT_BROADCAST_INTERVAL, IQUEUEMAC_BROADCAST_INTERVAL_US);
 
-	iqueuemac->device_states.device_broadcast_state = DEVICE_WAIT_BROADCAST_FEEDBACK;
-	iqueuemac->need_update = true;
+	iqueuemac->device_states.device_broadcast_state = DEVICE_WAIT_BROADCAST_TX_FINISH; //DEVICE_WAIT_BROADCAST_FEEDBACK;
+	iqueuemac->need_update = false;
+}
+
+void iqueuemac_device_wait_broadcast_txfinish(iqueuemac_t* iqueuemac){
+
+	if(iqueuemac->tx.tx_finished == true){
+		iqueuemac_set_timeout(iqueuemac, TIMEOUT_BROADCAST_INTERVAL, IQUEUEMAC_BROADCAST_INTERVAL_US);
+
+		iqueuemac->device_states.device_broadcast_state = DEVICE_WAIT_BROADCAST_FEEDBACK;
+		iqueuemac->need_update = false;
+	}
+
 }
 
 void iqueuemac_device_wait_broadcast_feedback(iqueuemac_t* iqueuemac){
@@ -320,7 +342,7 @@ void iqueuemac_device_wait_broadcast_feedback(iqueuemac_t* iqueuemac){
 
 	/* when rx completed, will reach here */
 	if(iqueuemac->packet_received == true){
-		;//iqueue_router_broadcast_receive_packet_process(iqueuemac);; /// to be filt in!!
+		//iqueue_router_broadcast_receive_packet_process(iqueuemac);; /// to be filt in!!
 	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_BROADCAST_FINISH)){
@@ -335,6 +357,14 @@ void iqueuemac_device_wait_broadcast_feedback(iqueuemac_t* iqueuemac){
 	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_BROADCAST_INTERVAL)){
+
+	    if(iqueuemac->tx.t2u_on_public_1 == true){
+		    iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_2);
+		    iqueuemac->tx.t2u_on_public_1 = false;
+	    }else{
+	    	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_1);
+	    	iqueuemac->tx.t2u_on_public_1 = true;
+	    }
 
 		iqueuemac->device_states.device_broadcast_state = DEVICE_SEND_BROADCAST;
 		iqueuemac->need_update = true;
@@ -375,6 +405,7 @@ void iqueuemac_device_broadcast_update(iqueuemac_t* iqueuemac){
 	{
 	 case DEVICE_BROADCAST_INIT: iqueuemac_device_broadcast_init(iqueuemac);break;
 	 case DEVICE_SEND_BROADCAST: iqueuemac_device_send_broadcast(iqueuemac); break;
+	 case DEVICE_WAIT_BROADCAST_TX_FINISH: iqueuemac_device_wait_broadcast_txfinish(iqueuemac); break;
 	 case DEVICE_WAIT_BROADCAST_FEEDBACK: iqueuemac_device_wait_broadcast_feedback(iqueuemac); break;
 	 case DEVICE_BROADCAST_END: iqueuemac_device_broadcast_end(iqueuemac);break;
 	 default: break;
