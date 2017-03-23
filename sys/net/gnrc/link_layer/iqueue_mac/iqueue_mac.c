@@ -259,7 +259,8 @@ void iqueuemac_phase_backoff(iqueuemac_t* iqueuemac)
 
 void iqueuemac_device_broadcast_init(iqueuemac_t* iqueuemac){
 
-	iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
+	/* disable autoACK when sending broadcast pkts */
+	//iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	iqueuemac_trun_on_radio(iqueuemac);
 
@@ -296,14 +297,31 @@ void iqueuemac_device_broadcast_init(iqueuemac_t* iqueuemac){
 
 void iqueuemac_device_send_broadcast(iqueuemac_t* iqueuemac){
 
-	/* if rx start, wait until rx is completed. */
-	if(iqueuemac->rx_started == true){
-		return;
-	}
+	/* if rx is going, quit send bcast. */
+	if((_get_netdev_state(iqueuemac) == NETOPT_STATE_RX) || (iqueuemac->rx_started == true)) {
+		/* found ongoing transmissions, quit send broadcast,delay to next cycle */
 
-	/* when rx completed, will reach here */
-	if(iqueuemac->packet_received == true){
-		;//iqueue_router_broadcast_receive_packet_process(iqueuemac);; /// to be filt in!!
+        /* save payload pointer */
+        gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next->next;
+
+        /* remove iqueuemac header */
+        iqueuemac->tx.tx_packet->next->next = NULL;
+        gnrc_pktbuf_release(iqueuemac->tx.tx_packet->next);
+
+        /* make append payload after netif header again */
+        iqueuemac->tx.tx_packet->next = payload;
+
+        /* queue the pkt for transmission in next cycle */
+        if(_queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet) == false){
+        	puts("Push pkt failed in t2r");
+        }
+        iqueuemac->tx.tx_packet = NULL;
+
+        puts("quit send bcast-0");
+
+		iqueuemac->device_states.device_broadcast_state = DEVICE_BROADCAST_END;
+		iqueuemac->need_update = true;
+		return;
 	}
 
 	/***  disable auto-ack ***/
@@ -342,7 +360,43 @@ void iqueuemac_device_wait_broadcast_feedback(iqueuemac_t* iqueuemac){
 
 	/* when rx completed, will reach here */
 	if(iqueuemac->packet_received == true){
-		//iqueue_router_broadcast_receive_packet_process(iqueuemac);; /// to be filt in!!
+		iqueuemac->packet_received = false;
+		iqueuemac_broadcast_receive_packet_process(iqueuemac);
+		iqueuemac->quit_current_cycle = true;
+
+	}
+
+	if(iqueuemac->packet_received == true){
+	   	iqueuemac->packet_received = false;
+	   	iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac);
+	}
+
+	/* if rx is going, quit send bcast. */
+	if((_get_netdev_state(iqueuemac) == NETOPT_STATE_RX) ||
+			(iqueuemac->rx_started == true) || (iqueuemac->quit_current_cycle == true)) {
+		/* found ongoing transmissions, quit send broadcast,delay to next cycle */
+
+        /* save payload pointer */
+        gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next->next;
+
+        /* remove iqueuemac header */
+        iqueuemac->tx.tx_packet->next->next = NULL;
+        gnrc_pktbuf_release(iqueuemac->tx.tx_packet->next);
+
+        /* make append payload after netif header again */
+        iqueuemac->tx.tx_packet->next = payload;
+
+        /* queue the pkt for transmission in next cycle */
+        if(_queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet) == false){
+        	puts("Push pkt failed in t2r");
+        }
+        iqueuemac->tx.tx_packet = NULL;
+
+        //puts("quit send bcast-1");
+
+		iqueuemac->device_states.device_broadcast_state = DEVICE_BROADCAST_END;
+		iqueuemac->need_update = true;
+		return;
 	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_BROADCAST_FINISH)){
@@ -421,7 +475,7 @@ void iqueuemac_init_prepare(iqueuemac_t* iqueuemac){
 
 	uint32_t listen_period;
 
-	listen_period = random_uint32_range(0, IQUEUEMAC_SUPERFRAME_DURATION_US);
+	listen_period = 0;//random_uint32_range(0, IQUEUEMAC_SUPERFRAME_DURATION_US);
 	listen_period = (IQUEUEMAC_SUPERFRAME_DURATION_US*11/10) + listen_period + IQUEUEMAC_WAIT_RTT_STABLE_US;
 
 	iqueuemac->quit_current_cycle = false;
@@ -1630,6 +1684,7 @@ void iqueue_mac_router_cp_end(iqueuemac_t* iqueuemac){
 	_dispatch(iqueuemac->rx.dispatch_buffer);
 
 	if(iqueuemac->quit_current_cycle == true){
+		//puts("cp: quit this cycle");
 		iqueuemac->router_states.router_listen_state = R_LISTEN_SLEEPING_INIT;
 	}else{
 		iqueuemac->router_states.router_listen_state = R_LISTEN_SEND_BEACON;
@@ -2017,6 +2072,7 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                    	{
                     	//LOG_ERROR("Can't push RX packet @ %p, memory full?\n", pkt);
                     	puts("can't push rx-pkt, memory full?");
+                    	//printf("iq-state:%d\n",iqueuemac.router_states.router_basic_state);
                     	gnrc_pktbuf_release(pkt);
                     	iqueuemac.packet_received = false;
                     	break;

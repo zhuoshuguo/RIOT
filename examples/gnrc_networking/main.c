@@ -28,6 +28,8 @@ static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 
 extern int udp_cmd(int argc, char **argv);
 
+extern int _gnrc_rpl_init(char *arg);
+
 static const shell_command_t shell_commands[] = {
     { "udp", "send data over UDP and listen on UDP ports", udp_cmd },
     { NULL, NULL, NULL }
@@ -44,7 +46,9 @@ int main(void)
     puts("All up, running the shell now");
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
-
+    
+    char inface = 7;
+    _gnrc_rpl_init(&inface);
     /* should be never reached */
     return 0;
 }
