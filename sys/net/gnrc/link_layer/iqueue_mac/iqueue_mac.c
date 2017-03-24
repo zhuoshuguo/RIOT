@@ -604,6 +604,8 @@ void iqueuemac_t2r_init(iqueuemac_t* iqueuemac){
 	/*** flush the rx-queue here to reduce possible buffered packet in RIOT!! ***/
 	packet_queue_flush(&iqueuemac->rx.queue);
 
+	iqueuemac->t2r_busy_rety_counter = 0;
+
 	iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CP;
 	iqueuemac->need_update = true;
 }
@@ -615,6 +617,16 @@ void iqueuemac_t2r_wait_cp(iqueuemac_t* iqueuemac){
 		/* set up auto-ack for packet reception! */
 		iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
 		iqueuemac_set_ack_req(iqueuemac, NETOPT_ENABLE);
+
+		netopt_enable_t csma_enable;
+		csma_enable = NETOPT_ENABLE;
+		iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev, NETOPT_CSMA, &csma_enable, sizeof(netopt_enable_t));
+
+		uint8_t csma_retry;
+		csma_retry = 5;
+		iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev, NETOPT_RETRANS, &csma_retry, sizeof(csma_retry));
+		csma_retry = 5;
+		iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev, NETOPT_CSMA_RETRIES, &csma_retry, sizeof(csma_retry));
 
 		iqueuemac_trun_on_radio(iqueuemac);
 		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_CP;
@@ -644,7 +656,7 @@ void iqueuemac_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 		; //return;
 	}*/
 
-	if(iqueuemac->tx.no_ack_contuer > 0){
+	if((iqueuemac->tx.no_ack_contuer > 0) || (iqueuemac->t2r_busy_rety_counter > 0)){
 		netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
 		device_state->seq = iqueuemac->tx.tx_seq;
 	}
@@ -706,7 +718,17 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 			}break;
 
 			case TX_FEEDBACK_BUSY:
-			/*** if NOACK, regards it as phase-lock failed, mark the destination as unknown will try t-2-u next time. ***/
+			    /*** if NOACK, regards it as phase-lock failed, mark the destination as unknown will try t-2-u next time. ***/
+				if(iqueuemac->t2r_busy_rety_counter < IQUEUEMAC_MAX_TX_BUSY_COUNTER) {
+					iqueuemac->t2r_busy_rety_counter ++;
+
+					netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+					iqueuemac->tx.tx_seq = device_state->seq - 1;
+
+					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_CP;
+					iqueuemac->need_update = true;
+					return;
+				}
 			case TX_FEEDBACK_NOACK:
 			default:{
 				/* this is for debug, delete when formal iqueuemac version is release! */
@@ -714,9 +736,9 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				 * since it (turn-off radio func here) is mainly for debug */
 				iqueuemac_trun_off_radio(iqueuemac);
 				if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_BUSY) {
-				    puts("t2r:busy");
+				    //puts("t2r:busy");
 				}else if (iqueuemac->tx.tx_feedback == TX_FEEDBACK_NOACK){
-					puts("t2r:noack");
+					//puts("t2r:noack");
 				}
 				iqueuemac->tx.no_ack_contuer ++;
 
@@ -726,7 +748,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				if(iqueuemac->tx.no_ack_contuer >= IQUEUEMAC_REPHASELOCK_THRESHOLD){
 					//iqueuemac->tx.no_ack_contuer = 0xFF; //0;
 
-					printf("t2r:noack %d, go t2u\n",iqueuemac->tx.no_ack_contuer);
+					//printf("t2r:noack %d\n",iqueuemac->tx.no_ack_contuer);
 					iqueuemac->tx.current_neighbour->mac_type = UNKNOWN;
 
 					iqueuemac->tx.t2u_retry_contuer = 0;
@@ -734,7 +756,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END; //DEVICE_T2R_RE_PHASE_LOCK_PREPARE;
 
 				}else{
-					printf("t2r:noack %d, go t2r\n",iqueuemac->tx.no_ack_contuer);
+					printf("t2r:noack %d\n",iqueuemac->tx.no_ack_contuer);
 					/* go to t-2-r end and try t-2-r again. */
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 				}
@@ -1608,7 +1630,7 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
     		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
     		iqueuemac_set_timeout(iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
     	}else{
-    		if((iqueuemac->get_other_preamble == false)&&(iqueuemac->cp_end == false)&&(iqueuemac->quit_current_cycle == false)){
+    		if((iqueuemac->get_other_preamble == false)&&(iqueuemac->quit_current_cycle == false)){
         		iqueuemac->got_preamble = false;
         		iqueuemac->cp_end = false;
         		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);

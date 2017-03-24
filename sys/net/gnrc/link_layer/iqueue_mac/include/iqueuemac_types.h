@@ -377,9 +377,11 @@ typedef struct iqueuemac {
     uint8_t cp_backoff_counter;
 
     /* Used to calculate wakeup times */
-    uint32_t last_wakeup;    
+    uint32_t last_wakeup;
 
     uint32_t backoff_phase_ticks;
+
+    uint8_t t2r_busy_rety_counter;
 
     /* Track if a transmission might have corrupted a received packet */
     bool rx_started;
