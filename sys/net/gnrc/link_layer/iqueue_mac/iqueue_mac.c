@@ -313,7 +313,7 @@ void iqueuemac_device_send_broadcast(iqueuemac_t* iqueuemac){
 
         /* queue the pkt for transmission in next cycle */
         if(_queue_tx_packet(iqueuemac, iqueuemac->tx.tx_packet) == false){
-        	puts("Push pkt failed in t2r");
+        	puts("Push pkt failed in bcast");
         }
         iqueuemac->tx.tx_packet = NULL;
 
@@ -364,11 +364,6 @@ void iqueuemac_device_wait_broadcast_feedback(iqueuemac_t* iqueuemac){
 		iqueuemac_broadcast_receive_packet_process(iqueuemac);
 		iqueuemac->quit_current_cycle = true;
 
-	}
-
-	if(iqueuemac->packet_received == true){
-	   	iqueuemac->packet_received = false;
-	   	iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac);
 	}
 
 	/* if rx is going, quit send bcast. */
@@ -475,7 +470,7 @@ void iqueuemac_init_prepare(iqueuemac_t* iqueuemac){
 
 	uint32_t listen_period;
 
-	listen_period = 0;//random_uint32_range(0, IQUEUEMAC_SUPERFRAME_DURATION_US);
+	listen_period = random_uint32_range(0, IQUEUEMAC_SUPERFRAME_DURATION_US);
 	listen_period = (IQUEUEMAC_SUPERFRAME_DURATION_US*11/10) + listen_period + IQUEUEMAC_WAIT_RTT_STABLE_US;
 
 	iqueuemac->quit_current_cycle = false;
@@ -2072,7 +2067,6 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                    	{
                     	//LOG_ERROR("Can't push RX packet @ %p, memory full?\n", pkt);
                     	puts("can't push rx-pkt, memory full?");
-                    	//printf("iq-state:%d\n",iqueuemac.router_states.router_basic_state);
                     	gnrc_pktbuf_release(pkt);
                     	iqueuemac.packet_received = false;
                     	break;
