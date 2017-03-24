@@ -31,7 +31,7 @@
 static gnrc_netreg_entry_t server = { NULL, GNRC_NETREG_DEMUX_CTX_ALL, KERNEL_PID_UNDEF };
 
 
-static void send(char *addr_str, char *port_str, char *data, unsigned int num,
+void udp_send(char *addr_str, char *port_str, char *data, unsigned int num,
                  unsigned int delay)
 {
     uint16_t port;
@@ -140,7 +140,7 @@ int udp_cmd(int argc, char **argv)
         if (argc > 6) {
             delay = (uint32_t)atoi(argv[6]);
         }
-        send(argv[2], argv[3], argv[4], num, delay);
+        udp_send(argv[2], argv[3], argv[4], num, delay);
     }
     else if (strcmp(argv[1], "server") == 0) {
         if (argc < 3) {
