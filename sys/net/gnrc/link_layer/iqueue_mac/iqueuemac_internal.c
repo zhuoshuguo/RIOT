@@ -675,6 +675,10 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
             iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(iqueuemac_frame_broadcast_t), GNRC_NETTYPE_IQUEUEMAC);
     }break;
 
+    case FRAMETYPE_EXP_SETTING:{
+        iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(iqueuemac_frame_expset_t), GNRC_NETTYPE_IQUEUEMAC);
+    }break;
+
     default:
         return -2;
     }
@@ -718,6 +722,12 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
           	info->dst_addr.len = 2;
           	info->dst_addr.addr[0] = 0xff;
            	info->dst_addr.addr[1] = 0xff;
+        }break;
+
+        case FRAMETYPE_EXP_SETTING:{
+          	info->dst_addr.len = 2;
+         	info->dst_addr.addr[0] = 0xff;
+         	info->dst_addr.addr[1] = 0xff;
         }break;
 
         default:break;
