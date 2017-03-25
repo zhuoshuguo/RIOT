@@ -909,7 +909,7 @@ static uint8_t _get_prefix_len(char *addr)
 }
 #endif
 
-static int _netif_add(char *cmd_name, kernel_pid_t dev, int argc, char **argv)
+int _netif_add(char *cmd_name, kernel_pid_t dev, int argc, char **argv)
 {
 #ifdef MODULE_GNRC_IPV6_NETIF
     enum {
