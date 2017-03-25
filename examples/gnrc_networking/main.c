@@ -67,13 +67,16 @@ static void generate_and_send_pkt(void){
     uint32_t num = 1;
     uint32_t delay = 1000000;
 
-    char *add = "2001:db8::1";
+
     char *port = "8808";
     char *data = "1122334455";
 
-    if(own_address2 != 0x5ad6) {
+
+    if(send_counter == 0) {
+    	char *add = "2001:db8::5844:55d:4a55:6f46";
         udp_send(add, port, data, num, delay);
     }
+
 }
 
 void *sender_thread(void *arg)
@@ -192,28 +195,31 @@ void *sender_thread(void *arg)
 	//uint32_t radom_period;
 	//radom_period = random_uint32_range(0, 5000000);
 	//xtimer_usleep(radom_period);
-	xtimer_sleep(80);
+	xtimer_sleep(20);
 
    exp_end = false;
 
-   puts("start pushs data");
+   puts("generating exp start commands to nodes");
    while (1) {
-   	xtimer_sleep(3);
-   	//xtimer_usleep((uint32_t) data_rate * 1000);
+	   xtimer_sleep(2);
+	   //xtimer_usleep((uint32_t) data_rate * 1000);
 
-   	if((send_counter < 5)&&(exp_end == false)){  //total_gene_num
-   		for(int i=0; i<1; i++){
-   			generate_and_send_pkt();
-   		}
-   		send_counter ++;
-   	}else {
-   	   	if(exp_end == false) {
-   	   		printf("sender totally generated pkt num %lu .\n", send_counter);
-   	   		exp_end =  false;
-   	   	}
-   	    exp_end = true;
-   	}
+	   if((send_counter < 1)&&(exp_end == false)){  //total_gene_num
+		   for(int i=0; i<1; i++){
+			   generate_and_send_pkt();
+		   }
+		   send_counter ++;
 
+		   if(send_counter>=1) {
+			   printf("finished generate exp commands.\n");
+		   }
+	   }else {
+		   if(exp_end == false) {
+			   //printf("sender totally generated pkt num %lu .\n", send_counter);
+			   exp_end =  false;
+		   }
+		   exp_end = true;
+	   }
    }
 
     return NULL;
