@@ -83,7 +83,7 @@ void udp_send(char *addr_str, char *port_str, char *data, unsigned int num,
     }
 }
 
-static void start_server(char *port_str)
+void start_server(char *port_str)
 {
     uint16_t port;
 

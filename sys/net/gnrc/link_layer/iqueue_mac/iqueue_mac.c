@@ -2199,14 +2199,20 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
     iqueuemac.mac_type = MAC_TYPE;
 
-    //xtimer_sleep(5);
+    xtimer_sleep(3);
 
     iqueuemac_init(&iqueuemac);
 
     uint32_t seed;
-    seed = (uint32_t)iqueuemac.own_addr.addr[0];
 
+    seed = 0;
+    seed = iqueuemac.own_addr.addr[6];
+    seed = seed << 8;
+    seed |= iqueuemac.own_addr.addr[7];
+
+    printf("seed: %lx\n",seed);
     random_init(seed);
+
 
     //rtt_handler(IQUEUEMAC_EVENT_RTT_START);
 

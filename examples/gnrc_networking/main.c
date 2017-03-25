@@ -44,6 +44,7 @@ uint32_t exp_duration_ticks;
 static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 
 extern int udp_cmd(int argc, char **argv);
+extern void start_server(char *port_str);
 
 extern int _gnrc_rpl_init(char *arg);
 extern void udp_send(char *addr_str, char *port_str, char *data, unsigned int num,
@@ -111,6 +112,10 @@ void *sender_thread(void *arg)
     /* RPL must be initialized on that particular interface-7 */
     char inface = '7';
     _gnrc_rpl_init(&inface);
+
+	/* start udp server on port 8808 */
+    char *udpport = "8808";
+    start_server(udpport);
 
     //gnrc_netreg_entry_t  me_reg = { .demux_ctx = GNRC_NETREG_DEMUX_CTX_ALL, .pid = thread_getpid() };
     //gnrc_netreg_register(GNRC_NETTYPE_APP, &me_reg);
