@@ -108,6 +108,10 @@ void *sender_thread(void *arg)
 
     printf("own add is %lx.\n", own_address2);
 
+    /* RPL must be initialized on that particular interface-7 */
+    char inface = '7';
+    _gnrc_rpl_init(&inface);
+
     //gnrc_netreg_entry_t  me_reg = { .demux_ctx = GNRC_NETREG_DEMUX_CTX_ALL, .pid = thread_getpid() };
     //gnrc_netreg_register(GNRC_NETTYPE_APP, &me_reg);
 
@@ -213,8 +217,6 @@ int main(void)
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
     
-    char inface = 7;
-    _gnrc_rpl_init(&inface);
     /* should be never reached */
     return 0;
 }
