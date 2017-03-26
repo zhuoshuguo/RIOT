@@ -47,7 +47,7 @@ extern int udp_cmd(int argc, char **argv);
 extern void start_server(char *port_str);
 
 extern int _gnrc_rpl_init(char *arg);
-extern void udp_send(char *addr_str, char *port_str, char *data, unsigned int num,
+extern void udp_send(char *addr_str, char *port_str, uint32_t *data, size_t datasize, unsigned int num,
         unsigned int delay);
 
 static const shell_command_t shell_commands[] = {
@@ -60,31 +60,38 @@ static const shell_command_t shell_commands[] = {
 static void generate_and_send_pkt(void){
 
     uint32_t num = 1;
-    uint32_t delay = 1000000;
+    uint32_t delay = 0;
 
     char *add = "2001:db8::1";
     char *port = "8808";
-    char *data = "1122334455";
+
+
+    uint32_t payload[10];
+
+   	send_counter++;
+
+   	payload[0] = send_counter;
+   	payload[1] = own_address2;
 
     if(own_address2 != 0x5ad6) {
-        udp_send(add, port, data, num, delay);
+        udp_send(add, port, payload, sizeof(payload), num, delay);
     }
 }
 
 void *sender_thread(void *arg)
 {
     (void) arg;
-    //msg_t msg;
-    //msg_t msg_queue[8];
+    msg_t msg;
+    msg_t msg_queue[8];
     bool exp_end;
 
-    //uint32_t data_rate;
-    //uint32_t total_gene_num;
-    //data_rate = 0;
-    //total_gene_num = 0;
+    uint32_t data_rate;
+    uint32_t total_gene_num;
+    data_rate = 0;
+    total_gene_num = 0;
 
     /* setup the message queue */
-    //msg_init_queue(msg_queue, 8);
+    msg_init_queue(msg_queue, 8);
 
     send_counter = 0;
     send_counter1 = 0;
@@ -117,10 +124,10 @@ void *sender_thread(void *arg)
     char *udpport = "8808";
     start_server(udpport);
 
-    //gnrc_netreg_entry_t  me_reg = { .demux_ctx = GNRC_NETREG_DEMUX_CTX_ALL, .pid = thread_getpid() };
-    //gnrc_netreg_register(GNRC_NETTYPE_APP, &me_reg);
+    gnrc_netreg_entry_t  me_reg = { .demux_ctx = GNRC_NETREG_DEMUX_CTX_ALL, .pid = thread_getpid() };
+    gnrc_netreg_register(GNRC_NETTYPE_APP, &me_reg);
 
-#if 0
+
    while (1) {
 
         msg_receive(&msg);
@@ -132,32 +139,17 @@ void *sender_thread(void *arg)
             	uint32_t *payload;
 
             	payload = pkt->data;
-            	data_rate = payload[0];
 
-            	if(own_address2 == 0x5ad6) {
-            	    total_gene_num = payload[2];
-            	} else if (own_address2 == 0x6f46) {
-            		total_gene_num = payload[2];
-            	} else if (own_address2 == 0x1b1a) {
-            		total_gene_num = payload[2];
-            	}else if (own_address2 == 0xa312) {
-            		total_gene_num = payload[2];
-            	}else if (own_address2 == 0x52d2) {
-            		total_gene_num = payload[2];
-            	}else if (own_address2 == 0x0f22) {
-            		total_gene_num = payload[2];
-            	}else if (own_address2 == 0x6142) {
-            		total_gene_num = payload[2];
-            	}else {
-            		total_gene_num = 0;
-            	}
+            	data_rate = payload[1];
+            	total_gene_num = payload[2];
             	exp_start_time = payload[5];
+
             	exp_duration_ticks = payload[1];
             	exp_duration_ticks = exp_duration_ticks * 1000000;
             	exp_duration_ticks = RTT_US_TO_TICKS(exp_duration_ticks);
 
-            	//printf("the exp-data_rate is %lu. \n", data_rate);
-            	//printf("the exp-total_gene_num is %lu. \n", total_gene_num);
+            	printf("the exp-data_rate is %lu. \n", data_rate);
+            	printf("the exp-total_gene_num is %lu. \n", total_gene_num);
 
             	gnrc_pktbuf_release(pkt);
 
@@ -170,28 +162,24 @@ void *sender_thread(void *arg)
 
         break;
     }
-#endif
-
-	//uint32_t radom_period;
-	//radom_period = random_uint32_range(0, 5000000);
-	//xtimer_usleep(radom_period);
-	xtimer_sleep(80);
 
    exp_end = false;
 
    puts("start pushs data");
    while (1) {
-   	xtimer_sleep(3);
-   	//xtimer_usleep((uint32_t) data_rate * 1000);
 
-   	if((send_counter < 5)&&(exp_end == false)){  //total_gene_num
+   	xtimer_usleep((uint32_t) data_rate * 1000);
+
+   	if((send_counter < total_gene_num)&&(exp_end == false)){  //total_gene_num
    		for(int i=0; i<1; i++){
    			generate_and_send_pkt();
    		}
-   		send_counter ++;
+   		if (send_counter >= total_gene_num) {
+   			printf("sender totally generated pkt num %lu .\n", send_counter);
+   		}
    	}else {
    	   	if(exp_end == false) {
-   	   		printf("sender totally generated pkt num %lu .\n", send_counter);
+   	   		//printf("sender totally generated pkt num %lu .\n", send_counter);
    	   		exp_end =  false;
    	   	}
    	    exp_end = true;
