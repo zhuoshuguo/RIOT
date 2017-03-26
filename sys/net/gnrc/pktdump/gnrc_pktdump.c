@@ -17,7 +17,6 @@
  *
  * @}
  */
-
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -32,6 +31,14 @@
 #include "net/udp.h"
 #include "net/sixlowpan.h"
 #include "od.h"
+#include <periph/rtt.h>
+
+
+uint32_t idlist[20];
+uint32_t reception_list[20];
+
+uint64_t delay_sum;
+uint32_t system_start_time = 0;
 
 /**
  * @brief   PID of the pktdump thread
@@ -42,7 +49,7 @@ kernel_pid_t gnrc_pktdump_pid = KERNEL_PID_UNDEF;
  * @brief   Stack for the pktdump thread
  */
 static char _stack[GNRC_PKTDUMP_STACKSIZE];
-
+#if 0
 static void _dump_snip(gnrc_pktsnip_t *pkt)
 {
     switch (pkt->type) {
@@ -96,12 +103,15 @@ static void _dump_snip(gnrc_pktsnip_t *pkt)
             break;
     }
 }
+#endif
 
-static void _dump(gnrc_pktsnip_t *pkt)
+static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 {
+	/*
     int snips = 0;
     int size = 0;
     gnrc_pktsnip_t *snip = pkt;
+
 
     while (snip != NULL) {
         printf("~~ SNIP %2i - size: %3u byte, type: ", snips,
@@ -110,9 +120,47 @@ static void _dump(gnrc_pktsnip_t *pkt)
         ++snips;
         size += snip->size;
         snip = snip->next;
+    }*/
+
+    //printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
+
+	uint32_t *payload;
+
+    //gnrc_netif_hdr_t *netif_hdr;
+
+    //uint8_t* addr;
+    bool found_id;
+
+    payload = pkt->data;
+
+    found_id = false;
+
+    int i=0;
+    /* find id exist or not */
+    for(i=0;i<20;i++){
+    	if(idlist[i] == payload[1]){
+    		found_id = true;
+    		reception_list[i] ++;
+    		break;
+    	}
     }
 
-    printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
+    if(found_id == false){
+    	for(i=0;i<20;i++){
+    		if(idlist[i] == 0){
+    			idlist[i] = payload[1];
+    			reception_list[i] ++;
+    			break;
+    		}
+    	}
+    }
+
+
+   // printf("s: %x, g: %lu, r: %lu, t: %lu. \n", addr[1], payload[0], reception_list[i], received_pkt_counter);
+
+    printf("%lx, %lu, %lu, %lu, %lu %% \n", payload[1], payload[0], reception_list[i],
+    		received_pkt_counter, (100*payload[5])/payload[6]);
+
     gnrc_pktbuf_release(pkt);
 }
 
@@ -122,23 +170,35 @@ static void *_eventloop(void *arg)
     msg_t msg, reply;
     msg_t msg_queue[GNRC_PKTDUMP_MSG_QUEUE_SIZE];
 
+    uint32_t received_pkt_counter;
+    received_pkt_counter = 0;
+    system_start_time = 0;
+
+    delay_sum = 0;
+
     /* setup the message queue */
     msg_init_queue(msg_queue, GNRC_PKTDUMP_MSG_QUEUE_SIZE);
 
     reply.content.value = (uint32_t)(-ENOTSUP);
     reply.type = GNRC_NETAPI_MSG_TYPE_ACK;
 
+    for(int i=0;i<20;i++){
+    	idlist[i] =0;
+    	reception_list[i] =0;
+    }
+
     while (1) {
         msg_receive(&msg);
 
         switch (msg.type) {
             case GNRC_NETAPI_MSG_TYPE_RCV:
-                puts("PKTDUMP: data received:");
-                _dump(msg.content.ptr);
+                //puts("PKTDUMP: over data received:");
+            	received_pkt_counter ++;
+                _dump(msg.content.ptr, received_pkt_counter);
                 break;
             case GNRC_NETAPI_MSG_TYPE_SND:
                 puts("PKTDUMP: data to send:");
-                _dump(msg.content.ptr);
+                _dump(msg.content.ptr, received_pkt_counter);
                 break;
             case GNRC_NETAPI_MSG_TYPE_GET:
             case GNRC_NETAPI_MSG_TYPE_SET:

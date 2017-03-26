@@ -77,8 +77,8 @@ void udp_send(char *addr_str, char *port_str, uint32_t *data, size_t datasize, u
             gnrc_pktbuf_release(ip);
             return;
         }
-        printf("Success: send %u byte to [%s]:%u\n", (unsigned)payload->size,
-               addr_str, port);
+       // printf("Success: send %u byte to [%s]:%u\n", (unsigned)payload->size,
+            //   addr_str, port);
         xtimer_usleep(delay);
     }
 }
