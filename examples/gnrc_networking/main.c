@@ -46,7 +46,7 @@ static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 extern int udp_cmd(int argc, char **argv);
 
 extern int _gnrc_rpl_init(char *arg);
-extern void udp_send(char *addr_str, char *port_str, char *data, unsigned int num,
+extern void udp_send(char *addr_str, char *port_str, uint32_t *data, size_t datasize, unsigned int num,
         unsigned int delay);
 
 extern int _netif_add(char *cmd_name, kernel_pid_t dev, int argc, char **argv);
@@ -67,14 +67,25 @@ static void generate_and_send_pkt(void){
     uint32_t num = 1;
     uint32_t delay = 1000000;
 
-
     char *port = "8808";
-    char *data = "1122334455";
 
+    uint32_t  expset[5];
+
+	expset[0] = 0xFFFF;
+
+	/* data rate */
+	expset[1] = 1000;
+
+	/* exp duration */
+	//gnrc_netdev2->lwmac.exp_duration = 300; //seconds
+	//expset[1] = gnrc_netdev2->lwmac.exp_duration;
+
+	/* exp total generate packet number */
+	expset[2] = 50;
 
     if(send_counter == 0) {
     	char *add = "2001:db8::5844:55d:4a55:6f46";
-        udp_send(add, port, data, num, delay);
+        udp_send(add, port, expset, sizeof(expset), num, delay);
     }
 
 }

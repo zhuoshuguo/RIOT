@@ -31,7 +31,7 @@
 static gnrc_netreg_entry_t server = { NULL, GNRC_NETREG_DEMUX_CTX_ALL, KERNEL_PID_UNDEF };
 
 
-void udp_send(char *addr_str, char *port_str, char *data, unsigned int num,
+void udp_send(char *addr_str, char *port_str, uint32_t *data, size_t datasize, unsigned int num,
                  unsigned int delay)
 {
     uint16_t port;
@@ -52,7 +52,7 @@ void udp_send(char *addr_str, char *port_str, char *data, unsigned int num,
     for (unsigned int i = 0; i < num; i++) {
         gnrc_pktsnip_t *payload, *udp, *ip;
         /* allocate payload */
-        payload = gnrc_pktbuf_add(NULL, data, strlen(data), GNRC_NETTYPE_UNDEF);
+        payload = gnrc_pktbuf_add(NULL, data, datasize, GNRC_NETTYPE_UNDEF);
         if (payload == NULL) {
             puts("Error: unable to copy data to packet buffer");
             return;
@@ -127,20 +127,20 @@ int udp_cmd(int argc, char **argv)
     }
 
     if (strcmp(argv[1], "send") == 0) {
-        uint32_t num = 1;
-        uint32_t delay = 1000000;
+        //uint32_t num = 1;
+        //uint32_t delay = 1000000;
         if (argc < 5) {
             printf("usage: %s send <addr> <port> <data> [<num> [<delay in us>]]\n",
                    argv[0]);
             return 1;
         }
         if (argc > 5) {
-            num = (uint32_t)atoi(argv[5]);
+           // num = (uint32_t)atoi(argv[5]);
         }
         if (argc > 6) {
-            delay = (uint32_t)atoi(argv[6]);
+            //delay = (uint32_t)atoi(argv[6]);
         }
-        udp_send(argv[2], argv[3], argv[4], num, delay);
+        //udp_send(argv[2], argv[3], argv[4],1, num, delay);
     }
     else if (strcmp(argv[1], "server") == 0) {
         if (argc < 3) {
