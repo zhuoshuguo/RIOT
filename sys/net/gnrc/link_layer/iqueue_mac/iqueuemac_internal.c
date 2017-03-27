@@ -1160,6 +1160,7 @@ void iqueuemac_packet_process_in_init(iqueuemac_t* iqueuemac){
             case FRAMETYPE_BROADCAST:{
             	iqueuemac->quit_current_cycle = true;
                 iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+                _dispatch(iqueuemac->rx.dispatch_buffer);
                 //puts("iqueuemac: router receives a broadcast data !!");
            }break;
 
@@ -1929,6 +1930,7 @@ void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             	//printf("%lu. \n", RTT_TICKS_TO_US(_phase_now(iqueuemac)));
             	//iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
         	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+        	    _dispatch(iqueuemac->rx.dispatch_buffer);
             	//gnrc_pktbuf_release(pkt);
 
 
@@ -1938,6 +1940,7 @@ void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             case FRAMETYPE_BROADCAST:{
                	iqueuemac->quit_current_cycle = true;
                 iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+                _dispatch(iqueuemac->rx.dispatch_buffer);
             }break;
 
             default:gnrc_pktbuf_release(pkt);break;
