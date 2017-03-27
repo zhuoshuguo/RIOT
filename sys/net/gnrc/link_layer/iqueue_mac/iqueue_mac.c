@@ -265,6 +265,7 @@ void iqueuemac_device_broadcast_init(iqueuemac_t* iqueuemac){
 	//iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
 
 	iqueuemac_trun_on_radio(iqueuemac);
+	//puts("bb");
 
 	////////////////////////////////////////////////////////////////
 	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_1);
@@ -2178,7 +2179,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
     /* setup the MAC layers message queue */
     msg_init_queue(msg_queue, NETDEV2_NETAPI_MSG_QUEUE_SIZE);
     /***************************************origin************************************/
-    
+
     /*************************************iqueue-mac**************************************/
     /* RTT is used for scheduling wakeup */
     rtt_init();    

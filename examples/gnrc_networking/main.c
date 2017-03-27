@@ -179,6 +179,8 @@ void *sender_thread(void *arg)
 
    exp_end = false;
 
+   xtimer_sleep(100);
+
    puts("start push data");
    while (1) {
 
