@@ -98,22 +98,22 @@ static void generate_and_send_pkt(void){
     }else if (send_counter == 3) {
     	char *add = "2001:db8::5855:605c:5109:447e";
         udp_send(add, port, expset, sizeof(expset), num, delay);
-    }else if (send_counter == 3) {
+    }else if (send_counter == 4) {
     	char *add = "2001:db8::5844:2c50:d550:a312";
         udp_send(add, port, expset, sizeof(expset), num, delay);
-    }else if (send_counter == 3) {
+    }else if (send_counter == 5) {
     	char *add = "2001:db8::5844:1f5f:809:e21a";
         udp_send(add, port, expset, sizeof(expset), num, delay);
-    }else if (send_counter == 3) {
+    }else if (send_counter == 6) {
     	char *add = "2001:db8::5844:3d54:41b8:52d2";
         udp_send(add, port, expset, sizeof(expset), num, delay);
-    }else if (send_counter == 3) {
+    }else if (send_counter == 7) {
     	char *add = "2001:db8::5844:3a41:d643:1b1a";
         udp_send(add, port, expset, sizeof(expset), num, delay);
-    }else if (send_counter == 3) {
+    }else if (send_counter == 8) {
     	char *add = "2001:db8::5844:451:d774:bcc6";
         udp_send(add, port, expset, sizeof(expset), num, delay);
-    }else if (send_counter == 3) {
+    }else if (send_counter == 9) {
     	char *add = "2001:db8::5844:2b54:22bc:103e";
         udp_send(add, port, expset, sizeof(expset), num, delay);
     }
@@ -172,13 +172,14 @@ void *sender_thread(void *arg)
     char *udpport = "8808";
     start_server(udpport);
 
-    xtimer_sleep(100);
+    xtimer_sleep(300);
+    puts("start RPL");
 
     /* Starting RPL */
     char *instanceid = "1";
     _gnrc_rpl_dodag_root(instanceid, ipadd);
 
-	xtimer_sleep(150);
+	xtimer_sleep(250);
 
    exp_end = false;
 
@@ -190,6 +191,7 @@ void *sender_thread(void *arg)
 	   if((send_counter < 10)&&(exp_end == false)){  //total_gene_num
 		   for(int i=0; i<1; i++){
 			   generate_and_send_pkt();
+			   printf("send to %lu \n", send_counter);
 		   }
 		   send_counter ++;
 

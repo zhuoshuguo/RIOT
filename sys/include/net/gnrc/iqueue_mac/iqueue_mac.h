@@ -128,7 +128,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE
-#define IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE             (8U)
+#define IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE             (20U)
 #endif
 
 #ifndef IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE
@@ -154,11 +154,11 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_NEIGHBOUR_COUNT
-#define IQUEUEMAC_NEIGHBOUR_COUNT           (8U)
+#define IQUEUEMAC_NEIGHBOUR_COUNT           (20U)
 #endif
 
 #ifndef IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT
-#define IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT           (10U)
+#define IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT           (11U)
 #endif
 
 #ifndef IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM
@@ -174,7 +174,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM
-#define IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM           (10U)
+#define IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM           (15U)
 #endif
 
 #define IQUEUEMAC_LPM_MASK					(1 << 17)
