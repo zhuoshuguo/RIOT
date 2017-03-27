@@ -32,7 +32,8 @@
 #include "net/gnrc/iqueue_mac/hdr.h"
 //#include <net/gnrc/lwmac/hdr.h>
 #include <net/gnrc/iqueue_mac/packet_queue.h>
-#include "timeout.h"
+#include <net/gnrc/iqueue_mac/timeout.h>
+//#include "timeout.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -398,6 +399,12 @@ typedef struct iqueuemac {
 
     bool send_beacon_fail;
     bool rx_memory_full;
+
+    bool radio_is_on;
+    uint32_t awake_duration_sum;
+    uint32_t last_radio_on_time;
+    uint32_t radio_off_time;
+    uint32_t system_start_time;
    
 } iqueuemac_t;
 

@@ -38,8 +38,10 @@
 #include "net/gnrc/netdev2/ieee802154.h"
 
 #include "include/iqueuemac_internal.h"
-#include "include/iqueuemac_types.h"
-#include "include/timeout.h"
+//#include "include/iqueuemac_types.h"
+#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
+//#include "include/timeout.h"
+#include <net/gnrc/iqueue_mac/timeout.h>
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
@@ -66,7 +68,7 @@
 #define NETDEV2_NETAPI_MSG_QUEUE_SIZE 8
 
 
-static iqueuemac_t iqueuemac;
+iqueuemac_t iqueuemac;
 
 void iqueuemac_init(iqueuemac_t* iqueuemac)
 {
@@ -2223,6 +2225,13 @@ static void *_gnrc_iqueuemac_thread(void *args)
     LOG_INFO("info event.\n");
     LOG_DEBUG("debug event.\n");
 */
+
+    rtt_set_counter(0);
+    iqueuemac.system_start_time = rtt_get_counter();
+
+   	iqueuemac.last_radio_on_time = iqueuemac.system_start_time;
+	iqueuemac.awake_duration_sum = 0;
+	iqueuemac.radio_is_on = true;
 
     /* start the event loop */
     while (1) {

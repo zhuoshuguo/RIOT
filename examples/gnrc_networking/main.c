@@ -32,6 +32,9 @@
 #include "net/gnrc/nettype.h"
 #include "xtimer.h"
 #include <periph/rtt.h>
+#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
+
+typedef struct iqueuemac iqueuemac_t;
 
 uint32_t send_counter;
 uint32_t send_counter1;
@@ -50,11 +53,12 @@ extern int _gnrc_rpl_init(char *arg);
 extern void udp_send(char *addr_str, char *port_str, uint32_t *data, size_t datasize, unsigned int num,
         unsigned int delay);
 
+extern iqueuemac_t iqueuemac;
+
 static const shell_command_t shell_commands[] = {
     { "udp", "send data over UDP and listen on UDP ports", udp_cmd },
     { NULL, NULL, NULL }
 };
-
 
 
 static void generate_and_send_pkt(void){
@@ -72,6 +76,9 @@ static void generate_and_send_pkt(void){
 
    	payload[0] = send_counter;
    	payload[1] = own_address2;
+
+   	payload[5] = iqueuemac.awake_duration_sum;
+   	payload[6] = rtt_get_counter() - iqueuemac.system_start_time;
 
     if(own_address2 != 0x5ad6) {
         udp_send(add, port, payload, sizeof(payload), num, delay);
@@ -151,6 +158,13 @@ void *sender_thread(void *arg)
             	printf("the exp-data_rate is %lu. \n", data_rate);
             	printf("the exp-total_gene_num is %lu. \n", total_gene_num);
 
+            	/* start recording duty-cycle */
+                iqueuemac.system_start_time = rtt_get_counter();
+
+               	iqueuemac.last_radio_on_time = iqueuemac.system_start_time;
+            	iqueuemac.awake_duration_sum = 0;
+            	iqueuemac.radio_is_on = true;
+
             	gnrc_pktbuf_release(pkt);
 
             } break;
@@ -165,7 +179,7 @@ void *sender_thread(void *arg)
 
    exp_end = false;
 
-   puts("start pushs data");
+   puts("start push data");
    while (1) {
 
    	xtimer_usleep((uint32_t) data_rate * 1000);

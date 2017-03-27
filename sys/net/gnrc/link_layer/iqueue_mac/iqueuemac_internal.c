@@ -26,7 +26,8 @@
 #include <net/gnrc/iqueue_mac/hdr.h>
 
 #include "include/iqueuemac_internal.h"
-#include "include/iqueuemac_types.h"
+//#include "include/iqueuemac_types.h"
+#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
@@ -267,6 +268,11 @@ void iqueuemac_trun_on_radio(iqueuemac_t* iqueuemac)
 	                              NETOPT_STATE,
 	                              &devstate,
 	                              sizeof(devstate));
+
+	if(iqueuemac->radio_is_on == false) {
+		iqueuemac->last_radio_on_time = rtt_get_counter();
+		iqueuemac->radio_is_on = true;
+   	}
 }
 
 void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac)
@@ -277,6 +283,12 @@ void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac)
 	                              NETOPT_STATE,
 	                              &devstate,
 	                              sizeof(devstate));
+
+	if(iqueuemac->radio_is_on == true) {
+		iqueuemac->radio_off_time = rtt_get_counter();
+		iqueuemac->awake_duration_sum += (iqueuemac->radio_off_time - iqueuemac->last_radio_on_time);
+		iqueuemac->radio_is_on = false;
+	}
 }
 
 
@@ -1069,7 +1081,7 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             	iqueuemac->quit_current_cycle = true;
                 iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
                 _dispatch(iqueuemac->rx.dispatch_buffer);
-                puts("b");
+                //puts("b");
                 //puts("iqueuemac: router receives a broadcast data !!");
            }break;
 
