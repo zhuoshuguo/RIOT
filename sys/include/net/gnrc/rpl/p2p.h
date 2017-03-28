@@ -43,7 +43,7 @@ extern "C" {
  *          RFC 6997, section 7, P2P Route Discovery Option (P2P-RDO)
  *      </a>
  */
-#define GNRC_RPL_P2P_LIFETIME   (0x02)
+#define GNRC_RPL_P2P_LIFETIME   (0x03)
 
 /**
  * @brief   Number of elided prefix octets from the target field and address vector

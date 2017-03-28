@@ -74,14 +74,14 @@ static void generate_and_send_pkt(void){
 	expset[0] = 0xFFFF;
 
 	/* data rate */
-	expset[1] = 2000;
+	expset[1] = 1000;
 
 	/* exp duration */
 	//gnrc_netdev2->lwmac.exp_duration = 300; //seconds
 	//expset[1] = gnrc_netdev2->lwmac.exp_duration;
 
 	/* exp total generate packet number */
-	expset[2] = 30;
+	expset[2] = 300;
 
 	/* the sequence of the command */
 	//expset[3] = 10 - send_counter;
@@ -179,13 +179,13 @@ void *sender_thread(void *arg)
     char *instanceid = "1";
     _gnrc_rpl_dodag_root(instanceid, ipadd);
 
-	xtimer_sleep(250);
+	xtimer_sleep(350);
 
    exp_end = false;
 
    puts("generating exp start commands to nodes");
    while (1) {
-	   xtimer_sleep(20);
+	   xtimer_sleep(5);
 	   //xtimer_usleep((uint32_t) data_rate * 1000);
 
 	   if((send_counter < 10)&&(exp_end == false)){  //total_gene_num
