@@ -74,20 +74,20 @@ static void generate_and_send_pkt(void){
 	expset[0] = 0xFFFF;
 
 	/* data rate */
-	expset[1] = 1000;
+	expset[1] = 3000;
 
 	/* exp duration */
 	//gnrc_netdev2->lwmac.exp_duration = 300; //seconds
 	//expset[1] = gnrc_netdev2->lwmac.exp_duration;
 
 	/* exp total generate packet number */
-	expset[2] = 300;
+	expset[2] = 100;
 
 	/* the sequence of the command */
 	//expset[3] = 10 - send_counter;
 
     if(send_counter == 0) {
-    	char *add = "2001:db8::5844:55d:4a55:6f46";
+    	char *add = "2001:db8::5844:55d:4a55:6f46"; //
         udp_send(add, port, expset, sizeof(expset), num, delay);
     } else if (send_counter == 1) {
     	char *add = "2001:db8::5844:2b69:30f0:f22";
@@ -102,19 +102,19 @@ static void generate_and_send_pkt(void){
     	char *add = "2001:db8::5844:2c50:d550:a312";
         udp_send(add, port, expset, sizeof(expset), num, delay);
     }else if (send_counter == 5) {
-    	char *add = "2001:db8::5844:1f5f:809:e21a";
+    	char *add = "2001:db8::5844:1f5f:809:e21a";//
         udp_send(add, port, expset, sizeof(expset), num, delay);
     }else if (send_counter == 6) {
     	char *add = "2001:db8::5844:3d54:41b8:52d2";
         udp_send(add, port, expset, sizeof(expset), num, delay);
     }else if (send_counter == 7) {
-    	char *add = "2001:db8::5844:3a41:d643:1b1a";
+    	char *add = "2001:db8::5844:3a41:d643:1b1a";//
         udp_send(add, port, expset, sizeof(expset), num, delay);
     }else if (send_counter == 8) {
-    	char *add = "2001:db8::5844:451:d774:bcc6";
+    	char *add = "2001:db8::5844:451:d774:bcc6";//
         udp_send(add, port, expset, sizeof(expset), num, delay);
     }else if (send_counter == 9) {
-    	char *add = "2001:db8::5844:2b54:22bc:103e";
+    	char *add = "2001:db8::5844:2b54:22bc:103e";//
         udp_send(add, port, expset, sizeof(expset), num, delay);
     }
 
@@ -185,7 +185,7 @@ void *sender_thread(void *arg)
 
    puts("generating exp start commands to nodes");
    while (1) {
-	   xtimer_sleep(5);
+	   xtimer_sleep(2);
 	   //xtimer_usleep((uint32_t) data_rate * 1000);
 
 	   if((send_counter < 10)&&(exp_end == false)){  //total_gene_num
