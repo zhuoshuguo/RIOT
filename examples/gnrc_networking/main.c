@@ -74,14 +74,14 @@ static void generate_and_send_pkt(void){
 	expset[0] = 0xFFFF;
 
 	/* data rate */
-	expset[1] = 3000;
+	expset[1] = 10000;
 
 	/* exp duration */
 	//gnrc_netdev2->lwmac.exp_duration = 300; //seconds
 	//expset[1] = gnrc_netdev2->lwmac.exp_duration;
 
 	/* exp total generate packet number */
-	expset[2] = 100;
+	expset[2] = 500;
 
 	/* the sequence of the command */
 	//expset[3] = 10 - send_counter;
@@ -172,7 +172,7 @@ void *sender_thread(void *arg)
     char *udpport = "8808";
     start_server(udpport);
 
-    xtimer_sleep(300);
+    xtimer_sleep(80);
     puts("start RPL");
 
     /* Starting RPL */
@@ -185,7 +185,7 @@ void *sender_thread(void *arg)
 
    puts("generating exp start commands to nodes");
    while (1) {
-	   xtimer_sleep(2);
+	   xtimer_sleep(5);
 	   //xtimer_usleep((uint32_t) data_rate * 1000);
 
 	   if((send_counter < 10)&&(exp_end == false)){  //total_gene_num
