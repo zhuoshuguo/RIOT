@@ -24,7 +24,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
-
 #include <kernel_types.h>
 #include <msg.h>
 #include <thread.h>
@@ -37,12 +36,10 @@
 #include <net/gnrc/lwmac/lwmac.h>
 #include <net/gnrc/lwmac/types.h>
 #include <net/gnrc/mac/internal.h>
-
-
+#include <net/gnrc/lwmac/timeout.h>
 #include "include/tx_state_machine.h"
 #include "include/rx_state_machine.h"
 #include "include/lwmac_internal.h"
-#include "net/gnrc/lwmac/timeout.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
