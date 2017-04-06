@@ -23,6 +23,7 @@
 #define GNRC_LWMAC_INTERNAL_H_
 
 #include <stdint.h>
+
 #include "periph/rtt.h"
 #include "net/gnrc/mac/types.h"
 

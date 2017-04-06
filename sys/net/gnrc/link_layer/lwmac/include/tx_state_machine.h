@@ -22,7 +22,7 @@
 #define LWMAC_TX_STATE_MACHINE_H_
 
 #include "net/gnrc/pkt.h"
-#include <net/gnrc/netdev2.h>
+#include "net/gnrc/netdev2.h"
 #include "net/gnrc/mac/types.h"
 
 #ifdef __cplusplus

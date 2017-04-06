@@ -19,10 +19,10 @@
  * @}
  */
 
-#include <net/gnrc.h>
-#include <net/gnrc/lwmac/lwmac.h>
-#include <net/gnrc/mac/internal.h>
-#include <net/gnrc/lwmac/timeout.h>
+#include "net/gnrc.h"
+#include "net/gnrc/lwmac/lwmac.h"
+#include "net/gnrc/mac/internal.h"
+#include "net/gnrc/lwmac/timeout.h"
 #include "include/rx_state_machine.h"
 #include "include/lwmac_internal.h"
 

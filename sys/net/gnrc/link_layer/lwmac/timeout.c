@@ -19,10 +19,10 @@
  * @}
  */
 
-#include <xtimer.h>
-#include <net/gnrc/lwmac/lwmac.h>
-#include <net/gnrc/lwmac/timeout.h>
-#include <net/gnrc/lwmac/types.h>
+#include "xtimer.h"
+#include "net/gnrc/lwmac/lwmac.h"
+#include "net/gnrc/lwmac/timeout.h"
+#include "net/gnrc/lwmac/types.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
