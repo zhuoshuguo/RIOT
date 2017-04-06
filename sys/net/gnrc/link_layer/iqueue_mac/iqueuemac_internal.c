@@ -190,6 +190,11 @@ bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
     int neighbour_id;
 
     if(_packet_is_broadcast(pkt)) {
+    	if (iqueuemac->exp_started == true) {
+    		gnrc_pktbuf_release(pkt);
+    		puts("release bcast");
+    		return true;
+    	}
         /* Broadcast queue is neighbour 0 by definition */
         neighbour_id = 0;
         neighbour = _get_neighbour(iqueuemac, neighbour_id);
@@ -1389,9 +1394,9 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 		 /* this means that the node is already in a new cycle when doing phase changed.
 		  * So, give some compensation for later phase adjust */
 		 phase_ticks = _phase_now(iqueuemac) + iqueuemac->backoff_phase_ticks - iqueuemac_preamble_ack_hdr->phase_in_ticks;
-		 phase_ticks += (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)/4);
+		 //phase_ticks += (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)/4);
 	 }else{
-		 phase_ticks = _phase_now(iqueuemac) - iqueuemac_preamble_ack_hdr->phase_in_ticks + (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)/4);
+		 phase_ticks = _phase_now(iqueuemac) - iqueuemac_preamble_ack_hdr->phase_in_ticks;
 	 }
 
 	 if(phase_ticks < 0) {

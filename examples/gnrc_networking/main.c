@@ -158,12 +158,8 @@ void *sender_thread(void *arg)
             	printf("the exp-data_rate is %lu. \n", data_rate);
             	printf("the exp-total_gene_num is %lu. \n", total_gene_num);
 
-            	/* start recording duty-cycle */
-                iqueuemac.system_start_time = rtt_get_counter();
 
-               	iqueuemac.last_radio_on_time = iqueuemac.system_start_time;
-            	iqueuemac.awake_duration_sum = 0;
-            	iqueuemac.radio_is_on = true;
+            	iqueuemac.exp_started = true;
 
             	gnrc_pktbuf_release(pkt);
 
@@ -180,6 +176,15 @@ void *sender_thread(void *arg)
    exp_end = false;
 
    xtimer_sleep(50);
+
+	/* start recording duty-cycle */
+   iqueuemac.system_start_time = rtt_get_counter();
+
+  	iqueuemac.last_radio_on_time = iqueuemac.system_start_time;
+	iqueuemac.awake_duration_sum = 0;
+	iqueuemac.radio_is_on = true;
+
+	xtimer_sleep(50);
 
    puts("start push data");
    while (1) {

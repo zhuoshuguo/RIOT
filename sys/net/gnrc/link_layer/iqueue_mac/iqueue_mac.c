@@ -169,6 +169,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 		iqueuemac->tx._queue_nodes[i].next = NULL;
 	}
 
+	iqueuemac->exp_started = false;
 }
 
 static void rtt_cb(void* arg)
