@@ -52,8 +52,7 @@ static int _lwmac_find_timeout(lwmac_t* lwmac, lwmac_timeout_type_t type)
 {
     assert(lwmac);
 
-    for (unsigned i = 0; i < LWMAC_TIMEOUT_COUNT; i++)
-    {
+    for (unsigned i = 0; i < LWMAC_TIMEOUT_COUNT; i++) {
         if (lwmac->timeouts[i].type == type) {
             return i;
         }
@@ -89,11 +88,9 @@ lwmac_timeout_t* _lwmac_acquire_timeout(gnrc_netdev2_t* gnrc_netdev2, lwmac_time
         return NULL;
     }
 
-    for(unsigned i = 0; i < LWMAC_TIMEOUT_COUNT; i++)
-    {
-        if(gnrc_netdev2->lwmac.timeouts[i].type == TIMEOUT_DISABLED)
-        {
-        	gnrc_netdev2->lwmac.timeouts[i].type = type;
+    for(unsigned i = 0; i < LWMAC_TIMEOUT_COUNT; i++) {
+        if(gnrc_netdev2->lwmac.timeouts[i].type == TIMEOUT_DISABLED) {
+            gnrc_netdev2->lwmac.timeouts[i].type = type;
             return &gnrc_netdev2->lwmac.timeouts[i];
         }
     }
@@ -122,8 +119,7 @@ void lwmac_set_timeout(gnrc_netdev2_t* gnrc_netdev2, lwmac_timeout_type_t type, 
     assert(gnrc_netdev2);
 
     lwmac_timeout_t* timeout;
-    if ((timeout = _lwmac_acquire_timeout(gnrc_netdev2, type)))
-    {
+    if ((timeout = _lwmac_acquire_timeout(gnrc_netdev2, type))) {
         DEBUG("[lwmac] Set timeout %s in %"PRIu32" us\n",
               lwmac_timeout_names[type], offset);
         timeout->expired = false;
@@ -131,7 +127,8 @@ void lwmac_set_timeout(gnrc_netdev2_t* gnrc_netdev2, lwmac_timeout_type_t type, 
         timeout->msg.content.ptr = (void*) timeout;
         xtimer_set_msg(&(timeout->timer), offset,
                        &(timeout->msg), gnrc_netdev2->pid);
-    } else {
+    }
+    else {
         DEBUG("[lwmac] Cannot set timeout %s, too many concurrent timeouts\n",
               lwmac_timeout_names[type]);
     }
@@ -141,8 +138,7 @@ void lwmac_reset_timeouts(gnrc_netdev2_t* gnrc_netdev2)
 {
     assert(gnrc_netdev2);
 
-    for (unsigned i = 0; i < LWMAC_TIMEOUT_COUNT; i++)
-    {
+    for (unsigned i = 0; i < LWMAC_TIMEOUT_COUNT; i++) {
         if (gnrc_netdev2->lwmac.timeouts[i].type != TIMEOUT_DISABLED) {
             _lwmac_clear_timeout(&gnrc_netdev2->lwmac.timeouts[i]);
         }
