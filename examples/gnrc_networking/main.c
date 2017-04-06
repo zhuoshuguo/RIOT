@@ -187,12 +187,15 @@ void *sender_thread(void *arg)
 	xtimer_sleep(50);
 
    puts("start push data");
+
+   total_gene_num = 30;
+
    while (1) {
 
    	xtimer_usleep((uint32_t) data_rate * 1000);
 
    	if((send_counter < total_gene_num)&&(exp_end == false)){  //total_gene_num
-   		for(int i=0; i<1; i++){
+   		for(int i=0; i<5; i++){
    			generate_and_send_pkt();
    		}
    		if (send_counter >= total_gene_num) {
