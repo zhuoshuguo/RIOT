@@ -23,8 +23,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <msg.h>
-#include <xtimer.h>
+
+#include "msg.h"
+#include "xtimer.h"
 
 #ifdef __cplusplus
 extern "C" {

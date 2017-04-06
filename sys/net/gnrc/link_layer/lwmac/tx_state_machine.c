@@ -19,13 +19,12 @@
  * @}
  */
 
-#include <periph/rtt.h>
-#include <net/gnrc.h>
-#include <net/gnrc/lwmac/lwmac.h>
-#include <random.h>
-
-#include <net/gnrc/mac/internal.h>
-#include <net/gnrc/lwmac/timeout.h>
+#include "periph/rtt.h"
+#include "net/gnrc.h"
+#include "net/gnrc/lwmac/lwmac.h"
+#include "random.h"
+#include "net/gnrc/mac/internal.h"
+#include "net/gnrc/lwmac/timeout.h"
 #include "include/tx_state_machine.h"
 #include "include/lwmac_internal.h"
 

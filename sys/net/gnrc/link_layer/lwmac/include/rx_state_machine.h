@@ -21,8 +21,8 @@
 #ifndef LWMAC_RX_STATE_MACHINE_H_
 #define LWMAC_RX_STATE_MACHINE_H_
 
-#include <net/gnrc/pkt.h>
-#include <net/gnrc/netdev2.h>
+#include "net/gnrc/pkt.h"
+#include "net/gnrc/netdev2.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -24,8 +24,8 @@
 #ifndef GNRC_LWMAC_H
 #define GNRC_LWMAC_H
 
-#include <kernel_types.h>
-#include <net/gnrc/netdev2.h>
+#include "kernel_types.h"
+#include "net/gnrc/netdev2.h"
 
 /**
  * @brief Forward gnrc_netdev2 declaration
