@@ -189,6 +189,11 @@ bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
     int neighbour_id;
 
     if(_packet_is_broadcast(pkt)) {
+    	if (iqueuemac->exp_started == true) {
+    	    gnrc_pktbuf_release(pkt);
+    	  	puts("release bcast");
+    	  	return true;
+    	}
         /* Broadcast queue is neighbour 0 by definition */
         neighbour_id = 0;
         neighbour = _get_neighbour(iqueuemac, neighbour_id);

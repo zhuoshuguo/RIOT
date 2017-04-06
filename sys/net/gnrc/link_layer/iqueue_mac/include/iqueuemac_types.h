@@ -398,6 +398,8 @@ typedef struct iqueuemac {
 
     bool send_beacon_fail;
     bool rx_memory_full;
+
+    bool exp_started;
    
 } iqueuemac_t;
 
