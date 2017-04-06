@@ -74,18 +74,22 @@ static void generate_and_send_pkt(void){
 	expset[0] = 0xFFFF;
 
 	/* data rate */
-	expset[1] = 10000;
+	expset[1] = 60000;
 
 	/* exp duration */
 	//gnrc_netdev2->lwmac.exp_duration = 300; //seconds
 	//expset[1] = gnrc_netdev2->lwmac.exp_duration;
 
 	/* exp total generate packet number */
-	expset[2] = 500;
+	expset[2] = 5;
 
 	/* the sequence of the command */
 	//expset[3] = 10 - send_counter;
 
+	char *add = "2001:db8::5844:2c50:d550:a312";
+    udp_send(add, port, expset, sizeof(expset), num, delay);
+
+#if 0
     if(send_counter == 0) {
     	char *add = "2001:db8::5844:55d:4a55:6f46"; //
         udp_send(add, port, expset, sizeof(expset), num, delay);
@@ -117,7 +121,7 @@ static void generate_and_send_pkt(void){
     	char *add = "2001:db8::5844:2b54:22bc:103e";//
         udp_send(add, port, expset, sizeof(expset), num, delay);
     }
-
+#endif
 }
 
 void *sender_thread(void *arg)
@@ -172,14 +176,14 @@ void *sender_thread(void *arg)
     char *udpport = "8808";
     start_server(udpport);
 
-    xtimer_sleep(80);
+    xtimer_sleep(30);
     puts("start RPL");
 
     /* Starting RPL */
     char *instanceid = "1";
     _gnrc_rpl_dodag_root(instanceid, ipadd);
 
-	xtimer_sleep(350);
+	xtimer_sleep(100);
 
    exp_end = false;
 
@@ -188,14 +192,14 @@ void *sender_thread(void *arg)
 	   xtimer_sleep(5);
 	   //xtimer_usleep((uint32_t) data_rate * 1000);
 
-	   if((send_counter < 10)&&(exp_end == false)){  //total_gene_num
+	   if((send_counter < 1)&&(exp_end == false)){  //total_gene_num
 		   for(int i=0; i<1; i++){
 			   generate_and_send_pkt();
 			   printf("send to %lu \n", send_counter);
 		   }
 		   send_counter ++;
 
-		   if(send_counter>=10) {
+		   if(send_counter>=1) {
 			   ;//printf("finished generate exp commands.\n");
 		   }
 	   }else {
