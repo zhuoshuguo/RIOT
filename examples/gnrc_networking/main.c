@@ -188,7 +188,7 @@ void *sender_thread(void *arg)
 
    puts("start push data");
 
-   total_gene_num = 30;
+   total_gene_num = 3000;
 
    while (1) {
 
