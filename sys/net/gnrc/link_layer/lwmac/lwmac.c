@@ -337,7 +337,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                     break;
                 }
                 case RX_STATE_SUCCESSFUL: {
-                	LOG_DEBUG("Reception was successful\n");
+                    LOG_DEBUG("Reception was successful\n");
                     lwmac_rx_stop(gnrc_netdev2);
                     /* Dispatch received packets, timing is not critical anymore */
                     _dispatch(gnrc_netdev2->rx.dispatch_buffer);
@@ -512,7 +512,7 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
         msg.content.ptr = (void*) gnrc_netdev2;
 
         if (msg_send(&msg, gnrc_netdev2->pid) <= 0) {
-        	LOG_WARNING("gnrc_netdev2: possibly lost interrupt.\n");
+            LOG_WARNING("gnrc_netdev2: possibly lost interrupt.\n");
         }
     }
     else {
