@@ -37,7 +37,8 @@ extern "C" {
  * @param[in]       neighbor       Tx neighbor
  *
  */
-void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2, gnrc_pktsnip_t* pkt, gnrc_mac_tx_neighbor_t* neighbor);
+void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2,
+                    gnrc_pktsnip_t* pkt, gnrc_mac_tx_neighbor_t* neighbor);
 
 /**
  * @brief Stop Lwmac TX procedure

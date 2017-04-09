@@ -173,7 +173,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 
             /* if found ongoing transmission,
              * quit sending WA for collision avoidance. */
-            if (_get_netdev_state(gnrc_netdev2) == NETOPT_STATE_RX){
+            if (_get_netdev_state(gnrc_netdev2) == NETOPT_STATE_RX) {
                 gnrc_netdev2->rx.rx_exten_count ++;
                 GOTO_RX_STATE(RX_STATE_FAILED, true);
             }

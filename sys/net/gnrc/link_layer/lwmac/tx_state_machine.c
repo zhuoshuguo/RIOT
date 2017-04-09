@@ -49,7 +49,8 @@
                                             reschedule = do_resched; \
                                             break
 
-void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2, gnrc_pktsnip_t* pkt, gnrc_mac_tx_neighbor_t* neighbor)
+void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2,
+                    gnrc_pktsnip_t* pkt, gnrc_mac_tx_neighbor_t* neighbor)
 {
     assert(gnrc_netdev2 != NULL);
     assert(pkt != NULL);
@@ -195,7 +196,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
                 gnrc_pktbuf_hold(pkt, 1);
 
                 int res = gnrc_netdev2->send(gnrc_netdev2, pkt);
-                if (res < 0){
+                if (res < 0) {
                     LOG_ERROR("Send broadcast pkt failed.");
                     GOTO_TX_STATE(TX_STATE_FAILED, true);
                 }
@@ -286,9 +287,9 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             /* Prepare WR, this will discard any frame in the transceiver that has
              * possibly arrived in the meantime but we don't care at this point. */
             int res = gnrc_netdev2->send(gnrc_netdev2, pkt);
-            if (res < 0){
+            if (res < 0) {
                 LOG_ERROR("Send WR failed.");
-                if (pkt != NULL){
+                if (pkt != NULL) {
                     gnrc_pktbuf_release(pkt);
                 }
                 GOTO_TX_STATE(TX_STATE_FAILED, true);
@@ -471,7 +472,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
                     lwmac_frame_wa_t* wa_hdr;
                     wa_hdr = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_LWMAC))->data;
 
-                    if (gnrc_netdev2->tx.timestamp >= wa_hdr->current_phase){
+                    if (gnrc_netdev2->tx.timestamp >= wa_hdr->current_phase) {
                         gnrc_netdev2->tx.timestamp = gnrc_netdev2->tx.timestamp -
                                                      wa_hdr->current_phase;
                     }
