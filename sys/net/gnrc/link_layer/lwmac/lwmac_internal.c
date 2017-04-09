@@ -94,20 +94,24 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
     lwmac_hdr = (lwmac_hdr_t*) pkt->data;
     switch (lwmac_hdr->type) {
         case FRAMETYPE_WR: {
-            lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_wr_t), GNRC_NETTYPE_LWMAC);
+            lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_wr_t),
+                                          GNRC_NETTYPE_LWMAC);
             break;
         }
         case FRAMETYPE_WA: {
-            lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_wa_t), GNRC_NETTYPE_LWMAC);
+            lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_wa_t),
+                                          GNRC_NETTYPE_LWMAC);
             break;
         }
         case FRAMETYPE_DATA_PENDING:
         case FRAMETYPE_DATA: {
-            lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_data_t), GNRC_NETTYPE_LWMAC);
+            lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_data_t),
+                                          GNRC_NETTYPE_LWMAC);
             break;
         }
         case FRAMETYPE_BROADCAST: {
-            lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_broadcast_t), GNRC_NETTYPE_LWMAC);
+            lwmac_snip = gnrc_pktbuf_mark(pkt, sizeof(lwmac_frame_broadcast_t),
+                                          GNRC_NETTYPE_LWMAC);
             break;
         }
         default: {
@@ -130,7 +134,7 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
         /* WA is broadcast, so get dst address out of header instead of netif */
         info->dst_addr = ((lwmac_frame_wa_t*)lwmac_hdr)->dst_addr;
     }
-    else if (lwmac_hdr->type == FRAMETYPE_WR){
+    else if (lwmac_hdr->type == FRAMETYPE_WR) {
         /* WR is broadcast, so get dst address out of header instead of netif */
         info->dst_addr = ((lwmac_frame_wr_t*)lwmac_hdr)->dst_addr;
     }
@@ -173,7 +177,11 @@ void _set_netdev_state(gnrc_netdev2_t* gnrc_netdev2, netopt_state_t devstate)
     else if (devstate == NETOPT_STATE_SLEEP) {
         if(gnrc_netdev2->lwmac.radio_is_on == true) {
             gnrc_netdev2->lwmac.radio_off_time_ticks = rtt_get_counter();
-            gnrc_netdev2->lwmac.awake_duration_sum_ticks += (gnrc_netdev2->lwmac.radio_off_time_ticks - gnrc_netdev2->lwmac.last_radio_on_time_ticks);
+
+            gnrc_netdev2->lwmac.awake_duration_sum_ticks +=
+            (gnrc_netdev2->lwmac.radio_off_time_ticks -
+            gnrc_netdev2->lwmac.last_radio_on_time_ticks);
+
             gnrc_netdev2->lwmac.radio_is_on = false;
         }
     }
@@ -316,7 +324,8 @@ void _dispatch(gnrc_pktsnip_t* buffer[])
             /* make append netif header after payload again */
             buffer[i]->next = netif;
 
-            if (!gnrc_netapi_dispatch_receive(buffer[i]->type, GNRC_NETREG_DEMUX_CTX_ALL, buffer[i])) {
+            if (!gnrc_netapi_dispatch_receive(buffer[i]->type,
+                GNRC_NETREG_DEMUX_CTX_ALL, buffer[i])) {
                 DEBUG("Unable to forward packet of type %i\n", buffer[i]->type);
                 gnrc_pktbuf_release(buffer[i]);
             }

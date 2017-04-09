@@ -106,7 +106,8 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
             /* Output duty-cycle ratio */
             uint64_t duty;
             duty = (uint64_t) rtt_get_counter();
-            duty = ((uint64_t) gnrc_netdev2->lwmac.awake_duration_sum_ticks)*100 / (duty - (uint64_t)gnrc_netdev2->lwmac.system_start_time_ticks);
+            duty = ((uint64_t) gnrc_netdev2->lwmac.awake_duration_sum_ticks)*100 /
+                   (duty - (uint64_t)gnrc_netdev2->lwmac.system_start_time_ticks);
             printf("[lwmac-tx]: achieved duty-cycle: %lu %% \n", (uint32_t)duty);
 #endif
             break;
@@ -138,10 +139,12 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
 
                 rtt_clear_alarm();
                 alarm = random_uint32_range(RTT_US_TO_TICKS((3*LWMAC_WAKEUP_DURATION_US/2)),
-                                            RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US - (3*LWMAC_WAKEUP_DURATION_US/2)));
+                                            RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US -
+                                            (3*LWMAC_WAKEUP_DURATION_US/2)));
                 LOG_WARNING("phase backoffed: %lu us\n",RTT_TICKS_TO_US(alarm));
                 gnrc_netdev2->lwmac.last_wakeup = gnrc_netdev2->lwmac.last_wakeup + alarm;
-                alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
+                alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup,
+                                            RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
                 rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_WAKEUP_PENDING);
             }
 
@@ -263,7 +266,8 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             }
             else {
                 if (lwmac_timeout_is_expired(gnrc_netdev2, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
-                    LOG_DEBUG("Got timeout for dest wakeup, ticks: %"PRIu32"\n", rtt_get_counter());
+                    LOG_DEBUG("Got timeout for dest wakeup, ticks: %"PRIu32"\n",
+                               rtt_get_counter());
                     gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
                     gnrc_netdev2->tx.tx_burst_count = 0;
                     lwmac_set_state(gnrc_netdev2, TRANSMITTING);
@@ -272,7 +276,8 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             break;
         }
         case LISTENING: {
-            if ((_next_tx_neighbor(gnrc_netdev2) != NULL) || (gnrc_netdev2->tx.current_neighbor != NULL)) {
+            if ((_next_tx_neighbor(gnrc_netdev2) != NULL) ||
+                (gnrc_netdev2->tx.current_neighbor != NULL)) {
                 rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev2);
             }
 
@@ -376,14 +381,16 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                         lwmac_tx_update(gnrc_netdev2);
                     }
                     else {
-                        if ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev2->tx.current_neighbor->queue))) {
+                        if ((pkt = gnrc_priority_pktqueue_pop(
+                             &gnrc_netdev2->tx.current_neighbor->queue))) {
                             gnrc_netdev2->tx.tx_retry_count = 0;
                             lwmac_tx_start(gnrc_netdev2, pkt, gnrc_netdev2->tx.current_neighbor);
                             lwmac_tx_update(gnrc_netdev2);
                         }
                         else {
                             /* Shouldn't happen, but never observed this case */
-                            int id = (gnrc_netdev2->tx.current_neighbor - gnrc_netdev2->tx.neighbors);
+                            int id = (gnrc_netdev2->tx.current_neighbor -
+                                      gnrc_netdev2->tx.neighbors);
                             id /= sizeof(gnrc_netdev2->tx.current_neighbor);
                             LOG_ERROR("Packet from neighbour's queue (#%d) invalid\n", id);
                             lwmac_schedule_update(gnrc_netdev2);
@@ -453,7 +460,8 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
     switch (event & 0xffff) {
         case LWMAC_EVENT_RTT_WAKEUP_PENDING: {
             gnrc_netdev2->lwmac.last_wakeup = rtt_get_alarm();
-            alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US));
+            alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup,
+                                        RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US));
             rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_SLEEP_PENDING);
             gnrc_netdev2_set_quit_tx(gnrc_netdev2,false);
             gnrc_netdev2_set_quit_rx(gnrc_netdev2,false);
@@ -463,7 +471,8 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
             break;
         }
         case LWMAC_EVENT_RTT_SLEEP_PENDING: {
-            alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
+            alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup,
+                                        RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
             rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_WAKEUP_PENDING);
             lwmac_set_state(gnrc_netdev2, SLEEPING);
             break;
@@ -485,7 +494,8 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
         }
         case LWMAC_EVENT_RTT_RESUME: {
             LOG_DEBUG("RTT: Resume duty cycling\n");
-            alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup, RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
+            alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup,
+                                        RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
             rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_WAKEUP_PENDING);
             gnrc_netdev2->lwmac.dutycycling_active = true;
             break;
@@ -645,7 +655,9 @@ static void *_lwmac_thread(void *args)
     dev->driver->set(dev, NETOPT_SRC_LEN, &src_len, sizeof(src_len));
 
     /* Get own address from netdev */
-    gnrc_netdev2->l2_addr_len = dev->driver->get(dev, NETOPT_ADDRESS_LONG, &gnrc_netdev2->l2_addr, IEEE802154_LONG_ADDRESS_LEN);
+    gnrc_netdev2->l2_addr_len = dev->driver->get(dev, NETOPT_ADDRESS_LONG,
+                                                 &gnrc_netdev2->l2_addr,
+                                                 IEEE802154_LONG_ADDRESS_LEN);
     assert(gnrc_netdev2->l2_addr_len > 0);
 
     /* Initialize broadcast sequence number. This at least differs from board
