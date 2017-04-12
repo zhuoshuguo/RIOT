@@ -215,8 +215,6 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             gnrc_pktsnip_t* pkt;
             gnrc_pktsnip_t* pkt_lwmac;
             gnrc_netif_hdr_t *nethdr;
-            //uint8_t* dst_addr = NULL;
-            //int addr_len;
 
             uint32_t random_backoff;
             random_backoff = random_uint32_range(0, LWMAC_RANDOM_BEFORE_WR_US);
@@ -230,13 +228,6 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
                 gnrc_netdev2->tx.packet = NULL;
                 GOTO_TX_STATE(TX_STATE_FAILED, true);
             }
-
-            /* Get destination address
-            addr_len = _get_dest_address(lwmac->tx.packet, &dst_addr);
-            if(addr_len <= 0 || addr_len > 8) {
-                LOG_ERROR("Invalid address length: %i\n", addr_len);
-                GOTO_TX_STATE(TX_STATE_FAILED, true);
-            }*/
 
             /* Assemble WR */
             lwmac_frame_wr_t wr_hdr = {};
@@ -354,14 +345,6 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             }
 
             gnrc_netdev2->tx.wr_sent++;
-
-            /* This is not needed anymore, because WRs are sent without CSMA/CA */
-            /*
-            if(lwmac->tx_feedback == TX_FEEDBACK_BUSY) {
-                LOG_DEBUG("WR could not be sent, retry\n");
-                GOTO_TX_STATE(TX_STATE_SEND_WR, true);
-            }
-            */
 
             /* Set timeout for next WR in case no WA will be received */
             lwmac_set_timeout(gnrc_netdev2, TIMEOUT_WR, LWMAC_TIME_BETWEEN_WR_US);
@@ -484,7 +467,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
                     uint32_t own_phase;
                     own_phase = _ticks_to_phase(gnrc_netdev2->lwmac.last_wakeup);
 
-                    if(own_phase >= gnrc_netdev2->tx.timestamp) {
+                    if (own_phase >= gnrc_netdev2->tx.timestamp) {
                         own_phase = own_phase - gnrc_netdev2->tx.timestamp;
                     }
                     else {

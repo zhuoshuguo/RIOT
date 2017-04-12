@@ -51,17 +51,14 @@ gnrc_mac_tx_neighbor_t* _next_tx_neighbor(gnrc_netdev2_t* gnrc_netdev2)
 {
     int next = -1;
 
-    uint32_t phase_check;
     uint32_t phase_nearest = LWMAC_PHASE_MAX;
 
     for (int i = 0; i < GNRC_MAC_NEIGHBOR_COUNT; i++) {
-
         if (gnrc_priority_pktqueue_length(&gnrc_netdev2->tx.neighbors[i].queue) > 0) {
-
             /* Unknown destinations are initialized with their phase at the end
              * of the local interval, so known destinations that still wakeup
              * in this interval will be preferred. */
-            phase_check = _ticks_until_phase(gnrc_netdev2->tx.neighbors[i].phase);
+            uint32_t phase_check = _ticks_until_phase(gnrc_netdev2->tx.neighbors[i].phase);
 
             if (phase_check <= phase_nearest) {
                 next = i;
@@ -88,9 +85,7 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
         return -1;
     }
 
-    /* Dissect lwMAC header */
-
-    /* every frame has header as first member */
+    /* Dissect lwMAC header, Every frame has header as first member */
     lwmac_hdr = (lwmac_hdr_t*) pkt->data;
     switch (lwmac_hdr->type) {
         case FRAMETYPE_WR: {
@@ -121,14 +116,6 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info)
 
     /* Memory location may have changed while marking */
     lwmac_hdr = lwmac_snip->data;
-
-    if (netif_hdr->dst_l2addr_len > sizeof(info->dst_addr)) {
-        return -3;
-    }
-
-    if (netif_hdr->src_l2addr_len > sizeof(info->src_addr)) {
-        return -4;
-    }
 
     if (lwmac_hdr->type == FRAMETYPE_WA) {
         /* WA is broadcast, so get dst address out of header instead of netif */
@@ -168,14 +155,14 @@ void _set_netdev_state(gnrc_netdev2_t* gnrc_netdev2, netopt_state_t devstate)
 
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
     if (devstate == NETOPT_STATE_IDLE) {
-        if(gnrc_netdev2->lwmac.radio_is_on == false) {
+        if (gnrc_netdev2->lwmac.radio_is_on == false) {
             gnrc_netdev2->lwmac.last_radio_on_time_ticks = rtt_get_counter();
             gnrc_netdev2->lwmac.radio_is_on = true;
         }
         return;
     }
     else if (devstate == NETOPT_STATE_SLEEP) {
-        if(gnrc_netdev2->lwmac.radio_is_on == true) {
+        if (gnrc_netdev2->lwmac.radio_is_on == true) {
             gnrc_netdev2->lwmac.radio_off_time_ticks = rtt_get_counter();
 
             gnrc_netdev2->lwmac.awake_duration_sum_ticks +=
@@ -313,7 +300,6 @@ void _dispatch(gnrc_pktsnip_t* buffer[])
 
     for (unsigned i = 0; i < GNRC_MAC_DISPATCH_BUFFER_SIZE; i++) {
         if (buffer[i]) {
-
             /* save pointer to netif header */
             gnrc_pktsnip_t* netif = buffer[i]->next->next;
 

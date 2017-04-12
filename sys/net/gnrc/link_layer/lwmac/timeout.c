@@ -88,8 +88,8 @@ lwmac_timeout_t* _lwmac_acquire_timeout(gnrc_netdev2_t* gnrc_netdev2, lwmac_time
         return NULL;
     }
 
-    for(unsigned i = 0; i < LWMAC_TIMEOUT_COUNT; i++) {
-        if(gnrc_netdev2->lwmac.timeouts[i].type == TIMEOUT_DISABLED) {
+    for (unsigned i = 0; i < LWMAC_TIMEOUT_COUNT; i++) {
+        if (gnrc_netdev2->lwmac.timeouts[i].type == TIMEOUT_DISABLED) {
             gnrc_netdev2->lwmac.timeouts[i].type = type;
             return &gnrc_netdev2->lwmac.timeouts[i];
         }

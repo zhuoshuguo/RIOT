@@ -26,7 +26,7 @@
 #include "include/rx_state_machine.h"
 #include "include/lwmac_internal.h"
 
-#define ENABLE_DEBUG    (1)
+#define ENABLE_DEBUG    (0)
 #include "debug.h"
 
 #define LOG_LEVEL LOG_WARNING
@@ -101,10 +101,9 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 
                 /* Parse packet */
                 lwmac_packet_info_t info;
-                int ret = _parse_packet(pkt, &info);
 
-                if (ret != 0) {
-                    LOG_DEBUG("Packet could not be parsed: %i\n", ret);
+                if (_parse_packet(pkt, &info) != 0) {
+                    LOG_DEBUG("Packet could not be parsed\n");
                     gnrc_pktbuf_release(pkt);
                     continue;
                 }
@@ -158,7 +157,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
                 GOTO_RX_STATE(RX_STATE_FAILED, true);
             }
 
-            // TODO: don't flush queue
+            /* TODO: don't flush queue */
             gnrc_priority_pktqueue_flush(&gnrc_netdev2->rx.queue);
             GOTO_RX_STATE(RX_STATE_SEND_WA, true);
         }
@@ -243,8 +242,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
             */
 
             /* Send WA */
-            int res = gnrc_netdev2->send(gnrc_netdev2, pkt);
-            if (res < 0) {
+            if (gnrc_netdev2->send(gnrc_netdev2, pkt) < 0) {
                 LOG_ERROR("Send WA failed.");
                 if (pkt != NULL) {
                     gnrc_pktbuf_release(pkt);
@@ -269,15 +267,6 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
                 break;
             }
 
-            /* This is not needed anymore, because WAs are sent without CSMA/CA */
-            /* WA wasn't sent, so restart state machine */
-            /*
-            if(lwmac->tx_feedback == TX_FEEDBACK_BUSY) {
-                LOG_WARNING("WA could not be sent. Wait for next WR\n");
-                GOTO_RX_STATE(RX_STATE_FAILED, true);
-            }
-            */
-
             /* Set timeout for expected data arrival */
             lwmac_set_timeout(gnrc_netdev2, TIMEOUT_DATA, LWMAC_DATA_DELAY_US);
 
@@ -298,10 +287,9 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 
                 /* Parse packet */
                 lwmac_packet_info_t info;
-                int ret = _parse_packet(pkt, &info);
 
-                if (ret != 0) {
-                    LOG_DEBUG("Packet could not be parsed: %i\n", ret);
+                if (_parse_packet(pkt, &info) != 0) {
+                    LOG_DEBUG("Packet could not be parsed\n");
                     gnrc_pktbuf_release(pkt);
                     continue;
                 }
@@ -333,7 +321,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
 
                 /* Sender maybe didn't get the WA */
                 if (info.header->type == FRAMETYPE_WR) {
-                    LOG_INFO("Found a WR while waiting for DATA\n");
+                    LOG_DEBUG("Found a WR while waiting for DATA\n");
                     lwmac_clear_timeout(gnrc_netdev2, TIMEOUT_DATA);
                     found_wr = true;
                     break;
@@ -372,7 +360,7 @@ static bool _lwmac_rx_update(gnrc_netdev2_t* gnrc_netdev2)
             if ((lwmac_timeout_is_expired(gnrc_netdev2, TIMEOUT_DATA)) &&
                 (!gnrc_netdev2_get_rx_started(gnrc_netdev2))) {
                 LOG_INFO("DATA timed out\n");
-                if(pkt != NULL) {
+                if (pkt != NULL) {
                     gnrc_pktbuf_release(pkt);
                 }
                 gnrc_netdev2->rx.rx_exten_count ++;
