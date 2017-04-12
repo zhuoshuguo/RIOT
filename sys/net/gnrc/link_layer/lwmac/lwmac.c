@@ -209,19 +209,19 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
              * sent before the first one is handled, even no broadcast
              */
             if (!lwmac_timeout_is_running(gnrc_netdev2, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
-                /* Check if there are broadcasts to send and transmit immediately */
-                if (gnrc_priority_pktqueue_length(&(gnrc_netdev2->tx.neighbors[0].queue)) > 0) {
-                    gnrc_netdev2->tx.current_neighbor = &(gnrc_netdev2->tx.neighbors[0]);
-                    lwmac_set_state(gnrc_netdev2, TRANSMITTING);
-                    break;
-                }
-
                 gnrc_mac_tx_neighbor_t* neighbour;
 
+                /* Check if there is packet remaining for retransmission */
                 if (gnrc_netdev2->tx.current_neighbor != NULL) {
                     neighbour= gnrc_netdev2->tx.current_neighbor;
                 }
                 else {
+                    /* Check if there are broadcasts to send and transmit immediately */
+                    if (gnrc_priority_pktqueue_length(&(gnrc_netdev2->tx.neighbors[0].queue)) > 0) {
+                        gnrc_netdev2->tx.current_neighbor = &(gnrc_netdev2->tx.neighbors[0]);
+                        lwmac_set_state(gnrc_netdev2, TRANSMITTING);
+                        break;
+                    }
                     neighbour = _next_tx_neighbor(gnrc_netdev2);
                 }
 
