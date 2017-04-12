@@ -201,7 +201,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
 
     switch (gnrc_netdev2->lwmac.state) {
         case SLEEPING: {
-            if(gnrc_netdev2_get_quit_tx(gnrc_netdev2)) {
+            if (gnrc_netdev2_get_quit_tx(gnrc_netdev2)) {
                 return false;
             }
 
@@ -565,7 +565,7 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
 
                 gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
 
-                if(!gnrc_mac_queue_rx_packet(&gnrc_netdev2->rx, 0, pkt)) {
+                if (!gnrc_mac_queue_rx_packet(&gnrc_netdev2->rx, 0, pkt)) {
                     LOG_ERROR("Can't push RX packet @ %p, memory full?\n", pkt);
                     gnrc_pktbuf_release(pkt);
                     break;
@@ -680,7 +680,6 @@ static void *_lwmac_thread(void *args)
 
     /* start the event loop */
     while (1) {
-
         msg_receive(&msg);
 
         /* Handle NETDEV, NETAPI, RTT and TIMEOUT messages */
