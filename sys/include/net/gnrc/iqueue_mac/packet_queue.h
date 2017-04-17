@@ -46,7 +46,7 @@ static inline uint32_t packet_queue_length(packet_queue_t *q)
     return (q ? q->length : 0);
 }
 
-void packet_queue_flush(packet_queue_t* q);
+//void packet_queue_flush(packet_queue_t* q);
 
 /* Get first element and remove it from queue */
 gnrc_pktsnip_t* packet_queue_pop(packet_queue_t* q);
