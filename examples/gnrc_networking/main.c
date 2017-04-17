@@ -175,7 +175,7 @@ void *sender_thread(void *arg)
 
    exp_end = false;
 
-   xtimer_sleep(50);
+   xtimer_sleep(120);
 
 	/* start recording duty-cycle */
    iqueuemac.system_start_time = rtt_get_counter();
