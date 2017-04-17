@@ -26,7 +26,8 @@
 #include <net/gnrc/iqueue_mac/hdr.h>
 
 #include "include/iqueuemac_internal.h"
-#include "include/iqueuemac_types.h"
+//#include "include/iqueuemac_types.h"
+#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"

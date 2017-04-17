@@ -32,7 +32,8 @@
 #include "net/gnrc/iqueue_mac/hdr.h"
 //#include <net/gnrc/lwmac/hdr.h>
 #include <net/gnrc/iqueue_mac/packet_queue.h>
-#include "timeout.h"
+//#include "timeout.h"
+#include "net/gnrc/iqueue_mac/timeout.h"
 
 #ifdef __cplusplus
 extern "C" {

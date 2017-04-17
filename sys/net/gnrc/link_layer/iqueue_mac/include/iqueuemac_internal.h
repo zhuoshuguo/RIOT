@@ -24,7 +24,8 @@
 
 #include <stdint.h>
 #include "periph/rtt.h"
-#include "iqueuemac_types.h"
+//#include "iqueuemac_types.h"
+#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
 
 #ifdef __cplusplus
 extern "C" {

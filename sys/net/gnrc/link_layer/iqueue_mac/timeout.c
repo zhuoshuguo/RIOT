@@ -20,8 +20,10 @@
 #include <xtimer.h>
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
 
-#include "include/timeout.h"
-#include "include/iqueuemac_types.h"
+//#include "include/timeout.h"
+//#include "include/iqueuemac_types.h"
+#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
+#include "net/gnrc/iqueue_mac/timeout.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"

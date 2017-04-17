@@ -32,6 +32,9 @@
 #include "net/gnrc/nettype.h"
 #include "xtimer.h"
 #include <periph/rtt.h>
+#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
+
+typedef struct iqueuemac iqueuemac_t;
 
 uint32_t send_counter;
 uint32_t send_counter1;
@@ -39,6 +42,8 @@ uint32_t send_counter2;
 uint32_t own_address2;
 uint32_t exp_start_time;
 uint32_t exp_duration_ticks;
+
+extern iqueuemac_t iqueuemac;
 
 #define MAIN_QUEUE_SIZE     (8)
 static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
@@ -59,7 +64,6 @@ static const shell_command_t shell_commands[] = {
     { "udp", "send data over UDP and listen on UDP ports", udp_cmd },
     { NULL, NULL, NULL }
 };
-
 
 
 static void generate_and_send_pkt(void){
@@ -179,6 +183,8 @@ void *sender_thread(void *arg)
     _gnrc_rpl_dodag_root(instanceid, ipadd);
 
 	xtimer_sleep(150);
+
+    iqueuemac.exp_started = true;
 
    exp_end = false;
 
