@@ -186,16 +186,20 @@ void *sender_thread(void *arg)
 
 	xtimer_sleep(50);
 
-   puts("start push data");
+	uint32_t random_period;
 
-   total_gene_num = 3000;
+	random_period = random_uint32_range(0, 60);
+
+	xtimer_sleep(random_period);
+
+   puts("start push data");
 
    while (1) {
 
    	xtimer_usleep((uint32_t) data_rate * 1000);
 
    	if((send_counter < total_gene_num)&&(exp_end == false)){  //total_gene_num
-   		for(int i=0; i<5; i++){
+   		for(int i=0; i<1; i++){
    			generate_and_send_pkt();
    		}
    		if (send_counter >= total_gene_num) {
