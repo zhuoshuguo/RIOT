@@ -192,7 +192,7 @@ bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
     if(_packet_is_broadcast(pkt)) {
     	if (iqueuemac->exp_started == true) {
     		gnrc_pktbuf_release(pkt);
-    		puts("release bcast");
+    		//puts("release bcast");
     		return true;
     	}
         /* Broadcast queue is neighbour 0 by definition */

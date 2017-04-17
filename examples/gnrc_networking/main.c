@@ -158,7 +158,6 @@ void *sender_thread(void *arg)
             	printf("the exp-data_rate is %lu. \n", data_rate);
             	printf("the exp-total_gene_num is %lu. \n", total_gene_num);
 
-
             	iqueuemac.exp_started = true;
 
             	gnrc_pktbuf_release(pkt);
