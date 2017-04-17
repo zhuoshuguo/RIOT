@@ -296,7 +296,7 @@ void iqueuemac_device_broadcast_init(iqueuemac_t* iqueuemac){
 	iqueuemac->device_states.device_broadcast_state = DEVICE_SEND_BROADCAST;
 	iqueuemac->need_update = true;
 
-	packet_queue_flush(&iqueuemac->rx.queue);
+	iqueuemac_packet_queue_flush(iqueuemac);
 }
 
 void iqueuemac_device_send_broadcast(iqueuemac_t* iqueuemac){
@@ -481,7 +481,8 @@ void iqueuemac_init_prepare(iqueuemac_t* iqueuemac){
 	iqueuemac->router_states.init_retry = false;
 	iqueuemac->router_states.subchannel_occu_flags = 0;
 
-	packet_queue_flush(&iqueuemac->rx.queue);
+	//iqueuemac_packet_queue_flush(iqueuemac);
+	iqueuemac_packet_queue_flush(iqueuemac);
 
 	/******set TIMEOUT_COLLECT_BEACON_END timeout ******/
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_COLLECT_BEACON_END, listen_period);
@@ -510,7 +511,8 @@ void iqueuemac_init_collec_beacons(iqueuemac_t* iqueuemac){
 	/*** it seems that this "init_retry" procedure is unnecessary here!! maybe delete it in the future ***/
 	if(iqueuemac->router_states.init_retry == true){
 		iqueuemac_clear_timeout(iqueuemac,TIMEOUT_COLLECT_BEACON_END);
-		packet_queue_flush(&iqueuemac->rx.queue);
+		//iqueuemac_packet_queue_flush(iqueuemac);
+		iqueuemac_packet_queue_flush(iqueuemac);
 		iqueuemac->router_states.router_init_state = R_INIT_PREPARE;
 		iqueuemac->need_update = true;
 	}
@@ -547,7 +549,8 @@ void iqueuemac_init_wait_announce_feedback(iqueuemac_t* iqueuemac){
 		/*** add another condition here in the furture: the tx-feedback must be ACK-got,
 		 * namely, completed, to ensure router gets the data correctly***/
 		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
-			packet_queue_flush(&iqueuemac->rx.queue);
+			//iqueuemac_packet_queue_flush(iqueuemac);
+			iqueuemac_packet_queue_flush(iqueuemac);
 			iqueuemac->router_states.router_init_state = R_INIT_END;
 			iqueuemac->need_update = true;
 			return;
@@ -606,7 +609,8 @@ void iqueuemac_t2r_init(iqueuemac_t* iqueuemac){
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
 
 	/*** flush the rx-queue here to reduce possible buffered packet in RIOT!! ***/
-	packet_queue_flush(&iqueuemac->rx.queue);
+	//iqueuemac_packet_queue_flush(iqueuemac);
+	iqueuemac_packet_queue_flush(iqueuemac);
 
 	iqueuemac->t2r_busy_rety_counter = 0;
 
@@ -712,7 +716,8 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 					iqueuemac->tx.vtdma_para.get_beacon = false;
 					iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_BEACON, IQUEUEMAC_WAIT_BEACON_TIME_US);
 					// need to flush the rx-queue ??
-					packet_queue_flush(&iqueuemac->rx.queue);
+					//iqueuemac_packet_queue_flush(iqueuemac);
+					iqueuemac_packet_queue_flush(iqueuemac);
 
 					iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_BEACON;
 				}else{
@@ -874,7 +879,9 @@ void iqueuemac_t2r_wait_beacon(iqueuemac_t* iqueuemac){
     }
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_WAIT_BEACON)){
-		packet_queue_flush(&iqueuemac->rx.queue);
+		//iqueuemac_packet_queue_flush(iqueuemac);
+		iqueuemac_packet_queue_flush(iqueuemac);
+
 		puts("t2r:no beacon");
 		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
 		iqueuemac->need_update = true;
@@ -1121,7 +1128,7 @@ void iqueuemac_t2u_send_preamble_init(iqueuemac_t* iqueuemac){
 	iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->pub_channel_1);
 	iqueuemac->tx.t2u_on_public_1 = true;
 
-	packet_queue_flush(&iqueuemac->rx.queue);
+	iqueuemac_packet_queue_flush(iqueuemac);
 }
 
 void iqueuemac_t2u_send_preamble_prepare(iqueuemac_t* iqueuemac){
@@ -1270,7 +1277,7 @@ void iqueuemac_t2u_wait_preamble_tx_end(iqueuemac_t* iqueuemac)
 	}
 
 	if(iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL)){
-		packet_queue_flush(&iqueuemac->rx.queue);
+		iqueuemac_packet_queue_flush(iqueuemac);
 		iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
 		iqueuemac->need_update = true;
 		return;
@@ -1454,7 +1461,7 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	    		iqueuemac->tx.vtdma_para.get_beacon = false;
 	    		iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_BEACON, IQUEUEMAC_WAIT_BEACON_TIME_US);
 	    		// need to flush the rx-queue ??
-	    		packet_queue_flush(&iqueuemac->rx.queue);
+	    		iqueuemac_packet_queue_flush(iqueuemac);
 
 	    		iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_BEACON;
 
@@ -1605,7 +1612,7 @@ void iqueue_mac_router_listen_cp_init(iqueuemac_t* iqueuemac){
 
 	iqueuemac->phase_changed = false;
 
-	packet_queue_flush(&iqueuemac->rx.queue);
+	iqueuemac_packet_queue_flush(iqueuemac);
 
 	/* backoff phase if needed */
 	if(iqueuemac->phase_backoff == true){
@@ -1700,7 +1707,7 @@ void iqueue_mac_router_listen_cp_listen(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_router_cp_end(iqueuemac_t* iqueuemac){
 
-	packet_queue_flush(&iqueuemac->rx.queue);
+	iqueuemac_packet_queue_flush(iqueuemac);
 
 	_dispatch(iqueuemac->rx.dispatch_buffer);
 
@@ -1862,7 +1869,7 @@ void iqueue_mac_router_vtdma(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_router_vtdma_end(iqueuemac_t* iqueuemac){
 
-	packet_queue_flush(&iqueuemac->rx.queue);
+	iqueuemac_packet_queue_flush(iqueuemac);
 	_dispatch(iqueuemac->rx.dispatch_buffer);
 
 	/*** switch the radio to the public-channel!!! ***/

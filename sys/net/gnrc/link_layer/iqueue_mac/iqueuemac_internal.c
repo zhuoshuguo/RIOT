@@ -1529,7 +1529,8 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
 
             			/**got preamble-ack, flush the rx queue***/
             			gnrc_pktbuf_release(pkt);
-            			packet_queue_flush(&iqueuemac->rx.queue);
+            			//packet_queue_flush(&iqueuemac->rx.queue);
+            			iqueuemac_packet_queue_flush(iqueuemac);
             			return;
             		}
             	}
@@ -2087,6 +2088,65 @@ void update_neighbor_pubchan(iqueuemac_t* iqueuemac)
 	}
 }
 
+
+
+void iqueuemac_packet_queue_flush(iqueuemac_t* iqueuemac)
+{
+#if 0
+    if(q->length == 0)
+        return;
+
+    packet_queue_node_t* node;
+    while( (node = priority_queue_remove_head(&(q->queue))) )
+    {
+        gnrc_pktbuf_release((gnrc_pktsnip_t*) node->data);
+        _free_node(node);
+    }
+    q->length = 0;
+
+#endif
+
+	gnrc_pktsnip_t* pkt;
+	iqueuemac_packet_info_t receive_packet_info;
+
+    while( (pkt = packet_queue_pop(&iqueuemac->rx.queue)) != NULL ) {
+
+    	/* parse the packet */
+    	int res = _parse_packet(pkt, &receive_packet_info);
+    	if(res != 0) {
+            //LOG_DEBUG("Packet could not be parsed: %i\n", ret);
+            gnrc_pktbuf_release(pkt);
+            continue;
+        }
+
+    	switch(receive_packet_info.header->type){
+
+            // iqueuemac.rx.last_seq_info.seq = netif_hdr->seq;
+            case FRAMETYPE_IQUEUE_DATA:{
+
+            	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)) {
+            		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+
+                	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
+                		gnrc_pktbuf_release(pkt);
+                		return;
+                	}
+
+            		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+            		_dispatch(iqueuemac->rx.dispatch_buffer);
+            	}else{/* if the data is not for the node, release it.  */
+            		/* it is very unlikely that we will receive not-intended data here, since CP will not overlape! */
+            		gnrc_pktbuf_release(pkt);
+            	}
+            }break;
+
+            default:{
+            	gnrc_pktbuf_release(pkt);break;
+            }
+  	    }
+
+    }/* end of while loop */
+}
 
 
 /******************************************************************************/

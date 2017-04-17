@@ -107,7 +107,7 @@ packet_queue_push(packet_queue_t* q, gnrc_pktsnip_t* snip, uint32_t priority)
 }
 
 /******************************************************************************/
-
+#if 0
 void packet_queue_flush(packet_queue_t* q)
 {
     if(q->length == 0)
@@ -121,3 +121,4 @@ void packet_queue_flush(packet_queue_t* q)
     }
     q->length = 0;
 }
+#endif
