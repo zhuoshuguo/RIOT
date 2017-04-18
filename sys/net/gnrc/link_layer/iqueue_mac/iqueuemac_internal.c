@@ -1189,9 +1189,16 @@ void iqueuemac_init_choose_subchannel(iqueuemac_t* iqueuemac){
 
 	uint16_t subchannel_seq, check_seq, own_id;
 
+    /*
 	memcpy(&own_id,
 	       iqueuemac->own_addr.addr,
 		   2);
+	 */
+
+	own_id = 0;
+	own_id = iqueuemac->own_addr.addr[6];
+	own_id = own_id << 8;
+	own_id |= iqueuemac->own_addr.addr[7];
 
 	/* range from 12 to 25 */
 	//own_id = 12;
