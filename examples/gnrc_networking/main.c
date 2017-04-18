@@ -182,7 +182,7 @@ void *sender_thread(void *arg)
     char *instanceid = "1";
     _gnrc_rpl_dodag_root(instanceid, ipadd);
 
-	xtimer_sleep(300);
+	xtimer_sleep(400);
 
     iqueuemac.exp_started = true;
 
@@ -190,7 +190,7 @@ void *sender_thread(void *arg)
 
    puts("generating exp start commands to nodes");
    while (1) {
-	   //xtimer_sleep(10);
+	   xtimer_sleep(10);
 	   //xtimer_usleep((uint32_t) data_rate * 1000);
 
 	   if((send_counter < 10)&&(exp_end == false)){  //total_gene_num
@@ -198,7 +198,7 @@ void *sender_thread(void *arg)
 		   for(int i=0; i<3; i++){
 			   generate_and_send_pkt();
 			   printf("send to %lu \n", send_counter);
-			   xtimer_sleep(15);
+			   xtimer_sleep(20);
 			   if (iqueuemac.receive_exp_settings == true) {
 				   iqueuemac.receive_exp_settings = false;
 			       puts("received sender feedback");
