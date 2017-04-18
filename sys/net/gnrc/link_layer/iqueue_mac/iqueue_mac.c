@@ -170,7 +170,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	}
 
 	iqueuemac->exp_started = false;
-
+	iqueuemac->receive_exp_settings = false;
 }
 
 static void rtt_cb(void* arg)

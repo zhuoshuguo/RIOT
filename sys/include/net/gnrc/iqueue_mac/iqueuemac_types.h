@@ -401,6 +401,7 @@ typedef struct iqueuemac {
     bool rx_memory_full;
 
     bool exp_started;
+    bool receive_exp_settings;
    
 } iqueuemac_t;
 

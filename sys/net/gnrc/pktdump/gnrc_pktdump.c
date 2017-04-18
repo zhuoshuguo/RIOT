@@ -32,13 +32,17 @@
 #include "net/sixlowpan.h"
 #include "od.h"
 #include <periph/rtt.h>
+#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
 
+typedef struct iqueuemac iqueuemac_t;
 
 uint32_t idlist[20];
 uint32_t reception_list[20];
 
 uint64_t delay_sum;
 uint32_t system_start_time = 0;
+
+extern iqueuemac_t iqueuemac;
 
 /**
  * @brief   PID of the pktdump thread
@@ -134,6 +138,14 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     payload = pkt->data;
 
     found_id = false;
+
+    ///////////////////////////
+    if (payload[0] == 0xEEEE) {
+    	iqueuemac.receive_exp_settings = true;
+    	gnrc_pktbuf_release(pkt);
+    	return;
+    }
+    ///////////////////////////
 
     int i=0;
     /* find id exist or not */
