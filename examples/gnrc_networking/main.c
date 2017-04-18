@@ -182,7 +182,7 @@ void *sender_thread(void *arg)
     char *instanceid = "1";
     _gnrc_rpl_dodag_root(instanceid, ipadd);
 
-	xtimer_sleep(400);
+	xtimer_sleep(1200);
 
     iqueuemac.exp_started = true;
 
