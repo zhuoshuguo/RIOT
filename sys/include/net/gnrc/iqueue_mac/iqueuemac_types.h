@@ -407,6 +407,7 @@ typedef struct iqueuemac {
     uint32_t system_start_time;
 
     bool exp_started;
+    bool receive_exp_settings;
    
 } iqueuemac_t;
 

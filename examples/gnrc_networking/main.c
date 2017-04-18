@@ -85,6 +85,27 @@ static void generate_and_send_pkt(void){
     }
 }
 
+
+static void send_exp_feedback(void){
+
+    uint32_t num = 1;
+    uint32_t delay = 0;
+
+    char *add = "2001:db8::1";
+    char *port = "8808";
+
+    uint32_t payload[10];
+
+   	payload[0] = 0xEEEE;
+
+   	//payload[5] = iqueuemac.awake_duration_sum;
+   	//payload[6] = rtt_get_counter() - iqueuemac.system_start_time;
+
+    if(own_address2 != 0x5ad6) {
+        udp_send(add, port, payload, sizeof(payload), num, delay);
+    }
+}
+
 void *sender_thread(void *arg)
 {
     (void) arg;
@@ -171,6 +192,9 @@ void *sender_thread(void *arg)
 
         break;
     }
+
+   send_exp_feedback();
+   puts("send exp-feedback");
 
    exp_end = false;
 

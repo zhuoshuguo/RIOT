@@ -32,13 +32,17 @@
 #include "net/sixlowpan.h"
 #include "od.h"
 #include <periph/rtt.h>
+#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
 
+typedef struct iqueuemac iqueuemac_t;
 
 uint32_t idlist[20];
 uint32_t reception_list[20];
 
 uint64_t delay_sum;
 uint32_t system_start_time = 0;
+
+extern iqueuemac_t iqueuemac;
 
 /**
  * @brief   PID of the pktdump thread
@@ -126,12 +130,12 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
 	uint32_t *payload;
 
-	uint32_t this_pkt_delay;
+	//uint32_t this_pkt_delay;
 
-	uint32_t local_systime;
+	//uint32_t local_systime;
 
-	this_pkt_delay = 0;
-	local_systime = 0;
+	//this_pkt_delay = 0;
+	//local_systime = 0;
 
     //gnrc_netif_hdr_t *netif_hdr;
 
@@ -144,37 +148,33 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
     //found_id = false;
 
-    if(payload[1] == 0x22222222) {
-
-    	system_start_time = payload[0];
-    	gnrc_pktbuf_release(pkt);
-    	delay_sum = 0;
-
-    	//printf("Dump: sys-start-time is %lu \n", system_start_time);
-    	return;
+    if (payload[0] == 0xFFFF) {
+        if(iqueuemac.receive_exp_settings == false) {
+        	puts("dump: gets exp set pkt");
+            if (!gnrc_netapi_dispatch_receive(GNRC_NETTYPE_APP, GNRC_NETREG_DEMUX_CTX_ALL, pkt)) {
+                gnrc_pktbuf_release(pkt);
+                puts("dispatch pkt fail, drop it");
+            } else {
+            	iqueuemac.receive_exp_settings = true;
+            }
+        	return;
+    	}else {
+    		gnrc_pktbuf_release(pkt);
+    		return;
+    	}
     }
 
-
-    if(payload[0] == 0xFFFF) {
-    	puts("dump: gets exp set pkt");
-        if (!gnrc_netapi_dispatch_receive(GNRC_NETTYPE_APP, GNRC_NETREG_DEMUX_CTX_ALL, pkt)) {
-            gnrc_pktbuf_release(pkt);
-            puts("dispatch pkt fail, drop it");
-        }
-    	return;
-    }
-
-    local_systime = rtt_get_counter() - system_start_time;
+    //local_systime = rtt_get_counter() - system_start_time;
 
     //printf("local_systime is %lu \n", RTT_TICKS_TO_US(local_systime));
 
     //printf("pkt genera time is %lu \n", RTT_TICKS_TO_US(payload[5] - payload[4]));
 
-    this_pkt_delay = local_systime - (payload[5] - payload[4]);
+    //this_pkt_delay = local_systime - (payload[5] - payload[4]);
 
     //printf("this_pkt_delay is %lu \n", RTT_TICKS_TO_US(this_pkt_delay));
 
-    delay_sum += (uint64_t) RTT_TICKS_TO_US(this_pkt_delay);
+    //delay_sum += (uint64_t) RTT_TICKS_TO_US(this_pkt_delay);
 
 #if 0
     int i=0;
