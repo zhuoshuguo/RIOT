@@ -69,7 +69,7 @@ static const shell_command_t shell_commands[] = {
 static void generate_and_send_pkt(void){
 
     uint32_t num = 1;
-    uint32_t delay = 1000000;
+    uint32_t delay = 0;
 
     char *port = "8808";
 
