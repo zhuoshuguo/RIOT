@@ -115,6 +115,7 @@ void *sender_thread(void *arg)
 
     uint32_t data_rate;
     uint32_t total_gene_num;
+    uint32_t burst_num;
     data_rate = 0;
     total_gene_num = 0;
 
@@ -156,6 +157,8 @@ void *sender_thread(void *arg)
     gnrc_netreg_register(GNRC_NETTYPE_APP, &me_reg);
 
 
+    burst_num = 1;
+
    while (1) {
 
         msg_receive(&msg);
@@ -170,7 +173,8 @@ void *sender_thread(void *arg)
 
             	data_rate = payload[1];
             	total_gene_num = payload[2];
-            	exp_start_time = payload[5];
+            	//exp_start_time = payload[5];
+            	burst_num = payload[3];
 
             	exp_duration_ticks = payload[1];
             	exp_duration_ticks = exp_duration_ticks * 1000000;
@@ -207,7 +211,7 @@ void *sender_thread(void *arg)
 	iqueuemac.awake_duration_sum = 0;
 	iqueuemac.radio_is_on = true;
 
-	xtimer_sleep(50);
+	xtimer_sleep(650);
 
 	uint32_t random_period;
 
@@ -222,7 +226,7 @@ void *sender_thread(void *arg)
    	xtimer_usleep((uint32_t) data_rate * 1000);
 
    	if((send_counter < total_gene_num)&&(exp_end == false)){  //total_gene_num
-   		for(int i=0; i<1; i++){
+   		for(int i=0; i<burst_num; i++){
    			generate_and_send_pkt();
    		}
    		if (send_counter >= total_gene_num) {
