@@ -488,7 +488,8 @@ void iqueuemac_init_prepare(iqueuemac_t* iqueuemac){
 	/******set TIMEOUT_COLLECT_BEACON_END timeout ******/
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_COLLECT_BEACON_END, listen_period);
 
-	iqueuemac->router_states.router_init_state = R_INIT_COLLECT_BEACONS;
+	//iqueuemac->router_states.router_init_state = R_INIT_COLLECT_BEACONS;
+	iqueuemac->router_states.router_init_state = R_INIT_ANNOUNCE_SUBCHANNEL;
 	iqueuemac->need_update = true;
 
 }
@@ -536,6 +537,7 @@ void iqueuemac_init_wait_busy_end(iqueuemac_t* iqueuemac){
 
 void iqueuemac_init_announce_subchannel(iqueuemac_t* iqueuemac){
 
+	iqueuemac_init_choose_subchannel(iqueuemac);
 	//set csma retry number here??
 	iqueuemac_send_announce(iqueuemac,NETOPT_ENABLE);
 
@@ -547,6 +549,10 @@ void iqueuemac_init_wait_announce_feedback(iqueuemac_t* iqueuemac){
 
 	if(iqueuemac->tx.tx_finished == true){
 
+		iqueuemac_packet_queue_flush(iqueuemac);
+		iqueuemac->router_states.router_init_state = R_INIT_END;
+		iqueuemac->need_update = true;
+#if 0
 		/*** add another condition here in the furture: the tx-feedback must be ACK-got,
 		 * namely, completed, to ensure router gets the data correctly***/
 		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
@@ -559,6 +565,7 @@ void iqueuemac_init_wait_announce_feedback(iqueuemac_t* iqueuemac){
 			iqueuemac->router_states.router_init_state = R_INIT_PREPARE;
 			iqueuemac->need_update = true;
 		}
+#endif
 	}
 }
 
