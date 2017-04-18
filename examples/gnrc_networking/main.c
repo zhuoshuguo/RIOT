@@ -87,8 +87,8 @@ static void generate_and_send_pkt(void){
 	/* exp total generate packet number */
 	expset[2] = 60;
 
-	/* the sequence of the command */
-	//expset[3] = 10 - send_counter;
+	/* the burst number */
+	expset[3] = 1;
 
     if(send_counter == 0) {
     	char *add = "2001:db8::5844:55d:4a55:6f46"; //
