@@ -175,14 +175,14 @@ void *sender_thread(void *arg)
     char *udpport = "8808";
     start_server(udpport);
 
-    xtimer_sleep(30);
+    xtimer_sleep(50);
     puts("start RPL");
 
     /* Starting RPL */
     char *instanceid = "1";
     _gnrc_rpl_dodag_root(instanceid, ipadd);
 
-	xtimer_sleep(150);
+	xtimer_sleep(300);
 
     iqueuemac.exp_started = true;
 
