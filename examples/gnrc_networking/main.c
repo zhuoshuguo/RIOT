@@ -202,7 +202,7 @@ void *sender_thread(void *arg)
 
    exp_end = false;
 
-   xtimer_sleep(120);
+   xtimer_sleep(100);
 
 	/* start recording duty-cycle */
    iqueuemac.system_start_time = rtt_get_counter();
@@ -211,7 +211,7 @@ void *sender_thread(void *arg)
 	iqueuemac.awake_duration_sum = 0;
 	iqueuemac.radio_is_on = true;
 
-	xtimer_sleep(650);
+	xtimer_sleep(150);
 
 	uint32_t random_period;
 
