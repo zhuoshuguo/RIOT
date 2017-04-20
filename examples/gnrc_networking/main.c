@@ -85,10 +85,10 @@ static void generate_and_send_pkt(void){
 	//expset[1] = gnrc_netdev2->lwmac.exp_duration;
 
 	/* exp total generate packet number */
-	expset[2] = 360;
+	expset[2] = 1500;
 
 	/* the burst number */
-	expset[3] = 1;
+	expset[3] = 6;
 
     if(send_counter == 0) {
     	char *add = "2001:db8::5844:55d:4a55:6f46"; //
