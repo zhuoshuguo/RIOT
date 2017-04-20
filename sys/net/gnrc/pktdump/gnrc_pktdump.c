@@ -170,7 +170,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
    // printf("s: %x, g: %lu, r: %lu, t: %lu. \n", addr[1], payload[0], reception_list[i], received_pkt_counter);
 
-    printf("%lx, %lu, %lu, %lu, %lu \n", payload[1], payload[0], reception_list[i], payload[5], payload[6]);
+    printf("%lx, %lu, %lu, %lu, %lu, %lu  \n", payload[1], payload[0], reception_list[i], payload[5], payload[6], received_pkt_counter);
 
     gnrc_pktbuf_release(pkt);
 }
