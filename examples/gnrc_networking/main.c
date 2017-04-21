@@ -85,10 +85,10 @@ static void generate_and_send_pkt(void){
 	//expset[1] = gnrc_netdev2->lwmac.exp_duration;
 
 	/* exp total generate packet number */
-	expset[2] = 1500;
+	expset[2] = 500;
 
 	/* the burst number */
-	expset[3] = 6;
+	expset[3] = 10;
 
     if(send_counter == 0) {
     	char *add = "2001:db8::5844:55d:4a55:6f46"; //
@@ -182,7 +182,7 @@ void *sender_thread(void *arg)
     char *instanceid = "1";
     _gnrc_rpl_dodag_root(instanceid, ipadd);
 
-	xtimer_sleep(800);
+	xtimer_sleep(400);
 
     iqueuemac.exp_started = true;
 
@@ -195,7 +195,7 @@ void *sender_thread(void *arg)
 
 	   if((send_counter < 10)&&(exp_end == false)){  //total_gene_num
 
-		   for(int i=0; i<3; i++){
+		   for(int i=0; i<6; i++){
 			   generate_and_send_pkt();
 			   printf("send to %lu \n", send_counter);
 			   xtimer_sleep(10);
