@@ -78,7 +78,7 @@ static void generate_and_send_pkt(void){
 	expset[0] = 0xFFFF;
 
 	/* data rate */
-	expset[1] = 10000;
+	expset[1] = 20000;
 
 	/* exp duration */
 	//gnrc_netdev2->lwmac.exp_duration = 300; //seconds
@@ -161,6 +161,8 @@ void *sender_thread(void *arg)
 
     printf("own add is %lx.\n", own_address2);
 
+    printf("sub-channel: %u\n",iqueuemac.sub_channel_num);
+
     /* configure a global IPv6 address for the root node */
     char *ifconfig = "ifconfig";
     char *ipadd = "2001:db8::1";
@@ -178,11 +180,13 @@ void *sender_thread(void *arg)
     xtimer_sleep(200);
     puts("start RPL");
 
+    printf("sub-channel: %u\n",iqueuemac.sub_channel_num);
+
     /* Starting RPL */
     char *instanceid = "1";
     _gnrc_rpl_dodag_root(instanceid, ipadd);
 
-	xtimer_sleep(400);
+	xtimer_sleep(300);
 
     iqueuemac.exp_started = true;
 
@@ -195,7 +199,7 @@ void *sender_thread(void *arg)
 
 	   if((send_counter < 10)&&(exp_end == false)){  //total_gene_num
 
-		   for(int i=0; i<6; i++){
+		   for(int i=0; i<10; i++){
 			   generate_and_send_pkt();
 			   printf("send to %lu \n", send_counter);
 			   xtimer_sleep(10);
