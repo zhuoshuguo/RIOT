@@ -144,6 +144,7 @@ void *sender_thread(void *arg)
     own_address2 |= own_addr[1];
 
     printf("own add is %lx.\n", own_address2);
+    printf("sub-chan: %u\n",iqueuemac.sub_channel_num);
 
     /* RPL must be initialized on that particular interface-7 */
     char inface = '7';
