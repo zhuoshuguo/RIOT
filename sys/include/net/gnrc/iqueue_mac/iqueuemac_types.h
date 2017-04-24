@@ -406,6 +406,10 @@ typedef struct iqueuemac {
     uint32_t radio_off_time;
     uint32_t system_start_time;
 
+    uint32_t csma_count;
+    uint32_t vtdma_count;
+
+
     bool exp_started;
     bool receive_exp_settings;
    

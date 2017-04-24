@@ -79,6 +79,8 @@ static void generate_and_send_pkt(void){
 
    	payload[5] = iqueuemac.awake_duration_sum;
    	payload[6] = rtt_get_counter() - iqueuemac.system_start_time;
+   	payload[7] = iqueuemac.csma_count;
+   	payload[8] = iqueuemac.vtdma_count;
 
     if(own_address2 != 0x5ad6) {
         udp_send(add, port, payload, sizeof(payload), num, delay);

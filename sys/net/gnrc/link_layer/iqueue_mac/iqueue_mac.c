@@ -171,6 +171,9 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 
 	iqueuemac->exp_started = false;
 	iqueuemac->receive_exp_settings =false;
+
+	iqueuemac->csma_count = 0;
+	iqueuemac->vtdma_count = 0;
 }
 
 static void rtt_cb(void* arg)
@@ -719,6 +722,8 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 
 				iqueuemac->tx.no_ack_contuer = 0;
 
+				iqueuemac->csma_count ++;
+
 				/*** if has pending pkt, join the vTDMA period, first wait receiver's beacon ***/
 				if(iqueuemac->tx.current_neighbour->queue.length > 0){
 					iqueuemac->tx.vtdma_para.get_beacon = false;
@@ -986,6 +991,8 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 				iqueuemac->tx.tx_packet = NULL;
 
 				iqueuemac->tx.no_ack_contuer = 0;
+
+				iqueuemac->vtdma_count ++;
 
 				/*** if the sender has pending pkt, continue vTDMA transmission ***/
 				if((iqueuemac->tx.vtdma_para.slots_num > 0)&&(iqueuemac->tx.current_neighbour->queue.length>0)){
