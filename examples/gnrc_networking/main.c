@@ -88,7 +88,7 @@ static void generate_and_send_pkt(void){
 	expset[2] = 500;
 
 	/* the burst number */
-	expset[3] = 10;
+	expset[3] = 6;
 
     if(send_counter == 0) {
     	char *add = "2001:db8::5844:55d:4a55:6f46"; //
