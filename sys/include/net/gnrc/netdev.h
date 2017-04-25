@@ -241,7 +241,7 @@ static inline void gnrc_netdev_set_tx_feedback(gnrc_netdev_t *dev,
  * @param[in] tx_continue  value for Lwmac tx-continue flag
  *
  */
-static inline void gnrc_netdev2_set_tx_continue(gnrc_netdev2_t *dev, bool tx_continue)
+static inline void gnrc_netdev2_set_tx_continue(gnrc_netdev_t *dev, bool tx_continue)
 {
     if (tx_continue) {
         dev->mac_info |= GNRC_NETDEV2_LWMAC_TX_CONTINUE;
@@ -257,7 +257,7 @@ static inline void gnrc_netdev2_set_tx_continue(gnrc_netdev2_t *dev, bool tx_con
  * @param[in] dev          ptr to netdev2 device
  *
  */
-static inline bool gnrc_netdev2_get_tx_continue(gnrc_netdev2_t *dev)
+static inline bool gnrc_netdev2_get_tx_continue(gnrc_netdev_t *dev)
 {
     return (dev->mac_info & GNRC_NETDEV2_LWMAC_TX_CONTINUE);
 }
@@ -269,7 +269,7 @@ static inline bool gnrc_netdev2_get_tx_continue(gnrc_netdev2_t *dev)
  * @param[in] quit_tx      value for Lwmac quit-TX flag
  *
  */
-static inline void gnrc_netdev2_set_quit_tx(gnrc_netdev2_t *dev, bool quit_tx)
+static inline void gnrc_netdev2_set_quit_tx(gnrc_netdev_t *dev, bool quit_tx)
 {
     if (quit_tx) {
         dev->mac_info |= GNRC_NETDEV2_LWMAC_QUIT_TX;
@@ -285,7 +285,7 @@ static inline void gnrc_netdev2_set_quit_tx(gnrc_netdev2_t *dev, bool quit_tx)
  * @param[in] dev          ptr to netdev2 device
  *
  */
-static inline bool gnrc_netdev2_get_quit_tx(gnrc_netdev2_t *dev)
+static inline bool gnrc_netdev2_get_quit_tx(gnrc_netdev_t *dev)
 {
     return (dev->mac_info & GNRC_NETDEV2_LWMAC_QUIT_TX);
 }
@@ -297,7 +297,7 @@ static inline bool gnrc_netdev2_get_quit_tx(gnrc_netdev2_t *dev)
  * @param[in] backoff      value for Lwmac phase-backoff flag
  *
  */
-static inline void gnrc_netdev2_set_phase_backoff(gnrc_netdev2_t *dev, bool backoff)
+static inline void gnrc_netdev2_set_phase_backoff(gnrc_netdev_t *dev, bool backoff)
 {
     if (backoff) {
         dev->mac_info |= GNRC_NETDEV2_LWMAC_PHASE_BACKOFF;
@@ -313,7 +313,7 @@ static inline void gnrc_netdev2_set_phase_backoff(gnrc_netdev2_t *dev, bool back
  * @param[in] dev          ptr to netdev2 device
  *
  */
-static inline bool gnrc_netdev2_get_phase_backoff(gnrc_netdev2_t *dev)
+static inline bool gnrc_netdev2_get_phase_backoff(gnrc_netdev_t *dev)
 {
     return (dev->mac_info & GNRC_NETDEV2_LWMAC_PHASE_BACKOFF);
 }
@@ -325,7 +325,7 @@ static inline bool gnrc_netdev2_get_phase_backoff(gnrc_netdev2_t *dev)
  * @param[in] quit_rx      value for Lwmac quit-Rx flag
  *
  */
-static inline void gnrc_netdev2_set_quit_rx(gnrc_netdev2_t *dev, bool quit_rx)
+static inline void gnrc_netdev2_set_quit_rx(gnrc_netdev_t *dev, bool quit_rx)
 {
     if (quit_rx) {
         dev->mac_info |= GNRC_NETDEV2_LWMAC_QUIT_RX;
@@ -341,7 +341,7 @@ static inline void gnrc_netdev2_set_quit_rx(gnrc_netdev2_t *dev, bool quit_rx)
  * @param[in] dev          ptr to netdev2 device
  *
  */
-static inline bool gnrc_netdev2_get_quit_rx(gnrc_netdev2_t *dev)
+static inline bool gnrc_netdev2_get_quit_rx(gnrc_netdev_t *dev)
 {
     return (dev->mac_info & GNRC_NETDEV2_LWMAC_QUIT_RX);
 }

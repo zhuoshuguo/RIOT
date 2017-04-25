@@ -22,7 +22,7 @@
 #define LWMAC_RX_STATE_MACHINE_H_
 
 #include "net/gnrc/pkt.h"
-#include "net/gnrc/netdev2.h"
+#include "net/gnrc/netdev.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,26 +31,26 @@ extern "C" {
 /**
  * @brief Start Lwmac RX procedure to receive packet
  *
- * @param[in,out]   gnrc_netdev2   gnrc_netdev2 structure
+ * @param[in,out]   gnrc_netdev   gnrc_netdev structure
  *
  */
-void lwmac_rx_start(gnrc_netdev2_t *gnrc_netdev2);
+void lwmac_rx_start(gnrc_netdev_t *gnrc_netdev);
 
 /**
  * @brief Stop Lwmac RX procedure
  *
- * @param[in,out]   gnrc_netdev2   gnrc_netdev2 structure
+ * @param[in,out]   gnrc_netdev   gnrc_netdev structure
  *
  */
-void lwmac_rx_stop(gnrc_netdev2_t *gnrc_netdev2);
+void lwmac_rx_stop(gnrc_netdev_t *gnrc_netdev);
 
 /**
  * @brief Update Lwmac RX procedure for packet reception
  *
- * @param[in,out]   gnrc_netdev2   gnrc_netdev2 structure
+ * @param[in,out]   gnrc_netdev   gnrc_netdev structure
  *
  */
-void lwmac_rx_update(gnrc_netdev2_t *gnrc_netdev2);
+void lwmac_rx_update(gnrc_netdev_t *gnrc_netdev);
 
 #ifdef __cplusplus
 }

@@ -22,7 +22,7 @@
 #define LWMAC_TX_STATE_MACHINE_H_
 
 #include "net/gnrc/pkt.h"
-#include "net/gnrc/netdev2.h"
+#include "net/gnrc/netdev.h"
 #include "net/gnrc/mac/types.h"
 
 #ifdef __cplusplus
@@ -32,29 +32,29 @@ extern "C" {
 /**
  * @brief Start Lwmac TX procedure to transmit packet @p pkt to @p neighbor
  *
- * @param[in,out]   gnrc_netdev2   gnrc_netdev2 structure
+ * @param[in,out]   gnrc_netdev   gnrc_netdev structure
  * @param[in]       pkt            packet to transmit
  * @param[in]       neighbor       Tx neighbor
  *
  */
-void lwmac_tx_start(gnrc_netdev2_t *gnrc_netdev2,
+void lwmac_tx_start(gnrc_netdev_t *gnrc_netdev,
                     gnrc_pktsnip_t *pkt, gnrc_mac_tx_neighbor_t *neighbor);
 
 /**
  * @brief Stop Lwmac TX procedure
  *
- * @param[in,out]   gnrc_netdev2   gnrc_netdev2 structure
+ * @param[in,out]   gnrc_netdev   gnrc_netdev structure
  *
  */
-void lwmac_tx_stop(gnrc_netdev2_t *gnrc_netdev2);
+void lwmac_tx_stop(gnrc_netdev_t *gnrc_netdev);
 
 /**
  * @brief Update Lwmac TX procedure for transmission
  *
- * @param[in,out]   gnrc_netdev2   gnrc_netdev2 structure
+ * @param[in,out]   gnrc_netdev   gnrc_netdev structure
  *
  */
-void lwmac_tx_update(gnrc_netdev2_t *gnrc_netdev2);
+void lwmac_tx_update(gnrc_netdev_t *gnrc_netdev);
 
 #ifdef __cplusplus
 }

@@ -548,10 +548,10 @@ endif
 
 ifneq (,$(filter gnrc_lwmac,$(USEMODULE)))
   USEMODULE += xtimer
-  USEMODULE += gnrc_netdev2
+  USEMODULE += gnrc_netdev
 endif
 
-ifneq (,$(filter gnrc_netdev2,$(USEMODULE)))
+ifneq (,$(filter gnrc_netdev,$(USEMODULE)))
   USEMODULE += netopt
 endif
 
