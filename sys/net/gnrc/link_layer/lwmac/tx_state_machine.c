@@ -49,8 +49,8 @@
                                             reschedule = do_resched; \
                                             break
 
-void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2,
-                    gnrc_pktsnip_t* pkt, gnrc_mac_tx_neighbor_t* neighbor)
+void lwmac_tx_start(gnrc_netdev2_t *gnrc_netdev2,
+                    gnrc_pktsnip_t *pkt, gnrc_mac_tx_neighbor_t *neighbor)
 {
     assert(gnrc_netdev2 != NULL);
     assert(pkt != NULL);
@@ -71,7 +71,7 @@ void lwmac_tx_start(gnrc_netdev2_t* gnrc_netdev2,
 #endif
 }
 
-void lwmac_tx_stop(gnrc_netdev2_t* gnrc_netdev2)
+void lwmac_tx_stop(gnrc_netdev2_t *gnrc_netdev2)
 {
     if (!gnrc_netdev2) {
         return;
@@ -92,7 +92,7 @@ void lwmac_tx_stop(gnrc_netdev2_t* gnrc_netdev2)
             LOG_WARNING("Drop TX packet\n");
         }
         else {
-            gnrc_netdev2->tx.tx_retry_count ++;
+            gnrc_netdev2->tx.tx_retry_count++;
             return;
         }
     }
@@ -103,7 +103,7 @@ void lwmac_tx_stop(gnrc_netdev2_t* gnrc_netdev2)
 }
 
 /* Returns whether rescheduling is needed or not */
-static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
+static bool _lwmac_tx_update(gnrc_netdev2_t *gnrc_netdev2)
 {
     bool reschedule = false;
 
@@ -129,7 +129,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 
             /* check if the packet is for broadcast */
             if (gnrc_netif_hdr_get_flag(gnrc_netdev2->tx.packet) &
-               (GNRC_NETIF_HDR_FLAGS_BROADCAST | GNRC_NETIF_HDR_FLAGS_MULTICAST)) {
+                (GNRC_NETIF_HDR_FLAGS_BROADCAST | GNRC_NETIF_HDR_FLAGS_MULTICAST)) {
                 /* Set CSMA retries as configured and enable */
                 uint8_t csma_retries = LWMAC_BROADCAST_CSMA_RETRIES;
                 gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA_RETRIES,
@@ -152,7 +152,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             }
         }
         case TX_STATE_SEND_BROADCAST: {
-            gnrc_pktsnip_t* pkt = gnrc_netdev2->tx.packet;
+            gnrc_pktsnip_t *pkt = gnrc_netdev2->tx.packet;
             bool first = false;
 
             if (lwmac_timeout_is_running(gnrc_netdev2, TIMEOUT_BROADCAST_END)) {
@@ -168,7 +168,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
                 lwmac_set_timeout(gnrc_netdev2, TIMEOUT_BROADCAST_END,
                                   LWMAC_BROADCAST_DURATION_US);
 
-                gnrc_pktsnip_t* pkt_payload;
+                gnrc_pktsnip_t *pkt_payload;
 
                 /* Prepare packet with LwMAC header*/
                 lwmac_frame_broadcast_t hdr = {};
@@ -212,8 +212,8 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         case TX_STATE_SEND_WR: {
             LOG_DEBUG("TX_STATE_SEND_WR\n");
 
-            gnrc_pktsnip_t* pkt;
-            gnrc_pktsnip_t* pkt_lwmac;
+            gnrc_pktsnip_t *pkt;
+            gnrc_pktsnip_t *pkt_lwmac;
             gnrc_netif_hdr_t *nethdr;
 
             uint32_t random_backoff;
@@ -232,7 +232,6 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             /* Assemble WR */
             lwmac_frame_wr_t wr_hdr = {};
             wr_hdr.header.type = FRAMETYPE_WR;
-            //wr_hdr.dst_addr = gnrc_netdev2->tx.current_neighbor->l2_addr;
             memcpy(&(wr_hdr.dst_addr.addr), gnrc_netdev2->tx.current_neighbor->l2_addr,
                    gnrc_netdev2->tx.current_neighbor->l2_addr_len);
             wr_hdr.dst_addr.len = gnrc_netdev2->tx.current_neighbor->l2_addr_len;
@@ -260,12 +259,11 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             }
 
             /* We wouldn't get here if adding the NETIF header had failed, so no
-               sanity checks needed */
-            nethdr = (gnrc_netif_hdr_t*) (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
+             * sanity checks needed */
+            nethdr = (gnrc_netif_hdr_t *) (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
 
             /* Construct NETIF header and insert address for WR packet */
             gnrc_netif_hdr_init(nethdr, 0, 0);
-            //gnrc_netif_hdr_set_dst_addr(nethdr, dst_addr, addr_len);
 
             /* Send WR as broadcast*/
             nethdr->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
@@ -297,13 +295,13 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
                 wait_until -= RTT_US_TO_TICKS(LWMAC_WR_BEFORE_PHASE_US);
 
                 /* This output blocks a long time and can prevent correct timing */
-                LOG_DEBUG("Phase length:  %"PRIu32"\n", RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
-                LOG_DEBUG("Wait until:    %"PRIu32"\n", wait_until);
-                LOG_DEBUG("     phase:    %"PRIu32"\n", _ticks_to_phase(wait_until));
-                LOG_DEBUG("Ticks to wait: %"PRIu32"\n", (long int)wait_until - rtt_get_counter());
+                LOG_DEBUG("Phase length:  %" PRIu32 "\n", RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
+                LOG_DEBUG("Wait until:    %" PRIu32 "\n", wait_until);
+                LOG_DEBUG("     phase:    %" PRIu32 "\n", _ticks_to_phase(wait_until));
+                LOG_DEBUG("Ticks to wait: %" PRIu32 "\n", (long int)wait_until - rtt_get_counter());
 
                 /* Wait until calculated wakeup time of destination */
-                while (rtt_get_counter() < wait_until);
+                while (rtt_get_counter() < wait_until) {}
             }
 #endif
             /* Trigger sending frame */
@@ -350,11 +348,11 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             lwmac_set_timeout(gnrc_netdev2, TIMEOUT_WR, LWMAC_TIME_BETWEEN_WR_US);
 
             /* Debug WR timing */
-            LOG_DEBUG("Destination phase was: %"PRIu32"\n",
-                       gnrc_netdev2->tx.current_neighbor->phase);
-            LOG_DEBUG("Phase when sent was:   %"PRIu32"\n",
-                       _ticks_to_phase(gnrc_netdev2->tx.timestamp));
-            LOG_DEBUG("Ticks when sent was:   %"PRIu32"\n", gnrc_netdev2->tx.timestamp);
+            LOG_DEBUG("Destination phase was: %" PRIu32 "\n",
+                      gnrc_netdev2->tx.current_neighbor->phase);
+            LOG_DEBUG("Phase when sent was:   %" PRIu32 "\n",
+                      _ticks_to_phase(gnrc_netdev2->tx.timestamp));
+            LOG_DEBUG("Ticks when sent was:   %" PRIu32 "\n", gnrc_netdev2->tx.timestamp);
 
             _set_netdev_state(gnrc_netdev2, NETOPT_STATE_IDLE);
             GOTO_TX_STATE(TX_STATE_WAIT_FOR_WA, false);
@@ -362,7 +360,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         case TX_STATE_WAIT_FOR_WA: {
             LOG_DEBUG("TX_STATE_WAIT_FOR_WA\n");
 
-            gnrc_pktsnip_t* pkt;
+            gnrc_pktsnip_t *pkt;
             bool found_wa = false;
             bool postponed = false;
             bool from_expected_destination = false;
@@ -452,7 +450,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
                 if (from_expected_destination) {
                     /* calculate the phase of the receiver based on WA */
                     gnrc_netdev2->tx.timestamp = _phase_now();
-                    lwmac_frame_wa_t* wa_hdr;
+                    lwmac_frame_wa_t *wa_hdr;
                     wa_hdr = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_LWMAC))->data;
 
                     if (gnrc_netdev2->tx.timestamp >= wa_hdr->current_phase) {
@@ -474,10 +472,10 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
                         own_phase = gnrc_netdev2->tx.timestamp - own_phase;
                     }
 
-                    if ((own_phase < RTT_US_TO_TICKS((3*LWMAC_WAKEUP_DURATION_US/2))) ||
+                    if ((own_phase < RTT_US_TO_TICKS((3 * LWMAC_WAKEUP_DURATION_US / 2))) ||
                         (own_phase > RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US -
-                        (3*LWMAC_WAKEUP_DURATION_US/2)))) {
-                        gnrc_netdev2_set_phase_backoff(gnrc_netdev2,true);
+                                                     (3 * LWMAC_WAKEUP_DURATION_US / 2)))) {
+                        gnrc_netdev2_set_phase_backoff(gnrc_netdev2, true);
                         LOG_WARNING("phase close\n");
                     }
                 }
@@ -509,7 +507,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 
             /* Save newly calculated phase for destination */
             gnrc_netdev2->tx.current_neighbor->phase = gnrc_netdev2->tx.timestamp;
-            LOG_INFO("New phase: %"PRIu32"\n", gnrc_netdev2->tx.timestamp);
+            LOG_INFO("New phase: %" PRIu32 "\n", gnrc_netdev2->tx.timestamp);
 
             /* We've got our WA, so discard the rest, TODO: no flushing */
             gnrc_priority_pktqueue_flush(&gnrc_netdev2->rx.queue);
@@ -519,8 +517,8 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
         case TX_STATE_SEND_DATA: {
             LOG_DEBUG("TX_STATE_SEND_DATA\n");
 
-            gnrc_pktsnip_t* pkt = gnrc_netdev2->tx.packet;
-            gnrc_pktsnip_t* pkt_payload;
+            gnrc_pktsnip_t *pkt = gnrc_netdev2->tx.packet;
+            gnrc_pktsnip_t *pkt_payload;
 
             /* Enable Auto ACK again */
             netopt_enable_t autoack = NETOPT_ENABLE;
@@ -544,12 +542,12 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
             if ((gnrc_priority_pktqueue_length(&gnrc_netdev2->tx.current_neighbor->queue) > 0) &&
                 (gnrc_netdev2->tx.tx_burst_count < LWMAC_MAX_TX_BURST_PKT_NUM)) {
                 hdr.type = FRAMETYPE_DATA_PENDING;
-                gnrc_netdev2_set_tx_continue(gnrc_netdev2,true);
-                gnrc_netdev2->tx.tx_burst_count ++;
+                gnrc_netdev2_set_tx_continue(gnrc_netdev2, true);
+                gnrc_netdev2->tx.tx_burst_count++;
             }
             else {
                 hdr.type = FRAMETYPE_DATA;
-                gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
+                gnrc_netdev2_set_tx_continue(gnrc_netdev2, false);
             }
 
             pkt->next = gnrc_pktbuf_add(pkt->next, &hdr, sizeof(hdr), GNRC_NETTYPE_LWMAC);
@@ -579,7 +577,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
 
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
             gnrc_netdev2->lwmac.pkt_start_sending_time_ticks =
-            rtt_get_counter() - gnrc_netdev2->lwmac.pkt_start_sending_time_ticks;
+                rtt_get_counter() - gnrc_netdev2->lwmac.pkt_start_sending_time_ticks;
             DEBUG("[lwmac-tx]: pkt sending delay in TX: %lu us\n",
                   RTT_TICKS_TO_US(gnrc_netdev2->lwmac.pkt_start_sending_time_ticks));
 #endif
@@ -624,7 +622,7 @@ static bool _lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
     return reschedule;
 }
 
-void lwmac_tx_update(gnrc_netdev2_t* gnrc_netdev2)
+void lwmac_tx_update(gnrc_netdev2_t *gnrc_netdev2)
 {
     /* Update until no rescheduling needed */
     while (_lwmac_tx_update(gnrc_netdev2)) {}
