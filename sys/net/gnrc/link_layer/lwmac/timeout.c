@@ -19,7 +19,9 @@
  * @}
  */
 
+#include <errno.h>
 #include "xtimer.h"
+#include "net/gnrc/netdev.h"
 #include "net/gnrc/lwmac/lwmac.h"
 #include "net/gnrc/lwmac/timeout.h"
 #include "net/gnrc/lwmac/types.h"

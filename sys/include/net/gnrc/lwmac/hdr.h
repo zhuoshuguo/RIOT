@@ -24,6 +24,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "net/ieee802154.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

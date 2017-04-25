@@ -25,7 +25,6 @@
 #define GNRC_LWMAC_H
 
 #include "kernel_types.h"
-#include "net/gnrc/netdev.h"
 
 /**
  * @brief Forward gnrc_netdev declaration
@@ -180,6 +179,13 @@ extern "C" {
  */
 #ifndef LWMAC_IPC_MSG_QUEUE_SIZE
 #define LWMAC_IPC_MSG_QUEUE_SIZE        (8U)
+#endif
+
+/**
+ * @brief   The default largest number of parallel timeouts in Lwmac
+ */
+#ifndef LWMAC_TIMEOUT_COUNT
+#define LWMAC_TIMEOUT_COUNT             (3U)
 #endif
 
 /**

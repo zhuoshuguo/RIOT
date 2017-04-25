@@ -21,6 +21,7 @@
 #ifndef GNRC_LWMAC_TYPES_H_
 #define GNRC_LWMAC_TYPES_H_
 
+#include "net/gnrc/lwmac/lwmac.h"
 #include "net/gnrc/lwmac/hdr.h"
 #include "net/gnrc/lwmac/timeout.h"
 
