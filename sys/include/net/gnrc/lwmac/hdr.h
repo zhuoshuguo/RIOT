@@ -32,14 +32,14 @@ extern "C" {
  * @brief   lwMAC internal L2 address structure
  */
 typedef struct {
-    uint8_t  addr[IEEE802154_LONG_ADDRESS_LEN];
-    uint8_t  len;
+    uint8_t addr[IEEE802154_LONG_ADDRESS_LEN];
+    uint8_t len;
 } l2_addr_t;
 
 /**
  * @brief Static initializer for l2_addr_t.
  */
-#define LWMAC_L2_ADDR_INIT      { {0}, 0 }
+#define LWMAC_L2_ADDR_INIT      { { 0 }, 0 }
 
 /**
  * @brief   lwMAC frame types
@@ -96,7 +96,7 @@ typedef struct __attribute__((packed)) {
  *
  * @param[in] hdr  lwmac header
  */
-void lwmac_print_hdr(lwmac_hdr_t* hdr);
+void lwmac_print_hdr(lwmac_hdr_t *hdr);
 
 #ifdef __cplusplus
 }

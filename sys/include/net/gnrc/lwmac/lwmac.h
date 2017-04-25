@@ -50,7 +50,7 @@ extern "C" {
  *        sure that at least one WR will be received by the destination.
  */
 #ifndef LWMAC_PREAMBLE_DURATION_US
-#define LWMAC_PREAMBLE_DURATION_US      ((13*LWMAC_WAKEUP_INTERVAL_US)/10)
+#define LWMAC_PREAMBLE_DURATION_US      ((13 * LWMAC_WAKEUP_INTERVAL_US) / 10)
 #endif
 
 /**
@@ -101,7 +101,7 @@ extern "C" {
  *        implementation.
  */
 #ifndef LWMAC_WR_BEFORE_PHASE_US
-#define LWMAC_WR_BEFORE_PHASE_US        ((13 * US_PER_MS)/10)
+#define LWMAC_WR_BEFORE_PHASE_US        ((13 * US_PER_MS) / 10)
 #endif
 
 /**
@@ -157,7 +157,7 @@ extern "C" {
  * @brief MAX burst transmission packet number in one shot.
  */
 #ifndef LWMAC_MAX_TX_BURST_PKT_NUM
-#define LWMAC_MAX_TX_BURST_PKT_NUM      (LWMAC_WAKEUP_INTERVAL_US/LWMAC_WAKEUP_DURATION_US)
+#define LWMAC_MAX_TX_BURST_PKT_NUM      (LWMAC_WAKEUP_INTERVAL_US / LWMAC_WAKEUP_DURATION_US)
 #endif
 
 /**
