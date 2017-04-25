@@ -153,14 +153,14 @@ void lwmac_set_state(gnrc_netdev_t *gnrc_netdev, lwmac_state_t newstate)
         }
         /* Trying to send data */
         case TRANSMITTING: {
-            rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev);   /**< No duty cycling while RXing */
-            _set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE); /**< Power up netdev */
+            rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev);    /**< No duty cycling while RXing */
+            _set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);  /**< Power up netdev */
             break;
         }
         /* Receiving incoming data */
         case RECEIVING: {
-            rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev);   /**< No duty cycling while TXing */
-            _set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE); /**< Power up netdev */
+            rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev);    /**< No duty cycling while TXing */
+            _set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);  /**< Power up netdev */
             break;
         }
         case STOPPED: {
@@ -658,8 +658,8 @@ static void *_lwmac_thread(void *args)
 
     /* Get own address from netdev */
     gnrc_netdev->l2_addr_len = dev->driver->get(dev, NETOPT_ADDRESS_LONG,
-                                                 &gnrc_netdev->l2_addr,
-                                                 IEEE802154_LONG_ADDRESS_LEN);
+                                                &gnrc_netdev->l2_addr,
+                                                IEEE802154_LONG_ADDRESS_LEN);
     assert(gnrc_netdev->l2_addr_len > 0);
 
     /* Initialize broadcast sequence number. This at least differs from board

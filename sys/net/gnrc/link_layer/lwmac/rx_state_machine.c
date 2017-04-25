@@ -59,7 +59,7 @@ void lwmac_rx_start(gnrc_netdev_t *gnrc_netdev)
     /* Don't attempt to send a WA if channel is busy to get timings right */
     netopt_enable_t csma_disable = NETOPT_DISABLE;
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA, &csma_disable,
-                                   sizeof(csma_disable));
+                                  sizeof(csma_disable));
 
     gnrc_netdev->rx.state = RX_STATE_INIT;
 }
@@ -224,7 +224,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
             /* Disable Auto ACK */
             netopt_enable_t autoack = NETOPT_DISABLE;
             gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_AUTOACK, &autoack,
-                                           sizeof(autoack));
+                                          sizeof(autoack));
 
             /* We might have taken too long to answer the WR so we're receiving the
              * next one already. Don't send WA yet and go back to WR reception.
@@ -255,7 +255,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
             /* Enable Auto ACK again for data reception */
             autoack = NETOPT_ENABLE;
             gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_AUTOACK, &autoack,
-                                           sizeof(autoack));
+                                          sizeof(autoack));
 
             GOTO_RX_STATE(RX_STATE_WAIT_WA_SENT, false);
         }
@@ -377,7 +377,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
         }
         case RX_STATE_SUCCESSFUL:
         case RX_STATE_FAILED: {
-             break;
+            break;
         }
         case RX_STATE_STOPPED: {
             LOG_DEBUG("Reception state machine is stopped\n");

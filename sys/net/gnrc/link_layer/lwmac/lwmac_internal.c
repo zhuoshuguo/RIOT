@@ -151,9 +151,9 @@ int _parse_packet(gnrc_pktsnip_t *pkt, lwmac_packet_info_t *info)
 void _set_netdev_state(gnrc_netdev_t *gnrc_netdev, netopt_state_t devstate)
 {
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
-                                   NETOPT_STATE,
-                                   &devstate,
-                                   sizeof(devstate));
+                                  NETOPT_STATE,
+                                  &devstate,
+                                  sizeof(devstate));
 
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
     if (devstate == NETOPT_STATE_IDLE) {
@@ -182,9 +182,9 @@ netopt_state_t _get_netdev_state(gnrc_netdev_t *gnrc_netdev)
     netopt_state_t state;
 
     if (0 < gnrc_netdev->dev->driver->get(gnrc_netdev->dev,
-                                           NETOPT_STATE,
-                                           &state,
-                                           sizeof(state))) {
+                                          NETOPT_STATE,
+                                          &state,
+                                          sizeof(state))) {
         return state;
     }
     return -1;

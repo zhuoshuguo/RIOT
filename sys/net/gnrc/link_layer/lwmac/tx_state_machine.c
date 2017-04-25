@@ -133,10 +133,10 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                 /* Set CSMA retries as configured and enable */
                 uint8_t csma_retries = LWMAC_BROADCAST_CSMA_RETRIES;
                 gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA_RETRIES,
-                                               &csma_retries, sizeof(csma_retries));
+                                              &csma_retries, sizeof(csma_retries));
                 netopt_enable_t csma_enable = NETOPT_ENABLE;
                 gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA,
-                                               &csma_enable, sizeof(csma_enable));
+                                              &csma_enable, sizeof(csma_enable));
 
                 GOTO_TX_STATE(TX_STATE_SEND_BROADCAST, true);
             }
@@ -144,7 +144,7 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                 /* Use CSMA for the first WR */
                 netopt_enable_t csma_disable = NETOPT_ENABLE;
                 gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA,
-                                               &csma_disable, sizeof(csma_disable));
+                                              &csma_disable, sizeof(csma_disable));
 
                 lwmac_set_timeout(gnrc_netdev, TIMEOUT_NO_RESPONSE, LWMAC_PREAMBLE_DURATION_US);
 
@@ -186,7 +186,7 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                 /* No Auto-ACK for broadcast packets */
                 netopt_enable_t autoack = NETOPT_DISABLE;
                 gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_AUTOACK, &autoack,
-                                               sizeof(autoack));
+                                              sizeof(autoack));
                 first = true;
             }
 
@@ -271,7 +271,7 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             /* Disable Auto ACK */
             netopt_enable_t autoack = NETOPT_DISABLE;
             gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_AUTOACK, &autoack,
-                                           sizeof(autoack));
+                                          sizeof(autoack));
 
             /* Prepare WR, this will discard any frame in the transceiver that has
              * possibly arrived in the meantime but we don't care at this point. */
@@ -339,7 +339,7 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                 /* Only the first WR use CSMA */
                 netopt_enable_t csma_disable = NETOPT_DISABLE;
                 gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA,
-                                               &csma_disable, sizeof(csma_disable));
+                                              &csma_disable, sizeof(csma_disable));
             }
 
             gnrc_netdev->tx.wr_sent++;
@@ -455,7 +455,7 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
 
                     if (gnrc_netdev->tx.timestamp >= wa_hdr->current_phase) {
                         gnrc_netdev->tx.timestamp = gnrc_netdev->tx.timestamp -
-                                                     wa_hdr->current_phase;
+                                                    wa_hdr->current_phase;
                     }
                     else {
                         gnrc_netdev->tx.timestamp += RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US);
@@ -523,17 +523,17 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             /* Enable Auto ACK again */
             netopt_enable_t autoack = NETOPT_ENABLE;
             gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_AUTOACK,
-                                           &autoack, sizeof(autoack));
+                                          &autoack, sizeof(autoack));
 
             /* It's okay to retry sending DATA. Timing doesn't matter anymore and
              * destination is waiting for a certain amount of time. */
             uint8_t csma_retries = LWMAC_DATA_CSMA_RETRIES;
             gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA_RETRIES,
-                                           &csma_retries, sizeof(csma_retries));
+                                          &csma_retries, sizeof(csma_retries));
 
             netopt_enable_t csma_enable = NETOPT_ENABLE;
             gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA,
-                                           &csma_enable, sizeof(csma_enable));
+                                          &csma_enable, sizeof(csma_enable));
 
             pkt_payload = pkt->next;
 

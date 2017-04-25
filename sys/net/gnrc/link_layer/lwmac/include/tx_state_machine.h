@@ -33,8 +33,8 @@ extern "C" {
  * @brief Start Lwmac TX procedure to transmit packet @p pkt to @p neighbor
  *
  * @param[in,out]   gnrc_netdev   gnrc_netdev structure
- * @param[in]       pkt            packet to transmit
- * @param[in]       neighbor       Tx neighbor
+ * @param[in]       pkt           packet to transmit
+ * @param[in]       neighbor      Tx neighbor
  *
  */
 void lwmac_tx_start(gnrc_netdev_t *gnrc_netdev,
