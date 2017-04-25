@@ -81,16 +81,16 @@ extern "C" {
  * @brief Internal states of Lwmac
  */
 typedef enum {
-    UNDEF = -1,
-    STOPPED,
-    START,
-    STOP,
-    RESET,
-    LISTENING,
-    RECEIVING,      /**< RX is handled in own state machine */
-    TRANSMITTING,   /**< TX is handled in own state machine */
-    SLEEPING,
-    STATE_COUNT
+    LWMAC_UNDEF = -1,
+    LWMAC_STOPPED,
+    LWMAC_START,
+    LWMAC_STOP,
+    LWMAC_RESET,
+    LWMAC_LISTENING,
+    LWMAC_RECEIVING,      /**< RX is handled in own state machine */
+    LWMAC_TRANSMITTING,   /**< TX is handled in own state machine */
+    LWMAC_SLEEPING,
+    LWMAC_STATE_COUNT
 } lwmac_state_t;
 
 /**
