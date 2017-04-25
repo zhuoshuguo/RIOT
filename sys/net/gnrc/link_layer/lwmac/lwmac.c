@@ -88,7 +88,7 @@ void lwmac_set_state(gnrc_netdev_t *gnrc_netdev, lwmac_state_t newstate)
         return;
     }
 
-    if (newstate >= STATE_COUNT) {
+    if (newstate >= LWMAC_STATE_COUNT) {
         LOG_ERROR("Trying to set invalid state %u\n", newstate);
         return;
     }
@@ -98,8 +98,8 @@ void lwmac_set_state(gnrc_netdev_t *gnrc_netdev, lwmac_state_t newstate)
 
     /* Actions when leaving old state */
     switch (oldstate) {
-        case RECEIVING:
-        case TRANSMITTING: {
+        case LWMAC_RECEIVING:
+        case LWMAC_TRANSMITTING: {
             /* Enable duty cycling again */
             rtt_handler(LWMAC_EVENT_RTT_RESUME, gnrc_netdev);
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
@@ -112,7 +112,7 @@ void lwmac_set_state(gnrc_netdev_t *gnrc_netdev, lwmac_state_t newstate)
 #endif
             break;
         }
-        case SLEEPING: {
+        case LWMAC_SLEEPING: {
             lwmac_clear_timeout(gnrc_netdev, TIMEOUT_WAKEUP_PERIOD);
             break;
         }
@@ -123,11 +123,11 @@ void lwmac_set_state(gnrc_netdev_t *gnrc_netdev, lwmac_state_t newstate)
     /* Actions when entering new state */
     switch (newstate) {
         /*********************** Operation states *********************************/
-        case LISTENING: {
+        case LWMAC_LISTENING: {
             _set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
             break;
         }
-        case SLEEPING: {
+        case LWMAC_SLEEPING: {
             /* Put transceiver to sleep */
             _set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
             /* We may have come here through RTT handler, so timeout may still be active */
@@ -152,36 +152,36 @@ void lwmac_set_state(gnrc_netdev_t *gnrc_netdev, lwmac_state_t newstate)
             return;
         }
         /* Trying to send data */
-        case TRANSMITTING: {
+        case LWMAC_TRANSMITTING: {
             rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev);    /**< No duty cycling while RXing */
             _set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);  /**< Power up netdev */
             break;
         }
         /* Receiving incoming data */
-        case RECEIVING: {
+        case LWMAC_RECEIVING: {
             rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev);    /**< No duty cycling while TXing */
             _set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);  /**< Power up netdev */
             break;
         }
-        case STOPPED: {
+        case LWMAC_STOPPED: {
             _set_netdev_state(gnrc_netdev, NETOPT_STATE_OFF);
             break;
         }
         /*********************** Control states ***********************************/
-        case START: {
+        case LWMAC_START: {
             rtt_handler(LWMAC_EVENT_RTT_START, gnrc_netdev);
-            lwmac_set_state(gnrc_netdev, LISTENING);
+            lwmac_set_state(gnrc_netdev, LWMAC_LISTENING);
             break;
         }
-        case STOP: {
+        case LWMAC_STOP: {
             rtt_handler(LWMAC_EVENT_RTT_STOP, gnrc_netdev);
-            lwmac_set_state(gnrc_netdev, STOPPED);
+            lwmac_set_state(gnrc_netdev, LWMAC_STOPPED);
             break;
         }
-        case RESET: {
+        case LWMAC_RESET: {
             LOG_WARNING("Reset not yet implemented\n");
-            lwmac_set_state(gnrc_netdev, STOP);
-            lwmac_set_state(gnrc_netdev, START);
+            lwmac_set_state(gnrc_netdev, LWMAC_STOP);
+            lwmac_set_state(gnrc_netdev, LWMAC_START);
             break;
         }
         /**************************************************************************/
@@ -200,7 +200,7 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->lwmac.needs_rescheduling = false;
 
     switch (gnrc_netdev->lwmac.state) {
-        case SLEEPING: {
+        case LWMAC_SLEEPING: {
             if (gnrc_netdev2_get_quit_tx(gnrc_netdev)) {
                 return false;
             }
@@ -219,7 +219,7 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
                     /* Check if there are broadcasts to send and transmit immediately */
                     if (gnrc_priority_pktqueue_length(&(gnrc_netdev->tx.neighbors[0].queue)) > 0) {
                         gnrc_netdev->tx.current_neighbor = &(gnrc_netdev->tx.neighbors[0]);
-                        lwmac_set_state(gnrc_netdev, TRANSMITTING);
+                        lwmac_set_state(gnrc_netdev, LWMAC_TRANSMITTING);
                         break;
                     }
                     neighbour = _next_tx_neighbor(gnrc_netdev);
@@ -231,7 +231,7 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
                         gnrc_netdev->tx.current_neighbor = neighbour;
                         gnrc_netdev2_set_tx_continue(gnrc_netdev, false);
                         gnrc_netdev->tx.tx_burst_count = 0;
-                        lwmac_set_state(gnrc_netdev, TRANSMITTING);
+                        lwmac_set_state(gnrc_netdev, LWMAC_TRANSMITTING);
                         break;
                     }
 
@@ -270,12 +270,12 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
                               rtt_get_counter());
                     gnrc_netdev2_set_tx_continue(gnrc_netdev, false);
                     gnrc_netdev->tx.tx_burst_count = 0;
-                    lwmac_set_state(gnrc_netdev, TRANSMITTING);
+                    lwmac_set_state(gnrc_netdev, LWMAC_TRANSMITTING);
                 }
             }
             break;
         }
-        case LISTENING: {
+        case LWMAC_LISTENING: {
             if ((_next_tx_neighbor(gnrc_netdev) != NULL) ||
                 (gnrc_netdev->tx.current_neighbor != NULL)) {
                 rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev);
@@ -290,7 +290,7 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
                 /* Dispatch first as there still may be broadcast packets. */
                 _dispatch(gnrc_netdev->rx.dispatch_buffer);
 
-                gnrc_netdev->lwmac.state = SLEEPING;
+                gnrc_netdev->lwmac.state = LWMAC_SLEEPING;
                 /* Enable duty cycling again */
                 rtt_handler(LWMAC_EVENT_RTT_RESUME, gnrc_netdev);
 
@@ -309,11 +309,11 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
             if (gnrc_priority_pktqueue_length(&gnrc_netdev->rx.queue) > 0) {
                 /* Do wakeup extension after packet reception. */
                 lwmac_clear_timeout(gnrc_netdev, TIMEOUT_WAKEUP_PERIOD);
-                lwmac_set_state(gnrc_netdev, RECEIVING);
+                lwmac_set_state(gnrc_netdev, LWMAC_RECEIVING);
             }
             break;
         }
-        case RECEIVING: {
+        case LWMAC_RECEIVING: {
             lwmac_rx_state_t state_rx = gnrc_netdev->rx.state;
 
             switch (state_rx) {
@@ -333,11 +333,11 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
                     }
 
                     if (gnrc_netdev2_get_quit_rx(gnrc_netdev)) {
-                        lwmac_set_state(gnrc_netdev, SLEEPING);
+                        lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
                     }
                     else {
                         /* Restart */
-                        lwmac_set_state(gnrc_netdev, LISTENING);
+                        lwmac_set_state(gnrc_netdev, LWMAC_LISTENING);
                     }
                     break;
                 }
@@ -348,11 +348,11 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
                     _dispatch(gnrc_netdev->rx.dispatch_buffer);
 
                     if (gnrc_netdev2_get_quit_rx(gnrc_netdev)) {
-                        lwmac_set_state(gnrc_netdev, SLEEPING);
+                        lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
                     }
                     else {
                         /* Go back to Listen after successful transaction */
-                        lwmac_set_state(gnrc_netdev, LISTENING);
+                        lwmac_set_state(gnrc_netdev, LWMAC_LISTENING);
                     }
                     break;
                 }
@@ -366,7 +366,7 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
             }
             break;
         }
-        case TRANSMITTING: {
+        case LWMAC_TRANSMITTING: {
             char *tx_success = "";
             lwmac_tx_state_t state_tx = gnrc_netdev->tx.state;
 
@@ -421,7 +421,7 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
                         lwmac_schedule_update(gnrc_netdev);
                     }
                     else {
-                        lwmac_set_state(gnrc_netdev, SLEEPING);
+                        lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
                     }
                     break;
                 }
@@ -469,14 +469,14 @@ void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
             gnrc_netdev2_set_quit_rx(gnrc_netdev, false);
             gnrc_netdev2_set_phase_backoff(gnrc_netdev, false);
             gnrc_netdev->rx.rx_exten_count = 0;
-            lwmac_set_state(gnrc_netdev, LISTENING);
+            lwmac_set_state(gnrc_netdev, LWMAC_LISTENING);
             break;
         }
         case LWMAC_EVENT_RTT_SLEEP_PENDING: {
             alarm = _next_inphase_event(gnrc_netdev->lwmac.last_wakeup,
                                         RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
             rtt_set_alarm(alarm, rtt_cb, (void *) LWMAC_EVENT_RTT_WAKEUP_PENDING);
-            lwmac_set_state(gnrc_netdev, SLEEPING);
+            lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
             break;
         }
         /* Set initial wakeup alarm that starts the cycle */
@@ -670,7 +670,7 @@ static void *_lwmac_thread(void *args)
     lwmac_reset_timeouts(gnrc_netdev);
 
     /* Start duty cycling */
-    lwmac_set_state(gnrc_netdev, START);
+    lwmac_set_state(gnrc_netdev, LWMAC_START);
 
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
     /* Start duty cycle recording */
@@ -737,15 +737,15 @@ static void *_lwmac_thread(void *args)
                         res = opt->data_len;
                         switch (*state) {
                             case NETOPT_STATE_OFF: {
-                                lwmac_set_state(gnrc_netdev, STOP);
+                                lwmac_set_state(gnrc_netdev, LWMAC_STOP);
                                 break;
                             }
                             case NETOPT_STATE_IDLE: {
-                                lwmac_set_state(gnrc_netdev, START);
+                                lwmac_set_state(gnrc_netdev, LWMAC_START);
                                 break;
                             }
                             case NETOPT_STATE_RESET: {
-                                lwmac_set_state(gnrc_netdev, RESET);
+                                lwmac_set_state(gnrc_netdev, LWMAC_RESET);
                                 break;
                             }
                             default:
