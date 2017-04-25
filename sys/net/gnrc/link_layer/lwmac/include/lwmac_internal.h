@@ -35,9 +35,9 @@ extern "C" {
  * @brief Type to pass information about parsing.
  */
 typedef struct {
-    lwmac_hdr_t* header;    /**< Lwmac header of packet */
-    l2_addr_t  src_addr;    /**< copied source address of packet  */
-    l2_addr_t  dst_addr;    /**< copied destination address of packet */
+    lwmac_hdr_t *header;    /**< Lwmac header of packet */
+    l2_addr_t src_addr;     /**< copied source address of packet  */
+    l2_addr_t dst_addr;     /**< copied destination address of packet */
 } lwmac_packet_info_t;
 
 /**
@@ -60,7 +60,7 @@ typedef struct {
  * @return                      0 if correctly parsed
  * @return                      <0 on error
  */
-int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info);
+int _parse_packet(gnrc_pktsnip_t *pkt, lwmac_packet_info_t *info);
 
 /**
  * @brief Shortcut to get the state of netdev.
@@ -69,7 +69,7 @@ int _parse_packet(gnrc_pktsnip_t* pkt, lwmac_packet_info_t* info);
  *
  * @return                      state of netdev
  */
-netopt_state_t _get_netdev_state(gnrc_netdev2_t* gnrc_netdev2);
+netopt_state_t _get_netdev_state(gnrc_netdev2_t *gnrc_netdev2);
 
 /**
  * @brief Shortcut to set the state of netdev
@@ -77,7 +77,7 @@ netopt_state_t _get_netdev_state(gnrc_netdev2_t* gnrc_netdev2);
  * @param[in]   gnrc_netdev2    gnrc_netdev2 structure
  * @param[in]   devstate        new state for netdev
  */
-void _set_netdev_state(gnrc_netdev2_t* gnrc_netdev2, netopt_state_t devstate);
+void _set_netdev_state(gnrc_netdev2_t *gnrc_netdev2, netopt_state_t devstate);
 
 /**
  * @brief Convert RTT ticks to device phase
@@ -111,7 +111,8 @@ static inline uint32_t _phase_now(void)
 static inline uint32_t _ticks_until_phase(uint32_t phase)
 {
     long int tmp = phase - _phase_now();
-    if(tmp < 0) {
+
+    if (tmp < 0) {
         /* Phase in next interval */
         tmp += RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US);
     }
@@ -136,7 +137,7 @@ uint32_t _phase_to_ticks(uint32_t phase);
  * @return                      tx neighbor
  * @return                      NULL, if there is no neighbor for transmission.
  */
-gnrc_mac_tx_neighbor_t* _next_tx_neighbor(gnrc_netdev2_t* gnrc_netdev2);
+gnrc_mac_tx_neighbor_t *_next_tx_neighbor(gnrc_netdev2_t *gnrc_netdev2);
 
 /**
  * @brief Calculate the next event's timing in rtt timer ticks
@@ -158,14 +159,14 @@ uint32_t _next_inphase_event(uint32_t last, uint32_t interval);
  * @return                      0 if correctly stored
  * @return                      <0 on error
  */
-int _dispatch_defer(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt);
+int _dispatch_defer(gnrc_pktsnip_t * buffer[], gnrc_pktsnip_t * pkt);
 
 /**
  * @brief Dispatch received packet to the upper layer
  *
  * @param[in,out]   buffer      RX dispatch packet buffer
  */
-void _dispatch(gnrc_pktsnip_t* buffer[]);
+void _dispatch(gnrc_pktsnip_t * buffer[]);
 
 #ifdef __cplusplus
 }
