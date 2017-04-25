@@ -63,24 +63,24 @@
  */
 kernel_pid_t lwmac_pid;
 
-static void rtt_cb(void* arg);
-static bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2);
-static void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate);
-static void lwmac_schedule_update(gnrc_netdev2_t* gnrc_netdev2);
-static bool lwmac_needs_update(gnrc_netdev2_t* gnrc_netdev2);
-static void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2);
+static void rtt_cb(void *arg);
+static bool lwmac_update(gnrc_netdev2_t *gnrc_netdev2);
+static void lwmac_set_state(gnrc_netdev2_t *gnrc_netdev2, lwmac_state_t newstate);
+static void lwmac_schedule_update(gnrc_netdev2_t *gnrc_netdev2);
+static bool lwmac_needs_update(gnrc_netdev2_t *gnrc_netdev2);
+static void rtt_handler(uint32_t event, gnrc_netdev2_t *gnrc_netdev2);
 
-inline void lwmac_schedule_update(gnrc_netdev2_t* gnrc_netdev2)
+inline void lwmac_schedule_update(gnrc_netdev2_t *gnrc_netdev2)
 {
     gnrc_netdev2->lwmac.needs_rescheduling = true;
 }
 
-inline bool lwmac_needs_update(gnrc_netdev2_t* gnrc_netdev2)
+inline bool lwmac_needs_update(gnrc_netdev2_t *gnrc_netdev2)
 {
     return gnrc_netdev2->lwmac.needs_rescheduling;
 }
 
-void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
+void lwmac_set_state(gnrc_netdev2_t *gnrc_netdev2, lwmac_state_t newstate)
 {
     lwmac_state_t oldstate = gnrc_netdev2->lwmac.state;
 
@@ -106,7 +106,7 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
             /* Output duty-cycle ratio */
             uint64_t duty;
             duty = (uint64_t) rtt_get_counter();
-            duty = ((uint64_t) gnrc_netdev2->lwmac.awake_duration_sum_ticks)*100 /
+            duty = ((uint64_t) gnrc_netdev2->lwmac.awake_duration_sum_ticks) * 100 /
                    (duty - (uint64_t)gnrc_netdev2->lwmac.system_start_time_ticks);
             printf("[lwmac-tx]: achieved duty-cycle: %lu %% \n", (uint32_t)duty);
 #endif
@@ -134,18 +134,18 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
             lwmac_clear_timeout(gnrc_netdev2, TIMEOUT_WAKEUP_PERIOD);
 
             if (gnrc_netdev2_get_phase_backoff(gnrc_netdev2)) {
-                gnrc_netdev2_set_phase_backoff(gnrc_netdev2,false);
+                gnrc_netdev2_set_phase_backoff(gnrc_netdev2, false);
                 uint32_t alarm;
 
                 rtt_clear_alarm();
-                alarm = random_uint32_range(RTT_US_TO_TICKS((3*LWMAC_WAKEUP_DURATION_US/2)),
+                alarm = random_uint32_range(RTT_US_TO_TICKS((3 * LWMAC_WAKEUP_DURATION_US / 2)),
                                             RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US -
-                                            (3*LWMAC_WAKEUP_DURATION_US/2)));
-                LOG_WARNING("phase backoffed: %lu us\n",RTT_TICKS_TO_US(alarm));
+                                                            (3 * LWMAC_WAKEUP_DURATION_US / 2)));
+                LOG_WARNING("phase backoffed: %lu us\n", RTT_TICKS_TO_US(alarm));
                 gnrc_netdev2->lwmac.last_wakeup = gnrc_netdev2->lwmac.last_wakeup + alarm;
                 alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup,
                                             RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
-                rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_WAKEUP_PENDING);
+                rtt_set_alarm(alarm, rtt_cb, (void *) LWMAC_EVENT_RTT_WAKEUP_PENDING);
             }
 
             /* Return immediately, so no rescheduling */
@@ -153,14 +153,14 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
         }
         /* Trying to send data */
         case TRANSMITTING: {
-            rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev2); /* No duty cycling while RXing */
-            _set_netdev_state(gnrc_netdev2, NETOPT_STATE_IDLE);  /* Power up netdev */
+            rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev2);   /**< No duty cycling while RXing */
+            _set_netdev_state(gnrc_netdev2, NETOPT_STATE_IDLE); /**< Power up netdev */
             break;
         }
         /* Receiving incoming data */
         case RECEIVING: {
-            rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev2); /* No duty cycling while TXing */
-            _set_netdev_state(gnrc_netdev2, NETOPT_STATE_IDLE);  /* Power up netdev */
+            rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev2);   /**< No duty cycling while TXing */
+            _set_netdev_state(gnrc_netdev2, NETOPT_STATE_IDLE); /**< Power up netdev */
             break;
         }
         case STOPPED: {
@@ -195,7 +195,7 @@ void lwmac_set_state(gnrc_netdev2_t* gnrc_netdev2, lwmac_state_t newstate)
 }
 
 /* Main state machine. Call whenever something happens */
-bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
+bool lwmac_update(gnrc_netdev2_t *gnrc_netdev2)
 {
     gnrc_netdev2->lwmac.needs_rescheduling = false;
 
@@ -209,11 +209,11 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
              * sent before the first one is handled, even no broadcast
              */
             if (!lwmac_timeout_is_running(gnrc_netdev2, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
-                gnrc_mac_tx_neighbor_t* neighbour;
+                gnrc_mac_tx_neighbor_t *neighbour;
 
                 /* Check if there is packet remaining for retransmission */
                 if (gnrc_netdev2->tx.current_neighbor != NULL) {
-                    neighbour= gnrc_netdev2->tx.current_neighbor;
+                    neighbour = gnrc_netdev2->tx.current_neighbor;
                 }
                 else {
                     /* Check if there are broadcasts to send and transmit immediately */
@@ -229,7 +229,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                     /* if phase is unknown, send immediately after wakeup period. */
                     if (neighbour->phase > RTT_TICKS_TO_US(LWMAC_WAKEUP_INTERVAL_US)) {
                         gnrc_netdev2->tx.current_neighbor = neighbour;
-                        gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
+                        gnrc_netdev2_set_tx_continue(gnrc_netdev2, false);
                         gnrc_netdev2->tx.tx_burst_count = 0;
                         lwmac_set_state(gnrc_netdev2, TRANSMITTING);
                         break;
@@ -266,9 +266,9 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             }
             else {
                 if (lwmac_timeout_is_expired(gnrc_netdev2, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
-                    LOG_DEBUG("Got timeout for dest wakeup, ticks: %"PRIu32"\n",
-                               rtt_get_counter());
-                    gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
+                    LOG_DEBUG("Got timeout for dest wakeup, ticks: %" PRIu32 "\n",
+                              rtt_get_counter());
+                    gnrc_netdev2_set_tx_continue(gnrc_netdev2, false);
                     gnrc_netdev2->tx.tx_burst_count = 0;
                     lwmac_set_state(gnrc_netdev2, TRANSMITTING);
                 }
@@ -298,7 +298,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                 lwmac_clear_timeout(gnrc_netdev2, TIMEOUT_WAKEUP_PERIOD);
 
                 /* if there is a packet for transmission, schedule update. */
-                gnrc_mac_tx_neighbor_t* neighbour = _next_tx_neighbor(gnrc_netdev2);
+                gnrc_mac_tx_neighbor_t *neighbour = _next_tx_neighbor(gnrc_netdev2);
                 if ((neighbour != NULL) || (gnrc_netdev2->tx.current_neighbor != NULL)) {
                     /* This triggers packet sending procedure in sleeping immediately. */
                     lwmac_schedule_update(gnrc_netdev2);
@@ -329,7 +329,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                     lwmac_rx_stop(gnrc_netdev2);
 
                     if (gnrc_netdev2->rx.rx_exten_count >= LWMAC_MAX_RX_EXTENSION_NUM) {
-                        gnrc_netdev2_set_quit_rx(gnrc_netdev2,true);
+                        gnrc_netdev2_set_quit_rx(gnrc_netdev2, true);
                     }
 
                     if (gnrc_netdev2_get_quit_rx(gnrc_netdev2)) {
@@ -367,12 +367,12 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
             break;
         }
         case TRANSMITTING: {
-            char* tx_success = "";
+            char *tx_success = "";
             lwmac_tx_state_t state_tx = gnrc_netdev2->tx.state;
 
             switch (state_tx) {
                 case TX_STATE_STOPPED: {
-                    gnrc_pktsnip_t* pkt;
+                    gnrc_pktsnip_t *pkt;
 
                     if (gnrc_netdev2->tx.packet != NULL) {
                         LOG_WARNING("TX %d times retry\n", gnrc_netdev2->tx.tx_retry_count);
@@ -382,7 +382,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                     }
                     else {
                         if ((pkt = gnrc_priority_pktqueue_pop(
-                             &gnrc_netdev2->tx.current_neighbor->queue))) {
+                                 &gnrc_netdev2->tx.current_neighbor->queue))) {
                             gnrc_netdev2->tx.tx_retry_count = 0;
                             lwmac_tx_start(gnrc_netdev2, pkt, gnrc_netdev2->tx.current_neighbor);
                             lwmac_tx_update(gnrc_netdev2);
@@ -399,8 +399,8 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                     break;
                 }
                 case TX_STATE_FAILED: {
-                    gnrc_netdev2_set_tx_continue(gnrc_netdev2,false);
-                    gnrc_netdev2_set_quit_tx(gnrc_netdev2,true);
+                    gnrc_netdev2_set_tx_continue(gnrc_netdev2, false);
+                    gnrc_netdev2_set_quit_tx(gnrc_netdev2, true);
                     tx_success = "NOT ";
                     /* Intended fall-through, TX packet will therefore be dropped. No
                      * automatic resending here, we did our best.
@@ -411,7 +411,7 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
                         LOG_INFO("Broadcast transmission done\n");
                     }
                     else {
-                        LOG_INFO("Transmission was %ssuccessful (%"PRIu32" WRs sent)\n",
+                        LOG_INFO("Transmission was %ssuccessful (%" PRIu32 " WRs sent)\n",
                                  tx_success, gnrc_netdev2->tx.wr_sent);
                     }
                     lwmac_tx_stop(gnrc_netdev2);
@@ -442,10 +442,11 @@ bool lwmac_update(gnrc_netdev2_t* gnrc_netdev2)
     return gnrc_netdev2->lwmac.needs_rescheduling;
 }
 
-static void rtt_cb(void* arg)
+static void rtt_cb(void *arg)
 {
     msg_t msg;
-    msg.content.value = ((uint32_t) arg ) & 0xffff;
+
+    msg.content.value = ((uint32_t) arg) & 0xffff;
     msg.type = LWMAC_EVENT_RTT_TYPE;
     msg_send(&msg, lwmac_pid);
 
@@ -454,18 +455,19 @@ static void rtt_cb(void* arg)
     }
 }
 
-void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
+void rtt_handler(uint32_t event, gnrc_netdev2_t *gnrc_netdev2)
 {
     uint32_t alarm;
+
     switch (event & 0xffff) {
         case LWMAC_EVENT_RTT_WAKEUP_PENDING: {
             gnrc_netdev2->lwmac.last_wakeup = rtt_get_alarm();
             alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup,
                                         RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US));
-            rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_SLEEP_PENDING);
-            gnrc_netdev2_set_quit_tx(gnrc_netdev2,false);
-            gnrc_netdev2_set_quit_rx(gnrc_netdev2,false);
-            gnrc_netdev2_set_phase_backoff(gnrc_netdev2,false);
+            rtt_set_alarm(alarm, rtt_cb, (void *) LWMAC_EVENT_RTT_SLEEP_PENDING);
+            gnrc_netdev2_set_quit_tx(gnrc_netdev2, false);
+            gnrc_netdev2_set_quit_rx(gnrc_netdev2, false);
+            gnrc_netdev2_set_phase_backoff(gnrc_netdev2, false);
             gnrc_netdev2->rx.rx_exten_count = 0;
             lwmac_set_state(gnrc_netdev2, LISTENING);
             break;
@@ -473,7 +475,7 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
         case LWMAC_EVENT_RTT_SLEEP_PENDING: {
             alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup,
                                         RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
-            rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_WAKEUP_PENDING);
+            rtt_set_alarm(alarm, rtt_cb, (void *) LWMAC_EVENT_RTT_WAKEUP_PENDING);
             lwmac_set_state(gnrc_netdev2, SLEEPING);
             break;
         }
@@ -481,7 +483,7 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
         case LWMAC_EVENT_RTT_START: {
             LOG_DEBUG("RTT: Initialize duty cycling\n");
             alarm = rtt_get_counter() + RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US);
-            rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_SLEEP_PENDING);
+            rtt_set_alarm(alarm, rtt_cb, (void *) LWMAC_EVENT_RTT_SLEEP_PENDING);
             gnrc_netdev2->lwmac.dutycycling_active = true;
             break;
         }
@@ -496,7 +498,7 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
             LOG_DEBUG("RTT: Resume duty cycling\n");
             alarm = _next_inphase_event(gnrc_netdev2->lwmac.last_wakeup,
                                         RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
-            rtt_set_alarm(alarm, rtt_cb, (void*) LWMAC_EVENT_RTT_WAKEUP_PENDING);
+            rtt_set_alarm(alarm, rtt_cb, (void *) LWMAC_EVENT_RTT_WAKEUP_PENDING);
             gnrc_netdev2->lwmac.dutycycling_active = true;
             break;
         }
@@ -511,15 +513,15 @@ void rtt_handler(uint32_t event, gnrc_netdev2_t* gnrc_netdev2)
  * @param[in] event         type of event
  * @param[in] data          optional parameter
  */
-static void _event_cb(netdev2_t* dev, netdev2_event_t event)
+static void _event_cb(netdev2_t *dev, netdev2_event_t event)
 {
-    gnrc_netdev2_t *gnrc_netdev2 = (gnrc_netdev2_t*) dev->context;
+    gnrc_netdev2_t *gnrc_netdev2 = (gnrc_netdev2_t *) dev->context;
 
     if (event == NETDEV2_EVENT_ISR) {
         msg_t msg;
 
         msg.type = NETDEV2_MSG_TYPE_EVENT;
-        msg.content.ptr = (void*) gnrc_netdev2;
+        msg.content.ptr = (void *) gnrc_netdev2;
 
         if (msg_send(&msg, gnrc_netdev2->pid) <= 0) {
             LOG_WARNING("gnrc_netdev2: possibly lost interrupt.\n");
@@ -530,7 +532,7 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
         switch (event) {
             case NETDEV2_EVENT_RX_STARTED: {
                 LOG_DEBUG("NETDEV_EVENT_RX_STARTED\n");
-                gnrc_netdev2_set_rx_started(gnrc_netdev2,true);
+                gnrc_netdev2_set_rx_started(gnrc_netdev2, true);
                 break;
             }
             case NETDEV2_EVENT_RX_COMPLETE: {
@@ -550,20 +552,20 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
                  * TODO: transceivers might have 2 frame buffers, so make this optional
                  */
                 if (pkt == NULL) {
-                    gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
+                    gnrc_netdev2_set_rx_started(gnrc_netdev2, false);
                     break;
                 }
 
                 /*
-                if (!gnrc_netdev2_get_rx_started(gnrc_netdev2)) {
+                   if (!gnrc_netdev2_get_rx_started(gnrc_netdev2)) {
                     LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
                     gnrc_pktbuf_release(pkt);
                     gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
                     break;
-                }
-                */
+                   }
+                 */
 
-                gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
+                gnrc_netdev2_set_rx_started(gnrc_netdev2, false);
 
                 if (!gnrc_mac_queue_rx_packet(&gnrc_netdev2->rx, 0, pkt)) {
                     LOG_ERROR("Can't push RX packet @ %p, memory full?\n", pkt);
@@ -574,30 +576,30 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
                 break;
             }
             case NETDEV2_EVENT_TX_STARTED: {
-                gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_UNDEF);
-                gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
+                gnrc_netdev2_set_tx_feedback(gnrc_netdev2, TX_FEEDBACK_UNDEF);
+                gnrc_netdev2_set_rx_started(gnrc_netdev2, false);
                 break;
             }
             case NETDEV2_EVENT_TX_COMPLETE: {
-                gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_SUCCESS);
-                gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
+                gnrc_netdev2_set_tx_feedback(gnrc_netdev2, TX_FEEDBACK_SUCCESS);
+                gnrc_netdev2_set_rx_started(gnrc_netdev2, false);
                 lwmac_schedule_update(gnrc_netdev2);
                 break;
             }
             case NETDEV2_EVENT_TX_NOACK: {
-                gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_NOACK);
-                gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
+                gnrc_netdev2_set_tx_feedback(gnrc_netdev2, TX_FEEDBACK_NOACK);
+                gnrc_netdev2_set_rx_started(gnrc_netdev2, false);
                 lwmac_schedule_update(gnrc_netdev2);
                 break;
             }
             case NETDEV2_EVENT_TX_MEDIUM_BUSY: {
-               gnrc_netdev2_set_tx_feedback(gnrc_netdev2,TX_FEEDBACK_BUSY);
-               gnrc_netdev2_set_rx_started(gnrc_netdev2,false);
-               lwmac_schedule_update(gnrc_netdev2);
-               break;
+                gnrc_netdev2_set_tx_feedback(gnrc_netdev2, TX_FEEDBACK_BUSY);
+                gnrc_netdev2_set_rx_started(gnrc_netdev2, false);
+                lwmac_schedule_update(gnrc_netdev2);
+                break;
             }
             default:
-               LOG_WARNING("Unhandled netdev event: %u\n", event);
+                LOG_WARNING("Unhandled netdev event: %u\n", event);
         }
     }
 }
@@ -611,12 +613,12 @@ static void _event_cb(netdev2_t* dev, netdev2_event_t event)
  */
 static void *_lwmac_thread(void *args)
 {
-    gnrc_netdev2_t* gnrc_netdev2 = (gnrc_netdev2_t *)args;
-    netdev2_t* dev = gnrc_netdev2->dev;
+    gnrc_netdev2_t *gnrc_netdev2 = (gnrc_netdev2_t *)args;
+    netdev2_t *dev = gnrc_netdev2->dev;
 
     gnrc_netdev2->pid = thread_getpid();
 
-    gnrc_netapi_opt_t* opt;
+    gnrc_netapi_opt_t *opt;
     int res;
     msg_t msg, reply, msg_queue[LWMAC_IPC_MSG_QUEUE_SIZE];
 
@@ -633,7 +635,7 @@ static void *_lwmac_thread(void *args)
 
     /* register the event callback with the device driver */
     dev->event_callback = _event_cb;
-    dev->context = (void*) gnrc_netdev2;
+    dev->context = (void *) gnrc_netdev2;
 
     /* register the device to the network stack*/
     gnrc_netif_add(thread_getpid());
@@ -697,7 +699,7 @@ static void *_lwmac_thread(void *args)
             }
             /* An lwmac timeout occured */
             case LWMAC_EVENT_TIMEOUT_TYPE: {
-                lwmac_timeout_make_expire((lwmac_timeout_t*) msg.content.ptr);
+                lwmac_timeout_make_expire((lwmac_timeout_t *) msg.content.ptr);
                 lwmac_schedule_update(gnrc_netdev2);
                 break;
             }
@@ -712,7 +714,7 @@ static void *_lwmac_thread(void *args)
             case GNRC_NETAPI_MSG_TYPE_SND: {
                 // TODO: how to announce failure to upper layers?
                 LOG_DEBUG("GNRC_NETAPI_MSG_TYPE_SND received\n");
-                gnrc_pktsnip_t* pkt = (gnrc_pktsnip_t*) msg.content.ptr;
+                gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *) msg.content.ptr;
 
                 if (!gnrc_mac_queue_tx_packet(&gnrc_netdev2->tx, 0, pkt)) {
                     gnrc_pktbuf_release(pkt);
@@ -731,7 +733,7 @@ static void *_lwmac_thread(void *args)
                 switch (opt->opt) {
                     /* Handle state change requests */
                     case NETOPT_STATE: {
-                        netopt_state_t* state = (netopt_state_t*) opt->data;
+                        netopt_state_t *state = (netopt_state_t *) opt->data;
                         res = opt->data_len;
                         switch (*state) {
                             case NETOPT_STATE_OFF: {
