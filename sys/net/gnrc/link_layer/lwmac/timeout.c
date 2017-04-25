@@ -28,7 +28,7 @@
 #include "debug.h"
 
 #if ENABLE_DEBUG
-char* lwmac_timeout_names[] = {
+char *lwmac_timeout_names[] = {
     [TIMEOUT_DISABLED]              = "DISABLED",
     [TIMEOUT_WR]                    = "WR",
     [TIMEOUT_NO_RESPONSE]           = "NO_RESPONSE",
@@ -39,7 +39,7 @@ char* lwmac_timeout_names[] = {
 };
 #endif
 
-static inline void _lwmac_clear_timeout(lwmac_timeout_t* timeout)
+static inline void _lwmac_clear_timeout(lwmac_timeout_t *timeout)
 {
     assert(timeout);
 
@@ -48,7 +48,7 @@ static inline void _lwmac_clear_timeout(lwmac_timeout_t* timeout)
 }
 
 /* Return index >= 0 if found, -ENONENT if not found */
-static int _lwmac_find_timeout(lwmac_t* lwmac, lwmac_timeout_type_t type)
+static int _lwmac_find_timeout(lwmac_t *lwmac, lwmac_timeout_type_t type)
 {
     assert(lwmac);
 
@@ -60,13 +60,13 @@ static int _lwmac_find_timeout(lwmac_t* lwmac, lwmac_timeout_type_t type)
     return -ENOENT;
 }
 
-inline bool lwmac_timeout_is_running(gnrc_netdev2_t* gnrc_netdev2, lwmac_timeout_type_t type)
+inline bool lwmac_timeout_is_running(gnrc_netdev2_t *gnrc_netdev2, lwmac_timeout_type_t type)
 {
     assert(gnrc_netdev2);
     return (_lwmac_find_timeout(&gnrc_netdev2->lwmac, type) >= 0);
 }
 
-bool lwmac_timeout_is_expired(gnrc_netdev2_t* gnrc_netdev2, lwmac_timeout_type_t type)
+bool lwmac_timeout_is_expired(gnrc_netdev2_t *gnrc_netdev2, lwmac_timeout_type_t type)
 {
     assert(gnrc_netdev2);
 
@@ -80,7 +80,7 @@ bool lwmac_timeout_is_expired(gnrc_netdev2_t* gnrc_netdev2, lwmac_timeout_type_t
     return false;
 }
 
-lwmac_timeout_t* _lwmac_acquire_timeout(gnrc_netdev2_t* gnrc_netdev2, lwmac_timeout_type_t type)
+lwmac_timeout_t *_lwmac_acquire_timeout(gnrc_netdev2_t *gnrc_netdev2, lwmac_timeout_type_t type)
 {
     assert(gnrc_netdev2);
 
@@ -97,14 +97,14 @@ lwmac_timeout_t* _lwmac_acquire_timeout(gnrc_netdev2_t* gnrc_netdev2, lwmac_time
     return NULL;
 }
 
-void lwmac_timeout_make_expire(lwmac_timeout_t* timeout)
+void lwmac_timeout_make_expire(lwmac_timeout_t *timeout)
 {
     assert(timeout);
 
     timeout->expired = true;
 }
 
-void lwmac_clear_timeout(gnrc_netdev2_t* gnrc_netdev2, lwmac_timeout_type_t type)
+void lwmac_clear_timeout(gnrc_netdev2_t *gnrc_netdev2, lwmac_timeout_type_t type)
 {
     assert(gnrc_netdev2);
 
@@ -114,17 +114,17 @@ void lwmac_clear_timeout(gnrc_netdev2_t* gnrc_netdev2, lwmac_timeout_type_t type
     }
 }
 
-void lwmac_set_timeout(gnrc_netdev2_t* gnrc_netdev2, lwmac_timeout_type_t type, uint32_t offset)
+void lwmac_set_timeout(gnrc_netdev2_t *gnrc_netdev2, lwmac_timeout_type_t type, uint32_t offset)
 {
     assert(gnrc_netdev2);
 
-    lwmac_timeout_t* timeout;
+    lwmac_timeout_t *timeout;
     if ((timeout = _lwmac_acquire_timeout(gnrc_netdev2, type))) {
-        DEBUG("[lwmac] Set timeout %s in %"PRIu32" us\n",
+        DEBUG("[lwmac] Set timeout %s in %" PRIu32 " us\n",
               lwmac_timeout_names[type], offset);
         timeout->expired = false;
         timeout->msg.type = LWMAC_EVENT_TIMEOUT_TYPE;
-        timeout->msg.content.ptr = (void*) timeout;
+        timeout->msg.content.ptr = (void *) timeout;
         xtimer_set_msg(&(timeout->timer), offset,
                        &(timeout->msg), gnrc_netdev2->pid);
     }
@@ -134,7 +134,7 @@ void lwmac_set_timeout(gnrc_netdev2_t* gnrc_netdev2, lwmac_timeout_type_t type, 
     }
 }
 
-void lwmac_reset_timeouts(gnrc_netdev2_t* gnrc_netdev2)
+void lwmac_reset_timeouts(gnrc_netdev2_t *gnrc_netdev2)
 {
     assert(gnrc_netdev2);
 
