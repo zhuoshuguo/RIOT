@@ -65,19 +65,19 @@ int _parse_packet(gnrc_pktsnip_t *pkt, lwmac_packet_info_t *info);
 /**
  * @brief Shortcut to get the state of netdev.
  *
- * @param[in]   gnrc_netdev2    gnrc_netdev2 structure
+ * @param[in]   gnrc_netdev    gnrc_netdev structure
  *
  * @return                      state of netdev
  */
-netopt_state_t _get_netdev_state(gnrc_netdev2_t *gnrc_netdev2);
+netopt_state_t _get_netdev_state(gnrc_netdev_t *gnrc_netdev);
 
 /**
  * @brief Shortcut to set the state of netdev
  *
- * @param[in]   gnrc_netdev2    gnrc_netdev2 structure
+ * @param[in]   gnrc_netdev    gnrc_netdev structure
  * @param[in]   devstate        new state for netdev
  */
-void _set_netdev_state(gnrc_netdev2_t *gnrc_netdev2, netopt_state_t devstate);
+void _set_netdev_state(gnrc_netdev_t *gnrc_netdev, netopt_state_t devstate);
 
 /**
  * @brief Convert RTT ticks to device phase
@@ -132,17 +132,17 @@ uint32_t _phase_to_ticks(uint32_t phase);
 /**
  * @brief Find the Tx neighbor that has a packet queued and is next for sending
  *
- * @param[in]   gnrc_netdev2    gnrc_netdev2 structure
+ * @param[in]   gnrc_netdev    gnrc_netdev structure
  *
  * @return                      tx neighbor
  * @return                      NULL, if there is no neighbor for transmission.
  */
-gnrc_mac_tx_neighbor_t *_next_tx_neighbor(gnrc_netdev2_t *gnrc_netdev2);
+gnrc_mac_tx_neighbor_t *_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev);
 
 /**
  * @brief Calculate the next event's timing in rtt timer ticks
  *
- * @param[in]   last        gnrc_netdev2 structure
+ * @param[in]   last        gnrc_netdev structure
  * @param[in]   interval    device's wake up interval
  *
  * @return                  RTT ticks
