@@ -67,7 +67,7 @@ int _parse_packet(gnrc_pktsnip_t *pkt, lwmac_packet_info_t *info);
  *
  * @param[in]   gnrc_netdev    gnrc_netdev structure
  *
- * @return                      state of netdev
+ * @return                     state of netdev
  */
 netopt_state_t _get_netdev_state(gnrc_netdev_t *gnrc_netdev);
 
@@ -75,7 +75,7 @@ netopt_state_t _get_netdev_state(gnrc_netdev_t *gnrc_netdev);
  * @brief Shortcut to set the state of netdev
  *
  * @param[in]   gnrc_netdev    gnrc_netdev structure
- * @param[in]   devstate        new state for netdev
+ * @param[in]   devstate       new state for netdev
  */
 void _set_netdev_state(gnrc_netdev_t *gnrc_netdev, netopt_state_t devstate);
 
@@ -134,8 +134,8 @@ uint32_t _phase_to_ticks(uint32_t phase);
  *
  * @param[in]   gnrc_netdev    gnrc_netdev structure
  *
- * @return                      tx neighbor
- * @return                      NULL, if there is no neighbor for transmission.
+ * @return                     tx neighbor
+ * @return                     NULL, if there is no neighbor for transmission.
  */
 gnrc_mac_tx_neighbor_t *_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev);
 

@@ -182,7 +182,7 @@ extern "C" {
 #endif
 
 /**
- * @brief   The default largest number of parallel timeouts in Lwmac
+ * @brief The default largest number of parallel timeouts in Lwmac
  */
 #ifndef LWMAC_TIMEOUT_COUNT
 #define LWMAC_TIMEOUT_COUNT             (3U)
