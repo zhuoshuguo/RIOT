@@ -45,7 +45,7 @@ extern "C" {
 
 /**
  * @brief Lwmac RTT pause event type.
- */    
+ */
 #define LWMAC_EVENT_RTT_PAUSE           (0x4303)
 
 /**
@@ -97,15 +97,15 @@ typedef enum {
  */
 typedef enum {
     TX_STATE_STOPPED = 0,
-    TX_STATE_INIT,          /**< Initiate transmission */
-    TX_STATE_SEND_BROADCAST,/**< directly goes to SUCCESSFUL or FAILED when finished */
-    TX_STATE_SEND_WR,       /**< Send a wakeup request */
-    TX_STATE_WAIT_WR_SENT,  /**< Wait until WR sent to set timeout */
-    TX_STATE_WAIT_FOR_WA,   /**< Wait for dest node's wakeup ackknowledge */
-    TX_STATE_SEND_DATA,     /**< Send the actual payload data */
-    TX_STATE_WAIT_FEEDBACK, /**< Wait if packet was ACKed */
-    TX_STATE_SUCCESSFUL,    /**< Transmission has finished successfully */
-    TX_STATE_FAILED         /**< Payload data couldn't be delivered to dest */
+    TX_STATE_INIT,              /**< Initiate transmission */
+    TX_STATE_SEND_BROADCAST,    /**< directly goes to SUCCESSFUL or FAILED when finished */
+    TX_STATE_SEND_WR,           /**< Send a wakeup request */
+    TX_STATE_WAIT_WR_SENT,      /**< Wait until WR sent to set timeout */
+    TX_STATE_WAIT_FOR_WA,       /**< Wait for dest node's wakeup ackknowledge */
+    TX_STATE_SEND_DATA,         /**< Send the actual payload data */
+    TX_STATE_WAIT_FEEDBACK,     /**< Wait if packet was ACKed */
+    TX_STATE_SUCCESSFUL,        /**< Transmission has finished successfully */
+    TX_STATE_FAILED             /**< Payload data couldn't be delivered to dest */
 } lwmac_tx_state_t;
 
 /**
@@ -146,24 +146,24 @@ typedef enum {
  * @brief Lwmac specific structure for storing internal states.
  */
 typedef struct lwmac {
-    lwmac_state_t state;                           /**< Internal state of MAC layer */
-    uint32_t last_wakeup;                          /**< Used to calculate wakeup times */
-    bool dutycycling_active;                       /**< Keep track of duty cycling to avoid 
-                                                        late RTT events after stopping */
-    bool needs_rescheduling;                       /**< Used internally for rescheduling state
-                                                        machine update, e.g. after state 
-                                                        transition caused in update */
-    lwmac_timeout_t timeouts[LWMAC_TIMEOUT_COUNT]; /**< Store timeouts used for protocol */
+    lwmac_state_t state;                            /**< Internal state of MAC layer */
+    uint32_t last_wakeup;                           /**< Used to calculate wakeup times */
+    bool dutycycling_active;                        /**< Keep track of duty cycling to avoid
+                                                         late RTT events after stopping */
+    bool needs_rescheduling;                        /**< Used internally for rescheduling state
+                                                         machine update, e.g. after state
+                                                         transition caused in update */
+    lwmac_timeout_t timeouts[LWMAC_TIMEOUT_COUNT];  /**< Store timeouts used for protocol */
 
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
     /* parameters for recording duty-cycle */
-    bool radio_is_on;                             /**< check if radio is on */
-    uint32_t last_radio_on_time_ticks;            /**< the last time in ticks when radio is on */
-    uint32_t radio_off_time_ticks;                /**< the time in ticks when radio is off */
-    uint32_t system_start_time_ticks;             /**< the time in ticks when chip is started */
-    uint32_t awake_duration_sum_ticks;            /**< the sum of time in ticks when radio is on */
-    uint32_t pkt_start_sending_time_ticks;        /**< the time in ticks when the packet is started 
-                                                       to be sent */
+    bool radio_is_on;                               /**< check if radio is on */
+    uint32_t last_radio_on_time_ticks;              /**< the last time in ticks when radio is on */
+    uint32_t radio_off_time_ticks;                  /**< the time in ticks when radio is off */
+    uint32_t system_start_time_ticks;               /**< the time in ticks when chip is started */
+    uint32_t awake_duration_sum_ticks;              /**< the sum of time in ticks when radio is on */
+    uint32_t pkt_start_sending_time_ticks;          /**< the time in ticks when the packet is started
+                                                         to be sent */
 #endif
 } lwmac_t;
 
