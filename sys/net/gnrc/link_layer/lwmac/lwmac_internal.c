@@ -24,8 +24,10 @@
 #include "periph/rtt.h"
 #include "net/gnrc.h"
 #include "net/gnrc/mac/mac.h"
+#include "net/gnrc/netdev.h"
 #include "net/gnrc/lwmac/lwmac.h"
 #include "include/lwmac_internal.h"
+
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
