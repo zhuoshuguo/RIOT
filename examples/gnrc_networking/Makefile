@@ -38,7 +38,7 @@ USEMODULE += netstats_rpl
 USEMODULE += gnrc_mac
 USEMODULE += gnrc_priority_pktqueue
 USEMODULE += gnrc_lwmac
-  
+
 # Comment this out to disable code in RIOT that does safety checking
 # which is not needed in a production environment but helps in the
 # development process:
