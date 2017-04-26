@@ -133,8 +133,8 @@ void lwmac_set_state(gnrc_netdev_t *gnrc_netdev, lwmac_state_t newstate)
             /* We may have come here through RTT handler, so timeout may still be active */
             lwmac_clear_timeout(gnrc_netdev, TIMEOUT_WAKEUP_PERIOD);
 
-            if (gnrc_netdev2_get_phase_backoff(gnrc_netdev)) {
-                gnrc_netdev2_set_phase_backoff(gnrc_netdev, false);
+            if (gnrc_netdev_lwmac_get_phase_backoff(gnrc_netdev)) {
+                gnrc_netdev_lwmac_set_phase_backoff(gnrc_netdev, false);
                 uint32_t alarm;
 
                 rtt_clear_alarm();
@@ -201,7 +201,7 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
 
     switch (gnrc_netdev->lwmac.state) {
         case LWMAC_SLEEPING: {
-            if (gnrc_netdev2_get_quit_tx(gnrc_netdev)) {
+            if (gnrc_netdev_lwmac_get_quit_tx(gnrc_netdev)) {
                 return false;
             }
 
@@ -229,7 +229,7 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
                     /* if phase is unknown, send immediately after wakeup period. */
                     if (neighbour->phase > RTT_TICKS_TO_US(LWMAC_WAKEUP_INTERVAL_US)) {
                         gnrc_netdev->tx.current_neighbor = neighbour;
-                        gnrc_netdev2_set_tx_continue(gnrc_netdev, false);
+                        gnrc_netdev_lwmac_set_tx_continue(gnrc_netdev, false);
                         gnrc_netdev->tx.tx_burst_count = 0;
                         lwmac_set_state(gnrc_netdev, LWMAC_TRANSMITTING);
                         break;
@@ -268,7 +268,7 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
                 if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
                     LOG_DEBUG("Got timeout for dest wakeup, ticks: %" PRIu32 "\n",
                               rtt_get_counter());
-                    gnrc_netdev2_set_tx_continue(gnrc_netdev, false);
+                    gnrc_netdev_lwmac_set_tx_continue(gnrc_netdev, false);
                     gnrc_netdev->tx.tx_burst_count = 0;
                     lwmac_set_state(gnrc_netdev, LWMAC_TRANSMITTING);
                 }
@@ -329,10 +329,10 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
                     lwmac_rx_stop(gnrc_netdev);
 
                     if (gnrc_netdev->rx.rx_exten_count >= LWMAC_MAX_RX_EXTENSION_NUM) {
-                        gnrc_netdev2_set_quit_rx(gnrc_netdev, true);
+                        gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
                     }
 
-                    if (gnrc_netdev2_get_quit_rx(gnrc_netdev)) {
+                    if (gnrc_netdev_lwmac_get_quit_rx(gnrc_netdev)) {
                         lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
                     }
                     else {
@@ -347,7 +347,7 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
                     /* Dispatch received packets, timing is not critical anymore */
                     _dispatch(gnrc_netdev->rx.dispatch_buffer);
 
-                    if (gnrc_netdev2_get_quit_rx(gnrc_netdev)) {
+                    if (gnrc_netdev_lwmac_get_quit_rx(gnrc_netdev)) {
                         lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
                     }
                     else {
@@ -399,8 +399,8 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
                     break;
                 }
                 case TX_STATE_FAILED: {
-                    gnrc_netdev2_set_tx_continue(gnrc_netdev, false);
-                    gnrc_netdev2_set_quit_tx(gnrc_netdev, true);
+                    gnrc_netdev_lwmac_set_tx_continue(gnrc_netdev, false);
+                    gnrc_netdev_lwmac_set_quit_tx(gnrc_netdev, true);
                     tx_success = "NOT ";
                     /* Intended fall-through, TX packet will therefore be dropped. No
                      * automatic resending here, we did our best.
@@ -416,7 +416,7 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
                     }
                     lwmac_tx_stop(gnrc_netdev);
 
-                    if ((gnrc_netdev2_get_tx_continue(gnrc_netdev)) &&
+                    if ((gnrc_netdev_lwmac_get_tx_continue(gnrc_netdev)) &&
                         (gnrc_netdev->tx.tx_burst_count < LWMAC_MAX_TX_BURST_PKT_NUM)) {
                         lwmac_schedule_update(gnrc_netdev);
                     }
@@ -465,9 +465,9 @@ void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
             alarm = _next_inphase_event(gnrc_netdev->lwmac.last_wakeup,
                                         RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US));
             rtt_set_alarm(alarm, rtt_cb, (void *) LWMAC_EVENT_RTT_SLEEP_PENDING);
-            gnrc_netdev2_set_quit_tx(gnrc_netdev, false);
-            gnrc_netdev2_set_quit_rx(gnrc_netdev, false);
-            gnrc_netdev2_set_phase_backoff(gnrc_netdev, false);
+            gnrc_netdev_lwmac_set_quit_tx(gnrc_netdev, false);
+            gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, false);
+            gnrc_netdev_lwmac_set_phase_backoff(gnrc_netdev, false);
             gnrc_netdev->rx.rx_exten_count = 0;
             lwmac_set_state(gnrc_netdev, LWMAC_LISTENING);
             break;
@@ -557,10 +557,10 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                 }
 
                 /*
-                   if (!gnrc_netdev2_get_rx_started(gnrc_netdev)) {
+                   if (!gnrc_netdev_get_rx_started(gnrc_netdev)) {
                     LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
                     gnrc_pktbuf_release(pkt);
-                    gnrc_netdev2_set_rx_started(gnrc_netdev,false);
+                    gnrc_netdev_set_rx_started(gnrc_netdev,false);
                     break;
                    }
                  */

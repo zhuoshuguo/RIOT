@@ -112,9 +112,9 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
                     _dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
                     found_bcast = true;
                     /* quit listening period to avoid receiving duplicate broadcast packets */
-                    gnrc_netdev2_set_quit_rx(gnrc_netdev, true);
+                    gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
                     /* quit TX in this cycle to avoid collisions with broadcast packets */
-                    gnrc_netdev2_set_quit_tx(gnrc_netdev, true);
+                    gnrc_netdev_lwmac_set_quit_tx(gnrc_netdev, true);
                     continue;
                 }
 
@@ -136,7 +136,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
                              gnrc_netdev->l2_addr_len) == 0)) {
                     LOG_DEBUG("Packet is WR but not for us\n");
                     /* quit TX in this cycle to avoid collisions with other senders */
-                    gnrc_netdev2_set_quit_tx(gnrc_netdev, true);
+                    gnrc_netdev_lwmac_set_quit_tx(gnrc_netdev, true);
                     continue;
                 }
 
@@ -196,7 +196,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
             pkt = gnrc_pktbuf_add(NULL, &lwmac_hdr, sizeof(lwmac_hdr), GNRC_NETTYPE_LWMAC);
             if (pkt == NULL) {
                 LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_LWMAC\n");
-                gnrc_netdev2_set_quit_rx(gnrc_netdev, true);
+                gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
                 GOTO_RX_STATE(RX_STATE_FAILED, true);
             }
             pkt_lwmac = pkt;
@@ -207,7 +207,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
             if (pkt == NULL) {
                 LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_NETIF\n");
                 gnrc_pktbuf_release(pkt_lwmac);
-                gnrc_netdev2_set_quit_rx(gnrc_netdev, true);
+                gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
                 GOTO_RX_STATE(RX_STATE_FAILED, true);
             }
 
@@ -247,7 +247,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
                 if (pkt != NULL) {
                     gnrc_pktbuf_release(pkt);
                 }
-                gnrc_netdev2_set_quit_rx(gnrc_netdev, true);
+                gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
                 GOTO_RX_STATE(RX_STATE_FAILED, true);
             }
             _set_netdev_state(gnrc_netdev, NETOPT_STATE_TX);
@@ -297,7 +297,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
                 if (info.header->type == FRAMETYPE_BROADCAST) {
                     _dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
                     /* quit listening period to avoid receiving duplicate broadcast packets */
-                    gnrc_netdev2_set_quit_rx(gnrc_netdev, true);
+                    gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
                     continue;
                 }
 
