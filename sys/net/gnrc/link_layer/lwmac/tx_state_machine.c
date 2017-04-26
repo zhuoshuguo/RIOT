@@ -97,7 +97,7 @@ void lwmac_tx_stop(gnrc_netdev_t *gnrc_netdev)
         }
     }
 
-    if (!gnrc_netdev2_get_tx_continue(gnrc_netdev)) {
+    if (!gnrc_netdev_lwmac_get_tx_continue(gnrc_netdev)) {
         gnrc_netdev->tx.current_neighbor = NULL;
     }
 }
@@ -287,7 +287,7 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
 #if 0
             /* First WR, try to catch wakeup phase */
             if ((gnrc_netdev->tx.wr_sent == 0) &&
-                (gnrc_netdev2_get_tx_continue(gnrc_netdev) == false)) {
+                (gnrc_netdev_lwmac_get_tx_continue(gnrc_netdev) == false)) {
 
                 /* Calculate wakeup time */
                 uint32_t wait_until;
@@ -371,7 +371,7 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             }
 
             if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_WR)) {
-                if (gnrc_netdev2_get_tx_continue(gnrc_netdev)) {
+                if (gnrc_netdev_lwmac_get_tx_continue(gnrc_netdev)) {
                     LOG_DEBUG("tx burst fail\n");
                     gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet);
                     /* drop pointer so it wont be free'd */
@@ -475,7 +475,7 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                     if ((own_phase < RTT_US_TO_TICKS((3 * LWMAC_WAKEUP_DURATION_US / 2))) ||
                         (own_phase > RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US -
                                                      (3 * LWMAC_WAKEUP_DURATION_US / 2)))) {
-                        gnrc_netdev2_set_phase_backoff(gnrc_netdev, true);
+                        gnrc_netdev_lwmac_set_phase_backoff(gnrc_netdev, true);
                         LOG_WARNING("phase close\n");
                     }
                 }
@@ -542,12 +542,12 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             if ((gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue) > 0) &&
                 (gnrc_netdev->tx.tx_burst_count < LWMAC_MAX_TX_BURST_PKT_NUM)) {
                 hdr.type = FRAMETYPE_DATA_PENDING;
-                gnrc_netdev2_set_tx_continue(gnrc_netdev, true);
+                gnrc_netdev_lwmac_set_tx_continue(gnrc_netdev, true);
                 gnrc_netdev->tx.tx_burst_count++;
             }
             else {
                 hdr.type = FRAMETYPE_DATA;
-                gnrc_netdev2_set_tx_continue(gnrc_netdev, false);
+                gnrc_netdev_lwmac_set_tx_continue(gnrc_netdev, false);
             }
 
             pkt->next = gnrc_pktbuf_add(pkt->next, &hdr, sizeof(hdr), GNRC_NETTYPE_LWMAC);
