@@ -34,8 +34,8 @@ extern "C" {
  * @brief   lwMAC internal L2 address structure
  */
 typedef struct {
-    uint8_t addr[IEEE802154_LONG_ADDRESS_LEN];
-    uint8_t len;
+    uint8_t addr[IEEE802154_LONG_ADDRESS_LEN]; /**< address of node */
+    uint8_t len;                               /**< address */
 } l2_addr_t;
 
 /**
@@ -65,7 +65,7 @@ typedef struct __attribute__((packed)) {
  * @brief   lwMAC WR frame
  */
 typedef struct __attribute__((packed)) {
-    lwmac_hdr_t header;
+    lwmac_hdr_t header; /**< WR packet header type */
     l2_addr_t dst_addr; /**< WR is broadcast, so destination address needed */
 } lwmac_frame_wr_t;
 
@@ -73,32 +73,25 @@ typedef struct __attribute__((packed)) {
  * @brief   lwMAC WA frame
  */
 typedef struct __attribute__((packed)) {
-    lwmac_hdr_t header;
-    l2_addr_t dst_addr; /**< WA is broadcast, so destination address needed */
-    uint32_t current_phase;
+    lwmac_hdr_t header;      /**< WA packet header type */
+    l2_addr_t dst_addr;      /**< WA is broadcast, so destination address needed */
+    uint32_t current_phase;  /**< Node's current phase value */
 } lwmac_frame_wa_t;
 
 /**
  * @brief   lwMAC broadcast data frame
  */
 typedef struct __attribute__((packed)) {
-    lwmac_hdr_t header;
-    uint8_t seq_nr;
+    lwmac_hdr_t header; /**< Broadcast packet header type */
+    uint8_t seq_nr;     /**< Broadcast sequence */
 } lwmac_frame_broadcast_t;
 
 /**
  * @brief   lwMAC unicast data frame
  */
 typedef struct __attribute__((packed)) {
-    lwmac_hdr_t header;
+    lwmac_hdr_t header; /**< Data packet header type */
 } lwmac_frame_data_t;
-
-/**
- * @brief Print out the Lwmac header information.
- *
- * @param[in] hdr  lwmac header
- */
-void lwmac_print_hdr(lwmac_hdr_t *hdr);
 
 #ifdef __cplusplus
 }
