@@ -66,11 +66,11 @@ void auto_init_at86rf2xx(void)
                             "at86rf2xx-lwmac",
                             &gnrc_adpt[i]);
 #else
-            gnrc_netdev2_init(_at86rf2xx_stacks[i],
-                              AT86RF2XX_MAC_STACKSIZE,
-                              AT86RF2XX_MAC_PRIO,
-                              "at86rf2xx",
-                              &gnrc_adpt[i]);
+            gnrc_netdev_init(_at86rf2xx_stacks[i],
+                             AT86RF2XX_MAC_STACKSIZE,
+                             AT86RF2XX_MAC_PRIO,
+                             "at86rf2xx",
+                             &gnrc_adpt[i]);
 #endif
         }
     }
