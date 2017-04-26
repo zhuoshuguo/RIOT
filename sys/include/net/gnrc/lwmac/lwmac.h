@@ -26,11 +26,6 @@
 
 #include "kernel_types.h"
 
-/**
- * @brief Forward gnrc_netdev declaration
- */
-typedef struct gnrc_netdev gnrc_netdev_t;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -187,25 +182,6 @@ extern "C" {
 #ifndef LWMAC_TIMEOUT_COUNT
 #define LWMAC_TIMEOUT_COUNT             (3U)
 #endif
-
-/**
- * @brief Initialize an instance of the LWMAC layer
- *
- * The initialization starts a new thread that connects to the given netdev
- * device and starts a link layer event loop.
- *
- * @param[in] stack         stack for the control thread
- * @param[in] stacksize     size of *stack*
- * @param[in] priority      priority for the thread housing the LWMAC instance
- * @param[in] name          name of the thread housing the LWMAC instance
- * @param[in] dev           netdev device, needs to be already initialized
- *
- * @return                  PID of LWMAC thread on success
- * @return                  -EINVAL if creation of thread fails
- * @return                  -ENODEV if *dev* is invalid
- */
-kernel_pid_t gnrc_lwmac_init(char *stack, int stacksize, char priority,
-                             const char *name, gnrc_netdev_t *dev);
 
 #ifdef __cplusplus
 }

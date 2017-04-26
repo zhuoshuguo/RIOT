@@ -24,42 +24,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "msg.h"
-#include "xtimer.h"
+#include "net/gnrc/netdev.h"
+#include "net/gnrc/lwmac/types.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- * @brief Forward gnrc_netdev declaration
- */
-typedef struct gnrc_netdev gnrc_netdev_t;
-
-/**
- * @brief Lwmac timeout types
- */
-typedef enum {
-    TIMEOUT_DISABLED = 0,
-    TIMEOUT_WR,
-    TIMEOUT_NO_RESPONSE,
-    TIMEOUT_WA,
-    TIMEOUT_DATA,
-    TIMEOUT_WAIT_FOR_DEST_WAKEUP,
-    TIMEOUT_WAKEUP_PERIOD,
-    TIMEOUT_NEXT_BROADCAST,
-    TIMEOUT_BROADCAST_END,
-} lwmac_timeout_type_t;
-
-/**
- * @brief Lwmac timeout structure
- */
-typedef struct {
-    xtimer_t timer;
-    msg_t msg;
-    bool expired;              /**< If type != DISABLED, this indicates if timeout has expired */
-    lwmac_timeout_type_t type;
-} lwmac_timeout_t;
 
 /**
  * @brief Static initializer for lwmac_timeout_t.

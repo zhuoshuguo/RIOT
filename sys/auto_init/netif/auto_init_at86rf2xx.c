@@ -23,7 +23,7 @@
 #include "board.h"
 #include "net/gnrc/netdev.h"
 #include "net/gnrc/netdev/ieee802154.h"
-#include "net/gnrc/lwmac/lwmac.h"
+#include "net/gnrc/lwmac/lwmac_init.h"
 #include "net/gnrc.h"
 
 #include "at86rf2xx.h"

@@ -21,9 +21,10 @@
 #ifndef GNRC_LWMAC_TYPES_H_
 #define GNRC_LWMAC_TYPES_H_
 
+#include "msg.h"
+#include "xtimer.h"
 #include "net/gnrc/lwmac/lwmac.h"
 #include "net/gnrc/lwmac/hdr.h"
-#include "net/gnrc/lwmac/timeout.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -142,6 +143,31 @@ typedef enum {
  * @brief Lwmac max phase value
  */
 #define LWMAC_PHASE_MAX             (-1)
+
+/**
+ * @brief Lwmac timeout types
+ */
+typedef enum {
+    TIMEOUT_DISABLED = 0,
+    TIMEOUT_WR,
+    TIMEOUT_NO_RESPONSE,
+    TIMEOUT_WA,
+    TIMEOUT_DATA,
+    TIMEOUT_WAIT_FOR_DEST_WAKEUP,
+    TIMEOUT_WAKEUP_PERIOD,
+    TIMEOUT_NEXT_BROADCAST,
+    TIMEOUT_BROADCAST_END,
+} lwmac_timeout_type_t;
+
+/**
+ * @brief Lwmac timeout structure
+ */
+typedef struct {
+    xtimer_t timer;
+    msg_t msg;
+    bool expired;              /**< If type != DISABLED, this indicates if timeout has expired */
+    lwmac_timeout_type_t type;
+} lwmac_timeout_t;
 
 /**
  * @brief Lwmac specific structure for storing internal states.
