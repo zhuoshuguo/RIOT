@@ -23,6 +23,10 @@
 
 #include "net/gnrc/netdev.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Initialize an instance of the LWMAC layer
  *
