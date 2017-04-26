@@ -8,18 +8,19 @@
  */
 
 /**
- * @ingroup     net_lwmac
+ * @ingroup net_lwmac
  * @{
  *
  * @file
- * @brief       Internal types of LWMAC
- * @internal
+ * @brief       Definition of internal types used by LWMAC
+ *
+ *
  * @author      Daniel Krebs <github@daniel-krebs.net>
  * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  */
 
-#ifndef GNRC_LWMAC_TYPES_H_
-#define GNRC_LWMAC_TYPES_H_
+#ifndef GNRC_LWMAC_TYPES_H
+#define GNRC_LWMAC_TYPES_H
 
 #include "msg.h"
 #include "xtimer.h"
@@ -31,55 +32,55 @@ extern "C" {
 #endif
 
 /**
- * @brief Lwmac RTT event type.
+ * @brief   Lwmac RTT event type.
  */
 #define LWMAC_EVENT_RTT_TYPE            (0x4300)
 
 /**
- * @brief Lwmac RTT start event type.
+ * @brief   Lwmac RTT start event type.
  */
 #define LWMAC_EVENT_RTT_START           (0x4301)
 
 /**
- * @brief Lwmac RTT stop event type.
+ * @brief   Lwmac RTT stop event type.
  */
 #define LWMAC_EVENT_RTT_STOP            (0x4302)
 
 /**
- * @brief Lwmac RTT pause event type.
+ * @brief   Lwmac RTT pause event type.
  */
 #define LWMAC_EVENT_RTT_PAUSE           (0x4303)
 
 /**
- * @brief Lwmac RTT resume event type.
+ * @brief   Lwmac RTT resume event type.
  */
 #define LWMAC_EVENT_RTT_RESUME          (0x4304)
 
 /**
- * @brief Lwmac RTT wakeup pending event type.
+ * @brief   Lwmac RTT wakeup pending event type.
  */
 #define LWMAC_EVENT_RTT_WAKEUP_PENDING  (0x4305)
 
 /**
- * @brief Lwmac RTT sleep pending event type.
+ * @brief   Lwmac RTT sleep pending event type.
  */
 #define LWMAC_EVENT_RTT_SLEEP_PENDING   (0x4306)
 
 /**
- * @brief Lwmac timeout event type.
+ * @brief   Lwmac timeout event type.
  */
 #define LWMAC_EVENT_TIMEOUT_TYPE        (0x4400)
 
 /**
- * @brief Enable/disable duty-cycle record and print out.
- *        Set "1" to enable, set "0" to disable.
+ * @brief   Enable/disable duty-cycle record and print out.
+ *          Set "1" to enable, set "0" to disable.
  */
 #ifndef LWMAC_ENABLE_DUTYCYLE_RECORD
 #define LWMAC_ENABLE_DUTYCYLE_RECORD             (0U)
 #endif
 
 /**
- * @brief Internal states of Lwmac
+ * @brief   Internal states of Lwmac
  */
 typedef enum {
     LWMAC_UNDEF = -1,
@@ -95,7 +96,7 @@ typedef enum {
 } lwmac_state_t;
 
 /**
- * @brief TX states of Lwmac
+ * @brief   TX states of Lwmac
  */
 typedef enum {
     TX_STATE_STOPPED = 0,
@@ -111,12 +112,12 @@ typedef enum {
 } lwmac_tx_state_t;
 
 /**
- * @brief Static initializer for lwmac_tx_state_t.
+ * @brief   Static initializer for lwmac_tx_state_t.
  */
 #define LWMAC_TX_STATE_INIT TX_STATE_STOPPED
 
 /**
- * @brief RX states of Lwmac
+ * @brief   RX states of Lwmac
  */
 typedef enum {
     RX_STATE_STOPPED = 0,
@@ -130,22 +131,22 @@ typedef enum {
 } lwmac_rx_state_t;
 
 /**
- * @brief Static initializer for lwmac_rx_state_t.
+ * @brief   Static initializer for lwmac_rx_state_t.
  */
 #define LWMAC_RX_STATE_INIT RX_STATE_STOPPED
 
 /**
- * @brief Lwmac uninitialized phase value
+ * @brief   Lwmac uninitialized phase value
  */
 #define LWMAC_PHASE_UNINITIALIZED   (0)
 
 /**
- * @brief Lwmac max phase value
+ * @brief   Lwmac max phase value
  */
 #define LWMAC_PHASE_MAX             (-1)
 
 /**
- * @brief Lwmac timeout types
+ * @brief   Lwmac timeout types
  */
 typedef enum {
     TIMEOUT_DISABLED = 0,
@@ -160,17 +161,17 @@ typedef enum {
 } lwmac_timeout_type_t;
 
 /**
- * @brief Lwmac timeout structure
+ * @brief   Lwmac timeout structure
  */
 typedef struct {
-    xtimer_t timer;
-    msg_t msg;
+    xtimer_t timer;            /**< xtimer entity */
+    msg_t msg;                 /**< msg entity */
     bool expired;              /**< If type != DISABLED, this indicates if timeout has expired */
-    lwmac_timeout_type_t type;
+    lwmac_timeout_type_t type; /**< timeout type */
 } lwmac_timeout_t;
 
 /**
- * @brief Lwmac specific structure for storing internal states.
+ * @brief   Lwmac specific structure for storing internal states.
  */
 typedef struct lwmac {
     lwmac_state_t state;                            /**< Internal state of MAC layer */
@@ -198,5 +199,5 @@ typedef struct lwmac {
 }
 #endif
 
-#endif /* GNRC_LWMAC_TYPES_H_ */
+#endif /* GNRC_LWMAC_TYPES_H */
 /** @} */

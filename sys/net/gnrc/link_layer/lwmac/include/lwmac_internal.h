@@ -168,6 +168,13 @@ int _dispatch_defer(gnrc_pktsnip_t * buffer[], gnrc_pktsnip_t * pkt);
  */
 void _dispatch(gnrc_pktsnip_t * buffer[]);
 
+/**
+ * @brief Print out the Lwmac header information.
+ *
+ * @param[in] hdr  lwmac header
+ */
+void lwmac_print_hdr(lwmac_hdr_t *hdr);
+
 #ifdef __cplusplus
 }
 #endif
