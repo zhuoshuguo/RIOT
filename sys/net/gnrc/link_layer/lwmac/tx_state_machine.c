@@ -319,7 +319,6 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_NO_RESPONSE)) {
                 LOG_WARNING("No response from destination\n");
                 GOTO_TX_STATE(TX_STATE_FAILED, true);
-                break;
             }
 
             if (gnrc_netdev_get_tx_feedback(gnrc_netdev) == TX_FEEDBACK_UNDEF) {
@@ -332,7 +331,6 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                 /* clear packet point to avoid TX retry */
                 gnrc_netdev->tx.packet = NULL;
                 GOTO_TX_STATE(TX_STATE_FAILED, true);
-                break;
             }
 
             if (gnrc_netdev->tx.wr_sent == 0) {
@@ -588,7 +586,6 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             /* In case of no Tx-isr error, goto TX failure. */
             if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_NO_RESPONSE)) {
                 GOTO_TX_STATE(TX_STATE_FAILED, true);
-                break;
             }
 
             LOG_DEBUG("TX_STATE_WAIT_FEEDBACK\n");
