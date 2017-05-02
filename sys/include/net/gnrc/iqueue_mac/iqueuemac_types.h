@@ -402,6 +402,10 @@ typedef struct iqueuemac {
 
     bool exp_started;
     bool receive_exp_settings;
+
+    bool exp_end;
+
+    uint8_t slot_varia[60];
    
 } iqueuemac_t;
 

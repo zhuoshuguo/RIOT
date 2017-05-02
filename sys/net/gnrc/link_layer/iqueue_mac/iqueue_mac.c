@@ -171,6 +171,8 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 
 	iqueuemac->exp_started = false;
 	iqueuemac->receive_exp_settings = false;
+
+	iqueuemac->exp_end = false;
 }
 
 static void rtt_cb(void* arg)
@@ -1980,6 +1982,20 @@ void iqueue_mac_router_sleep(iqueuemac_t* iqueuemac){
 
 void iqueue_mac_router_sleep_end(iqueuemac_t* iqueuemac){
 
+
+	if((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 20) && (iqueuemac->exp_end == false)){
+
+		iqueuemac->exp_end = true;
+
+    	puts("start exp results process");
+
+        int dd;
+    	for(int j=0;j<60;j++){
+    		dd = (int) iqueuemac->slot_varia[j];
+    		printf("%d\n",dd);
+    	}
+	}
+
 	iqueuemac->router_states.router_listen_state = R_LISTEN_CP_INIT;
 	iqueuemac->need_update = true;
 }
@@ -2212,6 +2228,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
     iqueuemac.mac_type = MAC_TYPE;
 
     xtimer_sleep(3);
+    rtt_set_counter(0);
 
     iqueuemac_init(&iqueuemac);
 

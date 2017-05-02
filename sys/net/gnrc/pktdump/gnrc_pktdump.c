@@ -38,6 +38,8 @@ typedef struct iqueuemac iqueuemac_t;
 
 uint32_t idlist[20];
 uint32_t reception_list[20];
+uint32_t node_tdma_record_list[20];
+
 
 uint64_t delay_sum;
 uint32_t system_start_time = 0;
@@ -145,6 +147,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     	gnrc_pktbuf_release(pkt);
     	return;
     }
+
     ///////////////////////////
 
     int i=0;
@@ -153,6 +156,8 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     	if(idlist[i] == payload[1]){
     		found_id = true;
     		reception_list[i] ++;
+    		/* records node's current vtdma trans number */
+    		node_tdma_record_list[i] = payload[8];
     		break;
     	}
     }
@@ -167,11 +172,24 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     	}
     }
 
-
    // printf("s: %x, g: %lu, r: %lu, t: %lu. \n", addr[1], payload[0], reception_list[i], received_pkt_counter);
 
     printf("%lx, %lu, %lu, %lu, %lu, %lu, %lu, %lu  \n", payload[1], payload[0], reception_list[i],
                                                          payload[5], payload[6], received_pkt_counter, payload[7], payload[8]);
+
+
+    uint32_t current_slots_sum =0;
+	for(i=0;i<20;i++){
+		current_slots_sum += node_tdma_record_list[i];
+	}
+
+    uint32_t current_rtt = 0;
+    current_rtt = rtt_get_counter();
+    current_rtt = RTT_TICKS_TO_MIN(current_rtt);
+
+    if(current_rtt < 60) {
+        iqueuemac.slot_varia[current_rtt] = current_slots_sum;
+    }
 
     gnrc_pktbuf_release(pkt);
 }
@@ -197,6 +215,11 @@ static void *_eventloop(void *arg)
     for(int i=0;i<20;i++){
     	idlist[i] =0;
     	reception_list[i] =0;
+    	node_tdma_record_list[i]=0;
+    }
+
+    for (int i=0;i<60;i++) {
+    	iqueuemac.slot_varia[i] = 0;
     }
 
     while (1) {
