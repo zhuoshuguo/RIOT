@@ -618,7 +618,7 @@ void iqueuemac_t2r_init(iqueuemac_t* iqueuemac){
 	    //puts("ahead");
 
 		if (wait_phase_duration < IQUEUEMAC_CP_DURATION_US) {
-			wait_phase_duration = wait_phase_duration + IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_CP_DURATION_US;
+			wait_phase_duration = (wait_phase_duration + IQUEUEMAC_SUPERFRAME_DURATION_US) - IQUEUEMAC_CP_DURATION_US;
 		} else {
 			wait_phase_duration = wait_phase_duration - IQUEUEMAC_CP_DURATION_US;
 		}

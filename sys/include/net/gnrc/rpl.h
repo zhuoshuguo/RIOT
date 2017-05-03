@@ -279,8 +279,8 @@ static inline bool GNRC_RPL_COUNTER_GREATER_THAN(uint8_t A, uint8_t B)
  * default lifetime will be multiplied by the lifetime unit to obtain the resulting lifetime
  * @{
  */
-#define GNRC_RPL_DEFAULT_LIFETIME (240)
-#define GNRC_RPL_LIFETIME_UNIT (10)
+#define GNRC_RPL_DEFAULT_LIFETIME (250)
+#define GNRC_RPL_LIFETIME_UNIT (103)
 /** @} */
 
 /**
@@ -312,7 +312,7 @@ static inline bool GNRC_RPL_COUNTER_GREATER_THAN(uint8_t A, uint8_t B)
  */
 #define GNRC_RPL_DAO_SEND_RETRIES (4)
 #define GNRC_RPL_DEFAULT_WAIT_FOR_DAO_ACK (3)
-#define GNRC_RPL_REGULAR_DAO_INTERVAL (60)
+#define GNRC_RPL_REGULAR_DAO_INTERVAL (250)
 #define GNRC_RPL_DEFAULT_DAO_DELAY (5)
 /** @} */
 
