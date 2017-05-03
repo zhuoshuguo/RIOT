@@ -177,7 +177,7 @@ void *sender_thread(void *arg)
     char *udpport = "8808";
     start_server(udpport);
 
-    xtimer_sleep(200);
+    xtimer_sleep(20);
     puts("start RPL");
 
     printf("sub-channel: %u\n",iqueuemac.sub_channel_num);
@@ -186,7 +186,7 @@ void *sender_thread(void *arg)
     char *instanceid = "1";
     _gnrc_rpl_dodag_root(instanceid, ipadd);
 
-	xtimer_sleep(300);
+	xtimer_sleep(20);
 
     iqueuemac.exp_started = true;
 
@@ -199,7 +199,7 @@ void *sender_thread(void *arg)
 
 	   if((send_counter < 10)&&(exp_end == false)){  //total_gene_num
 
-		   for(int i=0; i<10; i++){
+		   for(int i=0; i<1; i++){
 			   generate_and_send_pkt();
 			   printf("send to %lu \n", send_counter);
 			   xtimer_sleep(10);
