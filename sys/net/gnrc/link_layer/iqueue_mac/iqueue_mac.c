@@ -617,6 +617,26 @@ void iqueuemac_t2r_init(iqueuemac_t* iqueuemac){
 
 	wait_phase_duration = _ticks_until_phase(iqueuemac, iqueuemac->tx.current_neighbour->cp_phase);
 	wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
+
+	if(iqueuemac->tx.no_ack_contuer == (IQUEUEMAC_REPHASELOCK_THRESHOLD -2)) {
+	    //puts("ahead");
+
+		if (wait_phase_duration < IQUEUEMAC_CP_DURATION_US) {
+			wait_phase_duration = (wait_phase_duration + IQUEUEMAC_SUPERFRAME_DURATION_US) - IQUEUEMAC_CP_DURATION_US;
+		} else {
+			wait_phase_duration = wait_phase_duration - IQUEUEMAC_CP_DURATION_US;
+		}
+	}
+
+	if(iqueuemac->tx.no_ack_contuer == (IQUEUEMAC_REPHASELOCK_THRESHOLD -1)) {
+		//puts("delay phase");
+		wait_phase_duration = wait_phase_duration + IQUEUEMAC_CP_DURATION_US + IQUEUEMAC_REPHASE_ADJUST_US;
+
+		if (wait_phase_duration > IQUEUEMAC_SUPERFRAME_DURATION_US) {
+			wait_phase_duration = wait_phase_duration - IQUEUEMAC_SUPERFRAME_DURATION_US;
+		}
+	}
+
 	iqueuemac_set_timeout(iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
 
 	/*** flush the rx-queue here to reduce possible buffered packet in RIOT!! ***/
@@ -719,6 +739,28 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				/*** first release the pkt ***/
 				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 				iqueuemac->tx.tx_packet = NULL;
+
+				if(iqueuemac->tx.no_ack_contuer == (IQUEUEMAC_REPHASELOCK_THRESHOLD -2)) {
+				   // puts("advance neighbor phase");
+
+				    if(iqueuemac->tx.current_neighbour->cp_phase >= RTT_US_TO_TICKS((IQUEUEMAC_CP_DURATION_US+IQUEUEMAC_REPHASE_ADJUST_US))) {
+				    	iqueuemac->tx.current_neighbour->cp_phase -= RTT_US_TO_TICKS((IQUEUEMAC_CP_DURATION_US+IQUEUEMAC_REPHASE_ADJUST_US));
+				    } else {
+				    	iqueuemac->tx.current_neighbour->cp_phase += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+				    	iqueuemac->tx.current_neighbour->cp_phase -= RTT_US_TO_TICKS((IQUEUEMAC_CP_DURATION_US+IQUEUEMAC_REPHASE_ADJUST_US));
+				    }
+				}
+
+				if(iqueuemac->tx.no_ack_contuer == (IQUEUEMAC_REPHASELOCK_THRESHOLD -1)) {
+				    //puts("delay neighbor phase");
+
+				    iqueuemac->tx.current_neighbour->cp_phase +=
+				        (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)+RTT_US_TO_TICKS(4*IQUEUEMAC_REPHASE_ADJUST_US));
+
+					if(iqueuemac->tx.current_neighbour->cp_phase >= RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US)) {
+					  	iqueuemac->tx.current_neighbour->cp_phase -= RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+					}
+				}
 
 				iqueuemac->tx.no_ack_contuer = 0;
 

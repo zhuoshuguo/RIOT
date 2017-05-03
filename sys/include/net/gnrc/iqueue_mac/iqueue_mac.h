@@ -50,6 +50,10 @@ typedef enum {
 #define IQUEUEMAC_CP_DURATION_US        (10U * 1000)
 #endif
 
+#ifndef IQUEUEMAC_REPHASE_ADJUST_US
+#define IQUEUEMAC_REPHASE_ADJUST_US        (5U * 1000)
+#endif
+
 #ifndef IQUEUEMAC_CP_RANDOM_END_US
 #define IQUEUEMAC_CP_RANDOM_END_US        (1U * 1000)
 #endif
