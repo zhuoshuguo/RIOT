@@ -2025,7 +2025,7 @@ void iqueue_mac_router_sleep(iqueuemac_t* iqueuemac){
 void iqueue_mac_router_sleep_end(iqueuemac_t* iqueuemac){
 
 
-	if((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 20) && (iqueuemac->exp_end == false)){
+	if((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 70) && (iqueuemac->exp_end == false)){
 
 		iqueuemac->exp_end = true;
 

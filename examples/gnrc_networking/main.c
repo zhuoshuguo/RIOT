@@ -78,14 +78,14 @@ static void generate_and_send_pkt(void){
 	expset[0] = 0xFFFF;
 
 	/* data rate */
-	expset[1] = 20000;
+	expset[1] = 30000;
 
 	/* exp duration */
 	//gnrc_netdev2->lwmac.exp_duration = 300; //seconds
 	//expset[1] = gnrc_netdev2->lwmac.exp_duration;
 
 	/* exp total generate packet number */
-	expset[2] = 50000;
+	expset[2] = 300;
 
 	/* the burst number */
 	expset[3] = 6;
@@ -177,7 +177,7 @@ void *sender_thread(void *arg)
     char *udpport = "8808";
     start_server(udpport);
 
-    xtimer_sleep(10);
+    xtimer_sleep(200);
     puts("start RPL");
 
     printf("sub-channel: %u\n",iqueuemac.sub_channel_num);
@@ -186,7 +186,7 @@ void *sender_thread(void *arg)
     char *instanceid = "1";
     _gnrc_rpl_dodag_root(instanceid, ipadd);
 
-	xtimer_sleep(10);
+	xtimer_sleep(400);
 
     iqueuemac.exp_started = true;
 
@@ -194,12 +194,12 @@ void *sender_thread(void *arg)
 
    puts("generating exp start commands to nodes");
    while (1) {
-	   xtimer_sleep(5);
+	   xtimer_sleep(10);
 	   //xtimer_usleep((uint32_t) data_rate * 1000);
 
 	   if((send_counter < 10)&&(exp_end == false)){  //total_gene_num
 
-		   for(int i=0; i<1; i++){
+		   for(int i=0; i<10; i++){
 			   generate_and_send_pkt();
 			   printf("send to %lu \n", send_counter);
 			   xtimer_sleep(10);
