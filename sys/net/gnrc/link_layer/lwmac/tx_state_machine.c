@@ -231,7 +231,7 @@ static uint8_t _send_wr(gnrc_netdev_t *gnrc_netdev)
     /* Flush RX queue, TODO: maybe find a way without loosing RX packets */
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
 
-	return tx_info;
+    return tx_info;
 }
 
 static uint8_t _packet_process_in_wait_for_wa(gnrc_netdev_t *gnrc_netdev)
@@ -548,7 +548,7 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             }
         }
         case TX_STATE_SEND_BROADCAST: {
-        	uint8_t tx_info = _send_bcast(gnrc_netdev);
+            uint8_t tx_info = _send_bcast(gnrc_netdev);
 
             if (tx_info & GNRC_LWMAC_TX_SUCCESS) {
                 GOTO_TX_STATE(TX_STATE_SUCCESSFUL, true);

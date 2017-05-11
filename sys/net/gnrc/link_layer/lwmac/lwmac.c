@@ -194,6 +194,202 @@ void lwmac_set_state(gnrc_netdev_t *gnrc_netdev, lwmac_state_t newstate)
     lwmac_schedule_update(gnrc_netdev);
 }
 
+static void _sleep_management(gnrc_netdev_t *gnrc_netdev)
+{
+    /* If a packet is scheduled, no other (possible earlier) packet can be
+     * sent before the first one is handled, even no broadcast
+     */
+    if (!lwmac_timeout_is_running(gnrc_netdev, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
+        gnrc_mac_tx_neighbor_t *neighbour;
+
+        /* Check if there is packet remaining for retransmission */
+        if (gnrc_netdev->tx.current_neighbor != NULL) {
+            neighbour = gnrc_netdev->tx.current_neighbor;
+        }
+        else {
+            /* Check if there are broadcasts to send and transmit immediately */
+            if (gnrc_priority_pktqueue_length(&(gnrc_netdev->tx.neighbors[0].queue)) > 0) {
+                gnrc_netdev->tx.current_neighbor = &(gnrc_netdev->tx.neighbors[0]);
+                lwmac_set_state(gnrc_netdev, LWMAC_TRANSMITTING);
+                return;
+            }
+            neighbour = _next_tx_neighbor(gnrc_netdev);
+        }
+
+        if (neighbour != NULL) {
+            /* if phase is unknown, send immediately. */
+            if (neighbour->phase > RTT_TICKS_TO_US(LWMAC_WAKEUP_INTERVAL_US)) {
+                gnrc_netdev->tx.current_neighbor = neighbour;
+                gnrc_netdev_lwmac_set_tx_continue(gnrc_netdev, false);
+                gnrc_netdev->tx.tx_burst_count = 0;
+                lwmac_set_state(gnrc_netdev, LWMAC_TRANSMITTING);
+                return;
+            }
+
+            /* Offset in microseconds when the earliest (phase) destination
+             * node wakes up that we have packets for. */
+            int time_until_tx = RTT_TICKS_TO_US(_ticks_until_phase(neighbour->phase));
+
+            /* If there's not enough time to prepare a WR to catch the phase
+             * postpone to next interval */
+            if (time_until_tx < LWMAC_WR_PREPARATION_US) {
+                time_until_tx += LWMAC_WAKEUP_INTERVAL_US;
+            }
+
+            time_until_tx -= LWMAC_WR_PREPARATION_US;
+
+            /* add a random time before goto TX, for avoiding one node for always holding the medium */
+            uint32_t random_backoff;
+            random_backoff = random_uint32_range(0, LWMAC_TIME_BETWEEN_WR_US);
+            time_until_tx = time_until_tx + random_backoff;
+
+            lwmac_set_timeout(gnrc_netdev, TIMEOUT_WAIT_FOR_DEST_WAKEUP, time_until_tx);
+
+            /* Register neighbour to be the next */
+            gnrc_netdev->tx.current_neighbor = neighbour;
+
+            /* Stop dutycycling, we're preparing to send. This prevents the
+             * timeout arriving late, so that the destination phase would
+             * be missed. */
+            // TODO: bad for power savings
+            rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev);
+        }
+    }
+    else {
+        if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
+            LOG_DEBUG("Got timeout for dest wakeup, ticks: %" PRIu32 "\n",
+                      rtt_get_counter());
+            gnrc_netdev_lwmac_set_tx_continue(gnrc_netdev, false);
+            gnrc_netdev->tx.tx_burst_count = 0;
+            lwmac_set_state(gnrc_netdev, LWMAC_TRANSMITTING);
+        }
+    }
+}
+
+static void _rx_management(gnrc_netdev_t *gnrc_netdev)
+{
+    lwmac_rx_state_t state_rx = gnrc_netdev->rx.state;
+
+    switch (state_rx) {
+        case RX_STATE_STOPPED: {
+            lwmac_rx_start(gnrc_netdev);
+            lwmac_rx_update(gnrc_netdev);
+            break;
+        }
+        case RX_STATE_FAILED: {
+            /* This may happen frequently because we'll receive WA from
+             * every node in range. */
+            LOG_DEBUG("Reception was NOT successful\n");
+            lwmac_rx_stop(gnrc_netdev);
+
+            if (gnrc_netdev->rx.rx_exten_count >= LWMAC_MAX_RX_EXTENSION_NUM) {
+                gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
+            }
+
+            if (gnrc_netdev_lwmac_get_quit_rx(gnrc_netdev)) {
+                lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
+            }
+            else {
+                /* Restart */
+                lwmac_set_state(gnrc_netdev, LWMAC_LISTENING);
+            }
+            break;
+        }
+        case RX_STATE_SUCCESSFUL: {
+            LOG_DEBUG("Reception was successful\n");
+            lwmac_rx_stop(gnrc_netdev);
+            /* Dispatch received packets, timing is not critical anymore */
+            _dispatch(gnrc_netdev->rx.dispatch_buffer);
+
+            if (gnrc_netdev_lwmac_get_quit_rx(gnrc_netdev)) {
+                lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
+            }
+            else {
+                /* Go back to Listen after successful transaction */
+                lwmac_set_state(gnrc_netdev, LWMAC_LISTENING);
+            }
+            break;
+        }
+        default:
+            lwmac_rx_update(gnrc_netdev);
+    }
+
+    /* If state has changed, reschedule main state machine */
+    if (state_rx != gnrc_netdev->rx.state) {
+        lwmac_schedule_update(gnrc_netdev);
+    }
+}
+
+static void _tx_management(gnrc_netdev_t *gnrc_netdev)
+{
+    char *tx_success = "";
+    lwmac_tx_state_t state_tx = gnrc_netdev->tx.state;
+
+    switch (state_tx) {
+        case TX_STATE_STOPPED: {
+            gnrc_pktsnip_t *pkt;
+
+            if (gnrc_netdev->tx.packet != NULL) {
+                LOG_WARNING("TX %d times retry\n", gnrc_netdev->tx.tx_retry_count);
+                gnrc_netdev->tx.state = TX_STATE_INIT;
+                gnrc_netdev->tx.wr_sent = 0;
+                lwmac_tx_update(gnrc_netdev);
+            }
+            else {
+                if ((pkt = gnrc_priority_pktqueue_pop(
+                         &gnrc_netdev->tx.current_neighbor->queue))) {
+                    gnrc_netdev->tx.tx_retry_count = 0;
+                    lwmac_tx_start(gnrc_netdev, pkt, gnrc_netdev->tx.current_neighbor);
+                    lwmac_tx_update(gnrc_netdev);
+                }
+                else {
+                    /* Shouldn't happen, but never observed this case */
+                    int id = (gnrc_netdev->tx.current_neighbor -
+                              gnrc_netdev->tx.neighbors);
+                    id /= sizeof(gnrc_netdev->tx.current_neighbor);
+                    LOG_ERROR("Packet from neighbour's queue (#%d) invalid\n", id);
+                    lwmac_schedule_update(gnrc_netdev);
+                }
+            }
+            break;
+        }
+        case TX_STATE_FAILED: {
+            gnrc_netdev_lwmac_set_tx_continue(gnrc_netdev, false);
+            gnrc_netdev_lwmac_set_quit_tx(gnrc_netdev, true);
+            tx_success = "NOT ";
+            /* Intended fall-through, TX packet will therefore be dropped. No
+             * automatic resending here, we did our best.
+             */
+        }
+        case TX_STATE_SUCCESSFUL: {
+            if (gnrc_netdev->tx.current_neighbor == &(gnrc_netdev->tx.neighbors[0])) {
+                LOG_INFO("Broadcast transmission done\n");
+            }
+            else {
+                LOG_INFO("Transmission was %ssuccessful (%" PRIu32 " WRs sent)\n",
+                         tx_success, gnrc_netdev->tx.wr_sent);
+            }
+            lwmac_tx_stop(gnrc_netdev);
+
+            if ((gnrc_netdev_lwmac_get_tx_continue(gnrc_netdev)) &&
+                (gnrc_netdev->tx.tx_burst_count < LWMAC_MAX_TX_BURST_PKT_NUM)) {
+                lwmac_schedule_update(gnrc_netdev);
+            }
+            else {
+                lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
+            }
+            break;
+        }
+        default:
+            lwmac_tx_update(gnrc_netdev);
+    }
+
+    /* If state has changed, reschedule main state machine */
+    if (state_tx != gnrc_netdev->tx.state) {
+        lwmac_schedule_update(gnrc_netdev);
+    }
+}
+
 /* Main state machine. Call whenever something happens */
 bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
 {
@@ -205,74 +401,7 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
                 return false;
             }
 
-            /* If a packet is scheduled, no other (possible earlier) packet can be
-             * sent before the first one is handled, even no broadcast
-             */
-            if (!lwmac_timeout_is_running(gnrc_netdev, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
-                gnrc_mac_tx_neighbor_t *neighbour;
-
-                /* Check if there is packet remaining for retransmission */
-                if (gnrc_netdev->tx.current_neighbor != NULL) {
-                    neighbour = gnrc_netdev->tx.current_neighbor;
-                }
-                else {
-                    /* Check if there are broadcasts to send and transmit immediately */
-                    if (gnrc_priority_pktqueue_length(&(gnrc_netdev->tx.neighbors[0].queue)) > 0) {
-                        gnrc_netdev->tx.current_neighbor = &(gnrc_netdev->tx.neighbors[0]);
-                        lwmac_set_state(gnrc_netdev, LWMAC_TRANSMITTING);
-                        break;
-                    }
-                    neighbour = _next_tx_neighbor(gnrc_netdev);
-                }
-
-                if (neighbour != NULL) {
-                    /* if phase is unknown, send immediately after wakeup period. */
-                    if (neighbour->phase > RTT_TICKS_TO_US(LWMAC_WAKEUP_INTERVAL_US)) {
-                        gnrc_netdev->tx.current_neighbor = neighbour;
-                        gnrc_netdev_lwmac_set_tx_continue(gnrc_netdev, false);
-                        gnrc_netdev->tx.tx_burst_count = 0;
-                        lwmac_set_state(gnrc_netdev, LWMAC_TRANSMITTING);
-                        break;
-                    }
-
-                    /* Offset in microseconds when the earliest (phase) destination
-                     * node wakes up that we have packets for. */
-                    int time_until_tx = RTT_TICKS_TO_US(_ticks_until_phase(neighbour->phase));
-
-                    /* If there's not enough time to prepare a WR to catch the phase
-                     * postpone to next interval */
-                    if (time_until_tx < LWMAC_WR_PREPARATION_US) {
-                        time_until_tx += LWMAC_WAKEUP_INTERVAL_US;
-                    }
-
-                    time_until_tx -= LWMAC_WR_PREPARATION_US;
-
-                    /* add a random time before goto TX, for avoiding one node for always holding the medium */
-                    uint32_t random_backoff;
-                    random_backoff = random_uint32_range(0, LWMAC_TIME_BETWEEN_WR_US);
-                    time_until_tx = time_until_tx + random_backoff;
-
-                    lwmac_set_timeout(gnrc_netdev, TIMEOUT_WAIT_FOR_DEST_WAKEUP, time_until_tx);
-
-                    /* Register neighbour to be the next */
-                    gnrc_netdev->tx.current_neighbor = neighbour;
-
-                    /* Stop dutycycling, we're preparing to send. This prevents the
-                     * timeout arriving late, so that the destination phase would
-                     * be missed. */
-                    // TODO: bad for power savings
-                    rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev);
-                }
-            }
-            else {
-                if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_WAIT_FOR_DEST_WAKEUP)) {
-                    LOG_DEBUG("Got timeout for dest wakeup, ticks: %" PRIu32 "\n",
-                              rtt_get_counter());
-                    gnrc_netdev_lwmac_set_tx_continue(gnrc_netdev, false);
-                    gnrc_netdev->tx.tx_burst_count = 0;
-                    lwmac_set_state(gnrc_netdev, LWMAC_TRANSMITTING);
-                }
-            }
+            _sleep_management(gnrc_netdev);
             break;
         }
         case LWMAC_LISTENING: {
@@ -314,125 +443,11 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
             break;
         }
         case LWMAC_RECEIVING: {
-            lwmac_rx_state_t state_rx = gnrc_netdev->rx.state;
-
-            switch (state_rx) {
-                case RX_STATE_STOPPED: {
-                    lwmac_rx_start(gnrc_netdev);
-                    lwmac_rx_update(gnrc_netdev);
-                    break;
-                }
-                case RX_STATE_FAILED: {
-                    /* This may happen frequently because we'll receive WA from
-                     * every node in range. */
-                    LOG_DEBUG("Reception was NOT successful\n");
-                    lwmac_rx_stop(gnrc_netdev);
-
-                    if (gnrc_netdev->rx.rx_exten_count >= LWMAC_MAX_RX_EXTENSION_NUM) {
-                        gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
-                    }
-
-                    if (gnrc_netdev_lwmac_get_quit_rx(gnrc_netdev)) {
-                        lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
-                    }
-                    else {
-                        /* Restart */
-                        lwmac_set_state(gnrc_netdev, LWMAC_LISTENING);
-                    }
-                    break;
-                }
-                case RX_STATE_SUCCESSFUL: {
-                    LOG_DEBUG("Reception was successful\n");
-                    lwmac_rx_stop(gnrc_netdev);
-                    /* Dispatch received packets, timing is not critical anymore */
-                    _dispatch(gnrc_netdev->rx.dispatch_buffer);
-
-                    if (gnrc_netdev_lwmac_get_quit_rx(gnrc_netdev)) {
-                        lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
-                    }
-                    else {
-                        /* Go back to Listen after successful transaction */
-                        lwmac_set_state(gnrc_netdev, LWMAC_LISTENING);
-                    }
-                    break;
-                }
-                default:
-                    lwmac_rx_update(gnrc_netdev);
-            }
-
-            /* If state has changed, reschedule main state machine */
-            if (state_rx != gnrc_netdev->rx.state) {
-                lwmac_schedule_update(gnrc_netdev);
-            }
+            _rx_management(gnrc_netdev);
             break;
         }
         case LWMAC_TRANSMITTING: {
-            char *tx_success = "";
-            lwmac_tx_state_t state_tx = gnrc_netdev->tx.state;
-
-            switch (state_tx) {
-                case TX_STATE_STOPPED: {
-                    gnrc_pktsnip_t *pkt;
-
-                    if (gnrc_netdev->tx.packet != NULL) {
-                        LOG_WARNING("TX %d times retry\n", gnrc_netdev->tx.tx_retry_count);
-                        gnrc_netdev->tx.state = TX_STATE_INIT;
-                        gnrc_netdev->tx.wr_sent = 0;
-                        lwmac_tx_update(gnrc_netdev);
-                    }
-                    else {
-                        if ((pkt = gnrc_priority_pktqueue_pop(
-                                 &gnrc_netdev->tx.current_neighbor->queue))) {
-                            gnrc_netdev->tx.tx_retry_count = 0;
-                            lwmac_tx_start(gnrc_netdev, pkt, gnrc_netdev->tx.current_neighbor);
-                            lwmac_tx_update(gnrc_netdev);
-                        }
-                        else {
-                            /* Shouldn't happen, but never observed this case */
-                            int id = (gnrc_netdev->tx.current_neighbor -
-                                      gnrc_netdev->tx.neighbors);
-                            id /= sizeof(gnrc_netdev->tx.current_neighbor);
-                            LOG_ERROR("Packet from neighbour's queue (#%d) invalid\n", id);
-                            lwmac_schedule_update(gnrc_netdev);
-                        }
-                    }
-                    break;
-                }
-                case TX_STATE_FAILED: {
-                    gnrc_netdev_lwmac_set_tx_continue(gnrc_netdev, false);
-                    gnrc_netdev_lwmac_set_quit_tx(gnrc_netdev, true);
-                    tx_success = "NOT ";
-                    /* Intended fall-through, TX packet will therefore be dropped. No
-                     * automatic resending here, we did our best.
-                     */
-                }
-                case TX_STATE_SUCCESSFUL: {
-                    if (gnrc_netdev->tx.current_neighbor == &(gnrc_netdev->tx.neighbors[0])) {
-                        LOG_INFO("Broadcast transmission done\n");
-                    }
-                    else {
-                        LOG_INFO("Transmission was %ssuccessful (%" PRIu32 " WRs sent)\n",
-                                 tx_success, gnrc_netdev->tx.wr_sent);
-                    }
-                    lwmac_tx_stop(gnrc_netdev);
-
-                    if ((gnrc_netdev_lwmac_get_tx_continue(gnrc_netdev)) &&
-                        (gnrc_netdev->tx.tx_burst_count < LWMAC_MAX_TX_BURST_PKT_NUM)) {
-                        lwmac_schedule_update(gnrc_netdev);
-                    }
-                    else {
-                        lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
-                    }
-                    break;
-                }
-                default:
-                    lwmac_tx_update(gnrc_netdev);
-            }
-
-            /* If state has changed, reschedule main state machine */
-            if (state_tx != gnrc_netdev->tx.state) {
-                lwmac_schedule_update(gnrc_netdev);
-            }
+            _tx_management(gnrc_netdev);
             break;
         }
         default:
