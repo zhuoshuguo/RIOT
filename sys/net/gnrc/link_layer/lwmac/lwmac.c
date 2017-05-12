@@ -235,10 +235,11 @@ static void _sleep_management(gnrc_netdev_t *gnrc_netdev)
             if (time_until_tx < LWMAC_WR_PREPARATION_US) {
                 time_until_tx += LWMAC_WAKEUP_INTERVAL_US;
             }
-
             time_until_tx -= LWMAC_WR_PREPARATION_US;
 
-            /* add a random time before goto TX, for avoiding one node for always holding the medium */
+            /* add a random time before goto TX, for avoiding one node for
+             * always holding the medium (if the receiver's phase is recorded earlier in this
+             * particular node) */
             uint32_t random_backoff;
             random_backoff = random_uint32_range(0, LWMAC_TIME_BETWEEN_WR_US);
             time_until_tx = time_until_tx + random_backoff;
@@ -290,7 +291,7 @@ static void _rx_management(gnrc_netdev_t *gnrc_netdev)
                 lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
             }
             else {
-                /* Restart */
+                /* Go back to LISTENING for keep hearing on the channel */
                 lwmac_set_state(gnrc_netdev, LWMAC_LISTENING);
             }
             break;
@@ -305,7 +306,7 @@ static void _rx_management(gnrc_netdev_t *gnrc_netdev)
                 lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
             }
             else {
-                /* Go back to Listen after successful transaction */
+                /* Go back to LISTENING after successful reception */
                 lwmac_set_state(gnrc_netdev, LWMAC_LISTENING);
             }
             break;
@@ -329,6 +330,8 @@ static void _tx_management(gnrc_netdev_t *gnrc_netdev)
         case TX_STATE_STOPPED: {
             gnrc_pktsnip_t *pkt;
 
+            /* If there is packet remaining for retransmission,
+             * retransmit it (i.e., the retransmission scheme of LWMAC). */
             if (gnrc_netdev->tx.packet != NULL) {
                 LOG_WARNING("TX %d times retry\n", gnrc_netdev->tx.tx_retry_count);
                 gnrc_netdev->tx.state = TX_STATE_INIT;
@@ -354,6 +357,8 @@ static void _tx_management(gnrc_netdev_t *gnrc_netdev)
             break;
         }
         case TX_STATE_FAILED: {
+            /* I transmission failure, do not try burst transmissions and quit other
+             * transmission attempts in this cycle for collision avoidance */
             gnrc_netdev_lwmac_set_tx_continue(gnrc_netdev, false);
             gnrc_netdev_lwmac_set_quit_tx(gnrc_netdev, true);
             tx_success = "NOT ";
@@ -371,6 +376,8 @@ static void _tx_management(gnrc_netdev_t *gnrc_netdev)
             }
             lwmac_tx_stop(gnrc_netdev);
 
+            /* In case have pending packets for the same receiver, continue to
+             * send immediately, before the maximum transmit-limit */
             if ((gnrc_netdev_lwmac_get_tx_continue(gnrc_netdev)) &&
                 (gnrc_netdev->tx.tx_burst_count < LWMAC_MAX_TX_BURST_PKT_NUM)) {
                 lwmac_schedule_update(gnrc_netdev);
@@ -397,6 +404,9 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
 
     switch (gnrc_netdev->lwmac.state) {
         case LWMAC_SLEEPING: {
+            /* Quit scheduling transmission if 'quit-tx' flag is found set, thus
+             * to avoid potential collisions with ongoing transmissions of other
+             * neighbor nodes */
             if (gnrc_netdev_lwmac_get_quit_tx(gnrc_netdev)) {
                 return false;
             }
@@ -405,6 +415,9 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
             break;
         }
         case LWMAC_LISTENING: {
+            /* In case has pending packet to send, clear rtt alarm thus to goto
+             * transmission initialization (in SLEEPING management) right after the
+             * listening period */
             if ((_next_tx_neighbor(gnrc_netdev) != NULL) ||
                 (gnrc_netdev->tx.current_neighbor != NULL)) {
                 rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev);
@@ -426,7 +439,8 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
                 _set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
                 lwmac_clear_timeout(gnrc_netdev, TIMEOUT_WAKEUP_PERIOD);
 
-                /* if there is a packet for transmission, schedule update. */
+                /* if there is a packet for transmission, schedule update to start
+                 * transmission initialization immediately. */
                 gnrc_mac_tx_neighbor_t *neighbour = _next_tx_neighbor(gnrc_netdev);
                 if ((neighbour != NULL) || (gnrc_netdev->tx.current_neighbor != NULL)) {
                     /* This triggers packet sending procedure in sleeping immediately. */
@@ -436,7 +450,7 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
             }
 
             if (gnrc_priority_pktqueue_length(&gnrc_netdev->rx.queue) > 0) {
-                /* Do wakeup extension after packet reception. */
+                /* Do wake-up extension in each packet reception. */
                 lwmac_clear_timeout(gnrc_netdev, TIMEOUT_WAKEUP_PERIOD);
                 lwmac_set_state(gnrc_netdev, LWMAC_RECEIVING);
             }
@@ -476,6 +490,7 @@ void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
 
     switch (event & 0xffff) {
         case LWMAC_EVENT_RTT_WAKEUP_PENDING: {
+            /* A new cycle starts, set sleep timing and initialize related MAC-info flags. */
             gnrc_netdev->lwmac.last_wakeup = rtt_get_alarm();
             alarm = _next_inphase_event(gnrc_netdev->lwmac.last_wakeup,
                                         RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US));
@@ -488,13 +503,14 @@ void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
             break;
         }
         case LWMAC_EVENT_RTT_SLEEP_PENDING: {
+            /* Set next wake-up timing. */
             alarm = _next_inphase_event(gnrc_netdev->lwmac.last_wakeup,
                                         RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
             rtt_set_alarm(alarm, rtt_cb, (void *) LWMAC_EVENT_RTT_WAKEUP_PENDING);
             lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
             break;
         }
-        /* Set initial wakeup alarm that starts the cycle */
+        /* Set initial wake-up alarm that starts the cycle */
         case LWMAC_EVENT_RTT_START: {
             LOG_DEBUG("RTT: Initialize duty cycling\n");
             alarm = rtt_get_counter() + RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US);
