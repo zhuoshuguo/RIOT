@@ -108,11 +108,13 @@ static uint8_t _packet_process_in_wait_for_wr(gnrc_netdev_t *gnrc_netdev)
         if (!(memcmp(&info.dst_addr.addr, &gnrc_netdev->l2_addr,
                      gnrc_netdev->l2_addr_len) == 0)) {
             LOG_DEBUG("Packet is WR but not for us\n");
-            /* quit TX in this cycle to avoid collisions with other senders */
+            /* quit TX in this cycle to avoid collisions with other senders, since
+             * found ongoing WR (preamble) stream*/
             gnrc_netdev_lwmac_set_quit_tx(gnrc_netdev, true);
             continue;
         }
 
+        /* If reach here, the node gets a WR for itself. */
         /* Save source address for later addressing */
         gnrc_netdev->rx.l2_addr = info.src_addr;
 
@@ -147,6 +149,9 @@ static bool _send_wa(gnrc_netdev_t *gnrc_netdev)
 
     uint32_t phase_now = _phase_now();
 
+    /* Embed the current 'relative phase timing' (counted from the start of this cycle)
+     * of the receiver into its WA packet, thus to allow the sender to infer the
+     * receiver's exact wake-up timing */
     if (phase_now > _ticks_to_phase(gnrc_netdev->lwmac.last_wakeup)) {
         lwmac_hdr.current_phase = (phase_now -
                                    _ticks_to_phase(gnrc_netdev->lwmac.last_wakeup));
@@ -255,6 +260,7 @@ static uint8_t _packet_process_in_wait_for_data(gnrc_netdev_t *gnrc_netdev)
                      gnrc_netdev->rx.l2_addr.len) == 0)) {
             LOG_DEBUG("Packet is not from destination\n");
             gnrc_pktbuf_release(pkt);
+            /* Reset timeout to wait for the data packet */
             lwmac_clear_timeout(gnrc_netdev, TIMEOUT_DATA);
             lwmac_set_timeout(gnrc_netdev, TIMEOUT_DATA, LWMAC_DATA_DELAY_US);
             continue;
@@ -264,6 +270,7 @@ static uint8_t _packet_process_in_wait_for_data(gnrc_netdev_t *gnrc_netdev)
                      gnrc_netdev->l2_addr_len) == 0)) {
             LOG_DEBUG("Packet is not for us\n");
             gnrc_pktbuf_release(pkt);
+            /* Reset timeout to wait for the data packet */
             lwmac_clear_timeout(gnrc_netdev, TIMEOUT_DATA);
             lwmac_set_timeout(gnrc_netdev, TIMEOUT_DATA, LWMAC_DATA_DELAY_US);
             continue;
@@ -279,6 +286,7 @@ static uint8_t _packet_process_in_wait_for_data(gnrc_netdev_t *gnrc_netdev)
             break;
         }
 
+        /* Receiver gets the data packet */
         if ((info.header->type == FRAMETYPE_DATA) ||
             (info.header->type == FRAMETYPE_DATA_PENDING)) {
             _dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
@@ -352,6 +360,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
 
             /* TODO: don't flush queue */
             gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
+            /* Found WR packet (preamble), goto next state to send WA (preamble-ACK) */
             GOTO_RX_STATE(RX_STATE_SEND_WA, true);
         }
         case RX_STATE_SEND_WA: {
@@ -371,7 +380,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
                 break;
             }
 
-            /* Set timeout for expected data arrival */
+            /* When reach here, WA has been sent, set timeout for expected data arrival */
             lwmac_set_timeout(gnrc_netdev, TIMEOUT_DATA, LWMAC_DATA_DELAY_US);
 
             _set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
