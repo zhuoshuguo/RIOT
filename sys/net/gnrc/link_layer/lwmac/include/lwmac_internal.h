@@ -34,22 +34,43 @@ extern "C" {
 
 /**
  * @brief   Flag to track if the sender can continue to transmit packet to
- *          the receiver in its TX procedure.
+ *          the receiver in its TX procedure. LWMAC supports burst transmission
+ *          based on the pending-bit technique. Namely, if the sender has multi
+ *          packets for the same receiver, it can successively transmit its packets
+ *          back to back with this flag set up, with the awareness that the receiver
+ *          will also keep awake for receptions.
  */
 #define GNRC_NETDEV_LWMAC_TX_CONTINUE          (0x0008U)
 
 /**
- * @brief   Flag to track if the sender should quit Tx in current cycle.
+ * @brief   Flag to track if the sender should quit Tx in current cycle. This flag is
+ *          mainly for collision avoidance. In case a node overhears ongoing broadcast packets
+ *          stream or other ongoing transmissions of other communication pairs during its
+ *          wake-up period, it sets up this flag, which quits all its potential transmission
+ *          attempts in this current cycle (started by the wake-up period), thus not to collide
+ *          with other (neighbor) nodes' transmissions.
  */
 #define GNRC_NETDEV_LWMAC_QUIT_TX              (0x0010U)
 
 /**
- * @brief   Flag to track if the device need to reselect a new phase.
+ * @brief   Flag to track if the device need to reselect a new wake-up phase. This flag is
+ *          mainly for potential collision avoidance. In multi-hop scenario, it could be dangerous
+ *          that a sender's wake-up phase is close to its receiver's, which may lead to
+ *          collisions when the sender is sending to the receiver while the sender's son nodes are
+ *          also sending to the sender. To avoid this, in case a sender finds its phase close to
+ *          its receiver's, it sets up this flag and then randomly reselects a new wake-up phase.
  */
 #define GNRC_NETDEV_LWMAC_PHASE_BACKOFF        (0x0020U)
 
 /**
- * @brief   Flag to track if the device need to quit listening procedure.
+ * @brief   Flag to track if the device needs to quit the wake-up (listening) procedure.
+ *          LWMAC adopts an auto wake-up extension scheme. That is, normally, after each data
+ *          reception in the wake-up period, it extends the wake-up period to another basic
+ *          duration, thus to receive more potential incoming packets, which is also correlated to
+ *          the pending-bit transmission scheme to support burst transmissions to boost throughput.
+ *          However, in some situations, like receiving broadcast (stream) packet, the receiver
+ *          should immediately goto sleep (by setting up this flag) after one reception, thus not
+ *          to receive duplicate broadcast packets.
  */
 #define GNRC_NETDEV_LWMAC_QUIT_RX              (0x0040U)
 
