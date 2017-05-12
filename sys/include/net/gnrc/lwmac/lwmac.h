@@ -35,7 +35,7 @@ extern "C" {
  *        latency and throughput!
  */
 #ifndef LWMAC_WAKEUP_INTERVAL_US
-#define LWMAC_WAKEUP_INTERVAL_US        (200U * US_PER_MS)
+#define LWMAC_WAKEUP_INTERVAL_US        (100U * US_PER_MS)
 #endif
 
 /**
@@ -65,7 +65,7 @@ extern "C" {
  *        send a WR with the given hardware (including processor) and data rate.
  */
 #ifndef LWMAC_TIME_BETWEEN_WR_US
-#define LWMAC_TIME_BETWEEN_WR_US        (7U * US_PER_MS)
+#define LWMAC_TIME_BETWEEN_WR_US        (5U * US_PER_MS)
 #endif
 
 /**
