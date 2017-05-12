@@ -25,11 +25,33 @@
 #include <stdint.h>
 
 #include "periph/rtt.h"
+#include "net/gnrc/netdev.h"
 #include "net/gnrc/mac/types.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @brief   Flag to track if the sender can continue to transmit packet to
+ *          the receiver in its TX procedure.
+ */
+#define GNRC_NETDEV_LWMAC_TX_CONTINUE          (0x0008U)
+
+/**
+ * @brief   Flag to track if the sender should quit Tx in current cycle.
+ */
+#define GNRC_NETDEV_LWMAC_QUIT_TX              (0x0010U)
+
+/**
+ * @brief   Flag to track if the device need to reselect a new phase.
+ */
+#define GNRC_NETDEV_LWMAC_PHASE_BACKOFF        (0x0020U)
+
+/**
+ * @brief   Flag to track if the device need to quit listening procedure.
+ */
+#define GNRC_NETDEV_LWMAC_QUIT_RX              (0x0040U)
 
 /**
  * @brief Type to pass information about parsing.
@@ -48,6 +70,118 @@ typedef struct {
  *        margin will be applied when using `_next_inphase_event()`.
  */
 #define LWMAC_RTT_EVENT_MARGIN_TICKS    (RTT_MS_TO_TICKS(2))
+
+/**
+ * @brief set the TX-continue flag of the device
+ *
+ * @param[in] dev          ptr to netdev device
+ * @param[in] tx_continue  value for Lwmac tx-continue flag
+ *
+ */
+static inline void gnrc_netdev_lwmac_set_tx_continue(gnrc_netdev_t *dev, bool tx_continue)
+{
+    if (tx_continue) {
+        dev->mac_info |= GNRC_NETDEV_LWMAC_TX_CONTINUE;
+    }
+    else {
+        dev->mac_info &= ~GNRC_NETDEV_LWMAC_TX_CONTINUE;
+    }
+}
+
+/**
+ * @brief get the TX-continue flag of the device
+ *
+ * @param[in] dev          ptr to netdev device
+ *
+ */
+static inline bool gnrc_netdev_lwmac_get_tx_continue(gnrc_netdev_t *dev)
+{
+    return (dev->mac_info & GNRC_NETDEV_LWMAC_TX_CONTINUE);
+}
+
+/**
+ * @brief set the quit-TX flag of the device
+ *
+ * @param[in] dev          ptr to netdev device
+ * @param[in] quit_tx      value for Lwmac quit-TX flag
+ *
+ */
+static inline void gnrc_netdev_lwmac_set_quit_tx(gnrc_netdev_t *dev, bool quit_tx)
+{
+    if (quit_tx) {
+        dev->mac_info |= GNRC_NETDEV_LWMAC_QUIT_TX;
+    }
+    else {
+        dev->mac_info &= ~GNRC_NETDEV_LWMAC_QUIT_TX;
+    }
+}
+
+/**
+ * @brief get the quit-TX flag of the device
+ *
+ * @param[in] dev          ptr to netdev device
+ *
+ */
+static inline bool gnrc_netdev_lwmac_get_quit_tx(gnrc_netdev_t *dev)
+{
+    return (dev->mac_info & GNRC_NETDEV_LWMAC_QUIT_TX);
+}
+
+/**
+ * @brief set the phase-backoff flag of the device
+ *
+ * @param[in] dev          ptr to netdev device
+ * @param[in] backoff      value for Lwmac phase-backoff flag
+ *
+ */
+static inline void gnrc_netdev_lwmac_set_phase_backoff(gnrc_netdev_t *dev, bool backoff)
+{
+    if (backoff) {
+        dev->mac_info |= GNRC_NETDEV_LWMAC_PHASE_BACKOFF;
+    }
+    else {
+        dev->mac_info &= ~GNRC_NETDEV_LWMAC_PHASE_BACKOFF;
+    }
+}
+
+/**
+ * @brief get the phase-backoff of the device
+ *
+ * @param[in] dev          ptr to netdev device
+ *
+ */
+static inline bool gnrc_netdev_lwmac_get_phase_backoff(gnrc_netdev_t *dev)
+{
+    return (dev->mac_info & GNRC_NETDEV_LWMAC_PHASE_BACKOFF);
+}
+
+/**
+ * @brief set the quit-RX flag of the device
+ *
+ * @param[in] dev          ptr to netdev device
+ * @param[in] quit_rx      value for Lwmac quit-Rx flag
+ *
+ */
+static inline void gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev_t *dev, bool quit_rx)
+{
+    if (quit_rx) {
+        dev->mac_info |= GNRC_NETDEV_LWMAC_QUIT_RX;
+    }
+    else {
+        dev->mac_info &= ~GNRC_NETDEV_LWMAC_QUIT_RX;
+    }
+}
+
+/**
+ * @brief get the quit-RX flag of the device
+ *
+ * @param[in] dev          ptr to netdev device
+ *
+ */
+static inline bool gnrc_netdev_lwmac_get_quit_rx(gnrc_netdev_t *dev)
+{
+    return (dev->mac_info & GNRC_NETDEV_LWMAC_QUIT_RX);
+}
 
 /**
  * @brief Parse an incoming packet and extract important information.
