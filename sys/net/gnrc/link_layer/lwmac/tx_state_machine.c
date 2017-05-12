@@ -372,6 +372,7 @@ static uint8_t _packet_process_in_wait_for_wa(gnrc_netdev_t *gnrc_netdev)
     return tx_info;
 }
 
+/* return false if send data failed, otherwise return true */
 static bool _send_data(gnrc_netdev_t *gnrc_netdev)
 {
     gnrc_pktsnip_t *pkt = gnrc_netdev->tx.packet;
@@ -541,7 +542,7 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                 netopt_enable_t csma_disable = NETOPT_ENABLE;
                 gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA,
                                               &csma_disable, sizeof(csma_disable));
-
+                /* Set a timeout for the maximum transmission procedure */
                 lwmac_set_timeout(gnrc_netdev, TIMEOUT_NO_RESPONSE, LWMAC_PREAMBLE_DURATION_US);
 
                 GOTO_TX_STATE(TX_STATE_SEND_WR, true);
@@ -573,7 +574,7 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
         case TX_STATE_WAIT_WR_SENT: {
             LOG_DEBUG("TX_STATE_WAIT_WR_SENT\n");
 
-            /* In case of no Tx-isr error, goto TX failure. */
+            /* In case of no Tx-isr error (e.g., no Tx-isr), goto TX failure. */
             if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_NO_RESPONSE)) {
                 LOG_WARNING("No response from destination\n");
                 GOTO_TX_STATE(TX_STATE_FAILED, true);
@@ -584,6 +585,8 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                 break;
             }
 
+            /* If found ongoing transmission, goto TX failure, i.e., postpone transmission to
+             * next cycle. This is mainly for collision avoidance. */
             if (gnrc_netdev_get_tx_feedback(gnrc_netdev) == TX_FEEDBACK_BUSY) {
                 gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet);
                 /* clear packet point to avoid TX retry */
@@ -622,6 +625,12 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             }
 
             if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_WR)) {
+                /* In case the sender is in consecutive (burst) transmission to the receiver,
+                 * meaning that the sender has already successfully sent at least one data to
+                 * the receiver, then the sender will only spend one WR for triggering the next
+                 * transmission procedure. And, if this WR doesn't work (no WA replied), the
+                 * sender regards consecutive transmission failed.
+                 */
                 if (gnrc_netdev_lwmac_get_tx_continue(gnrc_netdev)) {
                     LOG_DEBUG("tx burst fail\n");
                     gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet);
@@ -631,6 +640,10 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                     GOTO_TX_STATE(TX_STATE_FAILED, true);
                 }
                 else {
+                    /* If this is the first transmission to the receiver for locating the
+                     * latter's wake-up period, the sender just keep sending WRs until it
+                     * finds the WA.
+                     */
                     GOTO_TX_STATE(TX_STATE_SEND_WR, true);
                 }
             }
