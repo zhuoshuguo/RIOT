@@ -31,27 +31,46 @@ extern "C" {
 #endif
 
 /**
- * @brief Time between consecutive wakeups. This parameter governs power consumption,
- *        latency and throughput!
+ * @brief Time between consecutive wake-ups.
+ *        This parameter governs power consumption, latency and throughput!
+ *        In LWMAC, devices adopt duty-cycle scheme to conserve power. That is,
+ *        time is divided into repeated cycles (or, superframes), and in each
+ *        cycle, a node only wakes up for a period of time for receiving potential
+ *        incoming packets for itself. This macro defines the wake-up interval, or,
+ *        in other words, defines the cycle duration used in LWMAC. If the wake-up interval
+ *        is short, nodes will wake up more frequently, which also increases
+ *        the chances for receiving packets from neighbors (i.e., leads to higher
+ *        throughput), but also results in higher power consumption.
+ *        In LWMAC, by default, we regard the wake-up period as the beginning of a cycle.
  */
 #ifndef LWMAC_WAKEUP_INTERVAL_US
 #define LWMAC_WAKEUP_INTERVAL_US        (100U * US_PER_MS)
 #endif
 
 /**
- * @brief The Maximum WR (preamble) duration time. The idea was to send WRs/preambles
- *        for a slightly longer period than LWMAC_WAKEUP_INTERVAL_US in order to make
- *        sure that at least one WR will be received by the destination.
+ * @brief The Maximum WR (preamble) duration time.
+ *        Since LWMAC adopts duty-cycle scheme, a node only wakes up for a short
+ *        period in each cycle. Thus, to probe where is the wake-up period of the
+ *        receiver, a sender sends WR (preamble) packets to notice the receiver for
+ *        communication. To ensure that the receiver will catch at least one WR
+ *        packet in one cycle, the sender repeatedly broadcasts a stream of WR packets
+ *        with the broadcast duration (preamble duration) slightly longer period than
+ *        LWMAC_WAKEUP_INTERVAL_US.
  */
 #ifndef LWMAC_PREAMBLE_DURATION_US
 #define LWMAC_PREAMBLE_DURATION_US      ((13 * LWMAC_WAKEUP_INTERVAL_US) / 10)
 #endif
 
 /**
- * @brief The Maximum random backoff time before actually sending each WR. This random
- *        backoff duration is temporally (maybe removed in the future) introduced to increase the
- *        probability of detection of WRs from other senders (i.e., two or more nearby senders
- *        are sending WRs at the same time), thus to avoid WR collisions.
+ * @brief The Maximum random backoff time before actually sending each WR.
+ *        Before actually sending a WR packet, a sender runs a random backoff with a
+ *        duration from 0 to LWMAC_RANDOM_BEFORE_WR_US. Then, after the random backoff,
+ *        the sender senses the channel to see if there is ongoing transmission.
+ *        If yes, the sender quits sending packet and delays the transmission attempt to the
+ *        next cycle. This random backoff duration is temporally (maybe removed in the future)
+ *        introduced to increase the probability of detection of WRs from other senders
+ *        (i.e., two or more nearby senders are sending WRs at the same time), thus to
+ *        avoid WR collisions.
  */
 #ifndef LWMAC_RANDOM_BEFORE_WR_US
 #define LWMAC_RANDOM_BEFORE_WR_US       (1U * US_PER_MS)
@@ -59,7 +78,14 @@ extern "C" {
 
 /**
  * @brief Timeout to send the next WR in case no WA has been received during that
- *        time. It is referenced to the beginning of both WRs, but due to internal
+ *        time.
+ *        In LWMAC, when a sender initiates a transmission to a receiver, it starts with
+ *        sending a stream of repeated WR packets with LWMAC_TIME_BETWEEN_WR_US interval
+ *        between consecutive two WRs. After sending one WR (preamble), the sender turns
+ *        to the listen mode to receive the potential incoming WA (preamble-ACK) packet with
+ *        a timeout of LWMAC_TIME_BETWEEN_WR_US. If no WA is received during
+ *        LWMAC_TIME_BETWEEN_WR_US, the sender starts sending the next WR.
+ *        It is referenced to the beginning of both WRs, but due to internal
  *        overhead, the exact spacing is slightly higher.
  *        The minimum possible value depends on the time it takes to completely
  *        send a WR with the given hardware (including processor) and data rate.
@@ -69,15 +95,13 @@ extern "C" {
 #endif
 
 /**
- * @brief Time to idle between two successive BROADCAST packets, referenced to the
- *        start of the packet. The same limitation as for time-between-WR apply here.
- */
-#ifndef LWMAC_TIME_BETWEEN_BROADCAST_US
-#define LWMAC_TIME_BETWEEN_BROADCAST_US (LWMAC_TIME_BETWEEN_WR_US)
-#endif
-
-/**
- * @brief Receiver needs to support RX_START event in order to use time-between-WR
+ * @brief How longer a node in LWMAC should keep awake and listen on the channel in one cycle.
+ *        LWMAC adopts the duty-cycle scheme that a node only wakes up for a short
+ *        period of LWMAC_WAKEUP_DURATION_US in each cycle. In the rest of the cycle, the node
+ *        turns off the radio to conserve power. LWMAC_WAKEUP_DURATION_US is set to twice the
+ *        duration of LWMAC_TIME_BETWEEN_WR_US, to guarantee that the wake-up period is longer
+ *        enough that receiver will not miss the WR (preamble) packet.
+ *        Receiver needs to support RX_START event in order to use time-between-WR
  *        as a sensible default here. Otherwise the duration of WRs as well as longest
  *        possible data broadcasts need to be taken into account.
  */
@@ -86,43 +110,53 @@ extern "C" {
 #endif
 
 /**
- * @brief Start sending earlier then known phase. Therefore advance to beginning edge
- *        of destinations wakeup phase over time.
- *
- * Note:  RTT tick is ~30us @ 32 kHz timer.
- *        There is a certain overhead from dispatching driver call until WR
- *        will be really sent that may depend on hardware and driver
- *        implementation.
+ * @brief How long BROADCAST packets will be sent to make sure every participant has
+ *        received at least one packet.
+ *        Since LWMAC adopts adopts duty-cycle scheme that a node only wakes up for a short
+ *        period in each cycle, thus, when a node wants to broadcast a packet and ensures that
+ *        all neighbors will catch one broadcast packet from it, it repeatedly broadcasts the
+ *        broadcast packet for one LWMAC_BROADCAST_DURATION_US duration which is slightly longer
+ *        LWMAC_WAKEUP_INTERVAL_US.
  */
-#ifndef LWMAC_WR_BEFORE_PHASE_US
-#define LWMAC_WR_BEFORE_PHASE_US        ((13 * US_PER_MS) / 10)
+#ifndef LWMAC_BROADCAST_DURATION_US
+#define LWMAC_BROADCAST_DURATION_US     ((LWMAC_WAKEUP_INTERVAL_US * 11) / 10)
+#endif
+
+/**
+ * @brief Time to idle between two successive BROADCAST packets, referenced to the
+ *        start of the packet.
+ *        The same limitation as for time-between-WR apply here.
+ *        In LWMAC, when a sender initiates a broadcast, it starts with sending a stream of
+ *        repeated broadcast packets with LWMAC_TIME_BETWEEN_BROADCAST_US interval
+ *        between two consecutive broadcast packets. After sending one broadcast packet, the sender
+ *        turns to the listen mode with a timeout of LWMAC_TIME_BETWEEN_BROADCAST_US. When this
+ *        timeout expires, the sender sends the next broadcast packet until reaching the maximum
+ *        broadcast duration of LWMAC_BROADCAST_DURATION_US.
+ */
+#ifndef LWMAC_TIME_BETWEEN_BROADCAST_US
+#define LWMAC_TIME_BETWEEN_BROADCAST_US (LWMAC_TIME_BETWEEN_WR_US)
 #endif
 
 /**
  * @brief WR preparation overhead before it can be sent (higher with debugging output).
- *        LwMAC will wakeup earlier to prepare for synced WR sending. When preparation
- *        is done, it will busy wait (block the whole system) until the WR has been
- *        dispatched to the driver.
+ *        In LWMAC, when a sender wants to send a data packet to the receiver, it starts
+ *        sending the WR stream a little bit earlier (advance) to the beginning edge
+ *        of destination's wake-up phase over time. The idea is not to miss the wake-up
+ *        period of the receiver, otherwise will lead to a long WR procedure.
  */
 #ifndef LWMAC_WR_PREPARATION_US
 #define LWMAC_WR_PREPARATION_US         ((2U * US_PER_MS) + LWMAC_WR_BEFORE_PHASE_US)
 #endif
 
 /**
- * @brief How long to wait after a WA for data to come in. It's enough to catch the
+ * @brief How long to wait after a WA for data to come in.
+ *        When a receiver in LWMAC gets a WR a
+ *        It's enough to catch the
  *        beginning of the packet if the transceiver supports RX_STARTED event (this
  *        can be important for big packets).
  */
 #ifndef LWMAC_DATA_DELAY_US
 #define LWMAC_DATA_DELAY_US             (10U * US_PER_MS)
-#endif
-
-/**
- * @brief How long BROADCAST packets will be sent to make sure every participant has
- *        received at least one packet.
- */
-#ifndef LWMAC_BROADCAST_DURATION_US
-#define LWMAC_BROADCAST_DURATION_US     ((LWMAC_WAKEUP_INTERVAL_US * 11) / 10)
 #endif
 
 /**
