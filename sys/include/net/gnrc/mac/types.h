@@ -70,7 +70,7 @@ typedef struct {
 #ifdef MODULE_GNRC_LWMAC
     l2_addr_t l2_addr;
     lwmac_rx_state_t state;     /**< Lwmac specific internal reception state */
-    uint8_t rx_exten_count;     /**< Count how many unnecessary RX extensions have been executed */
+    uint8_t rx_bad_exten_count; /**< Count how many unnecessary RX extensions have been executed */
 #endif
 } gnrc_mac_rx_t;
 

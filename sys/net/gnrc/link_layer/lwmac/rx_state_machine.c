@@ -138,7 +138,7 @@ static bool _send_wa(gnrc_netdev_t *gnrc_netdev)
     /* if found ongoing transmission,
      * quit sending WA for collision avoidance. */
     if (_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) {
-        gnrc_netdev->rx.rx_exten_count++;
+        gnrc_netdev->rx.rx_bad_exten_count++;
         return false;
     }
 
@@ -354,7 +354,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
 
             if (!(rx_info & GNRC_LWMAC_RX_FOUND_WR)) {
                 LOG_DEBUG("No WR found, stop RX\n");
-                gnrc_netdev->rx.rx_exten_count++;
+                gnrc_netdev->rx.rx_bad_exten_count++;
                 GOTO_RX_STATE(RX_STATE_FAILED, true);
             }
 
@@ -413,7 +413,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
             if ((lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_DATA)) &&
                 (!gnrc_netdev_get_rx_started(gnrc_netdev))) {
                 LOG_INFO("DATA timed out\n");
-                gnrc_netdev->rx.rx_exten_count++;
+                gnrc_netdev->rx.rx_bad_exten_count++;
                 GOTO_RX_STATE(RX_STATE_FAILED, true);
             }
 
