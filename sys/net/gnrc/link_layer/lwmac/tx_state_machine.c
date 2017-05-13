@@ -482,7 +482,7 @@ void lwmac_tx_stop(gnrc_netdev_t *gnrc_netdev)
 
     /* Release packet in case of failure */
     if (gnrc_netdev->tx.packet) {
-        if (gnrc_netdev->tx.tx_retry_count >= LWMAC_DATA_TX_RETRIES) {
+        if (gnrc_netdev->tx.tx_retry_count >= LWMAC_MAX_DATA_TX_RETRIES) {
             gnrc_netdev->tx.tx_retry_count = 0;
             gnrc_pktbuf_release(gnrc_netdev->tx.packet);
             gnrc_netdev->tx.packet = NULL;

@@ -357,7 +357,7 @@ static void _tx_management(gnrc_netdev_t *gnrc_netdev)
             break;
         }
         case TX_STATE_FAILED: {
-            /* I transmission failure, do not try burst transmissions and quit other
+            /* If transmission failure, do not try burst transmissions and quit other
              * transmission attempts in this cycle for collision avoidance */
             gnrc_netdev_lwmac_set_tx_continue(gnrc_netdev, false);
             gnrc_netdev_lwmac_set_quit_tx(gnrc_netdev, true);
