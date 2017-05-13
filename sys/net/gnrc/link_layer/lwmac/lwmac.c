@@ -283,7 +283,7 @@ static void _rx_management(gnrc_netdev_t *gnrc_netdev)
             LOG_DEBUG("Reception was NOT successful\n");
             lwmac_rx_stop(gnrc_netdev);
 
-            if (gnrc_netdev->rx.rx_exten_count >= LWMAC_MAX_RX_EXTENSION_NUM) {
+            if (gnrc_netdev->rx.rx_bad_exten_count >= LWMAC_MAX_RX_EXTENSION_NUM) {
                 gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
             }
 
@@ -498,7 +498,7 @@ void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
             gnrc_netdev_lwmac_set_quit_tx(gnrc_netdev, false);
             gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, false);
             gnrc_netdev_lwmac_set_phase_backoff(gnrc_netdev, false);
-            gnrc_netdev->rx.rx_exten_count = 0;
+            gnrc_netdev->rx.rx_bad_exten_count = 0;
             lwmac_set_state(gnrc_netdev, LWMAC_LISTENING);
             break;
         }
