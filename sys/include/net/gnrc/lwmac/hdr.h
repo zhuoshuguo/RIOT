@@ -31,7 +31,32 @@ extern "C" {
 #endif
 
 /**
- * @brief   lwMAC internal L2 address structure
+ * @brief   LWMAC WR frame type
+ */
+#define FRAMETYPE_WR             (0x01U)
+
+/**
+ * @brief   LWMAC WA frame type
+ */
+#define FRAMETYPE_WA             (0x02U)
+
+/**
+ * @brief   LWMAC data frame type
+ */
+#define FRAMETYPE_DATA           (0x03U)
+
+/**
+ * @brief   LWMAC data frame type with pending data transmission request
+ */
+#define FRAMETYPE_DATA_PENDING   (0x04U)
+
+/**
+ * @brief   LWMAC broadcast frame type
+ */
+#define FRAMETYPE_BROADCAST      (0x05U)
+
+/**
+ * @brief   LWMAC internal L2 address structure
  */
 typedef struct {
     uint8_t addr[IEEE802154_LONG_ADDRESS_LEN]; /**< address of node */
@@ -44,25 +69,14 @@ typedef struct {
 #define LWMAC_L2_ADDR_INIT      { { 0 }, 0 }
 
 /**
- * @brief   lwMAC frame types
+ * @brief   LWMAC header
  */
-typedef enum {
-    FRAMETYPE_WR = 1,
-    FRAMETYPE_WA,
-    FRAMETYPE_DATA,
-    FRAMETYPE_DATA_PENDING,
-    FRAMETYPE_BROADCAST,
-} lwmac_frame_type_t;
-
-/**
- * @brief   lwMAC header
- */
-typedef struct __attribute__((packed)) {
-    lwmac_frame_type_t type; /**< type of frame */
+typedef struct {
+    uint8_t type; /**< type of frame */
 } lwmac_hdr_t;
 
 /**
- * @brief   lwMAC WR frame
+ * @brief   LWMAC WR frame
  */
 typedef struct __attribute__((packed)) {
     lwmac_hdr_t header; /**< WR packet header type */
@@ -70,7 +84,7 @@ typedef struct __attribute__((packed)) {
 } lwmac_frame_wr_t;
 
 /**
- * @brief   lwMAC WA frame
+ * @brief   LWMAC WA frame
  */
 typedef struct __attribute__((packed)) {
     lwmac_hdr_t header;      /**< WA packet header type */
@@ -79,7 +93,7 @@ typedef struct __attribute__((packed)) {
 } lwmac_frame_wa_t;
 
 /**
- * @brief   lwMAC broadcast data frame
+ * @brief   LWMAC broadcast data frame
  */
 typedef struct __attribute__((packed)) {
     lwmac_hdr_t header; /**< Broadcast packet header type */
@@ -87,7 +101,7 @@ typedef struct __attribute__((packed)) {
 } lwmac_frame_broadcast_t;
 
 /**
- * @brief   lwMAC unicast data frame
+ * @brief   LWMAC unicast data frame
  */
 typedef struct __attribute__((packed)) {
     lwmac_hdr_t header; /**< Data packet header type */
