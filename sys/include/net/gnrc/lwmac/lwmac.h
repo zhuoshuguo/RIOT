@@ -45,7 +45,7 @@ extern "C" {
  * In LWMAC, by default, we regard the wake-up period as the beginning of a cycle.
  */
 #ifndef LWMAC_WAKEUP_INTERVAL_US
-#define LWMAC_WAKEUP_INTERVAL_US        (100U * US_PER_MS)
+#define LWMAC_WAKEUP_INTERVAL_US        (100LU * US_PER_MS)
 #endif
 
 /**
@@ -60,7 +60,7 @@ extern "C" {
  * LWMAC_WAKEUP_INTERVAL_US.
  */
 #ifndef LWMAC_PREAMBLE_DURATION_US
-#define LWMAC_PREAMBLE_DURATION_US      ((13 * LWMAC_WAKEUP_INTERVAL_US) / 10)
+#define LWMAC_PREAMBLE_DURATION_US      ((13LU * LWMAC_WAKEUP_INTERVAL_US) / 10)
 #endif
 
 /**

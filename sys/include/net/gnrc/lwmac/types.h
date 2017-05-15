@@ -83,23 +83,23 @@ extern "C" {
  * @brief   Internal states of Lwmac
  */
 typedef enum {
-    LWMAC_UNDEF = -1,
-    LWMAC_STOPPED,
-    LWMAC_START,
-    LWMAC_STOP,
-    LWMAC_RESET,
-    LWMAC_LISTENING,
+    LWMAC_UNDEF = -1,     /**< Undefined state of LWMAC */
+    LWMAC_STOPPED,        /**< LWMAC's main state machine has been stopped */
+    LWMAC_START,          /**< Start LWMAC's main state machine */
+    LWMAC_STOP,           /**< Stop LWMAC's main state machine */
+    LWMAC_RESET,          /**< Reset LWMAC's main state machine */
+    LWMAC_LISTENING,      /**< Listen the channel for receiving packets */
     LWMAC_RECEIVING,      /**< RX is handled in own state machine */
     LWMAC_TRANSMITTING,   /**< TX is handled in own state machine */
-    LWMAC_SLEEPING,
-    LWMAC_STATE_COUNT
+    LWMAC_SLEEPING,       /**< Turn off radio to conserve power */
+    LWMAC_STATE_COUNT     /**< Count of LWMAC's states */
 } lwmac_state_t;
 
 /**
  * @brief   TX states of Lwmac
  */
 typedef enum {
-    TX_STATE_STOPPED = 0,
+    TX_STATE_STOPPED,           /**< Tx schedule stopped, stop sending packet */
     TX_STATE_INIT,              /**< Initiate transmission */
     TX_STATE_SEND_BROADCAST,    /**< directly goes to SUCCESSFUL or FAILED when finished */
     TX_STATE_SEND_WR,           /**< Send a wakeup request */
@@ -120,7 +120,7 @@ typedef enum {
  * @brief   RX states of Lwmac
  */
 typedef enum {
-    RX_STATE_STOPPED = 0,
+    RX_STATE_STOPPED,       /**< Rx schedule stopped */
     RX_STATE_INIT,          /**< Initiate reception */
     RX_STATE_WAIT_FOR_WR,   /**< Wait for a wakeup request */
     RX_STATE_SEND_WA,       /**< Send wakeup ackknowledge to requesting node */
@@ -149,15 +149,14 @@ typedef enum {
  * @brief   Lwmac timeout types
  */
 typedef enum {
-    TIMEOUT_DISABLED = 0,
-    TIMEOUT_WR,
-    TIMEOUT_NO_RESPONSE,
-    TIMEOUT_WA,
-    TIMEOUT_DATA,
-    TIMEOUT_WAIT_FOR_DEST_WAKEUP,
-    TIMEOUT_WAKEUP_PERIOD,
-    TIMEOUT_NEXT_BROADCAST,
-    TIMEOUT_BROADCAST_END,
+    TIMEOUT_DISABLED,              /**< Timeout is diabled */
+    TIMEOUT_WR,                    /**< WR timeout, waiting WA */
+    TIMEOUT_NO_RESPONSE,           /**< Maximum WR duration timeout awaiting WA */
+    TIMEOUT_DATA,                  /**< Timeout awaiting data packet from receiver */
+    TIMEOUT_WAIT_FOR_DEST_WAKEUP,  /**< Timeout for waiting receiver's wake-up phase */
+    TIMEOUT_WAKEUP_PERIOD,         /**< Wake up period timeout for going to sleep */
+    TIMEOUT_NEXT_BROADCAST,        /**< Timeout for waiting to send the next broadcast packet */
+    TIMEOUT_BROADCAST_END,         /**< Timeout awaiting the end of the whole broadcast period */
 } lwmac_timeout_type_t;
 
 /**
