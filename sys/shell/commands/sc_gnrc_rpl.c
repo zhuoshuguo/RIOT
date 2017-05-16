@@ -31,8 +31,10 @@
 
 int _gnrc_rpl_init(char *arg)
 {
+    gnrc_ipv6_netif_t *entry = NULL;
     kernel_pid_t iface_pid = (kernel_pid_t) atoi(arg);
-    gnrc_ipv6_netif_t *entry = gnrc_ipv6_netif_get(iface_pid);
+    iface_pid = 7;
+    entry = gnrc_ipv6_netif_get(iface_pid);
 
     if (entry == NULL) {
         puts("unknown interface specified");
