@@ -535,6 +535,7 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                 gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA,
                                               &csma_enable, sizeof(csma_enable));
 
+                puts("bb");
                 GOTO_TX_STATE(TX_STATE_SEND_BROADCAST, true);
             }
             else {
