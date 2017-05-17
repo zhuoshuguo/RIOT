@@ -106,6 +106,28 @@ static uint8_t _send_bcast(gnrc_netdev_t *gnrc_netdev)
 
     if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_NEXT_BROADCAST) ||
         first) {
+        /* if found ongoing transmission,
+         * quit this cycle for collision avoidance. */
+        if (_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) {
+
+            /* save pointer to netif header */
+            gnrc_pktsnip_t *netif = pkt->next->next;
+
+            /* remove lwmac header */
+            pkt->next->next = NULL;
+            gnrc_pktbuf_release(pkt->next);
+
+            /* make append netif header after payload again */
+            pkt->next = netif;
+
+            gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet);
+            /* drop pointer so it wont be free'd */
+            gnrc_netdev->tx.packet = NULL;
+            tx_info |= GNRC_LWMAC_TX_FAIL;
+            puts("b-backoff");
+            return tx_info;
+        }
+
         /* Don't let the packet be released yet, we want to send it again */
         gnrc_pktbuf_hold(pkt, 1);
 
@@ -417,6 +439,27 @@ static bool _send_data(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->tx.packet = NULL;
         return false;
     }
+
+    /* if found ongoing transmission,
+    * quit this cycle for collision avoidance. */
+   if (_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) {
+
+       /* save pointer to netif header */
+       gnrc_pktsnip_t *netif = pkt->next->next;
+
+       /* remove lwmac header */
+       pkt->next->next = NULL;
+       gnrc_pktbuf_release(pkt->next);
+
+       /* make append netif header after payload again */
+       pkt->next = netif;
+
+       gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet);
+       /* drop pointer so it wont be free'd */
+       gnrc_netdev->tx.packet = NULL;
+       puts("D-backoff");
+       return false;
+   }
 
     /* Send data */
     int res = gnrc_netdev->send(gnrc_netdev, pkt);
