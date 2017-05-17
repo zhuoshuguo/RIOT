@@ -680,10 +680,6 @@ static void *_lwmac_thread(void *args)
     dev->driver->set(dev, NETOPT_TX_START_IRQ, &enable, sizeof(enable));
     dev->driver->set(dev, NETOPT_TX_END_IRQ, &enable, sizeof(enable));
 
-    /* Enable preloading, so packet will only be sent when netdev state will be
-     * set to NETOPT_STATE_TX */
-    dev->driver->set(dev, NETOPT_PRELOADING, &enable, sizeof(enable));
-
     uint16_t src_len = 8;
     dev->driver->set(dev, NETOPT_SRC_LEN, &src_len, sizeof(src_len));
 

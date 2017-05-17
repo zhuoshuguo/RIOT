@@ -218,7 +218,6 @@ static bool _send_wa(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
         return false;
     }
-    _set_netdev_state(gnrc_netdev, NETOPT_STATE_TX);
 
     /* Enable Auto ACK again for data reception */
     autoack = NETOPT_ENABLE;

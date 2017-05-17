@@ -115,7 +115,6 @@ static uint8_t _send_bcast(gnrc_netdev_t *gnrc_netdev)
             tx_info |= GNRC_LWMAC_TX_FAIL;
             return tx_info;
         }
-        _set_netdev_state(gnrc_netdev, NETOPT_STATE_TX);
 
         lwmac_set_timeout(gnrc_netdev, TIMEOUT_NEXT_BROADCAST,
                           LWMAC_TIME_BETWEEN_BROADCAST_US);
@@ -225,8 +224,6 @@ static uint8_t _send_wr(gnrc_netdev_t *gnrc_netdev)
         while (rtt_get_counter() < wait_until) {}
     }
 #endif
-    /* Trigger sending frame */
-    _set_netdev_state(gnrc_netdev, NETOPT_STATE_TX);
 
     /* Flush RX queue, TODO: maybe find a way without loosing RX packets */
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
@@ -434,7 +431,6 @@ static bool _send_data(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->tx.packet = NULL;
         return false;
     }
-    _set_netdev_state(gnrc_netdev, NETOPT_STATE_TX);
 
     /* Packet has been released by netdev, so drop pointer */
     gnrc_netdev->tx.packet = NULL;
