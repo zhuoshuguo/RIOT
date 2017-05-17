@@ -395,7 +395,12 @@ static bool _send_data(gnrc_netdev_t *gnrc_netdev)
 
     pkt_payload = pkt->next;
 
-    /* Insert lwMAC header above NETIF header */
+    /* Insert lwMAC header above NETIF header. The burst (consecutive) transmission
+     * scheme works here (sender side). If the sender finds it has pending packets
+     * for the receiver (and under burst limit), it sets the packet type to
+     * FRAMETYPE_DATA_PENDING, to notice the receiver for next incoming packet.
+     * In case the sender has no more packet for the receiver, it simply sets the
+     * data type to FRAMETYPE_DATA. */
     lwmac_hdr_t hdr;
     if ((gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue) > 0) &&
         (gnrc_netdev->tx.tx_burst_count < LWMAC_MAX_TX_BURST_PKT_NUM)) {
