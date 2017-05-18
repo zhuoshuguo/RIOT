@@ -108,11 +108,11 @@ void *sender_thread(void *arg)
     start_server(udpport);
 
     xtimer_sleep(20);
-    puts("start RPL");
+    //puts("start RPL");
 
     /* Starting RPL */
-    char *instanceid = "1";
-    _gnrc_rpl_dodag_root(instanceid, ipadd);
+    //char *instanceid = "1";
+    //_gnrc_rpl_dodag_root(instanceid, ipadd);
 
    while (1) {
    	xtimer_usleep((uint32_t) data_rate * 1000);
