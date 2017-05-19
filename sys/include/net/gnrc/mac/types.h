@@ -68,7 +68,7 @@ typedef struct {
 #endif /* (GNRC_MAC_DISPATCH_BUFFER_SIZE != 0) || defined(DOXYGEN) */
 
 #ifdef MODULE_GNRC_LWMAC
-    l2_addr_t l2_addr;
+    l2_addr_t l2_addr;          /**< Records the sender's address */
     lwmac_rx_state_t state;     /**< Lwmac specific internal reception state */
     uint8_t rx_bad_exten_count; /**< Count how many unnecessary RX extensions have been executed */
 #endif
