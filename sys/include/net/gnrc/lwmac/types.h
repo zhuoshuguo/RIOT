@@ -96,7 +96,7 @@ extern "C" {
  *          Set "1" to enable, set "0" to disable.
  */
 #ifndef LWMAC_ENABLE_DUTYCYLE_RECORD
-#define LWMAC_ENABLE_DUTYCYLE_RECORD             (0U)
+#define LWMAC_ENABLE_DUTYCYLE_RECORD    (0U)
 #endif
 
 /**
