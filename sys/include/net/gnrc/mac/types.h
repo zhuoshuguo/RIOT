@@ -167,7 +167,7 @@ typedef struct {
 #ifdef MODULE_GNRC_LWMAC
     lwmac_tx_state_t state;            /**< Lwmac specific internal transmission state */
     uint32_t wr_sent;                  /**< Count how many WRs were sent until WA received */
-    uint32_t timestamp;
+    uint32_t timestamp;                /**< Records the receiver's current phase */
     uint8_t bcast_seqnr;               /**< Sequence number for broadcast data to filter at receiver */
     uint8_t tx_burst_count;            /**< Count how many consecutive packets have been transmitted */
     uint8_t tx_retry_count;            /**< Count how many Tx-retrials have been executed before packet drop */

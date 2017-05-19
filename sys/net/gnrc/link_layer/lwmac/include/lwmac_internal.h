@@ -27,6 +27,7 @@
 #include "periph/rtt.h"
 #include "net/gnrc/netdev.h"
 #include "net/gnrc/mac/types.h"
+#include "net/gnrc/lwmac/types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -120,6 +121,8 @@ static inline void gnrc_netdev_lwmac_set_tx_continue(gnrc_netdev_t *dev, bool tx
  *
  * @param[in] dev          ptr to netdev device
  *
+ * @return                 true if tx continue
+ * @return                 false if tx will continue
  */
 static inline bool gnrc_netdev_lwmac_get_tx_continue(gnrc_netdev_t *dev)
 {
@@ -148,6 +151,8 @@ static inline void gnrc_netdev_lwmac_set_quit_tx(gnrc_netdev_t *dev, bool quit_t
  *
  * @param[in] dev          ptr to netdev device
  *
+ * @return                 true if quit tx
+ * @return                 false if will not quit tx
  */
 static inline bool gnrc_netdev_lwmac_get_quit_tx(gnrc_netdev_t *dev)
 {
@@ -176,6 +181,8 @@ static inline void gnrc_netdev_lwmac_set_phase_backoff(gnrc_netdev_t *dev, bool 
  *
  * @param[in] dev          ptr to netdev device
  *
+ * @return                 true if will run phase-backoff
+ * @return                 false if will not run phase-backoff
  */
 static inline bool gnrc_netdev_lwmac_get_phase_backoff(gnrc_netdev_t *dev)
 {
@@ -204,10 +211,72 @@ static inline void gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev_t *dev, bool quit_r
  *
  * @param[in] dev          ptr to netdev device
  *
+ * @return                 true if will quit rx
+ * @return                 false if will not quit rx
  */
 static inline bool gnrc_netdev_lwmac_get_quit_rx(gnrc_netdev_t *dev)
 {
     return (dev->mac_info & GNRC_NETDEV_LWMAC_QUIT_RX);
+}
+
+/**
+ * @brief set the duty-cycle-active flag of Lwmac
+ *
+ * @param[in] dev          ptr to netdev device
+ * @param[in] active       value for Lwmac duty-cycle-active flag
+ *
+ */
+static inline void gnrc_netdev_lwmac_set_dutycycle_active(gnrc_netdev_t *dev, bool active)
+{
+    if (active) {
+        dev->lwmac.lwmac_info |= LWMAC_DUTYCYCLE_ACTIVE;
+    }
+    else {
+        dev->lwmac.lwmac_info &= ~LWMAC_DUTYCYCLE_ACTIVE;
+    }
+}
+
+/**
+ * @brief get the duty-cycle-active flag of Lwmac
+ *
+ * @param[in] dev          ptr to netdev device
+ *
+ * @return                 true if active
+ * @return                 false if not active
+ */
+static inline bool gnrc_netdev_lwmac_get_dutycycle_active(gnrc_netdev_t *dev)
+{
+    return (dev->lwmac.lwmac_info & LWMAC_DUTYCYCLE_ACTIVE);
+}
+
+/**
+ * @brief set the needs-rescheduling flag of Lwmac
+ *
+ * @param[in] dev          ptr to netdev device
+ * @param[in] reschedule   value for Lwmac needs-rescheduling flag
+ *
+ */
+static inline void gnrc_netdev_lwmac_set_reschedule(gnrc_netdev_t *dev, bool reschedule)
+{
+    if (reschedule) {
+        dev->lwmac.lwmac_info |= LWMAC_NEEDS_RESCHEDULE;
+    }
+    else {
+        dev->lwmac.lwmac_info &= ~LWMAC_NEEDS_RESCHEDULE;
+    }
+}
+
+/**
+ * @brief get the needs-rescheduling flag of Lwmac
+ *
+ * @param[in] dev          ptr to netdev device
+ *
+ * @return                 true if needs rescheduling
+ * @return                 false if no need for rescheduling
+ */
+static inline bool gnrc_netdev_lwmac_get_reschedule(gnrc_netdev_t *dev)
+{
+    return (dev->lwmac.lwmac_info & LWMAC_NEEDS_RESCHEDULE);
 }
 
 /**

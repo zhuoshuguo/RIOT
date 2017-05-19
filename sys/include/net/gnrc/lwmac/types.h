@@ -72,6 +72,26 @@ extern "C" {
 #define LWMAC_EVENT_TIMEOUT_TYPE        (0x4400)
 
 /**
+ * @brief   Lwmac duty-cycle active flag.
+ *
+ * Keep track of duty cycling to avoid late RTT events after stopping.
+ */
+#define LWMAC_DUTYCYCLE_ACTIVE          (0x01)
+
+/**
+ * @brief   Lwmac needs reschedule flag.
+ *
+ * Used internally for rescheduling state machine update, e.g. after state
+ * transition caused in update.
+ */
+#define LWMAC_NEEDS_RESCHEDULE          (0x02)
+
+/**
+ * @brief   Lwmac check radio's on/off state flag.
+ */
+#define LWMAC_RADIO_IS_ON               (0x04)
+
+/**
  * @brief   Enable/disable duty-cycle record and print out.
  *          Set "1" to enable, set "0" to disable.
  */
@@ -175,16 +195,11 @@ typedef struct {
 typedef struct lwmac {
     lwmac_state_t state;                            /**< Internal state of MAC layer */
     uint32_t last_wakeup;                           /**< Used to calculate wakeup times */
-    bool dutycycling_active;                        /**< Keep track of duty cycling to avoid
-                                                         late RTT events after stopping */
-    bool needs_rescheduling;                        /**< Used internally for rescheduling state
-                                                         machine update, e.g. after state
-                                                         transition caused in update */
+    uint8_t lwmac_info;                             /**< LWMAC's internal informations (flags) */
     lwmac_timeout_t timeouts[LWMAC_TIMEOUT_COUNT];  /**< Store timeouts used for protocol */
 
 #if (LWMAC_ENABLE_DUTYCYLE_RECORD == 1)
     /* parameters for recording duty-cycle */
-    bool radio_is_on;                               /**< check if radio is on */
     uint32_t last_radio_on_time_ticks;              /**< the last time in ticks when radio is on */
     uint32_t radio_off_time_ticks;                  /**< the time in ticks when radio is off */
     uint32_t system_start_time_ticks;               /**< the time in ticks when chip is started */

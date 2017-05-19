@@ -72,12 +72,12 @@ static void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev);
 
 inline void lwmac_schedule_update(gnrc_netdev_t *gnrc_netdev)
 {
-    gnrc_netdev->lwmac.needs_rescheduling = true;
+    gnrc_netdev_lwmac_set_reschedule(gnrc_netdev, true);
 }
 
 inline bool lwmac_needs_update(gnrc_netdev_t *gnrc_netdev)
 {
-    return gnrc_netdev->lwmac.needs_rescheduling;
+    return gnrc_netdev_lwmac_get_reschedule(gnrc_netdev);
 }
 
 void lwmac_set_state(gnrc_netdev_t *gnrc_netdev, lwmac_state_t newstate)
@@ -400,7 +400,7 @@ static void _tx_management(gnrc_netdev_t *gnrc_netdev)
 /* Main state machine. Call whenever something happens */
 bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
 {
-    gnrc_netdev->lwmac.needs_rescheduling = false;
+    gnrc_netdev_lwmac_set_reschedule(gnrc_netdev, false);
 
     switch (gnrc_netdev->lwmac.state) {
         case LWMAC_SLEEPING: {
@@ -468,7 +468,7 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
             LOG_DEBUG("No actions in state %u\n", gnrc_netdev->lwmac.state);
     }
 
-    return gnrc_netdev->lwmac.needs_rescheduling;
+    return gnrc_netdev_lwmac_get_reschedule(gnrc_netdev);
 }
 
 static void rtt_cb(void *arg)
@@ -515,14 +515,14 @@ void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
             LOG_DEBUG("RTT: Initialize duty cycling\n");
             alarm = rtt_get_counter() + RTT_US_TO_TICKS(LWMAC_WAKEUP_DURATION_US);
             rtt_set_alarm(alarm, rtt_cb, (void *) LWMAC_EVENT_RTT_SLEEP_PENDING);
-            gnrc_netdev->lwmac.dutycycling_active = true;
+            gnrc_netdev_lwmac_set_dutycycle_active(gnrc_netdev, true);
             break;
         }
         case LWMAC_EVENT_RTT_STOP:
         case LWMAC_EVENT_RTT_PAUSE: {
             rtt_clear_alarm();
             LOG_DEBUG("RTT: Stop duty cycling, now in state %u\n", gnrc_netdev->lwmac.state);
-            gnrc_netdev->lwmac.dutycycling_active = false;
+            gnrc_netdev_lwmac_set_dutycycle_active(gnrc_netdev, false);
             break;
         }
         case LWMAC_EVENT_RTT_RESUME: {
@@ -530,7 +530,7 @@ void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
             alarm = _next_inphase_event(gnrc_netdev->lwmac.last_wakeup,
                                         RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
             rtt_set_alarm(alarm, rtt_cb, (void *) LWMAC_EVENT_RTT_WAKEUP_PENDING);
-            gnrc_netdev->lwmac.dutycycling_active = true;
+            gnrc_netdev_lwmac_set_dutycycle_active(gnrc_netdev, true);
             break;
         }
         default:
@@ -704,7 +704,7 @@ static void *_lwmac_thread(void *args)
     gnrc_netdev->lwmac.system_start_time_ticks = rtt_get_counter();
     gnrc_netdev->lwmac.last_radio_on_time_ticks = gnrc_netdev->lwmac.system_start_time_ticks;
     gnrc_netdev->lwmac.awake_duration_sum_ticks = 0;
-    gnrc_netdev->lwmac.radio_is_on = true;
+    gnrc_netdev->lwmac.lwmac_info |= LWMAC_RADIO_IS_ON;
 #endif
 
     /* start the event loop */
@@ -715,7 +715,7 @@ static void *_lwmac_thread(void *args)
         switch (msg.type) {
             /* RTT raised an interrupt */
             case LWMAC_EVENT_RTT_TYPE: {
-                if (gnrc_netdev->lwmac.dutycycling_active) {
+                if (gnrc_netdev_lwmac_get_dutycycle_active(gnrc_netdev)) {
                     rtt_handler(msg.content.value, gnrc_netdev);
                     lwmac_schedule_update(gnrc_netdev);
                 }
