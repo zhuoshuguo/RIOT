@@ -61,13 +61,76 @@ static const shell_command_t shell_commands[] = {
 };
 
 
+
+static void generate_and_send_pkt(void){
+
+    uint32_t num = 1;
+    uint32_t delay = 0;
+
+    char *port = "8808";
+
+    uint32_t  expset[5];
+
+	expset[0] = 0xFFFF;
+
+	/* data rate */
+	expset[1] = 30000;
+
+	/* exp duration */
+	//gnrc_netdev2->lwmac.exp_duration = 300; //seconds
+	//expset[1] = gnrc_netdev2->lwmac.exp_duration;
+
+	/* exp total generate packet number */
+	expset[2] = 300;
+
+	/* the burst number */
+	expset[3] = 6;
+
+	char *add = "2001:db8::2"; //
+    udp_send(add, port, expset, sizeof(expset), num, delay);
+
+    puts("send data");
+
+
+/*
+    if(send_counter == 0) {
+    	char *add = "2001:db8::5844:55d:4a55:6f46"; //
+        udp_send(add, port, expset, sizeof(expset), num, delay);
+    } else if (send_counter == 1) {
+    	char *add = "2001:db8::5844:2b69:30f0:f22";
+        udp_send(add, port, expset, sizeof(expset), num, delay);
+    }else if (send_counter == 2) {
+    	char *add = "2001:db8::5844:1e68:a003:6142";
+        udp_send(add, port, expset, sizeof(expset), num, delay);
+    }else if (send_counter == 3) {
+    	char *add = "2001:db8::5855:605c:5109:447e";
+        udp_send(add, port, expset, sizeof(expset), num, delay);
+    }else if (send_counter == 4) {
+    	char *add = "2001:db8::5844:2c50:d550:a312";
+        udp_send(add, port, expset, sizeof(expset), num, delay);
+    }else if (send_counter == 5) {
+    	char *add = "2001:db8::5844:1f5f:809:e21a";//
+        udp_send(add, port, expset, sizeof(expset), num, delay);
+    }else if (send_counter == 6) {
+    	char *add = "2001:db8::5844:3d54:41b8:52d2";
+        udp_send(add, port, expset, sizeof(expset), num, delay);
+    }else if (send_counter == 7) {
+    	char *add = "2001:db8::5844:3a41:d643:1b1a";//
+        udp_send(add, port, expset, sizeof(expset), num, delay);
+    }else if (send_counter == 8) {
+    	char *add = "2001:db8::5844:451:d774:bcc6";//
+        udp_send(add, port, expset, sizeof(expset), num, delay);
+    }else if (send_counter == 9) {
+    	char *add = "2001:db8::5844:2b54:22bc:103e";//
+        udp_send(add, port, expset, sizeof(expset), num, delay);
+    }
+    */
+}
+
 void *sender_thread(void *arg)
 {
     (void) arg;
 
-    uint32_t data_rate;
-
-    data_rate = 0;
 
     send_counter = 0;
     send_counter1 = 0;
@@ -111,11 +174,15 @@ void *sender_thread(void *arg)
     //puts("start RPL");
 
     /* Starting RPL */
-    //char *instanceid = "1";
-    //_gnrc_rpl_dodag_root(instanceid, ipadd);
+    char *instanceid = "1";
+    _gnrc_rpl_dodag_root(instanceid, ipadd);
 
    while (1) {
-   	xtimer_usleep((uint32_t) data_rate * 1000);
+	   xtimer_sleep(10);
+
+	   generate_and_send_pkt();
+
+
    }
 
     return NULL;
