@@ -35,8 +35,13 @@
 
 
 uint32_t send_counter;
+
 uint32_t send_counter1;
 uint32_t send_counter2;
+uint32_t send_counter3;
+uint32_t send_counter4;
+uint32_t send_counter5;
+
 uint32_t own_address2;
 uint32_t exp_start_time;
 uint32_t exp_duration_ticks;
@@ -71,10 +76,10 @@ static void generate_and_send_pkt(void){
 
     uint32_t  expset[5];
 
-	expset[0] = 0xFFFF;
+	send_counter ++;
 
 	/* data rate */
-	expset[1] = 30000;
+	expset[0] = own_address2;
 
 	/* exp duration */
 	//gnrc_netdev2->lwmac.exp_duration = 300; //seconds
@@ -86,12 +91,45 @@ static void generate_and_send_pkt(void){
 	/* the burst number */
 	expset[3] = 6;
 
-	char *add = "2001:db8::2"; //
-    udp_send(add, port, expset, sizeof(expset), num, delay);
+	//char *add = "2001:db8::2"; //
+    //udp_send(add, port, expset, sizeof(expset), num, delay);
 
     puts("send data");
 
+    uint32_t sequence;
+    sequence = send_counter % 5;
 
+    if(sequence == 1) {
+    	send_counter1 ++;
+    	expset[1] = send_counter1;
+
+    	char *add = "2001:db8::2"; //
+        udp_send(add, port, expset, sizeof(expset), num, delay);
+    } else if (sequence == 2) {
+    	send_counter2 ++;
+    	expset[1] = send_counter2;
+
+    	char *add = "2001:db8::3";
+        udp_send(add, port, expset, sizeof(expset), num, delay);
+    }else if (sequence == 3) {
+    	send_counter3 ++;
+    	expset[1] = send_counter3;
+
+    	char *add = "2001:db8::4";
+        udp_send(add, port, expset, sizeof(expset), num, delay);
+    }else if (sequence == 4) {
+    	send_counter4 ++;
+    	expset[1] = send_counter4;
+
+    	char *add = "2001:db8::5";
+        udp_send(add, port, expset, sizeof(expset), num, delay);
+    }else if (sequence == 0) {
+    	send_counter5 ++;
+    	expset[1] = send_counter5;
+
+    	char *add = "2001:db8::6";
+        udp_send(add, port, expset, sizeof(expset), num, delay);
+    }
 /*
     if(send_counter == 0) {
     	char *add = "2001:db8::5844:55d:4a55:6f46"; //
@@ -177,11 +215,12 @@ void *sender_thread(void *arg)
     char *instanceid = "1";
     _gnrc_rpl_dodag_root(instanceid, ipadd);
 
+    xtimer_sleep(40);
+
    while (1) {
-	   xtimer_sleep(10);
+	   xtimer_sleep(5);
 
 	   generate_and_send_pkt();
-
 
    }
 
