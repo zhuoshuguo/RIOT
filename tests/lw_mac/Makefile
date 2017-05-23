@@ -51,8 +51,6 @@ ifneq (,$(filter $(BOARD),$(BOARD_PROVIDES_NETIF)))
   USEMODULE += gnrc_txtsnd
   # the application dumps received packets to stdout
   USEMODULE += gnrc_pktdump
-  USEMODULE += gnrc_mac
-  USEMODULE += gnrc_priority_pktqueue
   USEMODULE += gnrc_lwmac
   # We use only the lower layers of the GNRC network stack, hence, we can
   # reduce the size of the packet buffer a bit
