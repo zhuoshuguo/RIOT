@@ -381,6 +381,7 @@ static void _tx_management(gnrc_netdev_t *gnrc_netdev)
             if ((gnrc_netdev_lwmac_get_tx_continue(gnrc_netdev)) &&
                 (gnrc_netdev->tx.tx_burst_count < LWMAC_MAX_TX_BURST_PKT_NUM)) {
                 lwmac_schedule_update(gnrc_netdev);
+                puts("T-cont");
             }
             else {
                 lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
@@ -529,6 +530,19 @@ void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
             LOG_DEBUG("RTT: Resume duty cycling\n");
             alarm = _next_inphase_event(gnrc_netdev->lwmac.last_wakeup,
                                         RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
+
+            uint32_t gap;
+            if (alarm < gnrc_netdev->lwmac.last_wakeup) {
+            	gap = LWMAC_PHASE_MAX;
+                gap = (gap - gnrc_netdev->lwmac.last_wakeup) + alarm;
+            } else {
+            	gap = alarm - gnrc_netdev->lwmac.last_wakeup;
+            }
+
+            if (gap > RTT_US_TO_TICKS(LWMAC_ERROR_RTT_US)) {
+                puts("ERROR: unexpected wrong phase setting!!!");
+            }
+
             rtt_set_alarm(alarm, rtt_cb, (void *) LWMAC_EVENT_RTT_WAKEUP_PENDING);
             gnrc_netdev->lwmac.dutycycling_active = true;
             break;

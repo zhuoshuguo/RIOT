@@ -48,6 +48,10 @@ extern "C" {
 #define LWMAC_WAKEUP_INTERVAL_US        (100LU * US_PER_MS)
 #endif
 
+#ifndef LWMAC_ERROR_RTT_US
+#define LWMAC_ERROR_RTT_US        (60000LU * US_PER_MS)
+#endif
+
 /**
  * @brief The Maximum WR (preamble) duration time.
  *

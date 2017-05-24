@@ -199,6 +199,7 @@ uint32_t _next_inphase_event(uint32_t last, uint32_t interval)
         tmp /= interval;
         tmp++;
         last += tmp * interval;
+        puts("RTT:overflow");
     }
 
     /* Add margin to next wakeup so that it will be at least 2ms in the future */

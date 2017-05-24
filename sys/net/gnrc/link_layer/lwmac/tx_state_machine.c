@@ -533,6 +533,7 @@ void lwmac_tx_stop(gnrc_netdev_t *gnrc_netdev)
         }
         else {
             gnrc_netdev->tx.tx_retry_count++;
+            LOG_WARNING("TX retry\n");
             return;
         }
     }
@@ -620,7 +621,7 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
 
             /* In case of no Tx-isr error (e.g., no Tx-isr), goto TX failure. */
             if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_NO_RESPONSE)) {
-                LOG_WARNING("No response from destination\n");
+            	LOG_WARNING("No response from destination, probably no TX-ISR\n");
                 GOTO_TX_STATE(TX_STATE_FAILED, true);
             }
 
@@ -664,7 +665,7 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             LOG_DEBUG("TX_STATE_WAIT_FOR_WA\n");
 
             if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_NO_RESPONSE)) {
-                LOG_WARNING("No response from destination\n");
+            	LOG_WARNING("No response from destination, no WA.\n");
                 GOTO_TX_STATE(TX_STATE_FAILED, true);
             }
 

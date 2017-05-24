@@ -208,14 +208,14 @@ void *sender_thread(void *arg)
     char *udpport = "8808";
     start_server(udpport);
 
-    xtimer_sleep(20);
+    xtimer_sleep(50);
     //puts("start RPL");
 
     /* Starting RPL */
     char *instanceid = "1";
     _gnrc_rpl_dodag_root(instanceid, ipadd);
 
-    xtimer_sleep(40);
+    xtimer_sleep(70);
 
    while (1) {
 	   xtimer_sleep(5);
