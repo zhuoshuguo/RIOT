@@ -93,6 +93,11 @@ static uint8_t _send_bcast(gnrc_netdev_t *gnrc_netdev)
         if (pkt->next == NULL) {
             LOG_ERROR("Cannot allocate pktbuf of type FRAMETYPE_BROADCAST\n");
             gnrc_netdev->tx.packet->next = pkt_payload;
+            /* Drop the broadcast packet */
+            LOG_ERROR("Memory maybe full, drop the broadcast packet\n");
+            gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+            /* clear packet point to avoid TX retry */
+            gnrc_netdev->tx.packet = NULL;
             tx_info |= GNRC_LWMAC_TX_FAIL;
             return tx_info;
         }
@@ -180,6 +185,7 @@ static uint8_t _send_wr(gnrc_netdev_t *gnrc_netdev)
     pkt = gnrc_pktbuf_add(NULL, &wr_hdr, sizeof(wr_hdr), GNRC_NETTYPE_LWMAC);
     if (pkt == NULL) {
         LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_LWMAC\n");
+        LOG_ERROR("Memory maybe full, drop the data packet\n");
         gnrc_pktbuf_release(gnrc_netdev->tx.packet);
         /* clear packet point to avoid TX retry */
         gnrc_netdev->tx.packet = NULL;
@@ -194,7 +200,9 @@ static uint8_t _send_wr(gnrc_netdev_t *gnrc_netdev)
     if (pkt == NULL) {
         LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_NETIF\n");
         gnrc_pktbuf_release(pkt_lwmac);
+        LOG_ERROR("Memory maybe full, drop the data packet\n");
         gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+        gnrc_netdev->tx.packet = NULL;
         /* clear packet point to avoid TX retry */
         tx_info |= GNRC_LWMAC_TX_FAIL;
         return tx_info;
@@ -286,8 +294,10 @@ static uint8_t _packet_process_in_wait_for_wa(gnrc_netdev_t *gnrc_netdev)
 
         if (info.header->type == FRAMETYPE_BROADCAST) {
             _dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
+            _dispatch(gnrc_netdev->rx.dispatch_buffer);
             /* Drop pointer to it can't get released */
             pkt = NULL;
+            continue;
         }
 
         /* Check if destination is talking to another node. It will sleep
@@ -301,10 +311,6 @@ static uint8_t _packet_process_in_wait_for_wa(gnrc_netdev_t *gnrc_netdev)
             postponed = true;
             gnrc_pktbuf_release(pkt);
             break;
-        }
-
-        if (info.header->type == FRAMETYPE_BROADCAST) {
-            continue;
         }
 
         /* if found anther node is also trying to send data,
