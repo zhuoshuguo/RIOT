@@ -291,6 +291,7 @@ static uint8_t _packet_process_in_wait_for_wa(gnrc_netdev_t *gnrc_netdev)
             _dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
             /* Drop pointer to it can't get released */
             pkt = NULL;
+            continue;
         }
 
         /* Check if destination is talking to another node. It will sleep
@@ -304,10 +305,6 @@ static uint8_t _packet_process_in_wait_for_wa(gnrc_netdev_t *gnrc_netdev)
             postponed = true;
             gnrc_pktbuf_release(pkt);
             break;
-        }
-
-        if (info.header->type == FRAMETYPE_BROADCAST) {
-            continue;
         }
 
         /* if found anther node is also trying to send data,
