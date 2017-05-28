@@ -124,7 +124,10 @@ static uint8_t _send_bcast(gnrc_netdev_t *gnrc_netdev)
             /* make append netif header after payload again */
             pkt->next = netif;
 
-            gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet);
+            if (!gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet)) {
+                gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+                LOG_WARNING("TX queue full, drop packet\n");
+            }
             /* drop pointer so it wont be free'd */
             gnrc_netdev->tx.packet = NULL;
             tx_info |= GNRC_LWMAC_TX_FAIL;
@@ -165,7 +168,10 @@ static uint8_t _send_wr(gnrc_netdev_t *gnrc_netdev)
     /* if found ongoing transmission, quit this cycle for collision avoidance.
      * Data packet will be re-queued and try to send in the next cycle. */
     if (_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) {
-        gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet);
+        if (!gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet)) {
+            gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+            LOG_WARNING("TX queue full, drop packet\n");
+        }
         /* drop pointer so it wont be free'd */
         gnrc_netdev->tx.packet = NULL;
         tx_info |= GNRC_LWMAC_TX_FAIL;
@@ -299,7 +305,10 @@ static uint8_t _packet_process_in_wait_for_wa(gnrc_netdev_t *gnrc_netdev)
          * further now. */
         if (!(memcmp(&info.dst_addr.addr, &gnrc_netdev->l2_addr,
                      gnrc_netdev->l2_addr_len) == 0) && from_expected_destination) {
-            gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet);
+            if (!gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet)) {
+                gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+                LOG_WARNING("TX queue full, drop packet\n");
+            }
             /* drop pointer so it wont be free'd */
             gnrc_netdev->tx.packet = NULL;
             postponed = true;
@@ -310,7 +319,10 @@ static uint8_t _packet_process_in_wait_for_wa(gnrc_netdev_t *gnrc_netdev)
         /* if found anther node is also trying to send data,
          * quit this cycle for collision avoidance. */
         if (info.header->type == FRAMETYPE_WR) {
-            gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet);
+            if (!gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet)) {
+                gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+                LOG_WARNING("TX queue full, drop packet\n");
+            }
             /* drop pointer so it wont be free'd */
             gnrc_netdev->tx.packet = NULL;
             postponed = true;
@@ -458,7 +470,10 @@ static bool _send_data(gnrc_netdev_t *gnrc_netdev)
         /* make append netif header after payload again */
         pkt->next = netif;
 
-        gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet);
+        if (!gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet)) {
+            gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+            LOG_WARNING("TX queue full, drop packet\n");
+        }
         /* drop pointer so it wont be free'd */
         gnrc_netdev->tx.packet = NULL;
         return false;
@@ -563,7 +578,10 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             /* if found ongoing transmission,
              * quit this cycle for collision avoidance. */
             if (_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) {
-                gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet);
+                if (!gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet)) {
+                    gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+                    LOG_WARNING("TX queue full, drop packet\n");
+                }
                 /* drop pointer so it wont be free'd */
                 gnrc_netdev->tx.packet = NULL;
                 GOTO_TX_STATE(TX_STATE_FAILED, true);
@@ -633,7 +651,10 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             /* If found ongoing transmission, goto TX failure, i.e., postpone transmission to
              * next cycle. This is mainly for collision avoidance. */
             if (gnrc_netdev_get_tx_feedback(gnrc_netdev) == TX_FEEDBACK_BUSY) {
-                gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet);
+                if (!gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet)) {
+                    gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+                    LOG_WARNING("TX queue full, drop packet\n");
+                }
                 /* clear packet point to avoid TX retry */
                 gnrc_netdev->tx.packet = NULL;
                 GOTO_TX_STATE(TX_STATE_FAILED, true);
@@ -678,7 +699,10 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                  */
                 if (gnrc_netdev_lwmac_get_tx_continue(gnrc_netdev)) {
                     LOG_DEBUG("tx burst fail\n");
-                    gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet);
+                    if (!gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet)) {
+                        gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+                        LOG_WARNING("TX queue full, drop packet\n");
+                    }
                     /* drop pointer so it wont be free'd */
                     gnrc_netdev->tx.packet = NULL;
 
