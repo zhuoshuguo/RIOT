@@ -93,6 +93,11 @@ static uint8_t _send_bcast(gnrc_netdev_t *gnrc_netdev)
         if (pkt->next == NULL) {
             LOG_ERROR("Cannot allocate pktbuf of type FRAMETYPE_BROADCAST\n");
             gnrc_netdev->tx.packet->next = pkt_payload;
+            /* Drop the broadcast packet */
+            LOG_ERROR("Memory maybe full, drop the broadcast packet\n");
+            gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+            /* clear packet point to avoid TX retry */
+            gnrc_netdev->tx.packet = NULL;
             tx_info |= GNRC_LWMAC_TX_FAIL;
             return tx_info;
         }
@@ -177,6 +182,7 @@ static uint8_t _send_wr(gnrc_netdev_t *gnrc_netdev)
     pkt = gnrc_pktbuf_add(NULL, &wr_hdr, sizeof(wr_hdr), GNRC_NETTYPE_LWMAC);
     if (pkt == NULL) {
         LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_LWMAC\n");
+        LOG_ERROR("Memory maybe full, drop the data packet\n");
         gnrc_pktbuf_release(gnrc_netdev->tx.packet);
         /* clear packet point to avoid TX retry */
         gnrc_netdev->tx.packet = NULL;
@@ -191,8 +197,10 @@ static uint8_t _send_wr(gnrc_netdev_t *gnrc_netdev)
     if (pkt == NULL) {
         LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_NETIF\n");
         gnrc_pktbuf_release(pkt_lwmac);
+        LOG_ERROR("Memory maybe full, drop the data packet\n");
         gnrc_pktbuf_release(gnrc_netdev->tx.packet);
         /* clear packet point to avoid TX retry */
+        gnrc_netdev->tx.packet = NULL;
         tx_info |= GNRC_LWMAC_TX_FAIL;
         return tx_info;
     }
