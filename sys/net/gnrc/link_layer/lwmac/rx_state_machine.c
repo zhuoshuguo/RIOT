@@ -88,7 +88,7 @@ static uint8_t _packet_process_in_wait_for_wr(gnrc_netdev_t *gnrc_netdev)
             gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
             /* quit TX in this cycle to avoid collisions with broadcast packets */
             gnrc_netdev_lwmac_set_quit_tx(gnrc_netdev, true);
-            continue;
+            break;
         }
 
         /* TODO:
