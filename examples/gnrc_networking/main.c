@@ -208,8 +208,8 @@ void *sender_thread(void *arg)
     char *udpport = "8808";
     start_server(udpport);
 
-    xtimer_sleep(50);
-    //puts("start RPL");
+    xtimer_sleep(20);
+    puts("start RPL");
 
     /* Starting RPL */
     char *instanceid = "1";
