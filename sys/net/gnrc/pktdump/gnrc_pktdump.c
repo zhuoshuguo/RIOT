@@ -33,13 +33,12 @@
 #include "od.h"
 #include <periph/rtt.h>
 
+
 uint32_t idlist[20];
 uint32_t reception_list[20];
-uint32_t node_tdma_record_list[20];
 
 uint64_t delay_sum;
 uint32_t system_start_time = 0;
-
 
 /**
  * @brief   PID of the pktdump thread
@@ -127,16 +126,24 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
 	uint32_t *payload;
 
+
     //gnrc_netif_hdr_t *netif_hdr;
 
     //uint8_t* addr;
-    bool found_id;
+
 
     payload = pkt->data;
 
+
+    bool found_id;
     found_id = false;
 
-    ///////////////////////////
+    if(payload[1] == 0x22222222) {
+    	gnrc_pktbuf_release(pkt);
+    	delay_sum = 0;
+    	return;
+    }
+
 
     int i=0;
     /* find id exist or not */
@@ -158,9 +165,10 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     	}
     }
 
+
    // printf("s: %x, g: %lu, r: %lu, t: %lu. \n", addr[1], payload[0], reception_list[i], received_pkt_counter);
 
-    printf("%lx, %lu, %lu, %lu \n", payload[1], payload[0], reception_list[i], received_pkt_counter);
+   printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], reception_list[i], received_pkt_counter);
 
     gnrc_pktbuf_release(pkt);
 }
@@ -186,7 +194,6 @@ static void *_eventloop(void *arg)
     for(int i=0;i<20;i++){
     	idlist[i] =0;
     	reception_list[i] =0;
-    	node_tdma_record_list[i]=0;
     }
 
     while (1) {
