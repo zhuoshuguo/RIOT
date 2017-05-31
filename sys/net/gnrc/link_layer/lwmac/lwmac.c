@@ -527,6 +527,7 @@ void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
         }
         case LWMAC_EVENT_RTT_RESUME: {
             LOG_DEBUG("RTT: Resume duty cycling\n");
+            rtt_clear_alarm();
             alarm = _next_inphase_event(gnrc_netdev->lwmac.last_wakeup,
                                         RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
             rtt_set_alarm(alarm, rtt_cb, (void *) LWMAC_EVENT_RTT_WAKEUP_PENDING);
