@@ -64,7 +64,7 @@
 
 static uint8_t _packet_process_in_wait_for_wr(gnrc_netdev_t *gnrc_netdev)
 {
-    uint8_t rx_info = NULL;
+    uint8_t rx_info = 0;
     gnrc_pktsnip_t *pkt;
 
     assert(gnrc_netdev != NULL);
@@ -229,7 +229,7 @@ static bool _send_wa(gnrc_netdev_t *gnrc_netdev)
 
 static uint8_t _packet_process_in_wait_for_data(gnrc_netdev_t *gnrc_netdev)
 {
-    uint8_t rx_info = NULL;
+    uint8_t rx_info = 0;
     gnrc_pktsnip_t *pkt;
 
     assert(gnrc_netdev != NULL);

@@ -61,7 +61,7 @@
 
 static uint8_t _send_bcast(gnrc_netdev_t *gnrc_netdev)
 {
-    uint8_t tx_info = NULL;
+    uint8_t tx_info = 0;
     gnrc_pktsnip_t *pkt = gnrc_netdev->tx.packet;
     bool first = false;
 
@@ -154,7 +154,7 @@ static uint8_t _send_bcast(gnrc_netdev_t *gnrc_netdev)
 
 static uint8_t _send_wr(gnrc_netdev_t *gnrc_netdev)
 {
-    uint8_t tx_info = NULL;
+    uint8_t tx_info = 0;
     gnrc_pktsnip_t *pkt;
     gnrc_pktsnip_t *pkt_lwmac;
     gnrc_netif_hdr_t *nethdr;
@@ -267,7 +267,7 @@ static uint8_t _send_wr(gnrc_netdev_t *gnrc_netdev)
 
 static uint8_t _packet_process_in_wait_for_wa(gnrc_netdev_t *gnrc_netdev)
 {
-    uint8_t tx_info = NULL;
+    uint8_t tx_info = 0;
     gnrc_pktsnip_t *pkt;
     bool found_wa = false;
     bool postponed = false;
