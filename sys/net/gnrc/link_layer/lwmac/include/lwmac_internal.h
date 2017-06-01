@@ -318,6 +318,8 @@ void _set_netdev_state(gnrc_netdev_t *gnrc_netdev, netopt_state_t devstate);
  */
 static inline uint32_t _ticks_to_phase(uint32_t ticks)
 {
+    assert(LWMAC_WAKEUP_INTERVAL_US != 0);
+
     return (ticks % RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
 }
 
