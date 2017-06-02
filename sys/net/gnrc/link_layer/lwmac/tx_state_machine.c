@@ -161,10 +161,6 @@ static uint8_t _send_wr(gnrc_netdev_t *gnrc_netdev)
 
     assert(gnrc_netdev != NULL);
 
-    uint32_t random_backoff;
-    random_backoff = random_uint32_range(0, LWMAC_RANDOM_BEFORE_WR_US);
-    xtimer_usleep(random_backoff);
-
     /* if found ongoing transmission, quit this cycle for collision avoidance.
      * Data packet will be re-queued and try to send in the next cycle. */
     if (_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) {
@@ -627,6 +623,11 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             break;
         }
         case TX_STATE_SEND_WR: {
+            /* In case of no Tx-isr error (e.g., no Tx-isr), goto TX failure. */
+            if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_NO_RESPONSE)) {
+                LOG_WARNING("No response from destination, probably no TX-ISR\n");
+                GOTO_TX_STATE(TX_STATE_FAILED, true);
+            }
             LOG_DEBUG("TX_STATE_SEND_WR\n");
             uint8_t tx_info = _send_wr(gnrc_netdev);
 

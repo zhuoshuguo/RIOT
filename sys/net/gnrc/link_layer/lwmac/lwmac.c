@@ -347,11 +347,7 @@ static void _tx_management(gnrc_netdev_t *gnrc_netdev)
                 }
                 else {
                     /* Shouldn't happen, but never observed this case */
-                    int id = (gnrc_netdev->tx.current_neighbor -
-                              gnrc_netdev->tx.neighbors);
-                    id /= sizeof(gnrc_netdev->tx.current_neighbor);
-                    LOG_ERROR("Packet from neighbour's queue (#%d) invalid\n", id);
-                    lwmac_schedule_update(gnrc_netdev);
+                    lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
                 }
             }
             break;
