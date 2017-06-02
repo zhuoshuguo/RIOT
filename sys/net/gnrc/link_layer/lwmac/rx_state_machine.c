@@ -83,6 +83,7 @@ static uint8_t _packet_process_in_wait_for_wr(gnrc_netdev_t *gnrc_netdev)
 
         if (info.header->type == FRAMETYPE_BROADCAST) {
             _dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
+            _dispatch(gnrc_netdev->rx.dispatch_buffer);
             rx_info |= GNRC_LWMAC_RX_FOUND_BROADCAST;
             /* quit listening period to avoid receiving duplicate broadcast packets */
             gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
@@ -250,6 +251,7 @@ static uint8_t _packet_process_in_wait_for_data(gnrc_netdev_t *gnrc_netdev)
 
         if (info.header->type == FRAMETYPE_BROADCAST) {
             _dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
+            _dispatch(gnrc_netdev->rx.dispatch_buffer);
             /* quit listening period to avoid receiving duplicate broadcast packets */
             gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
             continue;
@@ -289,6 +291,7 @@ static uint8_t _packet_process_in_wait_for_data(gnrc_netdev_t *gnrc_netdev)
         if ((info.header->type == FRAMETYPE_DATA) ||
             (info.header->type == FRAMETYPE_DATA_PENDING)) {
             _dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
+            _dispatch(gnrc_netdev->rx.dispatch_buffer);
             LOG_DEBUG("Found DATA!\n");
             lwmac_clear_timeout(gnrc_netdev, TIMEOUT_DATA);
             rx_info |= GNRC_LWMAC_RX_FOUND_DATA;

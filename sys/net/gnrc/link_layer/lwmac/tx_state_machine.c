@@ -295,6 +295,7 @@ static uint8_t _packet_process_in_wait_for_wa(gnrc_netdev_t *gnrc_netdev)
 
         if (info.header->type == FRAMETYPE_BROADCAST) {
             _dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
+            _dispatch(gnrc_netdev->rx.dispatch_buffer);
             /* Drop pointer to it can't get released */
             pkt = NULL;
             continue;
