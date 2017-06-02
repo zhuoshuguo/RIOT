@@ -449,7 +449,8 @@ static bool _send_data(gnrc_netdev_t *gnrc_netdev)
 
     pkt->next = gnrc_pktbuf_add(pkt->next, &hdr, sizeof(hdr), GNRC_NETTYPE_LWMAC);
     if (pkt->next == NULL) {
-        LOG_ERROR("Cannot allocate pktbuf of type FRAMETYPE_DATA\n");
+        LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_LWMAC\n");
+        LOG_ERROR("Memory maybe full, drop the data packet\n");
         gnrc_netdev->tx.packet->next = pkt_payload;
         gnrc_pktbuf_release(gnrc_netdev->tx.packet);
         /* clear packet point to avoid TX retry */
