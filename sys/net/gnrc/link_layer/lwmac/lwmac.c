@@ -287,6 +287,21 @@ static void _rx_management(gnrc_netdev_t *gnrc_netdev)
                 gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
             }
 
+            /* Here we check if we are close to the end of the cycle. If yes,
+             * go to sleep. Firstly, get the relative phase. */
+            uint32_t phase = rtt_get_counter();
+            if (phase < gnrc_netdev->lwmac.last_wakeup) {
+            	phase = (RTT_US_TO_TICKS(LWMAC_PHASE_MAX) - gnrc_netdev->lwmac.last_wakeup) +
+                         phase;
+            }
+            else {
+                phase = phase - gnrc_netdev->lwmac.last_wakeup;
+            }
+            /* If the relative phase is beyond 4/5 cycle time, go to sleep. */
+            if (phase > (4*RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US)/5)) {
+                gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
+            }
+
             if (gnrc_netdev_lwmac_get_quit_rx(gnrc_netdev)) {
                 lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
             }
@@ -301,6 +316,21 @@ static void _rx_management(gnrc_netdev_t *gnrc_netdev)
             lwmac_rx_stop(gnrc_netdev);
             /* Dispatch received packets, timing is not critical anymore */
             _dispatch(gnrc_netdev->rx.dispatch_buffer);
+
+            /* Here we check if we are close to the end of the cycle. If yes,
+             * go to sleep. Firstly, get the relative phase. */
+            uint32_t phase = rtt_get_counter();
+            if (phase < gnrc_netdev->lwmac.last_wakeup) {
+            	phase = (RTT_US_TO_TICKS(LWMAC_PHASE_MAX) - gnrc_netdev->lwmac.last_wakeup) +
+                         phase;
+            }
+            else {
+                phase = phase - gnrc_netdev->lwmac.last_wakeup;
+            }
+            /* If the relative phase is beyond 4/5 cycle time, go to sleep. */
+            if (phase > (4*RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US)/5)) {
+                gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
+            }
 
             if (gnrc_netdev_lwmac_get_quit_rx(gnrc_netdev)) {
                 lwmac_set_state(gnrc_netdev, LWMAC_SLEEPING);
