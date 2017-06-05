@@ -21,6 +21,7 @@
 #include "net/ieee802154.h"
 
 #include "net/gnrc/netdev/ieee802154.h"
+#include "net/csma_sender.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
@@ -221,7 +222,19 @@ static int _send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
             gnrc_netdev->dev->stats.tx_unicast_count++;
         }
 #endif
+#ifdef MODULE_CSMA_SENDER
+        netopt_enable_t csma_enable;
+        res = gnrc_netdev->dev->driver->get(gnrc_netdev->dev, NETOPT_CSMA, (void *) &csma_enable,
+                                            sizeof(csma_enable));
+        if ((csma_enable == NETOPT_ENABLE) && (res >= 0)) {
+            res = csma_sender_csma_ca_send(netdev, vector, n, NULL);
+        }
+        else {
+            res = netdev->driver->send(netdev, vector, n);
+        }
+#else
         res = netdev->driver->send(netdev, vector, n);
+#endif
     }
     else {
         return -ENOBUFS;
