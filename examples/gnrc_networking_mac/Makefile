@@ -1,5 +1,5 @@
 # name of your application
-APPLICATION = gnrc_networking
+APPLICATION = gnrc_networking_mac
 
 # If no BOARD is found in the environment, use this default:
 BOARD ?= native
@@ -34,6 +34,8 @@ USEMODULE += ps
 USEMODULE += netstats_l2
 USEMODULE += netstats_ipv6
 USEMODULE += netstats_rpl
+# Use Lw-MAC as the MAC layer protocol
+USEMODULE += gnrc_lwmac
 
 # Comment this out to disable code in RIOT that does safety checking
 # which is not needed in a production environment but helps in the
