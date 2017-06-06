@@ -516,6 +516,7 @@ endif
 
 ifneq (,$(filter gnrc_lwmac,$(USEMODULE)))
   USEMODULE += xtimer
+  USEMODULE += random
   USEMODULE += gnrc_mac
   USEMODULE += gnrc_priority_pktqueue
   USEMODULE += gnrc_netdev
