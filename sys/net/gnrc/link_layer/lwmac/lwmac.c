@@ -315,7 +315,7 @@ static void _rx_management(gnrc_netdev_t *gnrc_netdev)
             LOG_DEBUG("Reception was successful\n");
             lwmac_rx_stop(gnrc_netdev);
             /* Dispatch received packets, timing is not critical anymore */
-            _dispatch(gnrc_netdev->rx.dispatch_buffer);
+            gnrc_mac_dispatch(&gnrc_netdev->rx);
 
             /* Here we check if we are close to the end of the cycle. If yes,
              * go to sleep. Firstly, get the relative phase. */
@@ -456,7 +456,7 @@ bool lwmac_update(gnrc_netdev_t *gnrc_netdev)
             }
             else if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_WAKEUP_PERIOD)) {
                 /* Dispatch first as there still may be broadcast packets. */
-                _dispatch(gnrc_netdev->rx.dispatch_buffer);
+                gnrc_mac_dispatch(&gnrc_netdev->rx);
 
                 gnrc_netdev->lwmac.state = LWMAC_SLEEPING;
                 /* Enable duty cycling again */

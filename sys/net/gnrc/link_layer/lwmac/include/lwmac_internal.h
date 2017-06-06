@@ -394,13 +394,6 @@ uint32_t _next_inphase_event(uint32_t last, uint32_t interval);
 int _dispatch_defer(gnrc_pktsnip_t * buffer[], gnrc_pktsnip_t * pkt);
 
 /**
- * @brief Dispatch received packet to the upper layer
- *
- * @param[in,out]   buffer      RX dispatch packet buffer
- */
-void _dispatch(gnrc_pktsnip_t * buffer[]);
-
-/**
  * @brief Print out the Lwmac header information.
  *
  * @param[in] hdr  lwmac header
