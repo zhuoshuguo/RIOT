@@ -4,6 +4,8 @@ APPLICATION = gnrc_networking_mac
 # If no BOARD is found in the environment, use this default:
 BOARD ?= native
 
+BOARD_WHITELIST := samr21-xpro
+
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/../..
 
