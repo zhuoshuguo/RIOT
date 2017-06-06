@@ -27,9 +27,9 @@ In the RIOT shell, get to know the IP address of one node:
 
 2017-06-06 15:05:48,279 - INFO # ifconfig
 2017-06-06 15:05:48,284 - INFO # Iface  7   HWaddr: 79:f6  Channel: 26  Page: 0  NID: 0x23
-2017-06-06 15:05:48,288 - INFO #            Long HWaddr: 79:67:35:7e:54:3a:79:f6 
-2017-06-06 15:05:48,297 - INFO #            TX-Power: 0dBm  State: SLEEP  max. Retrans.: 3  CSMA Retries: 4 
-2017-06-06 15:05:48,303 - INFO #            CSMA  MTU:1280  HL:64  6LO  RTR  IPHC  
+2017-06-06 15:05:48,288 - INFO #            Long HWaddr: 79:67:35:7e:54:3a:79:f6
+2017-06-06 15:05:48,297 - INFO #            TX-Power: 0dBm  State: SLEEP  max. Retrans.: 3  CSMA Retries: 4
+2017-06-06 15:05:48,303 - INFO #            CSMA  MTU:1280  HL:64  6LO  RTR  IPHC
 2017-06-06 15:05:48,306 - INFO #            Source address length: 8
 2017-06-06 15:05:48,309 - INFO #            Link type: wireless
 2017-06-06 15:05:48,314 - INFO #            inet6 addr: ff02::1/128  scope: local [multicast]
@@ -49,7 +49,7 @@ In a second terminal, start a second RIOT instance, in the RIOT shell, you can n
 
 In your first terminal (the receiver side), you should now see output that looks like this:
 
-2017-06-06 15:00:06,894 - INFO # [lwmac]: achieved duty-cycle: 10 % 
+2017-06-06 15:00:06,894 - INFO # [lwmac]: achieved duty-cycle: 10 %
 2017-06-06 15:00:06,896 - INFO # PKTDUMP: data received:
 2017-06-06 15:00:06,901 - INFO # ~~ SNIP  0 - size:  11 byte, type: NETTYPE_UNDEF (0)
 2017-06-06 15:00:06,907 - INFO # 00000000  74  65  73  74  6D  65  73  73  61  67  65
@@ -76,4 +76,4 @@ In your second terminal (the sender side), you should now see output that looks 
 2017-06-06 15:00:06,877 - INFO # Success: sent 11 byte(s) to [fe80::7b67:357e:543a:79f6]:8808
 2017-06-06 15:00:06,890 - INFO # [lwmac-tx]: spent 1 WR in TX
 2017-06-06 15:00:06,894 - INFO # [lwmac-tx]: pkt sending delay in TX: 8422 us
-2017-06-06 15:00:06,898 - INFO # [lwmac]: achieved duty-cycle: 10 % 
+2017-06-06 15:00:06,898 - INFO # [lwmac]: achieved duty-cycle: 10 %
