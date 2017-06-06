@@ -291,7 +291,7 @@ static void _rx_management(gnrc_netdev_t *gnrc_netdev)
              * go to sleep. Firstly, get the relative phase. */
             uint32_t phase = rtt_get_counter();
             if (phase < gnrc_netdev->lwmac.last_wakeup) {
-            	phase = (RTT_US_TO_TICKS(LWMAC_PHASE_MAX) - gnrc_netdev->lwmac.last_wakeup) +
+                phase = (RTT_US_TO_TICKS(LWMAC_PHASE_MAX) - gnrc_netdev->lwmac.last_wakeup) +
                          phase;
             }
             else {
@@ -321,7 +321,7 @@ static void _rx_management(gnrc_netdev_t *gnrc_netdev)
              * go to sleep. Firstly, get the relative phase. */
             uint32_t phase = rtt_get_counter();
             if (phase < gnrc_netdev->lwmac.last_wakeup) {
-            	phase = (RTT_US_TO_TICKS(LWMAC_PHASE_MAX) - gnrc_netdev->lwmac.last_wakeup) +
+                phase = (RTT_US_TO_TICKS(LWMAC_PHASE_MAX) - gnrc_netdev->lwmac.last_wakeup) +
                          phase;
             }
             else {

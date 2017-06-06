@@ -61,11 +61,11 @@
 
 static uint8_t _send_bcast(gnrc_netdev_t *gnrc_netdev)
 {
+    assert(gnrc_netdev != NULL);
+
     uint8_t tx_info = 0;
     gnrc_pktsnip_t *pkt = gnrc_netdev->tx.packet;
     bool first = false;
-
-    assert(gnrc_netdev != NULL);
 
     if (lwmac_timeout_is_running(gnrc_netdev, TIMEOUT_BROADCAST_END)) {
         if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_BROADCAST_END)) {
@@ -154,12 +154,12 @@ static uint8_t _send_bcast(gnrc_netdev_t *gnrc_netdev)
 
 static uint8_t _send_wr(gnrc_netdev_t *gnrc_netdev)
 {
+    assert(gnrc_netdev != NULL);
+
     uint8_t tx_info = 0;
     gnrc_pktsnip_t *pkt;
     gnrc_pktsnip_t *pkt_lwmac;
     gnrc_netif_hdr_t *nethdr;
-
-    assert(gnrc_netdev != NULL);
 
     /* if found ongoing transmission, quit this cycle for collision avoidance.
      * Data packet will be re-queued and try to send in the next cycle. */
@@ -263,13 +263,13 @@ static uint8_t _send_wr(gnrc_netdev_t *gnrc_netdev)
 
 static uint8_t _packet_process_in_wait_for_wa(gnrc_netdev_t *gnrc_netdev)
 {
+    assert(gnrc_netdev != NULL);
+
     uint8_t tx_info = 0;
     gnrc_pktsnip_t *pkt;
     bool found_wa = false;
     bool postponed = false;
     bool from_expected_destination = false;
-
-    assert(gnrc_netdev != NULL);
 
     while ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL) {
         LOG_DEBUG("Inspecting pkt @ %p\n", pkt);
@@ -406,6 +406,8 @@ static uint8_t _packet_process_in_wait_for_wa(gnrc_netdev_t *gnrc_netdev)
 /* return false if send data failed, otherwise return true */
 static bool _send_data(gnrc_netdev_t *gnrc_netdev)
 {
+    assert(gnrc_netdev != NULL);
+
     gnrc_pktsnip_t *pkt = gnrc_netdev->tx.packet;
     gnrc_pktsnip_t *pkt_payload;
 
@@ -528,9 +530,7 @@ void lwmac_tx_start(gnrc_netdev_t *gnrc_netdev,
 
 void lwmac_tx_stop(gnrc_netdev_t *gnrc_netdev)
 {
-    if (!gnrc_netdev) {
-        return;
-    }
+    assert(gnrc_netdev != NULL);
 
     lwmac_clear_timeout(gnrc_netdev, TIMEOUT_WR);
     lwmac_clear_timeout(gnrc_netdev, TIMEOUT_NO_RESPONSE);
@@ -560,11 +560,9 @@ void lwmac_tx_stop(gnrc_netdev_t *gnrc_netdev)
 /* Returns whether rescheduling is needed or not */
 static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
 {
-    bool reschedule = false;
+    assert(gnrc_netdev != NULL);
 
-    if (!gnrc_netdev) {
-        return reschedule;
-    }
+    bool reschedule = false;
 
     switch (gnrc_netdev->tx.state) {
         case TX_STATE_INIT: {
