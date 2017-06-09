@@ -60,7 +60,6 @@ void auto_init_at86rf2xx(void)
             LOG_ERROR("[auto_init_netif] error initializing at86rf2xx radio #%u\n", i);
         }
         else {
-
 #ifdef MODULE_GNRC_LWMAC
             gnrc_lwmac_init(_at86rf2xx_stacks[i],
                             AT86RF2XX_MAC_STACKSIZE,

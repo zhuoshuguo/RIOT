@@ -23,7 +23,7 @@
 #define GNRC_IQUEUE_MAC_H
 
 #include <kernel_types.h>
-#include <net/gnrc/netdev2.h>
+#include <net/gnrc/netdev.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,12 +71,12 @@ typedef enum {
 #define IQUEUEMAC_CP_MIN_GAP_US        (25U * 1000)
 #endif
 
-#ifndef IQUEUEMAC_MAX_PREAM_INTERVAL_US
-#define IQUEUEMAC_MAX_PREAM_INTERVAL_US        (3U * 1000)
-#endif
-
 #ifndef IQUEUEMAC_WAIT_RX_END_US
 #define IQUEUEMAC_WAIT_RX_END_US        (3U * 1000)
+#endif
+
+#ifndef IQUEUEMAC_MAX_PREAM_INTERVAL_US
+#define IQUEUEMAC_MAX_PREAM_INTERVAL_US        (5U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_PREAMBLE_INTERVAL_US
@@ -193,7 +193,7 @@ typedef enum {
  * @return                  -ENODEV if *dev* is invalid
  */
 kernel_pid_t gnrc_iqueuemac_init(char *stack, int stacksize, char priority,
-						   const char *name, gnrc_netdev2_t *dev);
+						   const char *name, gnrc_netdev_t *dev);
 
 #ifdef __cplusplus
 }

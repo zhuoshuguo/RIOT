@@ -38,6 +38,7 @@ extern "C" {
 /**
  * @brief definition for device transmission feedback types
  */
+
 typedef enum {
     TX_FEEDBACK_UNDEF = 0,      /**< Transmission just start, no Tx feedback yet */
     TX_FEEDBACK_SUCCESS,        /**< Transmission succeeded */

@@ -18,6 +18,13 @@ ifneq (,$(filter gnrc_mac,$(USEMODULE)))
   USEMODULE += csma_sender
 endif
 
+ifneq (,$(filter gnrc_iqueuemac,$(USEMODULE)))
+  USEMODULE += gnrc_netdev
+  USEMODULE += random
+  USEMODULE += xtimer
+  USEMODULE += gnrc_mac
+endif
+
 ifneq (,$(filter nhdp,$(USEMODULE)))
   USEMODULE += sock_udp
   USEMODULE += xtimer

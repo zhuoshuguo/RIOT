@@ -263,7 +263,7 @@ void iqueuemac_trun_on_radio(iqueuemac_t* iqueuemac)
 {
 	netopt_state_t devstate;
 	devstate = NETOPT_STATE_IDLE;
-	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev,
+	iqueuemac->netdev_driver->set(iqueuemac->netdev->dev,
 	                              NETOPT_STATE,
 	                              &devstate,
 	                              sizeof(devstate));
@@ -273,7 +273,7 @@ void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac)
 {
 	netopt_state_t devstate;
 	devstate = NETOPT_STATE_SLEEP;
-	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev,
+	iqueuemac->netdev_driver->set(iqueuemac->netdev->dev,
 	                              NETOPT_STATE,
 	                              &devstate,
 	                              sizeof(devstate));
@@ -284,7 +284,7 @@ void iqueuemac_set_autoack(iqueuemac_t* iqueuemac, netopt_enable_t autoack)
 {
 	netopt_enable_t setautoack = autoack;
 
-	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev,
+	iqueuemac->netdev_driver->set(iqueuemac->netdev->dev,
 								  NETOPT_AUTOACK,
 	                              &setautoack,
 	                              sizeof(setautoack));
@@ -294,7 +294,7 @@ void iqueuemac_set_ack_req(iqueuemac_t* iqueuemac, netopt_enable_t ack_req)
 {
     netopt_enable_t set_ack_req = ack_req;
 
-    iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev,
+    iqueuemac->netdev_driver->set(iqueuemac->netdev->dev,
                                   NETOPT_ACK_REQ,
                                   &set_ack_req,
                                   sizeof(set_ack_req));
@@ -304,7 +304,7 @@ netopt_state_t _get_netdev_state(iqueuemac_t* iqueuemac)
 {
     netopt_state_t state;
 
-	if (0 < iqueuemac->netdev2_driver->get(iqueuemac->netdev->dev,
+	if (0 < iqueuemac->netdev_driver->get(iqueuemac->netdev->dev,
                                        NETOPT_STATE,
                                        &state,
                                        sizeof(state)))
@@ -320,7 +320,7 @@ void iqueuemac_set_promiscuousmode(iqueuemac_t* iqueuemac, netopt_enable_t enabl
 
 	//iqueuemac->netdev->dev->driver->set(iqueuemac->netdev->dev, NETOPT_PROMISCUOUSMODE, &enable, sizeof(enable));
 
-	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev,
+	iqueuemac->netdev_driver->set(iqueuemac->netdev->dev,
 								  NETOPT_PROMISCUOUSMODE,
 	                              &set_enable,
 	                              sizeof(set_enable));
@@ -329,7 +329,7 @@ void iqueuemac_set_promiscuousmode(iqueuemac_t* iqueuemac, netopt_enable_t enabl
 
 void iqueuemac_turn_radio_channel(iqueuemac_t* iqueuemac, uint16_t channel_num)
 {
-	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev, NETOPT_CHANNEL, &channel_num, sizeof(channel_num));
+	iqueuemac->netdev_driver->set(iqueuemac->netdev->dev, NETOPT_CHANNEL, &channel_num, sizeof(channel_num));
 }
 
 void iqueuemac_set_raddio_to_listen_mode(iqueuemac_t* iqueuemac){
@@ -342,16 +342,16 @@ int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t 
 	netopt_enable_t csma_enable_send;
 	int res;
 	csma_enable_send = csma_enable;
-	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev, NETOPT_CSMA, &csma_enable_send, sizeof(netopt_enable_t));
+	iqueuemac->netdev_driver->set(iqueuemac->netdev->dev, NETOPT_CSMA, &csma_enable_send, sizeof(netopt_enable_t));
 
 	iqueuemac->tx.tx_finished = false;
-	iqueuemac->tx.tx_feedback = TX_FEEDBACK_UNDEF;
+	gnrc_netdev_set_tx_feedback(iqueuemac->netdev,TX_FEEDBACK_UNDEF);
 	res = iqueuemac->netdev->send(iqueuemac->netdev, pkt);
 
 	/*
 	netopt_state_t devstate;
 	devstate = NETOPT_STATE_TX;
-	iqueuemac->netdev2_driver->set(iqueuemac->netdev->dev,
+	iqueuemac->netdev_driver->set(iqueuemac->netdev->dev,
 	                              NETOPT_STATE,
 	                              &devstate,
 	                              sizeof(devstate));
@@ -600,7 +600,7 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 
     /* Disable Auto ACK */
     //netopt_enable_t autoack = NETOPT_DISABLE;
- 	//lwmac->netdev2_driver->set(lwmac->netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
+ 	//lwmac->netdev_driver->set(lwmac->netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
 
     netopt_enable_t csma_enable;
     if(iqueuemac->get_other_preamble == true){

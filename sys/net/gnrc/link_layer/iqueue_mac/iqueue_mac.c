@@ -23,7 +23,6 @@
 #include <stdbool.h>
 
 #include <kernel_types.h>
-#include <lpm.h>
 #include "msg.h"
 #include "thread.h"
 #include "random.h"
@@ -31,11 +30,11 @@
 #include <periph/rtt.h>
 #include "net/gnrc.h"
 #include "net/gnrc/nettype.h"
-#include "net/netdev2.h"
-#include "net/gnrc/netdev2.h"
+#include "net/netdev.h"
+#include "net/gnrc/netdev.h"
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
 #include <net/gnrc/iqueue_mac/packet_queue.h>
-#include "net/gnrc/netdev2/ieee802154.h"
+#include "net/gnrc/netdev/ieee802154.h"
 
 #include "include/iqueuemac_internal.h"
 #include "include/iqueuemac_types.h"
@@ -63,7 +62,7 @@
 #define LOG_DEBUG(...) LOG(LOG_DEBUG, "DEBUG: [iqmac] " __VA_ARGS__)
 
 
-#define NETDEV2_NETAPI_MSG_QUEUE_SIZE 8
+#define NETDEV_NETAPI_MSG_QUEUE_SIZE 8
 
 
 static iqueuemac_t iqueuemac;
@@ -154,7 +153,7 @@ void iqueuemac_init(iqueuemac_t* iqueuemac)
 	iqueuemac->rx.check_dup_pkt.queue_head = 0;
 	iqueuemac->tx.last_tx_neighbor_id = 0;
 
-	netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+	netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)iqueuemac->netdev->dev;
 	device_state->seq = iqueuemac->own_addr.addr[0];
 
 	for(int i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
@@ -200,7 +199,7 @@ void rtt_handler(uint32_t event)
         	  // iqueuemac_stop_lpm();
           }
 
-          lpm_prevent_sleep |= IQUEUEMAC_LPM_MASK;
+          //lpm_prevent_sleep |= IQUEUEMAC_LPM_MASK;
 
 
           //alarm = RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
@@ -461,7 +460,7 @@ void iqueuemac_init_wait_announce_feedback(iqueuemac_t* iqueuemac){
 
 		/*** add another condition here in the furture: the tx-feedback must be ACK-got,
 		 * namely, completed, to ensure router gets the data correctly***/
-		if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
+		if(gnrc_netdev_get_tx_feedback(iqueuemac->netdev) == TX_FEEDBACK_SUCCESS){
 			packet_queue_flush(&iqueuemac->rx.queue);
 			iqueuemac->router_states.router_init_state = R_INIT_END;
 			iqueuemac->need_update = true;
@@ -564,7 +563,7 @@ void iqueuemac_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 	}*/
 
 	if(iqueuemac->tx.no_ack_contuer > 0){
-		netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+		netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)iqueuemac->netdev->dev;
 		device_state->seq = iqueuemac->tx.tx_seq;
 	}
 
@@ -601,7 +600,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 	if(iqueuemac->tx.tx_finished == true){
 		/*** add another condition here in the furture: the tx-feedback must be ACK-got,
 				 * namely, completed, to ensure router gets the data correctly***/
-		switch(iqueuemac->tx.tx_feedback){
+		switch(gnrc_netdev_get_tx_feedback(iqueuemac->netdev)){
 
 			case TX_FEEDBACK_SUCCESS:{
 				/*** first release the pkt ***/
@@ -632,14 +631,14 @@ void iqueuemac_t2r_wait_cp_transfeedback(iqueuemac_t* iqueuemac){
 				/* delete this turn-off radio when formal iqueuemac version is release!
 				 * since it (turn-off radio func here) is mainly for debug */
 				iqueuemac_trun_off_radio(iqueuemac);
-				if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_BUSY) {
+				if(gnrc_netdev_get_tx_feedback(iqueuemac->netdev) == TX_FEEDBACK_BUSY) {
 				    puts("t2r:busy");
-				}else if (iqueuemac->tx.tx_feedback == TX_FEEDBACK_NOACK){
+				}else if (gnrc_netdev_get_tx_feedback(iqueuemac->netdev) == TX_FEEDBACK_NOACK){
 					puts("t2r:noack");
 				}
 				iqueuemac->tx.no_ack_contuer ++;
 
-				netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+				netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)iqueuemac->netdev->dev;
 				iqueuemac->tx.tx_seq = device_state->seq - 1;
 
 				if(iqueuemac->tx.no_ack_contuer >= IQUEUEMAC_REPHASELOCK_THRESHOLD){
@@ -806,7 +805,7 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 		 *  */
 
 		if(iqueuemac->tx.no_ack_contuer > 0){
-			netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+			netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)iqueuemac->netdev->dev;
 			device_state->seq = iqueuemac->tx.tx_seq;
 		}
 
@@ -855,7 +854,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 		/*** add another condition here in the furture: the tx-feedback must be ACK-got,
 		 * namely, completed, to ensure router gets the data correctly***/
 
-		switch(iqueuemac->tx.tx_feedback){
+		switch(gnrc_netdev_get_tx_feedback(iqueuemac->netdev)){
 
 			case TX_FEEDBACK_SUCCESS:{
 				//puts("v");
@@ -893,7 +892,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(iqueuemac_t* iqueuemac){
 
 				iqueuemac->tx.no_ack_contuer = 1;
 
-				netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+				netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)iqueuemac->netdev->dev;
 				iqueuemac->tx.tx_seq = device_state->seq - 1;
 
 				/*** do not release the pkt here, continue sending the same pkt ***/
@@ -1265,7 +1264,7 @@ void iqueuemac_t2u_wait_preamble_ack(iqueuemac_t* iqueuemac)
 			iqueuemac_clear_timeout(iqueuemac,TIMEOUT_MAX_PREAM_INTERVAL);
 		}else{
 			iqueuemac->tx.no_ack_contuer = IQUEUEMAC_REPHASELOCK_THRESHOLD;
-		    netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+		    netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)iqueuemac->netdev->dev;
 		    iqueuemac->tx.tx_seq = device_state->seq - 1;
 
 			puts("t2u no-preamack, rety");
@@ -1295,7 +1294,7 @@ void iqueuemac_t2u_send_data(iqueuemac_t* iqueuemac){
 
 	/* if found this is a retrying data, reload its original seq. */
 	if(iqueuemac->tx.no_ack_contuer > 0){
-		netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+		netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)iqueuemac->netdev->dev;
 		device_state->seq = iqueuemac->tx.tx_seq;
 	}
 
@@ -1326,7 +1325,7 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 
 	/*** add another condition here in the furture: the tx-feedback must be ACK-got,
 	 * namely, completed, to ensure router gets the data correctly***/
-	    if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_SUCCESS){
+	    if(gnrc_netdev_get_tx_feedback(iqueuemac->netdev) == TX_FEEDBACK_SUCCESS){
 
 	    	gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 	    	iqueuemac->tx.tx_packet = NULL;
@@ -1371,7 +1370,7 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	    	    iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 	    	}else{
 	    		iqueuemac->tx.no_ack_contuer = IQUEUEMAC_REPHASELOCK_THRESHOLD;
-	    		netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+	    		netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)iqueuemac->netdev->dev;
 	    		iqueuemac->tx.tx_seq = device_state->seq - 1;
 
 	    		printf("t2u data failed on ch %d. rety.\n",iqueuemac->tx.current_neighbour->cur_pub_channel);
@@ -1610,7 +1609,7 @@ void iqueue_mac_router_send_beacon(iqueuemac_t* iqueuemac){
     // iqueuemac_select_sub_channel_num(iqueuemac);
 
 	/* set device seq
-	netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
+	netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)iqueuemac->netdev->dev;
 	if(device_state->seq > 20){
 		device_state->seq = 0;
 	}
@@ -1926,35 +1925,35 @@ void iqueue_mac_update(iqueuemac_t* iqueuemac){
  * @param[in] event     type of event
  * @param[in] data      optional parameter
  */
-static void _event_cb(netdev2_t *dev, netdev2_event_t event)
+static void _event_cb(netdev_t *dev, netdev_event_t event)
 {
-    gnrc_netdev2_t *gnrc_netdev2 = (gnrc_netdev2_t*) dev->context;
+    gnrc_netdev_t *gnrc_netdev = (gnrc_netdev_t*) dev->context;
 
-    if (event == NETDEV2_EVENT_ISR) {
+    if (event == NETDEV_EVENT_ISR) {
         msg_t msg;
 
-        msg.type = NETDEV2_MSG_TYPE_EVENT;
-        msg.content.ptr = (void*) gnrc_netdev2;
+        msg.type = NETDEV_MSG_TYPE_EVENT;
+        msg.content.ptr = (void*) gnrc_netdev;
 
-        if (msg_send(&msg, gnrc_netdev2->pid) <= 0) {
-            puts("gnrc_netdev2: possibly lost interrupt.");
+        if (msg_send(&msg, gnrc_netdev->pid) <= 0) {
+            puts("gnrc_netdev: possibly lost interrupt.");
         }
     }
     else {
-        DEBUG("gnrc_netdev2: event triggered -> %i\n", event);
+        DEBUG("gnrc_netdev: event triggered -> %i\n", event);
         switch(event) {
 
-            case NETDEV2_EVENT_RX_STARTED:
+            case NETDEV_EVENT_RX_STARTED:
             	iqueuemac.rx_started = true;
             	//puts("iqueuemac: rx-started event triggered.");
             	iqueuemac.need_update = true;
             	break;
 
-            case NETDEV2_EVENT_RX_COMPLETE:
+            case NETDEV_EVENT_RX_COMPLETE:
                 {
                 	iqueuemac.need_update = true;
 
-                    gnrc_pktsnip_t *pkt = gnrc_netdev2->recv(gnrc_netdev2);
+                    gnrc_pktsnip_t *pkt = gnrc_netdev->recv(gnrc_netdev);
 
                     if(pkt == NULL){
                     	iqueuemac.rx_memory_full = true;
@@ -1999,44 +1998,44 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
                     }*/
                 }break;
 
-            case NETDEV2_EVENT_TX_COMPLETE:{
-            	iqueuemac.tx.tx_feedback = TX_FEEDBACK_SUCCESS;
+            case NETDEV_EVENT_TX_COMPLETE:{
+            	gnrc_netdev_set_tx_feedback(iqueuemac.netdev,TX_FEEDBACK_SUCCESS);
             	iqueuemac.tx.tx_finished = true;
             	iqueuemac_set_raddio_to_listen_mode(&iqueuemac);
             	iqueuemac.need_update = true;
             }break;
 
-           	case NETDEV2_EVENT_TX_NOACK:{
-           		iqueuemac.tx.tx_feedback = TX_FEEDBACK_NOACK;
+           	case NETDEV_EVENT_TX_NOACK:{
+           		gnrc_netdev_set_tx_feedback(iqueuemac.netdev,TX_FEEDBACK_NOACK);
            		iqueuemac.tx.tx_finished = true;
            		iqueuemac_set_raddio_to_listen_mode(&iqueuemac);
             	iqueuemac.need_update = true;
            	}break;
 
-           	case NETDEV2_EVENT_TX_MEDIUM_BUSY:{
-           		iqueuemac.tx.tx_feedback = TX_FEEDBACK_BUSY;
+           	case NETDEV_EVENT_TX_MEDIUM_BUSY:{
+           		gnrc_netdev_set_tx_feedback(iqueuemac.netdev,TX_FEEDBACK_BUSY);
            		iqueuemac.tx.tx_finished = true;
            		iqueuemac_set_raddio_to_listen_mode(&iqueuemac);
            		iqueuemac.need_update = true;
            	}break;
 /*
-        	case NETDEV2_EVENT_TX_STARTED:{
+        	case NETDEV_EVENT_TX_STARTED:{
         		if(iqueuemac.tx.got_preamble_ack == true){
         		  puts("iqueuemac: data packet transmission tx started!");
         		 }
         	}break;*/
 
 #ifdef MODULE_NETSTATS_L2
-            case NETDEV2_EVENT_TX_MEDIUM_BUSY:
+            case NETDEV_EVENT_TX_MEDIUM_BUSY:
                 dev->stats.tx_failed++;
                 break;
-            case NETDEV2_EVENT_TX_COMPLETE:
+            case NETDEV_EVENT_TX_COMPLETE:
                 dev->stats.tx_success++;
                 break;
 #endif
             default: break;
 
-                DEBUG("gnrc_netdev2: warning: unhandled event %u.\n", event);
+                DEBUG("gnrc_netdev: warning: unhandled event %u.\n", event);
         }
     }
 }
@@ -2045,14 +2044,14 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
 //{
     /* throw away packet if no one is interested */
    // if (!gnrc_netapi_dispatch_receive(pkt->type, GNRC_NETREG_DEMUX_CTX_ALL, pkt)) {
-   //     DEBUG("gnrc_netdev2: unable to forward packet of type %i\n", pkt->type);
+   //     DEBUG("gnrc_netdev: unable to forward packet of type %i\n", pkt->type);
     //    gnrc_pktbuf_release(pkt);
     //    return;
    // }
 //}
 
 /**
- * @brief   Startup code and event loop of the gnrc_netdev2 layer
+ * @brief   Startup code and event loop of the gnrc_netdev layer
  *
  * @param[in] args  expects a pointer to the underlying netdev device
  *
@@ -2061,24 +2060,24 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
 static void *_gnrc_iqueuemac_thread(void *args)
 {
 
-    gnrc_netdev2_t* gnrc_netdev2 = iqueuemac.netdev = (gnrc_netdev2_t *)args;
-    netdev2_t* dev = gnrc_netdev2->dev;
-    iqueuemac.netdev2_driver = dev->driver;
+    gnrc_netdev_t* gnrc_netdev = iqueuemac.netdev = (gnrc_netdev_t *)args;
+    netdev_t* dev = gnrc_netdev->dev;
+    iqueuemac.netdev_driver = dev->driver;
     
         
     /**************************************origin*************************************/
-    DEBUG("gnrc_netdev2: starting thread\n");
-    //gnrc_netdev2_t *gnrc_netdev2 = (gnrc_netdev2_t*) args;
-    //netdev2_t *dev = gnrc_netdev2->dev;
+    DEBUG("gnrc_netdev: starting thread\n");
+    //gnrc_netdev_t *gnrc_netdev = (gnrc_netdev_t*) args;
+    //netdev_t *dev = gnrc_netdev->dev;
 
-    gnrc_netdev2->pid = thread_getpid();
+    gnrc_netdev->pid = thread_getpid();
 
     gnrc_netapi_opt_t *opt;
     int res;
-    msg_t msg, reply, msg_queue[NETDEV2_NETAPI_MSG_QUEUE_SIZE];
+    msg_t msg, reply, msg_queue[NETDEV_NETAPI_MSG_QUEUE_SIZE];
 
     /* setup the MAC layers message queue */
-    msg_init_queue(msg_queue, NETDEV2_NETAPI_MSG_QUEUE_SIZE);
+    msg_init_queue(msg_queue, NETDEV_NETAPI_MSG_QUEUE_SIZE);
     /***************************************origin************************************/
     
     /*************************************iqueue-mac**************************************/
@@ -2092,7 +2091,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
     /***************************************************************************/
     /* register the event callback with the device driver */
     dev->event_callback = _event_cb;
-    dev->context = (void*) gnrc_netdev2;
+    dev->context = (void*) gnrc_netdev;
 
     /* register the device to the network stack*/
     gnrc_netif_add(thread_getpid());
@@ -2124,22 +2123,22 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
     /* start the event loop */
     while (1) {
-        DEBUG("gnrc_netdev2: waiting for incoming messages\n");
+        DEBUG("gnrc_netdev: waiting for incoming messages\n");
         msg_receive(&msg);
         /* dispatch NETDEV and NETAPI messages */
         switch (msg.type) {
-            case NETDEV2_MSG_TYPE_EVENT:
-                DEBUG("gnrc_netdev2: GNRC_NETDEV_MSG_TYPE_EVENT received\n");
+            case NETDEV_MSG_TYPE_EVENT:
+                DEBUG("gnrc_netdev: GNRC_NETDEV_MSG_TYPE_EVENT received\n");
                 dev->driver->isr(dev);
                 break;
             case GNRC_NETAPI_MSG_TYPE_SET:
                 /* read incoming options */
                 opt = (gnrc_netapi_opt_t *)msg.content.ptr;
-                DEBUG("gnrc_netdev2: GNRC_NETAPI_MSG_TYPE_SET received. opt=%s\n",
+                DEBUG("gnrc_netdev: GNRC_NETAPI_MSG_TYPE_SET received. opt=%s\n",
                         netopt2str(opt->opt));
                 /* set option for device driver */
                 res = dev->driver->set(dev, opt->opt, opt->data, opt->data_len);
-                DEBUG("gnrc_netdev2: response of netdev->set: %i\n", res);
+                DEBUG("gnrc_netdev: response of netdev->set: %i\n", res);
                 /* send reply to calling thread */
                 reply.type = GNRC_NETAPI_MSG_TYPE_ACK;
                 reply.content.value = (uint32_t)res;
@@ -2148,11 +2147,11 @@ static void *_gnrc_iqueuemac_thread(void *args)
             case GNRC_NETAPI_MSG_TYPE_GET:
                 /* read incoming options */
                 opt = (gnrc_netapi_opt_t *)msg.content.ptr;
-                DEBUG("gnrc_netdev2: GNRC_NETAPI_MSG_TYPE_GET received. opt=%s\n",
+                DEBUG("gnrc_netdev: GNRC_NETAPI_MSG_TYPE_GET received. opt=%s\n",
                         netopt2str(opt->opt));
                 /* get option from device driver */
                 res = dev->driver->get(dev, opt->opt, opt->data, opt->data_len);
-                DEBUG("gnrc_netdev2: response of netdev->get: %i\n", res);
+                DEBUG("gnrc_netdev: response of netdev->get: %i\n", res);
                 /* send reply to calling thread */
                 reply.type = GNRC_NETAPI_MSG_TYPE_ACK;
                 reply.content.value = (uint32_t)res;
@@ -2171,10 +2170,10 @@ static void *_gnrc_iqueuemac_thread(void *args)
             }break;
 
             case GNRC_NETAPI_MSG_TYPE_SND:{
-              DEBUG("gnrc_netdev2: GNRC_NETAPI_MSG_TYPE_SND received\n");
+              DEBUG("gnrc_netdev: GNRC_NETAPI_MSG_TYPE_SND received\n");
 
               gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)msg.content.ptr;
-              //gnrc_netdev2->send(gnrc_netdev2, pkt);
+              //gnrc_netdev->send(gnrc_netdev, pkt);
 
               if(!_queue_tx_packet(&iqueuemac,  pkt)){
             	  puts("push pkt fail.");
@@ -2185,7 +2184,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
             /**************************************iqueue-mac********************************************/
 
             default:
-                DEBUG("gnrc_netdev2: Unknown command %" PRIu16 "\n", msg.type);
+                DEBUG("gnrc_netdev: Unknown command %" PRIu16 "\n", msg.type);
                 break;
         }
 
@@ -2200,18 +2199,18 @@ static void *_gnrc_iqueuemac_thread(void *args)
 }
 
 kernel_pid_t gnrc_iqueuemac_init(char *stack, int stacksize, char priority,
-                        const char *name, gnrc_netdev2_t *gnrc_netdev2)
+                        const char *name, gnrc_netdev_t *gnrc_netdev)
 {
     kernel_pid_t res;
 
     /* check if given netdev device is defined and the driver is set */
-    if (gnrc_netdev2 == NULL || gnrc_netdev2->dev == NULL) {
+    if (gnrc_netdev == NULL || gnrc_netdev->dev == NULL) {
         return -ENODEV;
     }
 
-    /* create new gnrc_netdev2 thread */
+    /* create new gnrc_netdev thread */
     res = thread_create(stack, stacksize, priority, THREAD_CREATE_STACKTEST,
-                         _gnrc_iqueuemac_thread, (void *)gnrc_netdev2, name);
+                         _gnrc_iqueuemac_thread, (void *)gnrc_netdev, name);
     if (res <= 0) {
         return -EINVAL;
     }

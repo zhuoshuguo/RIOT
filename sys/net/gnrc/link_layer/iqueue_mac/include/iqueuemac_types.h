@@ -26,11 +26,10 @@
 #include <kernel_types.h>
 #include <xtimer.h>
 #include <net/gnrc.h>
-#include <net/netdev2.h>
-#include <net/gnrc/netdev2.h>
+#include <net/netdev.h>
+#include <net/gnrc/netdev.h>
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
 #include "net/gnrc/iqueue_mac/hdr.h"
-//#include <net/gnrc/lwmac/hdr.h>
 #include <net/gnrc/iqueue_mac/packet_queue.h>
 #include "timeout.h"
 
@@ -194,15 +193,6 @@ typedef enum {
 
 /******************************node state machinies**********************************/
 
-typedef enum {
-    TX_FEEDBACK_UNDEF = -1,
-    TX_FEEDBACK_SUCCESS,
-    TX_FEEDBACK_NOACK,
-    TX_FEEDBACK_BUSY
-} iqueuemac_tx_feedback_t;
-
-#define IQUEUEMAC_TX_FEEDBACK_INIT TX_FEEDBACK_UNDEF
-
 /******************************************************************************/
 typedef struct {
     uint8_t  addr[IQUEUEMAC_MAX_L2_ADDR_LEN];
@@ -323,8 +313,6 @@ typedef struct {
 
 	uint8_t tx_seq;
 
-	/* Feedback of last packet that was sent */
-	iqueuemac_tx_feedback_t tx_feedback;
 	bool tx_finished;
 
 
@@ -348,8 +336,8 @@ typedef struct iqueuemac {
     /* PID of IQUEUEMAC thread */
     kernel_pid_t pid;
     /* NETDEV device used by lwMAC */
-	gnrc_netdev2_t* netdev;
-	const netdev2_driver_t* netdev2_driver;
+	gnrc_netdev_t* netdev;
+	const netdev_driver_t* netdev_driver;
 
     /* Internal state of MAC layer */
 	iqueuemac_type_t mac_type;
