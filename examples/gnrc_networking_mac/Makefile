@@ -2,8 +2,11 @@
 APPLICATION = gnrc_networking_mac
 
 # If no BOARD is found in the environment, use this default:
-BOARD ?= native
+BOARD ?= samr21-xpro
 
+# Currently, Lw-MAC is only tested and evaluated through on samr21-xpro.
+# Once Lw-MAC has also been tested through on other boards, the whitelist should be 
+# then accordingly extended.
 BOARD_WHITELIST := samr21-xpro
 
 # This has to be the absolute path to the RIOT base directory:
