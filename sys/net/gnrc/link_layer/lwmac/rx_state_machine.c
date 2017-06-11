@@ -29,7 +29,12 @@
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
+#ifndef LOG_LEVEL
+/**
+ * @brief Default log level define
+ */
 #define LOG_LEVEL LOG_WARNING
+#endif
 #include "log.h"
 
 /**
@@ -47,16 +52,6 @@
  */
 #define GNRC_LWMAC_RX_FOUND_DATA              (0x04U)
 
-#undef LOG_ERROR
-#undef LOG_WARNING
-#undef LOG_INFO
-#undef LOG_DEBUG
-
-#define LOG_ERROR(...) LOG(LOG_ERROR, "ERROR: [lwmac-rx] " __VA_ARGS__)
-#define LOG_WARNING(...) LOG(LOG_WARNING, "WARNING: [lwmac-rx] " __VA_ARGS__)
-#define LOG_INFO(...) LOG(LOG_INFO, "[lwmac-rx] " __VA_ARGS__)
-#define LOG_DEBUG(...) LOG(LOG_DEBUG, "[lwmac-rx] " __VA_ARGS__)
-
 /* Break out of switch and mark the need for rescheduling */
 #define GOTO_RX_STATE(rx_state, do_resched) gnrc_netdev->rx.state = rx_state; \
                                             reschedule = do_resched; \
@@ -70,13 +65,13 @@ static uint8_t _packet_process_in_wait_for_wr(gnrc_netdev_t *gnrc_netdev)
     assert(gnrc_netdev != NULL);
 
     while ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL) {
-        LOG_DEBUG("Inspecting pkt @ %p\n", pkt);
+        LOG(LOG_DEBUG, "[lwmac-rx] Inspecting pkt @ %p\n", pkt);
 
         /* Parse packet */
         lwmac_packet_info_t info;
 
         if (_parse_packet(pkt, &info) != 0) {
-            LOG_DEBUG("Packet could not be parsed\n");
+            LOG(LOG_DEBUG, "[lwmac-rx] Packet could not be parsed\n");
             gnrc_pktbuf_release(pkt);
             continue;
         }
@@ -98,7 +93,7 @@ static uint8_t _packet_process_in_wait_for_wr(gnrc_netdev_t *gnrc_netdev)
          * so maybe add a timestamp to every frame in event callback. */
 
         if (info.header->type != FRAMETYPE_WR) {
-            LOG_DEBUG("Packet is not WR: 0x%02x\n", info.header->type);
+            LOG(LOG_DEBUG, "[lwmac-rx] Packet is not WR: 0x%02x\n", info.header->type);
             gnrc_pktbuf_release(pkt);
             continue;
         }
@@ -108,7 +103,7 @@ static uint8_t _packet_process_in_wait_for_wr(gnrc_netdev_t *gnrc_netdev)
 
         if (!(memcmp(&info.dst_addr.addr, &gnrc_netdev->l2_addr,
                      gnrc_netdev->l2_addr_len) == 0)) {
-            LOG_DEBUG("Packet is WR but not for us\n");
+            LOG(LOG_DEBUG, "[lwmac-rx] Packet is WR but not for us\n");
             /* quit TX in this cycle to avoid collisions with other senders, since
              * found ongoing WR (preamble) stream*/
             gnrc_netdev_lwmac_set_quit_tx(gnrc_netdev, true);
@@ -164,7 +159,7 @@ static bool _send_wa(gnrc_netdev_t *gnrc_netdev)
 
     pkt = gnrc_pktbuf_add(NULL, &lwmac_hdr, sizeof(lwmac_hdr), GNRC_NETTYPE_LWMAC);
     if (pkt == NULL) {
-        LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_LWMAC\n");
+        LOG(LOG_ERROR, "ERROR: [lwmac-rx] Cannot allocate pktbuf of type GNRC_NETTYPE_LWMAC\n");
         gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
         return false;
     }
@@ -174,7 +169,7 @@ static bool _send_wa(gnrc_netdev_t *gnrc_netdev)
                           sizeof(gnrc_netif_hdr_t) + gnrc_netdev->rx.l2_addr.len,
                           GNRC_NETTYPE_NETIF);
     if (pkt == NULL) {
-        LOG_ERROR("Cannot allocate pktbuf of type GNRC_NETTYPE_NETIF\n");
+        LOG(LOG_ERROR, "ERROR: [lwmac-rx] Cannot allocate pktbuf of type GNRC_NETTYPE_NETIF\n");
         gnrc_pktbuf_release(pkt_lwmac);
         gnrc_netdev_lwmac_set_quit_rx(gnrc_netdev, true);
         return false;
@@ -204,7 +199,7 @@ static bool _send_wa(gnrc_netdev_t *gnrc_netdev)
      */
     /*
        if(_get_netdev_state(lwmac) == NETOPT_STATE_RX) {
-        LOG_WARNING("Receiving now, so cancel sending WA\n");
+        LOG(LOG_WARNING, "WARNING: [lwmac-rx] Receiving now, so cancel sending WA\n");
         gnrc_pktbuf_release(pkt);
         GOTO_RX_STATE(RX_STATE_WAIT_FOR_WR, false);
        }
@@ -212,7 +207,7 @@ static bool _send_wa(gnrc_netdev_t *gnrc_netdev)
 
     /* Send WA */
     if (gnrc_netdev->send(gnrc_netdev, pkt) < 0) {
-        LOG_ERROR("Send WA failed.");
+        LOG(LOG_ERROR, "ERROR: [lwmac-rx] Send WA failed.");
         if (pkt != NULL) {
             gnrc_pktbuf_release(pkt);
         }
@@ -238,13 +233,13 @@ static uint8_t _packet_process_in_wait_for_data(gnrc_netdev_t *gnrc_netdev)
     pkt = NULL;
 
     while ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL) {
-        LOG_DEBUG("Inspecting pkt @ %p\n", pkt);
+        LOG(LOG_DEBUG, "[lwmac-rx] Inspecting pkt @ %p\n", pkt);
 
         /* Parse packet */
         lwmac_packet_info_t info;
 
         if (_parse_packet(pkt, &info) != 0) {
-            LOG_DEBUG("Packet could not be parsed\n");
+            LOG(LOG_DEBUG, "[lwmac-rx] Packet could not be parsed\n");
             gnrc_pktbuf_release(pkt);
             continue;
         }
@@ -259,7 +254,7 @@ static uint8_t _packet_process_in_wait_for_data(gnrc_netdev_t *gnrc_netdev)
 
         if (!(memcmp(&info.src_addr.addr, &gnrc_netdev->rx.l2_addr.addr,
                      gnrc_netdev->rx.l2_addr.len) == 0)) {
-            LOG_DEBUG("Packet is not from destination\n");
+            LOG(LOG_DEBUG, "[lwmac-rx] Packet is not from destination\n");
             gnrc_pktbuf_release(pkt);
             /* Reset timeout to wait for the data packet */
             lwmac_clear_timeout(gnrc_netdev, TIMEOUT_DATA);
@@ -269,7 +264,7 @@ static uint8_t _packet_process_in_wait_for_data(gnrc_netdev_t *gnrc_netdev)
 
         if (!(memcmp(&info.dst_addr.addr, &gnrc_netdev->l2_addr,
                      gnrc_netdev->l2_addr_len) == 0)) {
-            LOG_DEBUG("Packet is not for us\n");
+            LOG(LOG_DEBUG, "[lwmac-rx] Packet is not for us\n");
             gnrc_pktbuf_release(pkt);
             /* Reset timeout to wait for the data packet */
             lwmac_clear_timeout(gnrc_netdev, TIMEOUT_DATA);
@@ -279,7 +274,7 @@ static uint8_t _packet_process_in_wait_for_data(gnrc_netdev_t *gnrc_netdev)
 
         /* Sender maybe didn't get the WA */
         if (info.header->type == FRAMETYPE_WR) {
-            LOG_DEBUG("Found a WR while waiting for DATA\n");
+            LOG(LOG_DEBUG, "[lwmac-rx] Found a WR while waiting for DATA\n");
             lwmac_clear_timeout(gnrc_netdev, TIMEOUT_DATA);
             rx_info |= GNRC_LWMAC_RX_FOUND_WR;
             /* Push WR back to rx queue */
@@ -292,7 +287,7 @@ static uint8_t _packet_process_in_wait_for_data(gnrc_netdev_t *gnrc_netdev)
             (info.header->type == FRAMETYPE_DATA_PENDING)) {
             _dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
             gnrc_mac_dispatch(&gnrc_netdev->rx);
-            LOG_DEBUG("Found DATA!\n");
+            LOG(LOG_DEBUG, "[lwmac-rx] Found DATA!\n");
             lwmac_clear_timeout(gnrc_netdev, TIMEOUT_DATA);
             rx_info |= GNRC_LWMAC_RX_FOUND_DATA;
             break;
@@ -345,7 +340,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
             GOTO_RX_STATE(RX_STATE_WAIT_FOR_WR, true);
         }
         case RX_STATE_WAIT_FOR_WR: {
-            LOG_DEBUG("RX_STATE_WAIT_FOR_WR\n");
+            LOG(LOG_DEBUG, "[lwmac-rx] RX_STATE_WAIT_FOR_WR\n");
 
             uint8_t rx_info = _packet_process_in_wait_for_wr(gnrc_netdev);
 
@@ -355,7 +350,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
             }
 
             if (!(rx_info & GNRC_LWMAC_RX_FOUND_WR)) {
-                LOG_DEBUG("No WR found, stop RX\n");
+                LOG(LOG_DEBUG, "[lwmac-rx] No WR found, stop RX\n");
                 gnrc_netdev->rx.rx_bad_exten_count++;
                 GOTO_RX_STATE(RX_STATE_FAILED, true);
             }
@@ -366,7 +361,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
             GOTO_RX_STATE(RX_STATE_SEND_WA, true);
         }
         case RX_STATE_SEND_WA: {
-            LOG_DEBUG("RX_STATE_SEND_WA\n");
+            LOG(LOG_DEBUG, "[lwmac-rx] RX_STATE_SEND_WA\n");
 
             if (!_send_wa(gnrc_netdev)) {
                 GOTO_RX_STATE(RX_STATE_FAILED, true);
@@ -375,10 +370,10 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
             GOTO_RX_STATE(RX_STATE_WAIT_WA_SENT, false);
         }
         case RX_STATE_WAIT_WA_SENT: {
-            LOG_DEBUG("RX_STATE_WAIT_WA_SENT\n");
+            LOG(LOG_DEBUG, "[lwmac-rx] RX_STATE_WAIT_WA_SENT\n");
 
             if (gnrc_netdev_get_tx_feedback(gnrc_netdev) == TX_FEEDBACK_UNDEF) {
-                LOG_DEBUG("WA not yet completely sent\n");
+                LOG(LOG_DEBUG, "[lwmac-rx] WA not yet completely sent\n");
                 break;
             }
 
@@ -389,7 +384,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
             GOTO_RX_STATE(RX_STATE_WAIT_FOR_DATA, false);
         }
         case RX_STATE_WAIT_FOR_DATA: {
-            LOG_DEBUG("RX_STATE_WAIT_FOR_DATA\n");
+            LOG(LOG_DEBUG, "[lwmac-rx] RX_STATE_WAIT_FOR_DATA\n");
 
             uint8_t rx_info = _packet_process_in_wait_for_data(gnrc_netdev);
 
@@ -400,7 +395,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
              *       delta time to get the timing right again.
              */
             if (rx_info & GNRC_LWMAC_RX_FOUND_WR) {
-                LOG_INFO("WA probably got lost, reset RX state machine\n");
+                LOG(LOG_INFO, "[lwmac-rx] WA probably got lost, reset RX state machine\n");
                 /* Start over again */
                 GOTO_RX_STATE(RX_STATE_INIT, true);
             }
@@ -414,13 +409,13 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
              *       stuck. */
             if ((lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_DATA)) &&
                 (!gnrc_netdev_get_rx_started(gnrc_netdev))) {
-                LOG_INFO("DATA timed out\n");
+                LOG(LOG_INFO, "[lwmac-rx] DATA timed out\n");
                 gnrc_netdev->rx.rx_bad_exten_count++;
                 GOTO_RX_STATE(RX_STATE_FAILED, true);
             }
 
             if (!(rx_info & GNRC_LWMAC_RX_FOUND_DATA)) {
-                LOG_DEBUG("No DATA yet\n");
+                LOG(LOG_DEBUG, "[lwmac-rx] No DATA yet\n");
                 break;
             }
 
@@ -431,7 +426,7 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
             break;
         }
         case RX_STATE_STOPPED: {
-            LOG_DEBUG("Reception state machine is stopped\n");
+            LOG(LOG_DEBUG, "[lwmac-rx] Reception state machine is stopped\n");
         }
     }
     return reschedule;
