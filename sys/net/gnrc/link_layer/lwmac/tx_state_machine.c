@@ -224,29 +224,6 @@ static uint8_t _send_wr(gnrc_netdev_t *gnrc_netdev)
         return tx_info;
     }
 
-#if 0
-    /* First WR, try to catch wakeup phase */
-    if ((gnrc_netdev->tx.wr_sent == 0) &&
-        (gnrc_netdev_lwmac_get_tx_continue(gnrc_netdev) == false)) {
-
-        /* Calculate wakeup time */
-        uint32_t wait_until;
-        wait_until  = _phase_to_ticks(gnrc_netdev->tx.current_neighbor->phase);
-        wait_until -= RTT_US_TO_TICKS(LWMAC_WR_BEFORE_PHASE_US);
-
-        /* This output blocks a long time and can prevent correct timing */
-        LOG(LOG_DEBUG, "[lwmac-tx] Phase length:  %" PRIu32 "\n",
-                       RTT_US_TO_TICKS(LWMAC_WAKEUP_INTERVAL_US));
-        LOG(LOG_DEBUG, "[lwmac-tx] Wait until:    %" PRIu32 "\n", wait_until);
-        LOG(LOG_DEBUG, "[lwmac-tx]      phase:    %" PRIu32 "\n", _ticks_to_phase(wait_until));
-        LOG(LOG_DEBUG, "[lwmac-tx] Ticks to wait: %" PRIu32 "\n",
-                       (long int)wait_until - rtt_get_counter());
-
-        /* Wait until calculated wakeup time of destination */
-        while (rtt_get_counter() < wait_until) {}
-    }
-#endif
-
     /* Flush RX queue, TODO: maybe find a way without loosing RX packets */
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
 

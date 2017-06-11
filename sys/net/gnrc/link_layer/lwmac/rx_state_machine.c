@@ -262,15 +262,20 @@ static uint8_t _packet_process_in_wait_for_data(gnrc_netdev_t *gnrc_netdev)
             break;
         }
 
-        /* Receiver gets the data packet */
-        if ((info.header->type == FRAMETYPE_DATA) ||
-            (info.header->type == FRAMETYPE_DATA_PENDING)) {
-            _dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
-            gnrc_mac_dispatch(&gnrc_netdev->rx);
-            LOG(LOG_DEBUG, "[lwmac-rx] Found DATA!\n");
-            lwmac_clear_timeout(gnrc_netdev, TIMEOUT_DATA);
-            rx_info |= GNRC_LWMAC_RX_FOUND_DATA;
-            break;
+        switch (info.header->type) {
+            case FRAMETYPE_DATA:
+            case FRAMETYPE_DATA_PENDING: {
+                /* Receiver gets the data packet */
+                _dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
+                gnrc_mac_dispatch(&gnrc_netdev->rx);
+                LOG(LOG_DEBUG, "[lwmac-rx] Found DATA!\n");
+                lwmac_clear_timeout(gnrc_netdev, TIMEOUT_DATA);
+                rx_info |= GNRC_LWMAC_RX_FOUND_DATA;
+                return rx_info;
+            }
+            default: {
+                gnrc_pktbuf_release(pkt);
+            }
         }
     }
 

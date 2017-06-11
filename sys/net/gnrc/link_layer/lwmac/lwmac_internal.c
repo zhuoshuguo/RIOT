@@ -266,27 +266,24 @@ int _dispatch_defer(gnrc_pktsnip_t *buffer[], gnrc_pktsnip_t *pkt)
             buffer[i] = pkt;
             return 0;
         }
-        else {
-            /* Filter same broadcasts, compare sequence number */
-            if (bcast &&
+        else if (bcast &&
                 (((lwmac_hdr_t *)buffer[i]->next->data)->type == FRAMETYPE_BROADCAST) &&
                 (bcast->seq_nr == ((lwmac_frame_broadcast_t *)buffer[i]->next->data)->seq_nr)) {
+                /* Filter same broadcasts, compare sequence number */
                 gnrc_netif_hdr_t *hdr_queued, *hdr_new;
                 hdr_new = pkt->next->next->data;
                 hdr_queued = buffer[i]->next->next->data;
 
                 /* Sequence numbers match, compare source addresses */
-                if (hdr_new->src_l2addr_len == hdr_queued->src_l2addr_len) {
-                    if (memcmp(gnrc_netif_hdr_get_src_addr(hdr_new),
-                               gnrc_netif_hdr_get_src_addr(hdr_queued),
-                               hdr_new->src_l2addr_len) == 0) {
-                        /* Source addresses match, same packet */
-                        DEBUG("[lwmac] Found duplicate broadcast packet, dropping\n");
-                        gnrc_pktbuf_release(pkt);
-                        return -2;
-                    }
+                if ((hdr_new->src_l2addr_len == hdr_queued->src_l2addr_len) &&
+                    (memcmp(gnrc_netif_hdr_get_src_addr(hdr_new),
+                            gnrc_netif_hdr_get_src_addr(hdr_queued),
+                            hdr_new->src_l2addr_len) == 0)) {
+                    /* Source addresses match, same packet */
+                    DEBUG("[lwmac] Found duplicate broadcast packet, dropping\n");
+                    gnrc_pktbuf_release(pkt);
+                    return -2;
                 }
-            }
         }
     }
 
