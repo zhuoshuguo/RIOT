@@ -52,11 +52,6 @@
  */
 #define GNRC_LWMAC_RX_FOUND_DATA              (0x04U)
 
-/* Break out of switch and mark the need for rescheduling */
-#define GOTO_RX_STATE(rx_state, do_resched) gnrc_netdev->rx.state = rx_state; \
-                                            reschedule = do_resched; \
-                                            break
-
 static uint8_t _packet_process_in_wait_for_wr(gnrc_netdev_t *gnrc_netdev)
 {
     uint8_t rx_info = 0;
@@ -190,21 +185,6 @@ static bool _send_wa(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_AUTOACK, &autoack,
                                   sizeof(autoack));
 
-    /* We might have taken too long to answer the WR so we're receiving the
-     * next one already. Don't send WA yet and go back to WR reception.
-     * TODO: Is this really neccessary?
-     *
-     * This should not happen for WRs if the timing has been determined
-     * correctly.
-     */
-    /*
-       if(_get_netdev_state(lwmac) == NETOPT_STATE_RX) {
-        LOG(LOG_WARNING, "WARNING: [lwmac-rx] Receiving now, so cancel sending WA\n");
-        gnrc_pktbuf_release(pkt);
-        GOTO_RX_STATE(RX_STATE_WAIT_FOR_WR, false);
-       }
-     */
-
     /* Send WA */
     if (gnrc_netdev->send(gnrc_netdev, pkt) < 0) {
         LOG(LOG_ERROR, "ERROR: [lwmac-rx] Send WA failed.");
@@ -337,7 +317,9 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
     switch (gnrc_netdev->rx.state) {
         case RX_STATE_INIT: {
             lwmac_clear_timeout(gnrc_netdev, TIMEOUT_DATA);
-            GOTO_RX_STATE(RX_STATE_WAIT_FOR_WR, true);
+            gnrc_netdev->rx.state = RX_STATE_WAIT_FOR_WR;
+            reschedule = true;
+            break;
         }
         case RX_STATE_WAIT_FOR_WR: {
             LOG(LOG_DEBUG, "[lwmac-rx] RX_STATE_WAIT_FOR_WR\n");
@@ -346,28 +328,38 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
 
             /* if found broadcast packet, goto rx successful */
             if (rx_info & GNRC_LWMAC_RX_FOUND_BROADCAST) {
-                GOTO_RX_STATE(RX_STATE_SUCCESSFUL, true);
+                gnrc_netdev->rx.state = RX_STATE_SUCCESSFUL;
+                reschedule = true;
+                break;
             }
 
             if (!(rx_info & GNRC_LWMAC_RX_FOUND_WR)) {
                 LOG(LOG_DEBUG, "[lwmac-rx] No WR found, stop RX\n");
                 gnrc_netdev->rx.rx_bad_exten_count++;
-                GOTO_RX_STATE(RX_STATE_FAILED, true);
+                gnrc_netdev->rx.state = RX_STATE_FAILED;
+                reschedule = true;
+                break;
             }
 
             /* TODO: don't flush queue */
             gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
             /* Found WR packet (preamble), goto next state to send WA (preamble-ACK) */
-            GOTO_RX_STATE(RX_STATE_SEND_WA, true);
+            gnrc_netdev->rx.state = RX_STATE_SEND_WA;
+            reschedule = true;
+            break;
         }
         case RX_STATE_SEND_WA: {
             LOG(LOG_DEBUG, "[lwmac-rx] RX_STATE_SEND_WA\n");
 
             if (!_send_wa(gnrc_netdev)) {
-                GOTO_RX_STATE(RX_STATE_FAILED, true);
+                gnrc_netdev->rx.state = RX_STATE_FAILED;
+                reschedule = true;
+                break;
             }
 
-            GOTO_RX_STATE(RX_STATE_WAIT_WA_SENT, false);
+            gnrc_netdev->rx.state = RX_STATE_WAIT_WA_SENT;
+            reschedule = false;
+            break;
         }
         case RX_STATE_WAIT_WA_SENT: {
             LOG(LOG_DEBUG, "[lwmac-rx] RX_STATE_WAIT_WA_SENT\n");
@@ -381,7 +373,9 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
             lwmac_set_timeout(gnrc_netdev, TIMEOUT_DATA, LWMAC_DATA_DELAY_US);
 
             _set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
-            GOTO_RX_STATE(RX_STATE_WAIT_FOR_DATA, false);
+            gnrc_netdev->rx.state = RX_STATE_WAIT_FOR_DATA;
+            reschedule = false;
+            break;
         }
         case RX_STATE_WAIT_FOR_DATA: {
             LOG(LOG_DEBUG, "[lwmac-rx] RX_STATE_WAIT_FOR_DATA\n");
@@ -397,7 +391,9 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
             if (rx_info & GNRC_LWMAC_RX_FOUND_WR) {
                 LOG(LOG_INFO, "[lwmac-rx] WA probably got lost, reset RX state machine\n");
                 /* Start over again */
-                GOTO_RX_STATE(RX_STATE_INIT, true);
+                gnrc_netdev->rx.state = RX_STATE_INIT;
+                reschedule = true;
+                break;
             }
 
             /* Only timeout if no packet (presumably the expected data) is being
@@ -411,7 +407,9 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
                 (!gnrc_netdev_get_rx_started(gnrc_netdev))) {
                 LOG(LOG_INFO, "[lwmac-rx] DATA timed out\n");
                 gnrc_netdev->rx.rx_bad_exten_count++;
-                GOTO_RX_STATE(RX_STATE_FAILED, true);
+                gnrc_netdev->rx.state = RX_STATE_FAILED;
+                reschedule = true;
+                break;
             }
 
             if (!(rx_info & GNRC_LWMAC_RX_FOUND_DATA)) {
@@ -419,7 +417,9 @@ static bool _lwmac_rx_update(gnrc_netdev_t *gnrc_netdev)
                 break;
             }
 
-            GOTO_RX_STATE(RX_STATE_SUCCESSFUL, true);
+            gnrc_netdev->rx.state = RX_STATE_SUCCESSFUL;
+            reschedule = true;
+            break;
         }
         case RX_STATE_SUCCESSFUL:
         case RX_STATE_FAILED: {

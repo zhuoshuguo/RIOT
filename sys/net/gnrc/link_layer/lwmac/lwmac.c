@@ -248,7 +248,7 @@ static void _sleep_management(gnrc_netdev_t *gnrc_netdev)
             /* Stop dutycycling, we're preparing to send. This prevents the
              * timeout arriving late, so that the destination phase would
              * be missed. */
-            // TODO: bad for power savings
+            /* TODO: bad for power savings */
             rtt_handler(LWMAC_EVENT_RTT_PAUSE, gnrc_netdev);
         }
     }
@@ -764,7 +764,7 @@ static void *_lwmac_thread(void *args)
             }
             /* TX: Queue for sending */
             case GNRC_NETAPI_MSG_TYPE_SND: {
-                // TODO: how to announce failure to upper layers?
+                /* TODO: how to announce failure to upper layers? */
                 LOG(LOG_DEBUG, "[lwmac] GNRC_NETAPI_MSG_TYPE_SND received\n");
                 gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *) msg.content.ptr;
 

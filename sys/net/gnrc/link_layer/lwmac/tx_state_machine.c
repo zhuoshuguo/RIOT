@@ -49,11 +49,6 @@
  */
 #define GNRC_LWMAC_TX_FAIL            (0x02U)
 
-/* Break out of switch and mark the need for rescheduling */
-#define GOTO_TX_STATE(tx_state, do_resched) gnrc_netdev->tx.state = tx_state; \
-                                            reschedule = do_resched; \
-                                            break
-
 static uint8_t _send_bcast(gnrc_netdev_t *gnrc_netdev)
 {
     assert(gnrc_netdev != NULL);
@@ -577,7 +572,9 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                 }
                 /* drop pointer so it wont be free'd */
                 gnrc_netdev->tx.packet = NULL;
-                GOTO_TX_STATE(TX_STATE_FAILED, true);
+                gnrc_netdev->tx.state = TX_STATE_FAILED;
+                reschedule = true;
+                break;
             }
 
             /* check if the packet is for broadcast */
@@ -591,7 +588,9 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                 gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA,
                                               &csma_enable, sizeof(csma_enable));
 
-                GOTO_TX_STATE(TX_STATE_SEND_BROADCAST, true);
+                gnrc_netdev->tx.state = TX_STATE_SEND_BROADCAST;
+                reschedule = true;
+                break;
             }
             else {
                 /* Use CSMA for the first WR */
@@ -601,18 +600,24 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                 /* Set a timeout for the maximum transmission procedure */
                 lwmac_set_timeout(gnrc_netdev, TIMEOUT_NO_RESPONSE, LWMAC_PREAMBLE_DURATION_US);
 
-                GOTO_TX_STATE(TX_STATE_SEND_WR, true);
+                gnrc_netdev->tx.state = TX_STATE_SEND_WR;
+                reschedule = true;
+                break;
             }
         }
         case TX_STATE_SEND_BROADCAST: {
             uint8_t tx_info = _send_bcast(gnrc_netdev);
 
             if (tx_info & GNRC_LWMAC_TX_SUCCESS) {
-                GOTO_TX_STATE(TX_STATE_SUCCESSFUL, true);
+                gnrc_netdev->tx.state = TX_STATE_SUCCESSFUL;
+                reschedule = true;
+                break;
             }
 
             if (tx_info & GNRC_LWMAC_TX_FAIL) {
-                GOTO_TX_STATE(TX_STATE_FAILED, true);
+                gnrc_netdev->tx.state = TX_STATE_FAILED;
+                reschedule = true;
+                break;
             }
 
             break;
@@ -622,16 +627,22 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_NO_RESPONSE)) {
                 LOG(LOG_WARNING, "WARNING: [lwmac-tx] No response from destination, "
                                  "probably no TX-ISR\n");
-                GOTO_TX_STATE(TX_STATE_FAILED, true);
+                gnrc_netdev->tx.state = TX_STATE_FAILED;
+                reschedule = true;
+                break;
             }
             LOG(LOG_DEBUG, "[lwmac-tx] TX_STATE_SEND_WR\n");
             uint8_t tx_info = _send_wr(gnrc_netdev);
 
             if (tx_info & GNRC_LWMAC_TX_FAIL) {
-                GOTO_TX_STATE(TX_STATE_FAILED, true);
+                gnrc_netdev->tx.state = TX_STATE_FAILED;
+                reschedule = true;
+                break;
             }
 
-            GOTO_TX_STATE(TX_STATE_WAIT_WR_SENT, false);
+            gnrc_netdev->tx.state = TX_STATE_WAIT_WR_SENT;
+            reschedule = false;
+            break;
         }
         case TX_STATE_WAIT_WR_SENT: {
             LOG(LOG_DEBUG, "[lwmac-tx] TX_STATE_WAIT_WR_SENT\n");
@@ -639,7 +650,9 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             /* In case of no Tx-isr error (e.g., no Tx-isr), goto TX failure. */
             if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_NO_RESPONSE)) {
                 LOG(LOG_WARNING, "WARNING: [lwmac-tx] No response from destination\n");
-                GOTO_TX_STATE(TX_STATE_FAILED, true);
+                gnrc_netdev->tx.state = TX_STATE_FAILED;
+                reschedule = true;
+                break;
             }
 
             if (gnrc_netdev_get_tx_feedback(gnrc_netdev) == TX_FEEDBACK_UNDEF) {
@@ -656,7 +669,9 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                 }
                 /* clear packet point to avoid TX retry */
                 gnrc_netdev->tx.packet = NULL;
-                GOTO_TX_STATE(TX_STATE_FAILED, true);
+                gnrc_netdev->tx.state = TX_STATE_FAILED;
+                reschedule = true;
+                break;
             }
 
             if (gnrc_netdev->tx.wr_sent == 0) {
@@ -679,14 +694,18 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             LOG(LOG_DEBUG, "[lwmac-tx] Ticks when sent was:   %" PRIu32 "\n",
                            gnrc_netdev->tx.timestamp);
             _set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
-            GOTO_TX_STATE(TX_STATE_WAIT_FOR_WA, false);
+            gnrc_netdev->tx.state = TX_STATE_WAIT_FOR_WA;
+            reschedule = false;
+            break;
         }
         case TX_STATE_WAIT_FOR_WA: {
             LOG(LOG_DEBUG, "[lwmac-tx] TX_STATE_WAIT_FOR_WA\n");
 
             if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_NO_RESPONSE)) {
                 LOG(LOG_WARNING, "WARNING: [lwmac-tx] No response from destination\n");
-                GOTO_TX_STATE(TX_STATE_FAILED, true);
+                gnrc_netdev->tx.state = TX_STATE_FAILED;
+                reschedule = true;
+                break;
             }
 
             if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_WR)) {
@@ -705,14 +724,18 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                     /* drop pointer so it wont be free'd */
                     gnrc_netdev->tx.packet = NULL;
 
-                    GOTO_TX_STATE(TX_STATE_FAILED, true);
+                    gnrc_netdev->tx.state = TX_STATE_FAILED;
+                    reschedule = true;
+                    break;
                 }
                 else {
                     /* If this is the first transmission to the receiver for locating the
                      * latter's wake-up period, the sender just keep sending WRs until it
                      * finds the WA.
                      */
-                    GOTO_TX_STATE(TX_STATE_SEND_WR, true);
+                    gnrc_netdev->tx.state = TX_STATE_SEND_WR;
+                    reschedule = true;
+                    break;
                 }
             }
 
@@ -724,11 +747,15 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             uint8_t tx_info = _packet_process_in_wait_for_wa(gnrc_netdev);
 
             if (tx_info & GNRC_LWMAC_TX_FAIL) {
-                GOTO_TX_STATE(TX_STATE_FAILED, true);
+                gnrc_netdev->tx.state = TX_STATE_FAILED;
+                reschedule = true;
+                break;
             }
 
             if (tx_info & GNRC_LWMAC_TX_SUCCESS) {
-                GOTO_TX_STATE(TX_STATE_SEND_DATA, true);
+                gnrc_netdev->tx.state = TX_STATE_SEND_DATA;
+                reschedule = true;
+                break;
             }
             else {
                 /* No WA yet */
@@ -739,15 +766,21 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
             LOG(LOG_DEBUG, "[lwmac-tx] TX_STATE_SEND_DATA\n");
 
             if (!_send_data(gnrc_netdev)) {
-                GOTO_TX_STATE(TX_STATE_FAILED, true);
+                gnrc_netdev->tx.state = TX_STATE_FAILED;
+                reschedule = true;
+                break;
             }
 
-            GOTO_TX_STATE(TX_STATE_WAIT_FEEDBACK, false);
+            gnrc_netdev->tx.state = TX_STATE_WAIT_FEEDBACK;
+            reschedule = false;
+            break;
         }
         case TX_STATE_WAIT_FEEDBACK: {
             /* In case of no Tx-isr error, goto TX failure. */
             if (lwmac_timeout_is_expired(gnrc_netdev, TIMEOUT_NO_RESPONSE)) {
-                GOTO_TX_STATE(TX_STATE_FAILED, true);
+                gnrc_netdev->tx.state = TX_STATE_FAILED;
+                reschedule = true;
+                break;
             }
 
             LOG(LOG_DEBUG, "[lwmac-tx] TX_STATE_WAIT_FEEDBACK\n");
@@ -755,20 +788,28 @@ static bool _lwmac_tx_update(gnrc_netdev_t *gnrc_netdev)
                 break;
             }
             else if (gnrc_netdev_get_tx_feedback(gnrc_netdev) == TX_FEEDBACK_SUCCESS) {
-                GOTO_TX_STATE(TX_STATE_SUCCESSFUL, true);
+                gnrc_netdev->tx.state = TX_STATE_SUCCESSFUL;
+                reschedule = true;
+                break;
             }
             else if (gnrc_netdev_get_tx_feedback(gnrc_netdev) == TX_FEEDBACK_NOACK) {
                 LOG(LOG_ERROR, "ERROR: [lwmac-tx] Not ACKED\n");
-                GOTO_TX_STATE(TX_STATE_FAILED, true);
+                gnrc_netdev->tx.state = TX_STATE_FAILED;
+                reschedule = true;
+                break;
             }
             else if (gnrc_netdev_get_tx_feedback(gnrc_netdev) == TX_FEEDBACK_BUSY) {
                 LOG(LOG_ERROR, "ERROR: [lwmac-tx] Channel busy \n");
-                GOTO_TX_STATE(TX_STATE_FAILED, true);
+                gnrc_netdev->tx.state = TX_STATE_FAILED;
+                reschedule = true;
+                break;
             }
 
             LOG(LOG_ERROR, "ERROR: [lwmac-tx] Tx feedback unhandled: %i\n",
                            gnrc_netdev_get_tx_feedback(gnrc_netdev));
-            GOTO_TX_STATE(TX_STATE_FAILED, true);
+            gnrc_netdev->tx.state = TX_STATE_FAILED;
+            reschedule = true;
+            break;
         }
         case TX_STATE_SUCCESSFUL:
         case TX_STATE_FAILED: {
