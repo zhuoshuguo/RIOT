@@ -23,12 +23,12 @@
 #define GNRC_IQUEUE_MAC_H
 
 #include <kernel_types.h>
-#include <net/gnrc/netdev.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+typedef struct gnrc_netdev gnrc_netdev_t;
 
 typedef enum {
 	UNKNOWN = 0,
@@ -193,7 +193,7 @@ typedef enum {
  * @return                  -ENODEV if *dev* is invalid
  */
 kernel_pid_t gnrc_iqueuemac_init(char *stack, int stacksize, char priority,
-						   const char *name, gnrc_netdev_t *dev);
+						         const char *name, gnrc_netdev_t *dev);
 
 #ifdef __cplusplus
 }

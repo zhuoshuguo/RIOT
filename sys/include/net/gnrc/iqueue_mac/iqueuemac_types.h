@@ -27,11 +27,10 @@
 #include <xtimer.h>
 #include <net/gnrc.h>
 #include <net/netdev.h>
-#include <net/gnrc/netdev.h>
+
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
 #include "net/gnrc/iqueue_mac/hdr.h"
-#include <net/gnrc/iqueue_mac/packet_queue.h>
-#include "timeout.h"
+#include "net/gnrc/iqueue_mac/timeout.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -202,16 +201,12 @@ typedef struct {
 typedef struct {
     /* Address of neighbour node */
     l2_addr_t l2_addr;
-    /* TX queue for this particular node */
-    packet_queue_t queue;
     /* MAC type of the neighbor*/
-    iqueuemac_type_t mac_type;  /* UNKONW when this neighbor is not phase-locked yet*/
-    /* Phase relative to iqueuemac: the start of its CP period */
-    uint32_t cp_phase;   /* in ticks*/
-    /* Indicating that whether this neighbor is within the same cluster*/
-    bool in_same_cluster;
 
-    uint16_t cur_pub_channel;
+    /* Phase relative to iqueuemac: the start of its CP period */
+
+    /* Indicating that whether this neighbor is within the same cluster*/
+    //bool in_same_cluster;
 
 } iqueuemac_tx_neighbour_t;
 
@@ -275,10 +270,7 @@ typedef struct {
 typedef struct {
     /* Internal state of reception state machine */
 
-    packet_queue_t queue;
-    packet_queue_node_t _queue_nodes[IQUEUEMAC_RX_QUEUE_SIZE];
     l2_addr_t l2_addr;
-    gnrc_pktsnip_t* dispatch_buffer[IQUEUEMAC_DISPATCH_BUFFER_SIZE];
 
     rx_slots_schedule_unit rx_register_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
 
@@ -298,9 +290,6 @@ typedef struct {
 
 typedef struct {
     /* Internal state of reception state machine */
-	packet_queue_node_t _queue_nodes[IQUEUEMAC_TX_QUEUE_SIZE];
-
-	iqueuemac_tx_neighbour_t neighbours[IQUEUEMAC_NEIGHBOUR_COUNT];
 
 	uint32_t preamble_sent;
 	bool got_preamble_ack;
@@ -309,7 +298,6 @@ typedef struct {
 	/* Packet that is currently scheduled to be sent */
 	gnrc_pktsnip_t* tx_packet;
 	/* Queue of destination node to which the current packet will be sent */
-	iqueuemac_tx_neighbour_t* current_neighbour;
 
 	uint8_t tx_seq;
 
@@ -335,9 +323,6 @@ typedef struct {
 typedef struct iqueuemac {
     /* PID of IQUEUEMAC thread */
     kernel_pid_t pid;
-    /* NETDEV device used by lwMAC */
-	gnrc_netdev_t* netdev;
-	const netdev_driver_t* netdev_driver;
 
     /* Internal state of MAC layer */
 	iqueuemac_type_t mac_type;

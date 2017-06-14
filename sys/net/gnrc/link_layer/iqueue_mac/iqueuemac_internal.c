@@ -21,12 +21,13 @@
 #include <periph/rtt.h>
 #include <net/gnrc.h>
 #include "random.h"
+#include "net/gnrc/mac/types.h"
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
-#include <net/gnrc/iqueue_mac/packet_queue.h>
-#include <net/gnrc/iqueue_mac/hdr.h>
+#include "net/gnrc/priority_pktqueue.h"
+#include "net/gnrc/iqueue_mac/hdr.h"
 
 #include "include/iqueuemac_internal.h"
-#include "include/iqueuemac_types.h"
+#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
@@ -67,96 +68,30 @@ void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type)
 
 /******************************************************************************/
 
-int _find_neighbour(iqueuemac_t* iqueuemac, uint8_t* dst_addr, int addr_len)
-{
-    iqueuemac_tx_neighbour_t* neighbours = iqueuemac->tx.neighbours;
-
-    for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
-        if(neighbours[i].l2_addr.len == addr_len) {
-            if(memcmp(&(neighbours[i].l2_addr.addr), dst_addr, addr_len) == 0) {
-                return i;
-            }
-        }
-    }
-    return -1;
-}
-
-/******************************************************************************/
-
-/* Free first empty queue that is not active */
-int _free_neighbour(iqueuemac_t* iqueuemac)
-{
-    iqueuemac_tx_neighbour_t* neighbours = iqueuemac->tx.neighbours;
-
-    for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
-        if( packet_queue_length(&(neighbours[i].queue)) == 0) {
-            /* Mark as free */
-            neighbours[i].l2_addr.len = 0;
-            neighbours[i].mac_type = UNKNOWN;
-            return i;
-        }
-    }
-    return -1;
-}
-
-/******************************************************************************/
-
-int _alloc_neighbour(iqueuemac_t* iqueuemac)
-{
-    iqueuemac_tx_neighbour_t* neighbours = iqueuemac->tx.neighbours;
-
-    for(int i = 0; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
-        if(neighbours[i].l2_addr.len == 0) {
-        	neighbours[i].mac_type = UNKNOWN;
-            packet_queue_init(&(neighbours[i].queue),
-                              iqueuemac->tx._queue_nodes,
-                              (sizeof(iqueuemac->tx._queue_nodes) / sizeof(packet_queue_node_t)));
-            return i;
-        }
-    }
-    return -1;
-}
-
-/******************************************************************************/
-
-void _init_neighbour(iqueuemac_tx_neighbour_t* neighbour, uint8_t* addr, int len)
-{
-    assert(neighbour != NULL);
-    assert(addr  != NULL);
-    assert(len > 0);
-
-    neighbour->mac_type = UNKNOWN;
-    neighbour->l2_addr.len = len;
-    neighbour->cp_phase = IQUEUEMAC_PHASE_UNINITIALIZED;
-    memcpy(&(neighbour->l2_addr.addr), addr, len);
-}
-
-/******************************************************************************/
-
 uint32_t _ticks_to_phase(uint32_t ticks)
 {
     return (ticks % RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US));
 }
 
 
-uint32_t _phase_now(iqueuemac_t* iqueuemac){
+uint32_t _phase_now(gnrc_netdev_t *gnrc_netdev){
 
 	uint32_t phase_now;
 	phase_now = rtt_get_counter();
 
 	/* in case that rtt overflows */
-	if(phase_now < iqueuemac->last_wakeup){
+	if(phase_now < gnrc_netdev->iqueuemac.last_wakeup){
 		uint32_t gap_to_full;
-		gap_to_full = IQUEUEMAC_PHASE_MAX - iqueuemac->last_wakeup;
+		gap_to_full = IQUEUEMAC_PHASE_MAX - gnrc_netdev->iqueuemac.last_wakeup;
 		phase_now += gap_to_full;
 	}else{
-		phase_now = phase_now - iqueuemac->last_wakeup;
+		phase_now = phase_now - gnrc_netdev->iqueuemac.last_wakeup;
 	}
 
 	return phase_now;
 }
 
-uint32_t _ticks_until_phase(iqueuemac_t* iqueuemac, uint32_t phase)  //
+uint32_t _ticks_until_phase(gnrc_netdev_t *gnrc_netdev, uint32_t phase)  //
 {
 	/*
 	uint32_t phase_now;
@@ -172,7 +107,7 @@ uint32_t _ticks_until_phase(iqueuemac_t* iqueuemac, uint32_t phase)  //
 	}*/
 
 
-    long int tmp = phase - _phase_now(iqueuemac); //rtt_get_counter();
+    long int tmp = phase - _phase_now(gnrc_netdev); //rtt_get_counter();
     if(tmp < 0) {
         tmp += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
     }
@@ -182,129 +117,53 @@ uint32_t _ticks_until_phase(iqueuemac_t* iqueuemac, uint32_t phase)  //
 
 /******************************************************************************/
 
-bool _queue_tx_packet(iqueuemac_t* iqueuemac,  gnrc_pktsnip_t* pkt)
-{
 
-    iqueuemac_tx_neighbour_t* neighbour;
-    int neighbour_id;
-
-    if(_packet_is_broadcast(pkt)) {
-        /* Broadcast queue is neighbour 0 by definition */
-        neighbour_id = 0;
-        neighbour = _get_neighbour(iqueuemac, neighbour_id);
-
-    } else {
-        uint8_t* addr;
-        int addr_len;
-        bool neighbour_known = true;
-
-        /* Get destination address of packet */
-        addr_len = _get_dest_address(pkt, &addr);
-        if(addr_len <= 0) {
-            DEBUG("[iqueuemac-int] Packet has no destination address\n");
-            gnrc_pktbuf_release(pkt);
-            return false;
-        }
-
-        /* Search for existing queue for destination */
-        neighbour_id = _find_neighbour(iqueuemac, addr, addr_len);
-
-        /* Neighbour node doesn't have a queue yet */
-        if(neighbour_id < 0) {
-            neighbour_known = false;
-
-            /* Try to allocate neighbour entry */
-            neighbour_id = _alloc_neighbour(iqueuemac);
-
-            /* No neighbour entries left */
-            if(neighbour_id < 0) {
-                DEBUG("[iqueuemac-int] No neighbour entries left, maybe increase "
-                      "iqueuemac_NEIGHBOUR_COUNT for better performance\n");
-
-                /* Try to free an unused queue */
-                neighbour_id = _free_neighbour(iqueuemac);
-
-                /* All queues are in use, so reject */
-                if(neighbour_id < 0) {
-                    DEBUG("[iqueuemac-int] Couldn't allocate tx queue for packet\n");
-                    //puts("iqueuemac: there is no free neighbor for caching packet! ");
-                    gnrc_pktbuf_release(pkt);
-                    return false;
-                }
-            }
-        }
-
-        neighbour = _get_neighbour(iqueuemac, neighbour_id);
-
-        if(!neighbour_known) {
-            _init_neighbour(neighbour, addr, addr_len);
-        }
-
-    }
-
-    //printf("iqueuemac: the current find neighbour_id is %d \n", neighbour_id);
-    //printf("iqueuemac: the inited addr in the neighbor-list is %d %d \n", iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[1], iqueuemac->tx.neighbours[neighbour_id].l2_addr.addr[0]);
-
-    if(packet_queue_push(&(neighbour->queue), pkt, 0) == NULL) {
-    	puts("tx-queue: full, drop data");
-        gnrc_pktbuf_release(pkt);
-        return false;
-    }
-
-    //printf("iqueuemac: the current find neighbour %d 's queue-length is %d. \n", neighbour_id, (int)iqueuemac->tx.neighbours[neighbour_id].queue.length);
-
-    //DEBUG("[iqueuemac-int] Queuing pkt to neighbour #%d\n", neighbour_id);
-
-    return true;
-}
-
-
-void iqueuemac_trun_on_radio(iqueuemac_t* iqueuemac)
+void iqueuemac_trun_on_radio(gnrc_netdev_t *gnrc_netdev)
 {
 	netopt_state_t devstate;
 	devstate = NETOPT_STATE_IDLE;
-	iqueuemac->netdev_driver->set(iqueuemac->netdev->dev,
+	gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
 	                              NETOPT_STATE,
 	                              &devstate,
 	                              sizeof(devstate));
 }
 
-void iqueuemac_trun_off_radio(iqueuemac_t* iqueuemac)
+void iqueuemac_trun_off_radio(gnrc_netdev_t *gnrc_netdev)
 {
 	netopt_state_t devstate;
 	devstate = NETOPT_STATE_SLEEP;
-	iqueuemac->netdev_driver->set(iqueuemac->netdev->dev,
+	gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
 	                              NETOPT_STATE,
 	                              &devstate,
 	                              sizeof(devstate));
 }
 
 
-void iqueuemac_set_autoack(iqueuemac_t* iqueuemac, netopt_enable_t autoack)
+void iqueuemac_set_autoack(gnrc_netdev_t *gnrc_netdev, netopt_enable_t autoack)
 {
 	netopt_enable_t setautoack = autoack;
 
-	iqueuemac->netdev_driver->set(iqueuemac->netdev->dev,
+	gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
 								  NETOPT_AUTOACK,
 	                              &setautoack,
 	                              sizeof(setautoack));
 }
 
-void iqueuemac_set_ack_req(iqueuemac_t* iqueuemac, netopt_enable_t ack_req)
+void iqueuemac_set_ack_req(gnrc_netdev_t *gnrc_netdev, netopt_enable_t ack_req)
 {
     netopt_enable_t set_ack_req = ack_req;
 
-    iqueuemac->netdev_driver->set(iqueuemac->netdev->dev,
+    gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
                                   NETOPT_ACK_REQ,
                                   &set_ack_req,
                                   sizeof(set_ack_req));
 }
 
-netopt_state_t _get_netdev_state(iqueuemac_t* iqueuemac)
+netopt_state_t _get_netdev_state(gnrc_netdev_t *gnrc_netdev)
 {
     netopt_state_t state;
 
-	if (0 < iqueuemac->netdev_driver->get(iqueuemac->netdev->dev,
+	if (0 < gnrc_netdev->dev->driver->get(gnrc_netdev->dev,
                                        NETOPT_STATE,
                                        &state,
                                        sizeof(state)))
@@ -314,6 +173,7 @@ netopt_state_t _get_netdev_state(iqueuemac_t* iqueuemac)
     return -1;
 }
 
+/*
 void iqueuemac_set_promiscuousmode(iqueuemac_t* iqueuemac, netopt_enable_t enable)
 {
 	netopt_enable_t set_enable = enable;
@@ -325,28 +185,29 @@ void iqueuemac_set_promiscuousmode(iqueuemac_t* iqueuemac, netopt_enable_t enabl
 	                              &set_enable,
 	                              sizeof(set_enable));
 }
+*/
 
 
-void iqueuemac_turn_radio_channel(iqueuemac_t* iqueuemac, uint16_t channel_num)
+void iqueuemac_turn_radio_channel(gnrc_netdev_t *gnrc_netdev, uint16_t channel_num)
 {
-	iqueuemac->netdev_driver->set(iqueuemac->netdev->dev, NETOPT_CHANNEL, &channel_num, sizeof(channel_num));
+	gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CHANNEL, &channel_num, sizeof(channel_num));
 }
 
-void iqueuemac_set_raddio_to_listen_mode(iqueuemac_t* iqueuemac){
+void iqueuemac_set_raddio_to_listen_mode(gnrc_netdev_t *gnrc_netdev){
 
-	iqueuemac_trun_on_radio(iqueuemac);
+	iqueuemac_trun_on_radio(gnrc_netdev);
 }
 
-int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable)
+int iqueuemac_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable)
 {
 	netopt_enable_t csma_enable_send;
-	int res;
-	csma_enable_send = csma_enable;
-	iqueuemac->netdev_driver->set(iqueuemac->netdev->dev, NETOPT_CSMA, &csma_enable_send, sizeof(netopt_enable_t));
 
-	iqueuemac->tx.tx_finished = false;
-	gnrc_netdev_set_tx_feedback(iqueuemac->netdev,TX_FEEDBACK_UNDEF);
-	res = iqueuemac->netdev->send(iqueuemac->netdev, pkt);
+	csma_enable_send = csma_enable;
+	gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA, &csma_enable_send, sizeof(netopt_enable_t));
+
+	gnrc_netdev->iqueuemac.tx.tx_finished = false;
+	gnrc_netdev_set_tx_feedback(gnrc_netdev,TX_FEEDBACK_UNDEF);
+	return gnrc_netdev->send(gnrc_netdev, pkt);
 
 	/*
 	netopt_state_t devstate;
@@ -357,12 +218,10 @@ int iqueuemac_send(iqueuemac_t* iqueuemac, gnrc_pktsnip_t *pkt, netopt_enable_t 
 	                              sizeof(devstate));
 	                              */
 
-	return res;
-
 }
 
 
-int iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* info)
+int iqueue_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t* info)
 {
 	/****** assemble and send the beacon ******/
 	gnrc_pktsnip_t* pkt_iqmac;
@@ -378,11 +237,11 @@ int iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* in
 	iqueuemac_frame_preamble_ack_t iqueuemac_preamble_ack_hdr;
 	iqueuemac_preamble_ack_hdr.header.type = FRAMETYPE_PREAMBLE_ACK;
 	iqueuemac_preamble_ack_hdr.dst_addr = info->src_addr;
-	iqueuemac_preamble_ack_hdr.device_type = iqueuemac->mac_type;
+	iqueuemac_preamble_ack_hdr.device_type = gnrc_netdev->iqueuemac.mac_type;
 	//maybe we don't need this "father_router_addr" parameter anymore
-	iqueuemac_preamble_ack_hdr.father_router = iqueuemac->father_router_addr;
+	iqueuemac_preamble_ack_hdr.father_router = gnrc_netdev->iqueuemac.father_router_addr;
 
-	phase_now_ticks = _phase_now(iqueuemac); //rtt_get_counter();
+	phase_now_ticks = _phase_now(gnrc_netdev); //rtt_get_counter();
 
 	iqueuemac_preamble_ack_hdr.phase_in_ticks = phase_now_ticks; // next_cp_timing_ticks; //  next_cp_timing_us; //
 
@@ -415,7 +274,7 @@ int iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* in
 	netopt_enable_t csma_enable;
 	csma_enable = NETOPT_DISABLE;
 	int res;
-	res = iqueuemac_send(iqueuemac, pkt, csma_enable);
+	res = iqueuemac_send(gnrc_netdev, pkt, csma_enable);
     if(res < 0){
 		puts("iqueuemac: send preamble-ack failed in iqueue_send_preamble_ack().");
     	gnrc_pktbuf_release(pkt_iqmac);
@@ -424,7 +283,7 @@ int iqueue_send_preamble_ack(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* in
 
 }
 
-int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
+int iqueuemac_assemble_and_send_beacon(gnrc_netdev_t *gnrc_netdev)
 {
 	int i;
 	int j=0;
@@ -432,12 +291,12 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 	uint8_t total_tdma_slot_num = 0;
 	bool slots_full = false;
 
-	iqueuemac->rx.router_vtdma_mana.total_slots_num = 0;
+	gnrc_netdev->iqueuemac.rx.router_vtdma_mana.total_slots_num = 0;
 
 	for(i=0;i<IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT;i++)
 	{
-		if(iqueuemac->rx.rx_register_list[i].queue_indicator >0){
-			total_tdma_slot_num = iqueuemac->rx.rx_register_list[i].queue_indicator;
+		if(gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator >0){
+			total_tdma_slot_num = gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator;
 			break;
 		}
 	}
@@ -457,17 +316,17 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 	/* Assemble Beacon packet */
 	iqueuemac_frame_beacon_t iqueuemac_hdr;
 	iqueuemac_hdr.header.type = FRAMETYPE_BEACON;
-	if(iqueuemac->phase_changed == false){
-		iqueuemac_hdr.current_phase = _phase_now(iqueuemac);
+	if(gnrc_netdev->iqueuemac.phase_changed == false){
+		iqueuemac_hdr.current_phase = _phase_now(gnrc_netdev);
 	}else{
 		iqueuemac_hdr.current_phase = 0;
 	}
-	iqueuemac_hdr.sub_channel_seq = iqueuemac->sub_channel_num; //iqueuemac->rx.router_vtdma_mana.sub_channel_seq;
+	iqueuemac_hdr.sub_channel_seq = gnrc_netdev->iqueuemac.sub_channel_num; //iqueuemac->rx.router_vtdma_mana.sub_channel_seq;
 	//iqueuemac_hdr.schedulelist_size = 0;
 
 	/********* Add the slots schedule list functionality here!!!  *********/
 
-	iqueuemac->rx.router_vtdma_mana.total_slots_num = 0;
+	gnrc_netdev->iqueuemac.rx.router_vtdma_mana.total_slots_num = 0;
 
 	l2_id_t  id_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
 	uint8_t  slots_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
@@ -475,14 +334,14 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 	/**** search router-type first ****/
 	for(i=0;i<IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT;i++)
 	{
-		if((iqueuemac->rx.rx_register_list[i].mac_type == ROUTER)&&(iqueuemac->rx.rx_register_list[i].queue_indicator > 0))
+		if((gnrc_netdev->iqueuemac.rx.rx_register_list[i].mac_type == ROUTER)&&(gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator > 0))
 		{
 			//id_list[j].addr = iqueuemac->rx.rx_register_list[i].node_addr.addr;
 			memcpy(id_list[j].addr,
-					iqueuemac->rx.rx_register_list[i].node_addr.addr,
-					iqueuemac->rx.rx_register_list[i].node_addr.len);
+					gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr.addr,
+					gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr.len);
 
-			slots_list[j] = iqueuemac->rx.rx_register_list[i].queue_indicator;
+			slots_list[j] = gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator;
 
 			total_tdma_node_num ++;
 			total_tdma_slot_num += slots_list[j];
@@ -507,13 +366,13 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 			break;
 		}
 
-		if((iqueuemac->rx.rx_register_list[i].mac_type == NODE)&&(iqueuemac->rx.rx_register_list[i].queue_indicator > 0))
-		{
+		if((gnrc_netdev->iqueuemac.rx.rx_register_list[i].mac_type == NODE) &&
+		   (gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator > 0)) {
 			//id_list[j].addr = iqueuemac->rx.rx_register_list[i].node_addr.addr;
 			memcpy(id_list[j].addr,
-			     	iqueuemac->rx.rx_register_list[i].node_addr.addr,
-					iqueuemac->rx.rx_register_list[i].node_addr.len);
-			slots_list[j] = iqueuemac->rx.rx_register_list[i].queue_indicator;
+			     	gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr.addr,
+					gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr.len);
+			slots_list[j] = gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator;
 
 			total_tdma_node_num ++;
 			total_tdma_slot_num += slots_list[j];
@@ -534,7 +393,7 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
 
 	if(total_tdma_node_num > 0){
 
-		iqueuemac->rx.router_vtdma_mana.total_slots_num = total_tdma_slot_num;
+		gnrc_netdev->iqueuemac.rx.router_vtdma_mana.total_slots_num = total_tdma_slot_num;
 		//printf("iqueuemac: the total slots-number this cycle is %d . \n", iqueuemac->rx.router_vtdma_mana.total_slots_num);
 
 		//puts("iqueuemac: schedule slots-list");
@@ -603,7 +462,7 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
  	//lwmac->netdev_driver->set(lwmac->netdev->dev, NETOPT_AUTOACK, &autoack, sizeof(autoack));
 
     netopt_enable_t csma_enable;
-    if(iqueuemac->get_other_preamble == true){
+    if(gnrc_netdev->iqueuemac.get_other_preamble == true){
     	/* use csma for collision avoidance of other preamble */
     	csma_enable = NETOPT_ENABLE;  // NETOPT_ENABLE
     }else{
@@ -611,7 +470,7 @@ int iqueuemac_assemble_and_send_beacon(iqueuemac_t* iqueuemac)
     	csma_enable = NETOPT_DISABLE;  // NETOPT_ENABLE
     }
     int res;
-    res = iqueuemac_send(iqueuemac, pkt, csma_enable);
+    res = iqueuemac_send(gnrc_netdev, pkt, csma_enable);
     if(res < 0){
 		puts("iqueuemac: send beacon failed, release it.");
     	gnrc_pktbuf_release(pkt);
@@ -740,7 +599,7 @@ int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info)
 
 
 /******************************************************************************/
-int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info, iqueuemac_t* iqueuemac)
+int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info)
 {
 	for(unsigned i = 0; i < IQUEUEMAC_DISPATCH_BUFFER_SIZE; i++) {
 	   /* Buffer will be filled bottom-up and emptied completely so no holes */
@@ -755,7 +614,7 @@ int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_
 	return -1;
 }
 
-void iqueuemac_router_queue_indicator_update(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info)
+void iqueuemac_router_queue_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info)
 {
 
 	iqueuemac_frame_data_t* iqueuemac_data_hdr;
@@ -771,11 +630,11 @@ void iqueuemac_router_queue_indicator_update(iqueuemac_t* iqueuemac, gnrc_pktsni
 	 /* check whether the node has registered or not  */
 	for(i=0;i<IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT;i++)
 	{
-		if(_addr_match(&iqueuemac->rx.rx_register_list[i].node_addr, &pa_info->src_addr)){
+		if(_addr_match(&gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr, &pa_info->src_addr)){
 
 			//iqueuemac_data_hdr->queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x7F;
 
-			iqueuemac->rx.rx_register_list[i].queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x3F;
+			gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x3F;
 			//printf("iqueuemac: the registered queue-indicator is %d. \n", iqueuemac_data_hdr->queue_indicator);
 			return;
 		}
@@ -784,10 +643,10 @@ void iqueuemac_router_queue_indicator_update(iqueuemac_t* iqueuemac, gnrc_pktsni
 	/********* the sender has not registered yet   **********/
 	for(i=0;i<IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT;i++)
 	{
-		if((iqueuemac->rx.rx_register_list[i].node_addr.len == 0)||(iqueuemac->rx.rx_register_list[i].queue_indicator ==0))
+		if((gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr.len == 0)||(gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator ==0))
 		{
-			iqueuemac->rx.rx_register_list[i].node_addr.len = pa_info->src_addr.len;
-			memcpy(iqueuemac->rx.rx_register_list[i].node_addr.addr,
+			gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr.len = pa_info->src_addr.len;
+			memcpy(gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr.addr,
 			       pa_info->src_addr.addr,
 				   pa_info->src_addr.len);
 
@@ -795,14 +654,14 @@ void iqueuemac_router_queue_indicator_update(iqueuemac_t* iqueuemac, gnrc_pktsni
 			uint8_t extra_mac_type;
 			extra_mac_type = iqueuemac_data_hdr->queue_indicator & 0x80;
 			if(extra_mac_type == 0x80){
-			    iqueuemac->rx.rx_register_list[i].mac_type = NODE;
+				gnrc_netdev->iqueuemac.rx.rx_register_list[i].mac_type = NODE;
 			    //puts("iqueuemac: the registered device is node type.");
 			}else{
-				iqueuemac->rx.rx_register_list[i].mac_type = ROUTER;
+				gnrc_netdev->iqueuemac.rx.rx_register_list[i].mac_type = ROUTER;
 				//puts("iqueuemac: the registered device is router type.");
 			}
 
-			iqueuemac->rx.rx_register_list[i].queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x3F;
+			gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x3F;
 			//printf("iqueuemac: the registered queue-indicator is %d. \n", iqueuemac_data_hdr->queue_indicator);
 			return;
 		}
@@ -810,16 +669,16 @@ void iqueuemac_router_queue_indicator_update(iqueuemac_t* iqueuemac, gnrc_pktsni
 
 }
 
-bool iqueuemac_check_duplicate(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* pa_info)
+bool iqueuemac_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t* pa_info)
 {
 	int i;
 	for(i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
-		if(_addr_match(&iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr, &pa_info->src_addr)){
-			iqueuemac->rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
-			if(iqueuemac->rx.check_dup_pkt.last_nodes[i].seq == pa_info->seq){
+		if(_addr_match(&gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].node_addr, &pa_info->src_addr)){
+			gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
+			if(gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].seq == pa_info->seq){
 				return true;
 			}else{
-				iqueuemac->rx.check_dup_pkt.last_nodes[i].seq = pa_info->seq;
+				gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].seq = pa_info->seq;
 				return false;
 			}
 		}
@@ -827,13 +686,13 @@ bool iqueuemac_check_duplicate(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* 
 
 	/* look for a free unit */
 	for(i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
-		if(iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.len == 0){
-			iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.len = pa_info->src_addr.len;
-			memcpy(iqueuemac->rx.check_dup_pkt.last_nodes[i].node_addr.addr,
+		if(gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].node_addr.len == 0){
+			gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].node_addr.len = pa_info->src_addr.len;
+			memcpy(gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].node_addr.addr,
 					pa_info->src_addr.addr,
 					pa_info->src_addr.len);
-			iqueuemac->rx.check_dup_pkt.last_nodes[i].seq = pa_info->seq;
-			iqueuemac->rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
+			gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].seq = pa_info->seq;
+			gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
 			return false;
 		}
 	}
@@ -934,12 +793,12 @@ bool iqueuemac_check_duplicate(iqueuemac_t* iqueuemac, iqueuemac_packet_info_t* 
 
 }
 
-void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
+void iqueue_router_cp_receive_packet_process(gnrc_netdev_t *gnrc_netdev){
 	gnrc_pktsnip_t* pkt;
 
 	iqueuemac_packet_info_t receive_packet_info;
 
-    while( (pkt = packet_queue_pop(&iqueuemac->rx.queue)) != NULL ) {
+    while( (pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL ) {
 
     	/* parse the packet */
     	int res = _parse_packet(pkt, &receive_packet_info);
@@ -1000,28 +859,27 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_PREAMBLE:{
-        	    if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
-
-        	    	iqueuemac->got_preamble = true;
+            	if (memcmp(&gnrc_netdev->l2_addr, &receive_packet_info.dst_addr.addr, gnrc_netdev->l2_addr_len) == 0) {
+        	    	gnrc_netdev->iqueuemac.got_preamble = true;
         	    	/** if reception is not going on, reply preamble-ack,
         	    	 * also, don't send preamble-ACK if CP ends. **/
-        	    	if(_get_netdev_state(iqueuemac) == NETOPT_STATE_IDLE){
+        	    	if(_get_netdev_state(gnrc_netdev) == NETOPT_STATE_IDLE){
         	    		/***  disable auto-ack ***/
-        	    		iqueuemac_set_autoack(iqueuemac, NETOPT_DISABLE);
+        	    		iqueuemac_set_autoack(gnrc_netdev, NETOPT_DISABLE);
 
         	    		int res;
-        	    		res = iqueue_send_preamble_ack(iqueuemac, &receive_packet_info);
+        	    		res = iqueue_send_preamble_ack(gnrc_netdev, &receive_packet_info);
         	    		if(res < 0){
         	    			printf("preamble-ack: res %d\n",res);
         	    		}
 
         	    		/* Enable Auto ACK again for data reception */
-        	    		iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
+        	    		iqueuemac_set_autoack(gnrc_netdev, NETOPT_ENABLE);
         	    	}
         	    }else{
         		    //iqueuemac->quit_current_cycle = true;
         	    	/* if receives unintended preamble, don't send beacon and quit the following vTDMA period. */
-        	    	iqueuemac->get_other_preamble = true;
+        	    	gnrc_netdev->iqueuemac.get_other_preamble = true;
         	    }
         	    gnrc_pktbuf_release(pkt);
             }break;
@@ -1035,17 +893,17 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             // iqueuemac.rx.last_seq_info.seq = netif_hdr->seq;
             case FRAMETYPE_IQUEUE_DATA:{
 
-            	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)) {
-            		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+            	if (memcmp(&gnrc_netdev->l2_addr, &receive_packet_info.dst_addr.addr, gnrc_netdev->l2_addr_len) == 0) {
+            		iqueuemac_router_queue_indicator_update(gnrc_netdev, pkt, &receive_packet_info);
 
-                	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
+                	if((iqueuemac_check_duplicate(gnrc_netdev, &receive_packet_info))){
                 		gnrc_pktbuf_release(pkt);
                 		puts("dup pkt.");
                 		return;
                 	}
 
-            		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
-            		_dispatch(iqueuemac->rx.dispatch_buffer);
+            		iqueue_push_packet_to_dispatch_queue(gnrc_netdev->rx.dispatch_buffer, pkt, &receive_packet_info);
+            		_dispatch(gnrc_netdev->rx.dispatch_buffer);
             	}else{/* if the data is not for the node, release it.  */
             		/* it is very unlikely that we will receive not-intended data here, since CP will not overlape! */
             		gnrc_pktbuf_release(pkt);
@@ -1056,9 +914,9 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_BROADCAST:{
-            	iqueuemac->quit_current_cycle = true;
-                iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
-                _dispatch(iqueuemac->rx.dispatch_buffer);
+            	gnrc_netdev->iqueuemac.quit_current_cycle = true;
+                iqueue_push_packet_to_dispatch_queue(gnrc_netdev->rx.dispatch_buffer, pkt, &receive_packet_info);
+                _dispatch(gnrc_netdev->rx.dispatch_buffer);
                 //puts("iqueuemac: router receives a broadcast data !!");
            }break;
 
@@ -1070,7 +928,7 @@ void iqueue_router_cp_receive_packet_process(iqueuemac_t* iqueuemac){
     }/* end of while loop */
 }
 
-void iqueuemac_update_subchannel_occu_flags(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info){
+void iqueuemac_update_subchannel_occu_flags(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info){
 
 	uint16_t subchannel_seq,flag;
 
@@ -1106,18 +964,18 @@ void iqueuemac_update_subchannel_occu_flags(iqueuemac_t* iqueuemac, gnrc_pktsnip
 
 	flag = (1 << subchannel_seq);
 
-	iqueuemac->router_states.subchannel_occu_flags = iqueuemac->router_states.subchannel_occu_flags | flag;
+	gnrc_netdev->iqueuemac.router_states.subchannel_occu_flags = gnrc_netdev->iqueuemac.router_states.subchannel_occu_flags | flag;
 	//printf("iqueuemac: subchannel flag is %d .\n", iqueuemac->router_states.subchannel_occu_flags);
 
 }
 
 
-void iqueuemac_packet_process_in_init(iqueuemac_t* iqueuemac){
+void iqueuemac_packet_process_in_init(gnrc_netdev_t *gnrc_netdev){
 	gnrc_pktsnip_t* pkt;
 
 	iqueuemac_packet_info_t receive_packet_info;
 
-    while( (pkt = packet_queue_pop(&iqueuemac->rx.queue)) != NULL ) {
+    while( (pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL ) {
 
     	/* parse the packet */
     	int res = _parse_packet(pkt, &receive_packet_info);
@@ -1129,12 +987,12 @@ void iqueuemac_packet_process_in_init(iqueuemac_t* iqueuemac){
 
     	switch(receive_packet_info.header->type){
             case FRAMETYPE_BEACON:{
-            	iqueuemac_update_subchannel_occu_flags(iqueuemac,pkt,&receive_packet_info);
+            	iqueuemac_update_subchannel_occu_flags(gnrc_netdev, pkt, &receive_packet_info);
             	gnrc_pktbuf_release(pkt);
             }break;
 
             case FRAMETYPE_PREAMBLE:{
-            	iqueuemac->quit_current_cycle = true;
+            	gnrc_netdev->iqueuemac.quit_current_cycle = true;
         	    gnrc_pktbuf_release(pkt);
             }break;
 
@@ -1147,13 +1005,13 @@ void iqueuemac_packet_process_in_init(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_BROADCAST:{
-            	iqueuemac->quit_current_cycle = true;
-                iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+            	gnrc_netdev->iqueuemac.quit_current_cycle = true;
+                iqueue_push_packet_to_dispatch_queue(gnrc_netdev->rx.dispatch_buffer, pkt, &receive_packet_info);
                 //puts("iqueuemac: router receives a broadcast data !!");
            }break;
 
             case FRAMETYPE_ANNOUNCE:{
-            	iqueuemac_update_subchannel_occu_flags(iqueuemac,pkt,&receive_packet_info);
+            	iqueuemac_update_subchannel_occu_flags(gnrc_netdev, pkt, &receive_packet_info);
 
             	/*** it seems that this "init_retry" procedure is unnecessary here!! maybe delete it in the future ***/
             	//iqueuemac->router_states.init_retry = true;
@@ -1167,13 +1025,13 @@ void iqueuemac_packet_process_in_init(iqueuemac_t* iqueuemac){
     }/* end of while loop */
 }
 
-void iqueuemac_init_choose_subchannel(iqueuemac_t* iqueuemac){
+void iqueuemac_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev){
 
 	uint16_t subchannel_seq, check_seq, own_id;
 
 	memcpy(&own_id,
-	       iqueuemac->own_addr.addr,
-		   iqueuemac->own_addr.len);
+			gnrc_netdev->l2_addr,
+			gnrc_netdev->l2_addr_len);
 
 	/* range from 12 to 25 */
 	//own_id = 12;
@@ -1187,7 +1045,7 @@ void iqueuemac_init_choose_subchannel(iqueuemac_t* iqueuemac){
 		check_seq = subchannel_seq - 11;
 		check_seq = (1<<check_seq);
 
-		if(check_seq & iqueuemac->router_states.subchannel_occu_flags){
+		if(check_seq & gnrc_netdev->iqueuemac.router_states.subchannel_occu_flags){
 			//puts("iqueuemac: subchannel exist, find next subchannel.");
 			own_id += 1;
 			subchannel_seq = 12 + (own_id % 14);
@@ -1196,11 +1054,11 @@ void iqueuemac_init_choose_subchannel(iqueuemac_t* iqueuemac){
 		}
 	}
 
-	iqueuemac->sub_channel_num = subchannel_seq;
+	gnrc_netdev->iqueuemac.sub_channel_num = subchannel_seq;
 	//printf("iqueuemac: the final selected subchannel is %d .\n", subchannel_seq);
 }
 
-int iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
+int iqueue_mac_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma)
 {
 	/****** assemble and send the beacon ******/
 	gnrc_pktsnip_t* pkt;
@@ -1210,7 +1068,10 @@ int iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 	/* Assemble preamble packet */
 	iqueuemac_frame_preamble_t iqueuemac_preamble_hdr;
 	iqueuemac_preamble_hdr.header.type = FRAMETYPE_PREAMBLE;
-	iqueuemac_preamble_hdr.dst_addr = iqueuemac->tx.current_neighbour->l2_addr;
+	memcpy(iqueuemac_preamble_hdr.dst_addr.addr,
+		   gnrc_netdev->tx.current_neighbor->l2_addr,
+		   gnrc_netdev->tx.current_neighbor->l2_addr_len);
+	iqueuemac_preamble_hdr.dst_addr.len = gnrc_netdev->tx.current_neighbor->l2_addr_len;
 
 	pkt = gnrc_pktbuf_add(NULL, &iqueuemac_preamble_hdr, sizeof(iqueuemac_preamble_hdr), GNRC_NETTYPE_IQUEUEMAC);
 	if(pkt == NULL) {
@@ -1242,7 +1103,7 @@ int iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 	csma_enable = use_csma;
 	int res;
 
-	res = iqueuemac_send(iqueuemac, pkt, csma_enable);
+	res = iqueuemac_send(gnrc_netdev, pkt, csma_enable);
     if(res < 0){
 		puts("iqueuemac: send preamble failed in iqueue_mac_send_preamble().");
     	gnrc_pktbuf_release(pkt_iqmac);
@@ -1251,7 +1112,7 @@ int iqueue_mac_send_preamble(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 }
 
 
-void iqueuemac_send_announce(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
+void iqueuemac_send_announce(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma)
 {
 	/****** assemble and send the beacon ******/
 	gnrc_pktsnip_t* pkt;
@@ -1260,7 +1121,7 @@ void iqueuemac_send_announce(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 	/* Assemble announce packet */
 	iqueuemac_frame_announce_t iqueuemac_announce_hdr;
 	iqueuemac_announce_hdr.header.type = FRAMETYPE_ANNOUNCE;
-	iqueuemac_announce_hdr.subchannel_seq = iqueuemac->sub_channel_num;
+	iqueuemac_announce_hdr.subchannel_seq = gnrc_netdev->iqueuemac.sub_channel_num;
 
 	pkt = gnrc_pktbuf_add(NULL, &iqueuemac_announce_hdr, sizeof(iqueuemac_announce_hdr), GNRC_NETTYPE_IQUEUEMAC);
 	if(pkt == NULL) {
@@ -1283,7 +1144,7 @@ void iqueuemac_send_announce(iqueuemac_t* iqueuemac, netopt_enable_t use_csma)
 
 	netopt_enable_t csma_enable;
 	csma_enable = use_csma;
-	iqueuemac_send(iqueuemac, pkt, csma_enable);
+	iqueuemac_send(gnrc_netdev, pkt, csma_enable);
 }
 
 
@@ -1323,7 +1184,7 @@ void iqueuemac_remove_in_cluster_neighbor(iqueuemac_t* iqueuemac, l2_addr_t* add
 	}
 }
 
-void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info){
+void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info){
 
 	 iqueuemac_frame_preamble_ack_t* iqueuemac_preamble_ack_hdr;
 
@@ -1336,24 +1197,21 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 
 	 /**** check if this node has a father router yet, if no, check whether this destination is a router.**/
 
-	 if((iqueuemac->father_router_addr.len == 0)&&(iqueuemac->mac_type == NODE)){
+	 if((gnrc_netdev->iqueuemac.father_router_addr.len == 0)&&(gnrc_netdev->iqueuemac.mac_type == NODE)){
 		 /*** this node doesn't has a father router yet ***/
 
 		 /*** check whether the receiver is a router type ***/
 		 if(iqueuemac_preamble_ack_hdr->device_type == ROUTER){
 			 /*** the first heard router is selected as father router ***/
-			 iqueuemac->father_router_addr.len = pa_info->src_addr.len;
-			 memcpy(iqueuemac->father_router_addr.addr,
+			 gnrc_netdev->iqueuemac.father_router_addr.len = pa_info->src_addr.len;
+			 memcpy(gnrc_netdev->iqueuemac.father_router_addr.addr,
 					pa_info->src_addr.addr,
 					pa_info->src_addr.len);
 		 }
 	 }
 
 	 /***** update all the necessary information to marked as a known neighbor ****/
-	 iqueuemac->tx.current_neighbour->mac_type = iqueuemac_preamble_ack_hdr->device_type;
-
-	 iqueuemac->tx.current_neighbour->in_same_cluster = false;
-
+	 gnrc_netdev->tx.current_neighbor->mac_type = iqueuemac_preamble_ack_hdr->device_type;
 
 	 /*** remember to reduce a bit the phase for locking, since there is a hand-shake procedure before ***/
 	 //uint32_t  phase_ticks;
@@ -1361,13 +1219,13 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 
 	 long int phase_ticks;
 
-	 if((iqueuemac->phase_changed == true)&&(iqueuemac->router_states.router_new_cycle == true)){
+	 if((gnrc_netdev->iqueuemac.phase_changed == true)&&(gnrc_netdev->iqueuemac.router_states.router_new_cycle == true)){
 		 /* this means that the node is already in a new cycle when doing phase changed.
 		  * So, give some compensation for later phase adjust */
-		 phase_ticks = _phase_now(iqueuemac) + iqueuemac->backoff_phase_ticks - iqueuemac_preamble_ack_hdr->phase_in_ticks;
+		 phase_ticks = _phase_now(gnrc_netdev) + gnrc_netdev->iqueuemac.backoff_phase_ticks - iqueuemac_preamble_ack_hdr->phase_in_ticks;
 		 phase_ticks += (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)/4);
 	 }else{
-		 phase_ticks = _phase_now(iqueuemac) - iqueuemac_preamble_ack_hdr->phase_in_ticks + (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)/4);
+		 phase_ticks = _phase_now(gnrc_netdev) - iqueuemac_preamble_ack_hdr->phase_in_ticks + (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)/4);
 	 }
 
 	 if(phase_ticks < 0) {
@@ -1376,8 +1234,8 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 
 	 /* check if phase is too close */
 	 long int future_neighbor_phase;
-	 if(iqueuemac->phase_changed == true){
-		 future_neighbor_phase = phase_ticks - iqueuemac->backoff_phase_ticks;
+	 if(gnrc_netdev->iqueuemac.phase_changed == true){
+		 future_neighbor_phase = phase_ticks - gnrc_netdev->iqueuemac.backoff_phase_ticks;
 
 		 if(future_neighbor_phase < 0) {
 			 future_neighbor_phase += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
@@ -1394,15 +1252,15 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 			 (RTT_TICKS_TO_US(neighbor_phase) < IQUEUEMAC_CP_MIN_GAP_US))
 	 {
 		 puts("p close");
-		 iqueuemac->phase_backoff = true;
-		 iqueuemac->backoff_phase_ticks =
+		 gnrc_netdev->iqueuemac.phase_backoff = true;
+		 gnrc_netdev->iqueuemac.backoff_phase_ticks =
 				 random_uint32_range(RTT_US_TO_TICKS(IQUEUEMAC_CP_MIN_GAP_US), RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_CP_MIN_GAP_US));
 	 }
 
      /*** move 1/3 CP duration to give some time redundancy for sender the has forward timer-drift!!! ***/
 	 //phase_ticks = (phase_ticks + (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)/3)) % RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
 
-	 iqueuemac->tx.current_neighbour->cp_phase = (uint32_t)phase_ticks;//_phase_now(iqueuemac); //- RTT_US_TO_TICKS(IQUEUEMAC_WAIT_CP_SECUR_GAP_US); rtt_get_counter();
+	 gnrc_netdev->tx.current_neighbor->cp_phase = (uint32_t)phase_ticks;//_phase_now(iqueuemac); //- RTT_US_TO_TICKS(IQUEUEMAC_WAIT_CP_SECUR_GAP_US); rtt_get_counter();
 
 
 #if 0
@@ -1461,12 +1319,12 @@ void iqueuemac_device_process_preamble_ack(iqueuemac_t* iqueuemac, gnrc_pktsnip_
 
 }
 
-void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
+void iqueuemac_packet_process_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev){
 	gnrc_pktsnip_t* pkt;
 
 	iqueuemac_packet_info_t receive_packet_info;
 
-    while( (pkt = packet_queue_pop(&iqueuemac->rx.queue)) != NULL ) {
+    while( (pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL ) {
     	/* parse the packet */
     	int res = _parse_packet(pkt, &receive_packet_info);
     	if(res != 0) {
@@ -1487,39 +1345,39 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             	 * Release all received preamle here to reduce complexity. Only reply preamble in CP.*/
             	gnrc_pktbuf_release(pkt);
             	puts("q-u-1");
-            	iqueuemac->quit_current_cycle = true;
+            	gnrc_netdev->iqueuemac.quit_current_cycle = true;
             }break;
 
             case FRAMETYPE_PREAMBLE_ACK:{
             	//puts("iqueuemac: nodes receives a preamble_ack");
-            	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
-            		if(_addr_match(&iqueuemac->tx.current_neighbour->l2_addr, &receive_packet_info.src_addr)){
-            			iqueuemac->tx.got_preamble_ack = true;
+            	if ((memcmp(&gnrc_netdev->l2_addr, &receive_packet_info.dst_addr.addr, gnrc_netdev->l2_addr_len) == 0) &&
+            		(memcmp(&gnrc_netdev->tx.current_neighbor->l2_addr,
+            		        &receive_packet_info.src_addr.addr,
+            		        gnrc_netdev->tx.current_neighbor->l2_addr_len) == 0)) {
+            			gnrc_netdev->iqueuemac.tx.got_preamble_ack = true;
 
-            			iqueuemac_device_process_preamble_ack(iqueuemac, pkt, &receive_packet_info);
+            			iqueuemac_device_process_preamble_ack(gnrc_netdev, pkt, &receive_packet_info);
 
             			/**got preamble-ack, flush the rx queue***/
             			gnrc_pktbuf_release(pkt);
-            			packet_queue_flush(&iqueuemac->rx.queue);
+            			gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
             			return;
-            		}
             	}
             	gnrc_pktbuf_release(pkt);
             }break;
 
             case FRAMETYPE_IQUEUE_DATA:{
-            	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr))
-            	{
-            		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+            	if (memcmp(&gnrc_netdev->l2_addr, &receive_packet_info.dst_addr.addr, gnrc_netdev->l2_addr_len) == 0) {
+            		iqueuemac_router_queue_indicator_update(gnrc_netdev, pkt, &receive_packet_info);
 
-                	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
+                	if((iqueuemac_check_duplicate(gnrc_netdev, &receive_packet_info))){
                 		gnrc_pktbuf_release(pkt);
                 		puts("dup pkt.");
                 		return;
                 	}
 
-            		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
-            		_dispatch(iqueuemac->rx.dispatch_buffer);
+            		iqueue_push_packet_to_dispatch_queue(gnrc_netdev->rx.dispatch_buffer, pkt, &receive_packet_info);
+            		_dispatch(gnrc_netdev->rx.dispatch_buffer);
             	}else {/* if the data is not for the node, release it.  */
 
             		gnrc_pktbuf_release(pkt);
@@ -1530,7 +1388,7 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
             	/* Due to non-overlap CP rule, it is very unlikely that we will receive broadcast here.
             	 * But, in case it happens, quit this t-2-u for collision avoidance.
             	 * Release the broadcast pkt, and receive it in CP, thus to reduce complexity.*/
-            	iqueuemac->quit_current_cycle = true;
+            	gnrc_netdev->iqueuemac.quit_current_cycle = true;
             	gnrc_pktbuf_release(pkt);
             	puts("q-u-2");
             }break;
@@ -1542,10 +1400,10 @@ void iqueuemac_packet_process_in_wait_preamble_ack(iqueuemac_t* iqueuemac){
 
 }
 
-int iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_enable)
+int iqueuemac_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable)
 {
 	gnrc_pktsnip_t* pkt;
-	pkt = iqueuemac->tx.tx_packet;
+	pkt = gnrc_netdev->iqueuemac.tx.tx_packet;
 
     if (pkt == NULL) {
         puts("iqsend: pkt was NULL\n");
@@ -1562,32 +1420,32 @@ int iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_enab
 
 		iqueuemac_frame_data_t iqueuemac_data_hdr;
 		iqueuemac_data_hdr.header.type = FRAMETYPE_IQUEUE_DATA;
-		iqueuemac_data_hdr.queue_indicator = iqueuemac->tx.current_neighbour->queue.length;
+		iqueuemac_data_hdr.queue_indicator = gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue);
 
 		/* save payload pointer */
-		gnrc_pktsnip_t* payload = iqueuemac->tx.tx_packet->next;
+		gnrc_pktsnip_t* payload = gnrc_netdev->iqueuemac.tx.tx_packet->next;
 
 		pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_data_hdr, sizeof(iqueuemac_data_hdr), GNRC_NETTYPE_IQUEUEMAC);
 		if(pkt->next == NULL) {
 			puts("iqueuemac: pktbuf add failed in iqueuemac_send_data_packet().");
 			/* make append payload after netif header again */
-			iqueuemac->tx.tx_packet->next = payload;
+			gnrc_netdev->iqueuemac.tx.tx_packet->next = payload;
 			return -ENOBUFS;
 		}
 
 	}else{
 		/*** update queue-indicator ***/
-		iqueuemac_data_hdr_pointer->queue_indicator = iqueuemac->tx.current_neighbour->queue.length;
+		iqueuemac_data_hdr_pointer->queue_indicator = gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue);
 	}
 
-	gnrc_pktbuf_hold(iqueuemac->tx.tx_packet,1);
+	gnrc_pktbuf_hold(gnrc_netdev->iqueuemac.tx.tx_packet,1);
 
 	int res;
-	res = iqueuemac_send(iqueuemac, iqueuemac->tx.tx_packet, csma_enable);
+	res = iqueuemac_send(gnrc_netdev, gnrc_netdev->iqueuemac.tx.tx_packet, csma_enable);
     if(res < 0){
         /* If res is < 0, then, the old pkt will not be released in send(). so need to release old data once */
-        gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
-        iqueuemac->tx.tx_packet = NULL;
+        gnrc_pktbuf_release(gnrc_netdev->iqueuemac.tx.tx_packet);
+        gnrc_netdev->iqueuemac.tx.tx_packet = NULL;
 		puts("iqueuemac: tx-res < 0 in iqueuemac_send_data_packet().");
     }
 	return res;
@@ -1595,7 +1453,7 @@ int iqueuemac_send_data_packet(iqueuemac_t* iqueuemac, netopt_enable_t csma_enab
 }
 
 
-bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
+bool iqueue_mac_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev){
 
     //////////////
     int next = -1;
@@ -1604,17 +1462,17 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
 
     /*** If current_neighbour is not NULL, means last t-2-r or t-2-u failed, will continue try t-2-r/t-2-u
      * again for the same neighbor, which has not been released in last t-2-r/t-2-u. ***/
-    if(iqueuemac->tx.current_neighbour != NULL)
+    if(gnrc_netdev->tx.current_neighbor != NULL)
     {
        return true;
     }
 
-    if(iqueuemac->tx.neighbours[0].queue.length > 0){
+    if(gnrc_priority_pktqueue_length(&gnrc_netdev->tx.neighbors[0].queue) > 0){
     	next = 0;
     }else{
     	/*** find the next neighbor ***/
     	uint32_t j;
-    	j = iqueuemac->tx.last_tx_neighbor_id + 1;
+    	j = gnrc_netdev->iqueuemac.tx.last_tx_neighbor_id + 1;
 
     	if(j >= IQUEUEMAC_NEIGHBOUR_COUNT) {
     		j= 1;
@@ -1622,8 +1480,8 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
 
     	for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
 
-    		if(iqueuemac->tx.neighbours[j].queue.length > 0) {
-    			iqueuemac->tx.last_tx_neighbor_id = j;
+    		if(gnrc_priority_pktqueue_length(&gnrc_netdev->tx.neighbors[j].queue) > 0) {
+    			gnrc_netdev->iqueuemac.tx.last_tx_neighbor_id = j;
     			next = (int)j;
     			break;
     		} else {
@@ -1650,12 +1508,12 @@ bool iqueue_mac_find_next_tx_neighbor(iqueuemac_t* iqueuemac){
     }
     ////////
     if(next >= 0){
-       	gnrc_pktsnip_t *pkt = packet_queue_pop(&(iqueuemac->tx.neighbours[next].queue));
+       	gnrc_pktsnip_t *pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->tx.neighbors[next].queue);
       	if(pkt != NULL){
-       		iqueuemac->tx.tx_packet = pkt;
-       		iqueuemac->tx.current_neighbour = &iqueuemac->tx.neighbours[next];
-       		iqueuemac->tx.tx_seq = 0;
-       		iqueuemac->tx.t2u_retry_contuer = 0;
+       		gnrc_netdev->iqueuemac.tx.tx_packet = pkt;
+       		gnrc_netdev->tx.current_neighbor = &gnrc_netdev->tx.neighbors[next];
+       		gnrc_netdev->iqueuemac.tx.tx_seq = 0;
+       		gnrc_netdev->iqueuemac.tx.t2u_retry_contuer = 0;
 
        		//printf("iqueuemac: the find nearest neighbor is %d. \n", next);
        		return true;
@@ -1680,7 +1538,7 @@ bool iqueuemac_check_has_pending_packet(packet_queue_t* q)
 }*/
 
 
-void iqueuemac_beacon_process(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt){
+void iqueuemac_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t* pkt){
 	iqueuemac_frame_beacon_t* iqueuemac_beacon_hdr;
 	gnrc_pktsnip_t* iqueuemac_snip;
 
@@ -1699,11 +1557,11 @@ void iqueuemac_beacon_process(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt){
 	}
 
 	schedulelist_size = iqueuemac_beacon_hdr->schedulelist_size;
-	iqueuemac->tx.vtdma_para.sub_channel_seq = iqueuemac_beacon_hdr->sub_channel_seq;
+	gnrc_netdev->iqueuemac.tx.vtdma_para.sub_channel_seq = iqueuemac_beacon_hdr->sub_channel_seq;
 
 	if(schedulelist_size == 0){
-		iqueuemac->tx.vtdma_para.slots_num = 0;
-		iqueuemac->tx.vtdma_para.slots_position = 0;
+		gnrc_netdev->iqueuemac.tx.vtdma_para.slots_num = 0;
+		gnrc_netdev->iqueuemac.tx.vtdma_para.slots_position = 0;
 		return;
 	}
 
@@ -1719,7 +1577,7 @@ void iqueuemac_beacon_process(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt){
 	id_position = 0;
 
 	for(i=0;i<schedulelist_size;i++){
-		if(memcmp(iqueuemac->own_addr.addr, id_list[i].addr, iqueuemac->own_addr.len) == 0){
+		if(memcmp(gnrc_netdev->l2_addr, id_list[i].addr, gnrc_netdev->l2_addr_len) == 0){
 			got_allocated_slots = true;
 			id_position = i;
 		}
@@ -1727,28 +1585,28 @@ void iqueuemac_beacon_process(iqueuemac_t* iqueuemac, gnrc_pktsnip_t* pkt){
 
 	/**** find the slots number and position ****/
 	if(got_allocated_slots == true){
-		iqueuemac->tx.vtdma_para.slots_num = slots_list[id_position];
+		gnrc_netdev->iqueuemac.tx.vtdma_para.slots_num = slots_list[id_position];
 
 		slots_position = 0;
 		for(i=0;i<id_position;i++){
 			slots_position += slots_list[i];
 		}
-		iqueuemac->tx.vtdma_para.slots_position = slots_position;
+		gnrc_netdev->iqueuemac.tx.vtdma_para.slots_position = slots_position;
 
 		//printf("iqueuemac: the allocated slots-num is %d, id-position is %d .\n", iqueuemac->tx.vtdma_para.slots_num, id_position);
 	}else{
-		iqueuemac->tx.vtdma_para.slots_num = 0;
-		iqueuemac->tx.vtdma_para.slots_position = 0;
+		gnrc_netdev->iqueuemac.tx.vtdma_para.slots_num = 0;
+		gnrc_netdev->iqueuemac.tx.vtdma_para.slots_position = 0;
 	}
 }
 
 /****** check whether this function can be merged with router-wait-beacon-packet-process!!! ******/
-void iqueuemac_wait_beacon_packet_process(iqueuemac_t* iqueuemac){
+void iqueuemac_wait_beacon_packet_process(gnrc_netdev_t *gnrc_netdev){
 	gnrc_pktsnip_t* pkt;
 
 	iqueuemac_packet_info_t receive_packet_info;
 
-    while( (pkt = packet_queue_pop(&iqueuemac->rx.queue)) != NULL ) {
+    while( (pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL ) {
 
     	/* parse the packet */
     	int res = _parse_packet(pkt, &receive_packet_info);
@@ -1760,16 +1618,18 @@ void iqueuemac_wait_beacon_packet_process(iqueuemac_t* iqueuemac){
 
     	switch(receive_packet_info.header->type){
             case FRAMETYPE_BEACON:{
-            	if(_addr_match(&iqueuemac->tx.current_neighbour->l2_addr, &receive_packet_info.src_addr)){
-            		iqueuemac->tx.vtdma_para.get_beacon = true;
-            		iqueuemac_beacon_process(iqueuemac, pkt);
+            	if (memcmp(&gnrc_netdev->tx.current_neighbor->l2_addr,
+            		       &receive_packet_info.src_addr.addr,
+						   gnrc_netdev->tx.current_neighbor->l2_addr_len) == 0) {
+            		gnrc_netdev->iqueuemac.tx.vtdma_para.get_beacon = true;
+            		iqueuemac_beacon_process(gnrc_netdev, pkt);
             	}
             	gnrc_pktbuf_release(pkt);
             }break;
 
             case FRAMETYPE_PREAMBLE:{
             	/* Release preamble pkt no matter the preamble is for it or not, and quit the t-2-r. */
-            	iqueuemac->quit_current_cycle = true;
+            	gnrc_netdev->iqueuemac.quit_current_cycle = true;
         	    gnrc_pktbuf_release(pkt);
             }break;
 
@@ -1781,18 +1641,17 @@ void iqueuemac_wait_beacon_packet_process(iqueuemac_t* iqueuemac){
             case FRAMETYPE_IQUEUE_DATA:{
             	/* It is unlikely that we will received a data for us here. This means the nodes' CP is close with its
             	 * destination's. */
-            	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr))
-            	{
-            		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+            	if (memcmp(&gnrc_netdev->l2_addr, &receive_packet_info.dst_addr.addr, gnrc_netdev->l2_addr_len) == 0) {
+            		iqueuemac_router_queue_indicator_update(gnrc_netdev, pkt, &receive_packet_info);
 
-                	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
+                	if((iqueuemac_check_duplicate(gnrc_netdev, &receive_packet_info))){
                 		gnrc_pktbuf_release(pkt);
                 		puts("dup pkt.");
                 		return;
                 	}
 
-            		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
-            		_dispatch(iqueuemac->rx.dispatch_buffer);
+            		iqueue_push_packet_to_dispatch_queue(gnrc_netdev->rx.dispatch_buffer, pkt, &receive_packet_info);
+            		_dispatch(gnrc_netdev->rx.dispatch_buffer);
             	}else/* if the data is not for the node, release it.  */
             	{
             		/* it is very unlikely that we will receive not-intended data here, since CP will not overlape! */
@@ -1801,7 +1660,7 @@ void iqueuemac_wait_beacon_packet_process(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_BROADCAST:{
-            	iqueuemac->quit_current_cycle = true;
+            	gnrc_netdev->iqueuemac.quit_current_cycle = true;
             	gnrc_pktbuf_release(pkt);
             }break;
 
@@ -1811,70 +1670,12 @@ void iqueuemac_wait_beacon_packet_process(iqueuemac_t* iqueuemac){
     }/* end of while loop */
 }
 
-void iqueue_node_cp_receive_packet_process(iqueuemac_t* iqueuemac){
+void iqueuemac_router_vtdma_receive_packet_process(gnrc_netdev_t *gnrc_netdev){
 	gnrc_pktsnip_t* pkt;
 
 	iqueuemac_packet_info_t receive_packet_info;
 
-    while( (pkt = packet_queue_pop(&iqueuemac->rx.queue)) != NULL ) {
-
-    	/* parse the packet */
-    	int res = _parse_packet(pkt, &receive_packet_info);
-    	if(res != 0) {
-            //LOG_DEBUG("Packet could not be parsed: %i\n", ret);
-            gnrc_pktbuf_release(pkt);
-            continue;
-        }
-
-    	switch(receive_packet_info.header->type){
-            case FRAMETYPE_BEACON:{
-            	gnrc_pktbuf_release(pkt);
-            }break;
-
-            case FRAMETYPE_PREAMBLE:{
-        	    if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr)){
-        	  	  iqueue_send_preamble_ack(iqueuemac, &receive_packet_info);
-        	    }else{
-        		  //this means that there is a long preamble period, so quit this cycle and go to sleep.
-        		  iqueuemac->quit_current_cycle = true;
-        	    }
-        	    gnrc_pktbuf_release(pkt);
-            }break;
-
-            case FRAMETYPE_PREAMBLE_ACK:{
-            	gnrc_pktbuf_release(pkt);
-
-            }break;
-
-            case FRAMETYPE_IQUEUE_DATA:{
-            	//printf("%lu. \n", RTT_TICKS_TO_US(_phase_now(iqueuemac)));
-            	//iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
-        	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
-            	//gnrc_pktbuf_release(pkt);
-
-
-        	    //puts("iqueuemac: node receives a data !!");
-            }break;
-
-            case FRAMETYPE_BROADCAST:{
-               	iqueuemac->quit_current_cycle = true;
-                iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
-            }break;
-
-            default:gnrc_pktbuf_release(pkt);break;
-  	    }
-
-    }/* end of while loop */
-}
-
-
-
-void iqueuemac_router_vtdma_receive_packet_process(iqueuemac_t* iqueuemac){
-	gnrc_pktsnip_t* pkt;
-
-	iqueuemac_packet_info_t receive_packet_info;
-
-    while( (pkt = packet_queue_pop(&iqueuemac->rx.queue)) != NULL ) {
+    while( (pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL ) {
 
     	/* parse the packet */
     	int res = _parse_packet(pkt, &receive_packet_info);
@@ -1898,16 +1699,16 @@ void iqueuemac_router_vtdma_receive_packet_process(iqueuemac_t* iqueuemac){
             }break;
 
             case FRAMETYPE_IQUEUE_DATA:{
-            	iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+            	iqueuemac_router_queue_indicator_update(gnrc_netdev, pkt, &receive_packet_info);
 
-            	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
+            	if((iqueuemac_check_duplicate(gnrc_netdev, &receive_packet_info))){
             		gnrc_pktbuf_release(pkt);
             		puts("dup pkt.");
             		return;
             	}
-        	    iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+        	    iqueue_push_packet_to_dispatch_queue(gnrc_netdev->rx.dispatch_buffer, pkt, &receive_packet_info);
 
-        	    _dispatch(iqueuemac->rx.dispatch_buffer);
+        	    _dispatch(gnrc_netdev->rx.dispatch_buffer);
         	    //puts("iqueuemac: router receives a data in vtdma!!");
             }break;
 
@@ -1917,26 +1718,26 @@ void iqueuemac_router_vtdma_receive_packet_process(iqueuemac_t* iqueuemac){
     }/* end of while loop */
 }
 
-void iqueuemac_figure_tx_neighbor_phase(iqueuemac_t* iqueuemac){
+void iqueuemac_figure_tx_neighbor_phase(gnrc_netdev_t *gnrc_netdev){
 
-	if(iqueuemac->phase_changed == true){
+	if(gnrc_netdev->iqueuemac.phase_changed == true){
 
-		iqueuemac->phase_changed = false;
+		gnrc_netdev->iqueuemac.phase_changed = false;
 
     	for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++){
-    		if(iqueuemac->tx.neighbours[i].mac_type == ROUTER){
-    			long int tmp = iqueuemac->tx.neighbours[i].cp_phase - iqueuemac->backoff_phase_ticks;
+    		if(gnrc_netdev->tx.neighbors[i].mac_type == ROUTER){
+    			long int tmp = gnrc_netdev->tx.neighbors[i].cp_phase - gnrc_netdev->iqueuemac.backoff_phase_ticks;
     		    if(tmp < 0) {
     		        tmp += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
 
     		        /* update the neighbor's cur_pub_channel if tmp < 0 */
-        	        if(iqueuemac->tx.neighbours[i].cur_pub_channel == iqueuemac->pub_channel_1) {
-        		        iqueuemac->tx.neighbours[i].cur_pub_channel = iqueuemac->pub_channel_2;
+        	        if(gnrc_netdev->tx.neighbors[i].pub_chanseq == gnrc_netdev->iqueuemac.pub_channel_1) {
+        	        	gnrc_netdev->tx.neighbors[i].pub_chanseq = gnrc_netdev->iqueuemac.pub_channel_2;
         	        }else{
-        		        iqueuemac->tx.neighbours[i].cur_pub_channel = iqueuemac->pub_channel_1;
+        	        	gnrc_netdev->tx.neighbors[i].pub_chanseq = gnrc_netdev->iqueuemac.pub_channel_1;
         	        }
     		    }
-    		    iqueuemac->tx.neighbours[i].cp_phase = (uint32_t)tmp;
+    		    gnrc_netdev->tx.neighbors[i].cp_phase = (uint32_t)tmp;
     		}
     	}
 	}
@@ -1969,22 +1770,22 @@ void _dispatch(gnrc_pktsnip_t** buffer)
     }
 }
 
-void update_neighbor_pubchan(iqueuemac_t* iqueuemac)
+void update_neighbor_pubchan(gnrc_netdev_t *gnrc_netdev)
 {
-	if(iqueuemac->cur_pub_channel == iqueuemac->pub_channel_1) {
-		iqueuemac->cur_pub_channel = iqueuemac->pub_channel_2;
+	if(gnrc_netdev->iqueuemac.cur_pub_channel == gnrc_netdev->iqueuemac.pub_channel_1) {
+		gnrc_netdev->iqueuemac.cur_pub_channel = gnrc_netdev->iqueuemac.pub_channel_2;
 	}else{
-		iqueuemac->cur_pub_channel = iqueuemac->pub_channel_1;
+		gnrc_netdev->iqueuemac.cur_pub_channel = gnrc_netdev->iqueuemac.pub_channel_1;
 	}
 
 	/* update tx-nighbors' current channel */
 	for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++){
-		if(iqueuemac->tx.neighbours[i].mac_type == ROUTER){
+		if(gnrc_netdev->tx.neighbors[i].mac_type == ROUTER){
 			/* switch public channel */
-			if(iqueuemac->tx.neighbours[i].cur_pub_channel == iqueuemac->pub_channel_1) {
-				iqueuemac->tx.neighbours[i].cur_pub_channel = iqueuemac->pub_channel_2;
+			if(gnrc_netdev->tx.neighbors[i].pub_chanseq == gnrc_netdev->iqueuemac.pub_channel_1) {
+				gnrc_netdev->tx.neighbors[i].pub_chanseq = gnrc_netdev->iqueuemac.pub_channel_2;
 			}else{
-				iqueuemac->tx.neighbours[i].cur_pub_channel = iqueuemac->pub_channel_1;
+				gnrc_netdev->tx.neighbors[i].pub_chanseq = gnrc_netdev->iqueuemac.pub_channel_1;
 			}
 		}
 	}

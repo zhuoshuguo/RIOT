@@ -20,8 +20,8 @@
 #include <xtimer.h>
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
 
-#include "include/timeout.h"
-#include "include/iqueuemac_types.h"
+#include "net/gnrc/iqueue_mac/timeout.h"
+#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
@@ -146,6 +146,7 @@ void iqueuemac_set_timeout(iqueuemac_t* iqueuemac, iqueuemac_timeout_type_t type
         xtimer_set_msg(&(timeout->timer), offset,
                        &(timeout->msg), iqueuemac->pid);
     } else {
+
         DEBUG("[iqueuemac] Cannot set timeout %s, too many concurrent timeouts\n",
                 iqueuemac_timeout_names[type]);
     }

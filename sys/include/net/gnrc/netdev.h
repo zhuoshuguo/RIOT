@@ -42,6 +42,10 @@
 #include "net/csma_sender.h"
 #endif
 
+
+#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -160,6 +164,9 @@ typedef struct gnrc_netdev {
     gnrc_lwmac_t lwmac;
 #endif
 
+#ifdef MODULE_GNRC_IQUEUEMAC
+    iqueuemac_t iqueuemac;
+#endif
 #endif /* MODULE_GNRC_MAC */
 } gnrc_netdev_t;
 

@@ -30,6 +30,7 @@
 #include "net/ieee802154.h"
 #include "net/gnrc/mac/mac.h"
 #include "net/gnrc/lwmac/types.h"
+#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -109,6 +110,12 @@ typedef struct {
 #if (GNRC_MAC_TX_QUEUE_SIZE != 0) || defined(DOXYGEN)
     gnrc_priority_pktqueue_t queue;                  /**< TX queue for this particular Neighbor */
 #endif /* (GNRC_MAC_TX_QUEUE_SIZE != 0) || defined(DOXYGEN) */
+
+#ifdef MODULE_GNRC_IQUEUEMAC
+    uint16_t pub_chanseq;                            /**< Neighbor's current public channel sequence */
+    uint32_t cp_phase;                               /**< Neighbor's wakeup phase */
+    iqueuemac_type_t mac_type;                       /**< UNKONW when this neighbor is not phase-locked yet*/
+#endif
 } gnrc_mac_tx_neighbor_t;
 
 /**
