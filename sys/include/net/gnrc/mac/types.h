@@ -75,6 +75,12 @@ typedef struct {
     gnrc_lwmac_rx_state_t state;  /**< LWMAC specific internal reception state */
     uint8_t rx_bad_exten_count;   /**< Count how many unnecessary RX extensions have been executed */
 #endif
+
+#ifdef MODULE_GNRC_IQUEUEMAC
+    rx_slots_schedule_unit rx_register_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
+    rx_vtdma_mana_t router_vtdma_mana;
+    check_dup_pkt_t check_dup_pkt;
+#endif
 } gnrc_mac_rx_t;
 
 /**

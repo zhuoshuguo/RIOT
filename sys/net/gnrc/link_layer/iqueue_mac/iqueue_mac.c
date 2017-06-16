@@ -86,7 +86,7 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
 
 		gnrc_netdev->iqueuemac.router_states.router_new_cycle = false;
 
-		gnrc_netdev->iqueuemac.rx.router_vtdma_mana.sub_channel_seq = 26;
+		gnrc_netdev->rx.router_vtdma_mana.sub_channel_seq = 26;
 
 		gnrc_netdev->iqueuemac.router_states.subchannel_occu_flags = 0;
 
@@ -153,14 +153,14 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->iqueuemac.rx_memory_full = false;
     gnrc_netdev->iqueuemac.phase_backoff = false;
 
-    gnrc_netdev->iqueuemac.rx.check_dup_pkt.queue_head = 0;
+    gnrc_netdev->rx.check_dup_pkt.queue_head = 0;
     gnrc_netdev->tx.last_tx_neighbor_id = 0;
 
 	netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
 	device_state->seq = gnrc_netdev->iqueuemac.own_addr.addr[0];
 
 	for(int i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
-		gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
+		gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
 	}
 
 }
@@ -1445,14 +1445,14 @@ void iqueue_mac_router_listen_cp_init(gnrc_netdev_t *gnrc_netdev){
 
 	/* reset last_seq_info. important! need to do every cycle.*/
 	for(int i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
-		if(gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].node_addr.len != 0){
-			gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].life_cycle ++;
-			if(gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].life_cycle >= IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE){
-				gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
-				gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].node_addr.addr[0]=0;
-				gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].node_addr.addr[1]=0;
-				gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].seq=0;
-				gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
+		if(gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len != 0){
+			gnrc_netdev->rx.check_dup_pkt.last_nodes[i].life_cycle ++;
+			if(gnrc_netdev->rx.check_dup_pkt.last_nodes[i].life_cycle >= IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE){
+				gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
+				gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.addr[0]=0;
+				gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.addr[1]=0;
+				gnrc_netdev->rx.check_dup_pkt.last_nodes[i].seq=0;
+				gnrc_netdev->rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
 			}
 		}
 	}
@@ -1638,7 +1638,7 @@ void iqueue_mac_router_send_beacon(gnrc_netdev_t *gnrc_netdev){
 		gnrc_netdev->iqueuemac.need_update = true;
 	}else{
 		/* if the beacon has not been sent due to no slots. */
-		if(gnrc_netdev->iqueuemac.rx.router_vtdma_mana.total_slots_num == 0) {
+		if(gnrc_netdev->rx.router_vtdma_mana.total_slots_num == 0) {
 			gnrc_netdev->iqueuemac.send_beacon_fail = true;
 			gnrc_netdev->iqueuemac.need_update = true;
 		}else{
@@ -1655,7 +1655,7 @@ void iqueuemac_router_wait_beacon_feedback(gnrc_netdev_t *gnrc_netdev){
 	if((gnrc_netdev->tx.tx_finished == true)||(gnrc_netdev->iqueuemac.send_beacon_fail == true)){
 
 		/****** router switch to sleep period or vTDMA period ******/
-		if((gnrc_netdev->iqueuemac.rx.router_vtdma_mana.total_slots_num > 0)&&(gnrc_netdev->iqueuemac.send_beacon_fail == false)){
+		if((gnrc_netdev->rx.router_vtdma_mana.total_slots_num > 0)&&(gnrc_netdev->iqueuemac.send_beacon_fail == false)){
 			gnrc_netdev->iqueuemac.router_states.router_listen_state = R_LISTEN_VTDMA_INIT;
 			gnrc_netdev->iqueuemac.need_update = true;
 		}else{ /**** no vTDMA period ****/
@@ -1715,7 +1715,7 @@ void iqueue_mac_router_vtdma_init(gnrc_netdev_t *gnrc_netdev){
 
 	/*** set the vTDMA period timeout!!! ***/
 	uint32_t vtdma_duration;
-	vtdma_duration = gnrc_netdev->iqueuemac.rx.router_vtdma_mana.total_slots_num * IQUEUEMAC_VTDMA_SLOT_SIZE_US;
+	vtdma_duration = gnrc_netdev->rx.router_vtdma_mana.total_slots_num * IQUEUEMAC_VTDMA_SLOT_SIZE_US;
 
 	iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_VTDMA, vtdma_duration);
 

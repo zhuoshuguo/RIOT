@@ -254,7 +254,6 @@ typedef struct {
 	uint8_t sub_channel_seq;
 }rx_vtdma_mana_t;
 
-
 typedef struct {
 	l2_addr_t node_addr;
 	uint8_t seq;
@@ -266,19 +265,6 @@ typedef struct {
 	uint8_t queue_head;
 
 }check_dup_pkt_t;
-
-typedef struct {
-    /* Internal state of reception state machine */
-
-    l2_addr_t l2_addr;
-
-    rx_slots_schedule_unit rx_register_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
-
-    rx_vtdma_mana_t router_vtdma_mana;
-    check_dup_pkt_t check_dup_pkt;
-
-} iqueuemac_rx_t;
-
 
 typedef struct {
 	uint8_t sub_channel_seq;
@@ -298,8 +284,6 @@ typedef struct iqueuemac {
 
 	router_states_t router_states;
 	device_states_t device_states;
-
-	iqueuemac_rx_t rx;
 
 	in_cluster_neighbor_info_t in_cluster_node_list[IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM];
 

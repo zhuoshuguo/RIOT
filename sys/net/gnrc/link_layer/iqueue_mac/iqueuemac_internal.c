@@ -292,12 +292,12 @@ int iqueuemac_assemble_and_send_beacon(gnrc_netdev_t *gnrc_netdev)
 	uint8_t total_tdma_slot_num = 0;
 	bool slots_full = false;
 
-	gnrc_netdev->iqueuemac.rx.router_vtdma_mana.total_slots_num = 0;
+	gnrc_netdev->rx.router_vtdma_mana.total_slots_num = 0;
 
 	for(i=0;i<IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT;i++)
 	{
-		if(gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator >0){
-			total_tdma_slot_num = gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator;
+		if(gnrc_netdev->rx.rx_register_list[i].queue_indicator >0){
+			total_tdma_slot_num = gnrc_netdev->rx.rx_register_list[i].queue_indicator;
 			break;
 		}
 	}
@@ -327,7 +327,7 @@ int iqueuemac_assemble_and_send_beacon(gnrc_netdev_t *gnrc_netdev)
 
 	/********* Add the slots schedule list functionality here!!!  *********/
 
-	gnrc_netdev->iqueuemac.rx.router_vtdma_mana.total_slots_num = 0;
+	gnrc_netdev->rx.router_vtdma_mana.total_slots_num = 0;
 
 	l2_id_t  id_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
 	uint8_t  slots_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
@@ -335,14 +335,14 @@ int iqueuemac_assemble_and_send_beacon(gnrc_netdev_t *gnrc_netdev)
 	/**** search router-type first ****/
 	for(i=0;i<IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT;i++)
 	{
-		if((gnrc_netdev->iqueuemac.rx.rx_register_list[i].mac_type == ROUTER)&&(gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator > 0))
+		if((gnrc_netdev->rx.rx_register_list[i].mac_type == ROUTER)&&(gnrc_netdev->rx.rx_register_list[i].queue_indicator > 0))
 		{
 			//id_list[j].addr = iqueuemac->rx.rx_register_list[i].node_addr.addr;
 			memcpy(id_list[j].addr,
-					gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr.addr,
-					gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr.len);
+					gnrc_netdev->rx.rx_register_list[i].node_addr.addr,
+					gnrc_netdev->rx.rx_register_list[i].node_addr.len);
 
-			slots_list[j] = gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator;
+			slots_list[j] = gnrc_netdev->rx.rx_register_list[i].queue_indicator;
 
 			total_tdma_node_num ++;
 			total_tdma_slot_num += slots_list[j];
@@ -367,13 +367,13 @@ int iqueuemac_assemble_and_send_beacon(gnrc_netdev_t *gnrc_netdev)
 			break;
 		}
 
-		if((gnrc_netdev->iqueuemac.rx.rx_register_list[i].mac_type == NODE) &&
-		   (gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator > 0)) {
+		if((gnrc_netdev->rx.rx_register_list[i].mac_type == NODE) &&
+		   (gnrc_netdev->rx.rx_register_list[i].queue_indicator > 0)) {
 			//id_list[j].addr = iqueuemac->rx.rx_register_list[i].node_addr.addr;
 			memcpy(id_list[j].addr,
-			     	gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr.addr,
-					gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr.len);
-			slots_list[j] = gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator;
+			     	gnrc_netdev->rx.rx_register_list[i].node_addr.addr,
+					gnrc_netdev->rx.rx_register_list[i].node_addr.len);
+			slots_list[j] = gnrc_netdev->rx.rx_register_list[i].queue_indicator;
 
 			total_tdma_node_num ++;
 			total_tdma_slot_num += slots_list[j];
@@ -394,7 +394,7 @@ int iqueuemac_assemble_and_send_beacon(gnrc_netdev_t *gnrc_netdev)
 
 	if(total_tdma_node_num > 0){
 
-		gnrc_netdev->iqueuemac.rx.router_vtdma_mana.total_slots_num = total_tdma_slot_num;
+		gnrc_netdev->rx.router_vtdma_mana.total_slots_num = total_tdma_slot_num;
 		//printf("iqueuemac: the total slots-number this cycle is %d . \n", iqueuemac->rx.router_vtdma_mana.total_slots_num);
 
 		//puts("iqueuemac: schedule slots-list");
@@ -631,11 +631,11 @@ void iqueuemac_router_queue_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pk
 	 /* check whether the node has registered or not  */
 	for(i=0;i<IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT;i++)
 	{
-		if(_addr_match(&gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr, &pa_info->src_addr)){
+		if(_addr_match(&gnrc_netdev->rx.rx_register_list[i].node_addr, &pa_info->src_addr)){
 
 			//iqueuemac_data_hdr->queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x7F;
 
-			gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x3F;
+			gnrc_netdev->rx.rx_register_list[i].queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x3F;
 			//printf("iqueuemac: the registered queue-indicator is %d. \n", iqueuemac_data_hdr->queue_indicator);
 			return;
 		}
@@ -644,10 +644,10 @@ void iqueuemac_router_queue_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pk
 	/********* the sender has not registered yet   **********/
 	for(i=0;i<IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT;i++)
 	{
-		if((gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr.len == 0)||(gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator ==0))
+		if((gnrc_netdev->rx.rx_register_list[i].node_addr.len == 0)||(gnrc_netdev->rx.rx_register_list[i].queue_indicator ==0))
 		{
-			gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr.len = pa_info->src_addr.len;
-			memcpy(gnrc_netdev->iqueuemac.rx.rx_register_list[i].node_addr.addr,
+			gnrc_netdev->rx.rx_register_list[i].node_addr.len = pa_info->src_addr.len;
+			memcpy(gnrc_netdev->rx.rx_register_list[i].node_addr.addr,
 			       pa_info->src_addr.addr,
 				   pa_info->src_addr.len);
 
@@ -655,14 +655,14 @@ void iqueuemac_router_queue_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pk
 			uint8_t extra_mac_type;
 			extra_mac_type = iqueuemac_data_hdr->queue_indicator & 0x80;
 			if(extra_mac_type == 0x80){
-				gnrc_netdev->iqueuemac.rx.rx_register_list[i].mac_type = NODE;
+				gnrc_netdev->rx.rx_register_list[i].mac_type = NODE;
 			    //puts("iqueuemac: the registered device is node type.");
 			}else{
-				gnrc_netdev->iqueuemac.rx.rx_register_list[i].mac_type = ROUTER;
+				gnrc_netdev->rx.rx_register_list[i].mac_type = ROUTER;
 				//puts("iqueuemac: the registered device is router type.");
 			}
 
-			gnrc_netdev->iqueuemac.rx.rx_register_list[i].queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x3F;
+			gnrc_netdev->rx.rx_register_list[i].queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x3F;
 			//printf("iqueuemac: the registered queue-indicator is %d. \n", iqueuemac_data_hdr->queue_indicator);
 			return;
 		}
@@ -674,12 +674,12 @@ bool iqueuemac_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info
 {
 	int i;
 	for(i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
-		if(_addr_match(&gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].node_addr, &pa_info->src_addr)){
-			gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
-			if(gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].seq == pa_info->seq){
+		if(_addr_match(&gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr, &pa_info->src_addr)){
+			gnrc_netdev->rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
+			if(gnrc_netdev->rx.check_dup_pkt.last_nodes[i].seq == pa_info->seq){
 				return true;
 			}else{
-				gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].seq = pa_info->seq;
+				gnrc_netdev->rx.check_dup_pkt.last_nodes[i].seq = pa_info->seq;
 				return false;
 			}
 		}
@@ -687,13 +687,13 @@ bool iqueuemac_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info
 
 	/* look for a free unit */
 	for(i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
-		if(gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].node_addr.len == 0){
-			gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].node_addr.len = pa_info->src_addr.len;
-			memcpy(gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].node_addr.addr,
+		if(gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len == 0){
+			gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len = pa_info->src_addr.len;
+			memcpy(gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.addr,
 					pa_info->src_addr.addr,
 					pa_info->src_addr.len);
-			gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].seq = pa_info->seq;
-			gnrc_netdev->iqueuemac.rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
+			gnrc_netdev->rx.check_dup_pkt.last_nodes[i].seq = pa_info->seq;
+			gnrc_netdev->rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
 			return false;
 		}
 	}
