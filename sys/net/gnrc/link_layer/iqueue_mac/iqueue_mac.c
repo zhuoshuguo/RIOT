@@ -69,10 +69,10 @@ kernel_pid_t iqueuemac_pid;
 void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
 {
 
-	gnrc_netdev->iqueuemac.own_addr.len = gnrc_netdev->dev->driver->get(gnrc_netdev->dev,
-	                                                                     NETOPT_ADDRESS,
-	                                                                     gnrc_netdev->iqueuemac.own_addr.addr,
-	                                                                     sizeof(gnrc_netdev->iqueuemac.own_addr.addr));
+	gnrc_netdev->l2_addr_len = gnrc_netdev->dev->driver->get(gnrc_netdev->dev,
+	                                                         NETOPT_ADDRESS,
+	                                                         gnrc_netdev->l2_addr,
+	                                                         sizeof(gnrc_netdev->l2_addr));
 
 	//printf("iqueuemac: iqueuemac's own addrs is: %d, %d . \n ", iqueuemac->own_addr.addr[1], iqueuemac->own_addr.addr[0]);
 
@@ -89,12 +89,6 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
 		gnrc_netdev->rx.router_vtdma_mana.sub_channel_seq = 26;
 
 		gnrc_netdev->iqueuemac.router_states.subchannel_occu_flags = 0;
-
-		/*** set the father-router as itself ***/
-		gnrc_netdev->iqueuemac.father_router_addr.len = gnrc_netdev->iqueuemac.own_addr.len;
-		memcpy(gnrc_netdev->iqueuemac.father_router_addr.addr,
-				gnrc_netdev->iqueuemac.own_addr.addr,
-				gnrc_netdev->iqueuemac.own_addr.len);
 
 		/*** initiate the sub_channel_num  ***/
 		//uint16_t random_channel = iqueuemac->own_addr.addr[0] % 15;
@@ -126,7 +120,7 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
 
     /* Initialize broadcast sequence number. This at least differs from board
          * to board */
-    gnrc_netdev->tx.broadcast_seq = gnrc_netdev->iqueuemac.own_addr.addr[0];
+    gnrc_netdev->tx.broadcast_seq = gnrc_netdev->l2_addr[0];
 
     /* First neighbour queue is supposed to be broadcast queue */
     //int broadcast_queue_id = _alloc_neighbour(&gnrc_netdev->iqueuemac);
@@ -157,7 +151,7 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->tx.last_tx_neighbor_id = 0;
 
 	netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
-	device_state->seq = gnrc_netdev->iqueuemac.own_addr.addr[0];
+	device_state->seq = gnrc_netdev->l2_addr[0];
 
 	for(int i=0;i<IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE;i++){
 		gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
@@ -2096,7 +2090,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
     gnrc_netdev->iqueuemac.mac_type = MAC_TYPE;
 
-    xtimer_sleep(3);
+    xtimer_sleep(5);
 
     iqueuemac_init(gnrc_netdev);
 

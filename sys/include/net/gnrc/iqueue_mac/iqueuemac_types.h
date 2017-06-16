@@ -243,11 +243,6 @@ typedef struct {
 	iqueuemac_type_t mac_type;
 }rx_slots_schedule_unit;
 
-/***  only record node-type neighbor ***/
-typedef struct {
-	l2_addr_t node_addr;
-	iqueuemac_type_t mac_type;
-}in_cluster_neighbor_info_t;
 
 typedef struct {
 	uint8_t total_slots_num;
@@ -285,13 +280,7 @@ typedef struct iqueuemac {
 	router_states_t router_states;
 	device_states_t device_states;
 
-	in_cluster_neighbor_info_t in_cluster_node_list[IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM];
-
 	iqueuemac_timeout_t timeouts[IQUEUEMAC_TIMEOUT_COUNT];
-
-    /* Own address */
-    l2_addr_t own_addr;
-    l2_addr_t father_router_addr;
 
     uint16_t sub_channel_num;
     uint16_t pub_channel_1;

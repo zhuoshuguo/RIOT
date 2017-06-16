@@ -240,7 +240,6 @@ int iqueue_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t
 	iqueuemac_preamble_ack_hdr.dst_addr = info->src_addr;
 	iqueuemac_preamble_ack_hdr.device_type = gnrc_netdev->iqueuemac.mac_type;
 	//maybe we don't need this "father_router_addr" parameter anymore
-	iqueuemac_preamble_ack_hdr.father_router = gnrc_netdev->iqueuemac.father_router_addr;
 
 	phase_now_ticks = _phase_now(gnrc_netdev); //rtt_get_counter();
 
@@ -1148,43 +1147,6 @@ void iqueuemac_send_announce(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csm
 	iqueuemac_send(gnrc_netdev, pkt, csma_enable);
 }
 
-
-void iqueuemac_add_in_cluster_neighbor(iqueuemac_t* iqueuemac, l2_addr_t* addr){
-
-	int i;
-	/*** first check whether it has been recorded ***/
-	for(i=0;i<IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM;i++){
-		if(iqueuemac->in_cluster_node_list[i].node_addr.len != 0){
-			if(_addr_match(&iqueuemac->in_cluster_node_list[i].node_addr, addr)){
-				return;
-			}
-		}
-	}
-
-	/*** Then, if not recorded yet, add it into the list ***/
-	for(i=0;i<IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM;i++){
-		if(iqueuemac->in_cluster_node_list[i].node_addr.len == 0){
-			iqueuemac->in_cluster_node_list[i].node_addr.len = addr->len;
-			memcpy(iqueuemac->in_cluster_node_list[i].node_addr.addr,
-					addr->addr,
-					addr->len);
-			return;
-		}
-	}
-}
-
-void iqueuemac_remove_in_cluster_neighbor(iqueuemac_t* iqueuemac, l2_addr_t* addr){
-
-	int i;
-	/*** first check whether it has been recorded ***/
-	for(i=0;i<IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM;i++){
-		if(_addr_match(&iqueuemac->in_cluster_node_list[i].node_addr, addr)){
-			iqueuemac->in_cluster_node_list[i].node_addr.len = 0;
-			return;
-		}
-	}
-}
-
 void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info){
 
 	 iqueuemac_frame_preamble_ack_t* iqueuemac_preamble_ack_hdr;
@@ -1194,21 +1156,6 @@ void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pkts
 	 if(iqueuemac_preamble_ack_hdr == NULL) {
 		 puts("iqueuemac_preamble_ack_hdr is null");
 		 return;
-	 }
-
-	 /**** check if this node has a father router yet, if no, check whether this destination is a router.**/
-
-	 if((gnrc_netdev->iqueuemac.father_router_addr.len == 0)&&(gnrc_netdev->iqueuemac.mac_type == NODE)){
-		 /*** this node doesn't has a father router yet ***/
-
-		 /*** check whether the receiver is a router type ***/
-		 if(iqueuemac_preamble_ack_hdr->device_type == ROUTER){
-			 /*** the first heard router is selected as father router ***/
-			 gnrc_netdev->iqueuemac.father_router_addr.len = pa_info->src_addr.len;
-			 memcpy(gnrc_netdev->iqueuemac.father_router_addr.addr,
-					pa_info->src_addr.addr,
-					pa_info->src_addr.len);
-		 }
 	 }
 
 	 /***** update all the necessary information to marked as a known neighbor ****/
