@@ -31,10 +31,10 @@ extern "C" {
 /******************************************************************************/
 
 typedef struct {
-    uint8_t  addr[IQUEUEMAC_MAX_L2_ADDR_LEN];
-    uint8_t  len;
+    uint8_t addr[IQUEUEMAC_MAX_L2_ADDR_LEN];
+    uint8_t len;
 } l2_addr_t;
-#define IQUEUEMAC_L2_ADDR_INIT      { {0}, 0 }
+#define IQUEUEMAC_L2_ADDR_INIT      { { 0 }, 0 }
 
 /******************************************************************************/
 
@@ -42,9 +42,9 @@ typedef enum {
     FRAMETYPE_BEACON = 1,
     FRAMETYPE_IQUEUE_DATA,
     FRAMETYPE_PREAMBLE,
-	FRAMETYPE_PREAMBLE_ACK,
+    FRAMETYPE_PREAMBLE_ACK,
     FRAMETYPE_BROADCAST,
-	FRAMETYPE_ANNOUNCE
+    FRAMETYPE_ANNOUNCE
 } iqueuemac_frame_type_t;
 
 /******************************************************************************/
@@ -53,7 +53,7 @@ typedef enum {
  * @brief   iqueuemac header
  */
 typedef struct __attribute__((packed)) {
-	iqueuemac_frame_type_t type; /**< type of frame */
+    iqueuemac_frame_type_t type; /**< type of frame */
 } iqueuemac_hdr_t;
 
 
@@ -61,31 +61,31 @@ typedef struct __attribute__((packed)) {
  * @brief   iqueuemac Beacon frame
  */
 typedef struct __attribute__((packed)) {
-	iqueuemac_hdr_t header;
-	uint32_t current_phase;     /* phase of this device*/
-	uint8_t sub_channel_seq;
-	uint8_t schedulelist_size;
+    iqueuemac_hdr_t header;
+    uint32_t current_phase;     /* phase of this device*/
+    uint8_t sub_channel_seq;
+    uint8_t schedulelist_size;
 } iqueuemac_frame_beacon_t;
 
 /**
  * @brief   iqueuemac unicast data frame
  */
 typedef struct __attribute__((packed)) {
-	iqueuemac_hdr_t header;
-	uint8_t queue_indicator;  /* The first bit of the indicator is used to indicate MAC type: router or dimple node*/
+    iqueuemac_hdr_t header;
+    uint8_t queue_indicator;  /* The first bit of the indicator is used to indicate MAC type: router or dimple node*/
 } iqueuemac_frame_data_t;
 
 typedef struct __attribute__((packed)) {
-	iqueuemac_hdr_t header;
-	uint8_t subchannel_seq;  /* The first bit of the indicator is used to indicate MAC type: router or dimple node*/
+    iqueuemac_hdr_t header;
+    uint8_t subchannel_seq;  /* The first bit of the indicator is used to indicate MAC type: router or dimple node*/
 } iqueuemac_frame_announce_t;
 
 /**
  * @brief   iqueuemac broadcast preamble frame
  */
 typedef struct __attribute__((packed)) {
-	iqueuemac_hdr_t header;
-	l2_addr_t dst_addr;  /* Preamble is broadcast, so dst addr is needed to show who is the intended receiver*/
+    iqueuemac_hdr_t header;
+    l2_addr_t dst_addr;  /* Preamble is broadcast, so dst addr is needed to show who is the intended receiver*/
 } iqueuemac_frame_preamble_t;
 
 
@@ -93,10 +93,10 @@ typedef struct __attribute__((packed)) {
  * @brief   iqueuemac broadcast preamble_ack frame
  */
 typedef struct __attribute__((packed)) {
-	iqueuemac_hdr_t header;
-	l2_addr_t dst_addr;  /* Preamble_ACK is broadcast, so dst addr is needed to show who is the intended receiver*/
-	l2_addr_t father_router;
-	uint32_t phase_in_ticks; //next_cp_time;   /* phase of this device*/
+    iqueuemac_hdr_t header;
+    l2_addr_t dst_addr;         /* Preamble_ACK is broadcast, so dst addr is needed to show who is the intended receiver*/
+    l2_addr_t father_router;
+    uint32_t phase_in_ticks;    //next_cp_time;   /* phase of this device*/
 } iqueuemac_frame_preamble_ack_t;
 
 
@@ -104,7 +104,7 @@ typedef struct __attribute__((packed)) {
  * @brief   iqueuemac broadcast data frame
  */
 typedef struct __attribute__((packed)) {
-	iqueuemac_hdr_t header;
+    iqueuemac_hdr_t header;
     uint8_t seq_nr;
 } iqueuemac_frame_broadcast_t;
 

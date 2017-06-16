@@ -29,7 +29,7 @@
 /******************************************************************************/
 
 #if ENABLE_DEBUG
-char* iqueuemac_timeout_names[] = {
+char *iqueuemac_timeout_names[] = {
     [TIMEOUT_DISABLED]              = "DISABLED",
     [TIMEOUT_WR]                    = "WR",
     [TIMEOUT_NO_RESPONSE]           = "NO_RESPONSE",
@@ -42,7 +42,7 @@ char* iqueuemac_timeout_names[] = {
 
 /******************************************************************************/
 
-static inline void _iqueuemac_clear_timeout(iqueuemac_timeout_t* timeout)
+static inline void _iqueuemac_clear_timeout(iqueuemac_timeout_t *timeout)
 {
     assert(timeout);
 
@@ -53,21 +53,21 @@ static inline void _iqueuemac_clear_timeout(iqueuemac_timeout_t* timeout)
 /******************************************************************************/
 
 /* Return index >= 0 if found, -ENONENT if not found */
-static int _iqueuemac_find_timeout(iqueuemac_t* iqueuemac, iqueuemac_timeout_type_t type)
+static int _iqueuemac_find_timeout(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type)
 {
     assert(iqueuemac);
 
-    for(unsigned i = 0; i < IQUEUEMAC_TIMEOUT_COUNT; i++)
-    {
-        if(iqueuemac->timeouts[i].type == type)
+    for (unsigned i = 0; i < IQUEUEMAC_TIMEOUT_COUNT; i++) {
+        if (iqueuemac->timeouts[i].type == type) {
             return i;
+        }
     }
     return -ENOENT;
 }
 
 /******************************************************************************/
 
-inline bool iqueuemac_timeout_is_running(iqueuemac_t* iqueuemac, iqueuemac_timeout_type_t type)
+inline bool iqueuemac_timeout_is_running(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type)
 {
     assert(iqueuemac);
     return (_iqueuemac_find_timeout(iqueuemac, type) >= 0);
@@ -75,14 +75,15 @@ inline bool iqueuemac_timeout_is_running(iqueuemac_t* iqueuemac, iqueuemac_timeo
 
 /******************************************************************************/
 
-bool iqueuemac_timeout_is_expired(iqueuemac_t* iqueuemac, iqueuemac_timeout_type_t type)
+bool iqueuemac_timeout_is_expired(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type)
 {
     assert(iqueuemac);
 
     int index = _iqueuemac_find_timeout(iqueuemac, type);
-    if(index >= 0) {
-        if(iqueuemac->timeouts[index].expired)
+    if (index >= 0) {
+        if (iqueuemac->timeouts[index].expired) {
             _iqueuemac_clear_timeout(&iqueuemac->timeouts[index]);
+        }
         return iqueuemac->timeouts[index].expired;
     }
     return false;
@@ -90,17 +91,16 @@ bool iqueuemac_timeout_is_expired(iqueuemac_t* iqueuemac, iqueuemac_timeout_type
 
 /******************************************************************************/
 
-iqueuemac_timeout_t* _iqueuemac_acquire_timeout(iqueuemac_t* iqueuemac, iqueuemac_timeout_type_t type)
+iqueuemac_timeout_t *_iqueuemac_acquire_timeout(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type)
 {
     assert(iqueuemac);
 
-    if(iqueuemac_timeout_is_running(iqueuemac, type))
+    if (iqueuemac_timeout_is_running(iqueuemac, type)) {
         return NULL;
+    }
 
-    for(unsigned i = 0; i < IQUEUEMAC_TIMEOUT_COUNT; i++)
-    {
-        if(iqueuemac->timeouts[i].type == TIMEOUT_DISABLED)
-        {
+    for (unsigned i = 0; i < IQUEUEMAC_TIMEOUT_COUNT; i++) {
+        if (iqueuemac->timeouts[i].type == TIMEOUT_DISABLED) {
             iqueuemac->timeouts[i].type = type;
             return &iqueuemac->timeouts[i];
         }
@@ -110,7 +110,7 @@ iqueuemac_timeout_t* _iqueuemac_acquire_timeout(iqueuemac_t* iqueuemac, iqueuema
 
 /******************************************************************************/
 
-void iqueuemac_timeout_make_expire(iqueuemac_timeout_t* timeout)
+void iqueuemac_timeout_make_expire(iqueuemac_timeout_t *timeout)
 {
     assert(timeout);
 
@@ -120,47 +120,48 @@ void iqueuemac_timeout_make_expire(iqueuemac_timeout_t* timeout)
 
 /******************************************************************************/
 
-void iqueuemac_clear_timeout(iqueuemac_t* iqueuemac, iqueuemac_timeout_type_t type)
+void iqueuemac_clear_timeout(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type)
 {
     assert(iqueuemac);
 
     int index = _iqueuemac_find_timeout(iqueuemac, type);
-    if(index >= 0)
+    if (index >= 0) {
         _iqueuemac_clear_timeout(&iqueuemac->timeouts[index]);
-}
-
-/******************************************************************************/
-
-void iqueuemac_set_timeout(iqueuemac_t* iqueuemac, iqueuemac_timeout_type_t type, uint32_t offset)
-{
-    assert(iqueuemac);
-
-    iqueuemac_timeout_t* timeout;
-    if( (timeout = _iqueuemac_acquire_timeout(iqueuemac, type)) )
-    {
-        DEBUG("[iqueuemac] Set timeout %s in %"PRIu32" us\n",
-                iqueuemac_timeout_names[type], offset);
-        timeout->expired = false;
-        timeout->msg.type = IQUEUEMAC_EVENT_TIMEOUT_TYPE;
-        timeout->msg.content.ptr = (void*) timeout;
-        xtimer_set_msg(&(timeout->timer), offset,
-                       &(timeout->msg), iqueuemac->pid);
-    } else {
-
-        DEBUG("[iqueuemac] Cannot set timeout %s, too many concurrent timeouts\n",
-                iqueuemac_timeout_names[type]);
     }
 }
 
 /******************************************************************************/
 
-void iqueuemac_reset_timeouts(iqueuemac_t* iqueuemac)
+void iqueuemac_set_timeout(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type, uint32_t offset)
 {
     assert(iqueuemac);
 
-    for(unsigned i = 0; i < IQUEUEMAC_TIMEOUT_COUNT; i++)
-    {
-        if(iqueuemac->timeouts[i].type != TIMEOUT_DISABLED)
+    iqueuemac_timeout_t *timeout;
+    if ((timeout = _iqueuemac_acquire_timeout(iqueuemac, type))) {
+        DEBUG("[iqueuemac] Set timeout %s in %" PRIu32 " us\n",
+              iqueuemac_timeout_names[type], offset);
+        timeout->expired = false;
+        timeout->msg.type = IQUEUEMAC_EVENT_TIMEOUT_TYPE;
+        timeout->msg.content.ptr = (void *) timeout;
+        xtimer_set_msg(&(timeout->timer), offset,
+                       &(timeout->msg), iqueuemac->pid);
+    }
+    else {
+
+        DEBUG("[iqueuemac] Cannot set timeout %s, too many concurrent timeouts\n",
+              iqueuemac_timeout_names[type]);
+    }
+}
+
+/******************************************************************************/
+
+void iqueuemac_reset_timeouts(iqueuemac_t *iqueuemac)
+{
+    assert(iqueuemac);
+
+    for (unsigned i = 0; i < IQUEUEMAC_TIMEOUT_COUNT; i++) {
+        if (iqueuemac->timeouts[i].type != TIMEOUT_DISABLED) {
             _iqueuemac_clear_timeout(&iqueuemac->timeouts[i]);
+        }
     }
 }

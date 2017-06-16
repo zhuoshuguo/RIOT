@@ -33,10 +33,10 @@ extern "C" {
 
 /* @brief   Type to pass information about parsing */
 typedef struct {
-	iqueuemac_hdr_t* header;    /**< iqueuemac header of packet */
-    l2_addr_t  src_addr;    /**< copied source address of packet  */
-    l2_addr_t  dst_addr;    /**< copied destination address of packet */
-    uint8_t seq;			/**< seq of the received packet */
+    iqueuemac_hdr_t *header;    /**< iqueuemac header of packet */
+    l2_addr_t src_addr;         /**< copied source address of packet  */
+    l2_addr_t dst_addr;         /**< copied destination address of packet */
+    uint8_t seq;                /**< seq of the received packet */
 } iqueuemac_packet_info_t;
 
 /* @brief   Next RTT event must be at least this far in the future
@@ -54,7 +54,7 @@ typedef struct {
  *
  * @return                          length of destination address
  */
-int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[]);
+int _get_dest_address(gnrc_pktsnip_t * pkt, uint8_t * pointer_to_addr[]);
 
 /* @brief Find the first pktsnip of @p type
  *
@@ -66,7 +66,7 @@ int _get_dest_address(gnrc_pktsnip_t* pkt, uint8_t* pointer_to_addr[]);
  *
  * @return              pointer to data, NULL is not found
  */
-void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type);
+void *_gnrc_pktbuf_find(gnrc_pktsnip_t *pkt, gnrc_nettype_t type);
 
 /* @brief Parse an incoming packet and extract important information
  *
@@ -84,13 +84,14 @@ void* _gnrc_pktbuf_find(gnrc_pktsnip_t* pkt, gnrc_nettype_t type);
 /* @brief Check if packet is broadcast
  *
  * @param[in]   pkt             packet to check
-*/
+ */
 
-static inline bool _packet_is_broadcast(gnrc_pktsnip_t* pkt)
+static inline bool _packet_is_broadcast(gnrc_pktsnip_t *pkt)
 {
-    gnrc_netif_hdr_t* netif_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
-    return ( (netif_hdr == NULL) ? false :
-                              (netif_hdr->flags & GNRC_NETIF_HDR_FLAGS_BROADCAST) );
+    gnrc_netif_hdr_t *netif_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+
+    return ((netif_hdr == NULL) ? false :
+            (netif_hdr->flags & GNRC_NETIF_HDR_FLAGS_BROADCAST));
 }
 
 /* TX queue handling */
@@ -102,7 +103,7 @@ uint32_t _phase_now(gnrc_netdev_t *gnrc_netdev);
 uint32_t _ticks_until_phase(gnrc_netdev_t *gnrc_netdev, uint32_t phase); //uint32_t _ticks_until_phase(uint32_t phase);
 
 
-static inline gnrc_mac_tx_neighbor_t* _get_neighbour(gnrc_netdev_t *gnrc_netdev, unsigned int id)
+static inline gnrc_mac_tx_neighbor_t *_get_neighbour(gnrc_netdev_t *gnrc_netdev, unsigned int id)
 {
     return &(gnrc_netdev->tx.neighbors[id]);
 }
@@ -113,13 +114,14 @@ uint32_t _next_inphase_event(uint32_t last, uint32_t interval);
 
 //void _dispatch(gnrc_pktsnip_t* buffer[]);
 
-static inline bool _addr_match(l2_addr_t* addr1, l2_addr_t* addr2)
+static inline bool _addr_match(l2_addr_t *addr1, l2_addr_t *addr2)
 {
     assert(addr1);
     assert(addr2);
 
-    if(addr1->len != addr2->len)
+    if (addr1->len != addr2->len) {
         return false;
+    }
 
     return (memcmp(addr1->addr, addr2->addr, addr1->len) == 0);
 }
@@ -133,29 +135,29 @@ netopt_state_t _get_netdev_state(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_turn_radio_channel(gnrc_netdev_t *gnrc_netdev, uint16_t channel_num);
 void iqueuemac_set_raddio_to_listen_mode(gnrc_netdev_t *gnrc_netdev);
 
-bool iqueuemac_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t* pa_info);
+bool iqueuemac_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t *pa_info);
 int iqueuemac_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable);
-int iqueue_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t* info);
+int iqueue_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t *info);
 int iqueuemac_assemble_and_send_beacon(gnrc_netdev_t *gnrc_netdev);
-int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info);
-int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info);
-void iqueuemac_router_queue_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info);
+int _parse_packet(gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *info);
+int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t * buffer[], gnrc_pktsnip_t * pkt, iqueuemac_packet_info_t * pa_info);
+void iqueuemac_router_queue_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *pa_info);
 void iqueue_router_cp_receive_packet_process(gnrc_netdev_t *gnrc_netdev);
-void iqueuemac_update_subchannel_occu_flags(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info);
+void iqueuemac_update_subchannel_occu_flags(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *pa_info);
 void iqueuemac_packet_process_in_init(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_send_announce(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma);
 int iqueue_mac_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma);
-void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* pa_info);
+void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *pa_info);
 void iqueuemac_packet_process_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev);
 int iqueuemac_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable);
 bool iqueue_mac_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev);
 //bool iqueuemac_check_has_pending_packet(packet_queue_t* q);
-void iqueuemac_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t* pkt);
+void iqueuemac_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt);
 void iqueuemac_wait_beacon_packet_process(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_router_vtdma_receive_packet_process(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_figure_tx_neighbor_phase(gnrc_netdev_t *gnrc_netdev);
-void _dispatch(gnrc_pktsnip_t** buffer);
+void _dispatch(gnrc_pktsnip_t **buffer);
 void update_neighbor_pubchan(gnrc_netdev_t *gnrc_netdev);
 
 #ifdef __cplusplus

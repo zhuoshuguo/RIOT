@@ -31,7 +31,7 @@ extern "C" {
 typedef struct gnrc_netdev gnrc_netdev_t;
 
 typedef enum {
-	UNKNOWN = 0,
+    UNKNOWN = 0,
     ROUTER,
     NODE
 } iqueuemac_type_t;
@@ -53,7 +53,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_CP_DURATION_MAX_US
-#define IQUEUEMAC_CP_DURATION_MAX_US        (5*IQUEUEMAC_CP_DURATION_US)
+#define IQUEUEMAC_CP_DURATION_MAX_US        (5 * IQUEUEMAC_CP_DURATION_US)
 #endif
 
 //this can be merged into IQUEUEMAC_CP_DURATION_MAX_US.
@@ -86,11 +86,11 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_PREAMBLE_DURATION_US
-#define IQUEUEMAC_PREAMBLE_DURATION_US        (21*IQUEUEMAC_SUPERFRAME_DURATION_US/10)
+#define IQUEUEMAC_PREAMBLE_DURATION_US        (21 * IQUEUEMAC_SUPERFRAME_DURATION_US / 10)
 #endif
 
 #ifndef IQUEUEMAC_RE_PHASE_LOCK_ADVANCE_US
-#define IQUEUEMAC_RE_PHASE_LOCK_ADVANCE_US        (IQUEUEMAC_SUPERFRAME_DURATION_US/10)
+#define IQUEUEMAC_RE_PHASE_LOCK_ADVANCE_US        (IQUEUEMAC_SUPERFRAME_DURATION_US / 10)
 #endif
 
 #ifndef IQUEUEMAC_SLEEP_DURATION_US
@@ -159,7 +159,7 @@ typedef enum {
 #define IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM           (10U)
 #endif
 
-#define IQUEUEMAC_LPM_MASK					(1 << 17)
+#define IQUEUEMAC_LPM_MASK                  (1 << 17)
 
 
 /**
@@ -179,7 +179,7 @@ typedef enum {
  * @return                  -ENODEV if *dev* is invalid
  */
 kernel_pid_t gnrc_iqueuemac_init(char *stack, int stacksize, char priority,
-						         const char *name, gnrc_netdev_t *dev);
+                                 const char *name, gnrc_netdev_t *dev);
 
 #ifdef __cplusplus
 }
