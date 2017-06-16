@@ -95,7 +95,6 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
 	iqueuemac_hdr_t header;
 	l2_addr_t dst_addr;  /* Preamble_ACK is broadcast, so dst addr is needed to show who is the intended receiver*/
-	iqueuemac_type_t device_type;
 	l2_addr_t father_router;
 	uint32_t phase_in_ticks; //next_cp_time;   /* phase of this device*/
 } iqueuemac_frame_preamble_ack_t;

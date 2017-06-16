@@ -76,26 +76,22 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
 
 	//printf("iqueuemac: iqueuemac's own addrs is: %d, %d . \n ", iqueuemac->own_addr.addr[1], iqueuemac->own_addr.addr[0]);
 
-	if(gnrc_netdev->iqueuemac.mac_type == ROUTER)
-	{
-		gnrc_netdev->iqueuemac.router_states.router_basic_state = R_INIT;  //R_LISTENNING;
-		gnrc_netdev->iqueuemac.router_states.router_init_state = R_INIT_PREPARE;
+	gnrc_netdev->iqueuemac.router_states.router_basic_state = R_INIT;  //R_LISTENNING;
+	gnrc_netdev->iqueuemac.router_states.router_init_state = R_INIT_PREPARE;
 
-		gnrc_netdev->iqueuemac.router_states.router_listen_state = R_LISTEN_CP_INIT;
-		gnrc_netdev->iqueuemac.router_states.router_trans_state = R_TRANS_TO_UNKOWN;
+	gnrc_netdev->iqueuemac.router_states.router_listen_state = R_LISTEN_CP_INIT;
+	gnrc_netdev->iqueuemac.router_states.router_trans_state = R_TRANS_TO_UNKOWN;
 
-		gnrc_netdev->iqueuemac.router_states.router_new_cycle = false;
+	gnrc_netdev->iqueuemac.router_states.router_new_cycle = false;
 
-		gnrc_netdev->rx.router_vtdma_mana.sub_channel_seq = 26;
+	gnrc_netdev->rx.router_vtdma_mana.sub_channel_seq = 26;
 
-		gnrc_netdev->iqueuemac.router_states.subchannel_occu_flags = 0;
+	gnrc_netdev->iqueuemac.router_states.subchannel_occu_flags = 0;
 
-		/*** initiate the sub_channel_num  ***/
-		//uint16_t random_channel = iqueuemac->own_addr.addr[0] % 15;
-		//iqueuemac->sub_channel_num = 11 + random_channel;
-		gnrc_netdev->iqueuemac.sub_channel_num = 13;
-
-	}
+	/*** initiate the sub_channel_num  ***/
+	//uint16_t random_channel = iqueuemac->own_addr.addr[0] % 15;
+	//iqueuemac->sub_channel_num = 11 + random_channel;
+	gnrc_netdev->iqueuemac.sub_channel_num = 13;
 
 	gnrc_netdev->iqueuemac.pub_channel_1 = 26;
 	gnrc_netdev->iqueuemac.pub_channel_2 = 11;
@@ -205,22 +201,8 @@ void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
 
       /********************************************************/
       case IQUEUEMAC_EVENT_RTT_START:{
-
-    	  if(gnrc_netdev->iqueuemac.mac_type == ROUTER)
-    	  {
-    		  gnrc_netdev->iqueuemac.duty_cycle_started = true;
-    		  gnrc_netdev->iqueuemac.need_update = true;
-    		  /*** set a random starting time here in the future, thus to avoid the same phase for neighbor devices.
-    		  puts("iqueuemac: router starting duty cycling.");
-
-    	      alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
-    	      rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);  ***/
-    	  }else{
-    		  //puts("iqueuemac: node starting duty cycling.");
-    		  /*** set a random starting time here in the future, thus to avoid the same phase for neighbor devices. ***/
-     	      alarm = rtt_get_counter() + RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
-     	      rtt_set_alarm(alarm, rtt_cb, (void*) IQUEUEMAC_EVENT_RTT_N_NEW_CYCLE);
-    	  }
+		  gnrc_netdev->iqueuemac.duty_cycle_started = true;
+		  gnrc_netdev->iqueuemac.need_update = true;
       }break;
 
       default: break;
@@ -345,16 +327,15 @@ void iqueuemac_device_broadcast_end(gnrc_netdev_t *gnrc_netdev){
 
 	gnrc_netdev->iqueuemac.device_states.device_broadcast_state = DEVICE_BROADCAST_INIT;
 
-	if(gnrc_netdev->iqueuemac.mac_type == ROUTER){
-	    /*********** judge and update the states before switch back to CP listening period   ***********/
-		gnrc_netdev->iqueuemac.router_states.router_basic_state = R_LISTENNING;
-		gnrc_netdev->iqueuemac.router_states.router_listen_state = R_LISTEN_SLEEPING;
-		gnrc_netdev->iqueuemac.router_states.router_new_cycle = false;
+    /*********** judge and update the states before switch back to CP listening period   ***********/
+	gnrc_netdev->iqueuemac.router_states.router_basic_state = R_LISTENNING;
+	gnrc_netdev->iqueuemac.router_states.router_listen_state = R_LISTEN_SLEEPING;
+	gnrc_netdev->iqueuemac.router_states.router_new_cycle = false;
 
-	    iqueuemac_trun_off_radio(gnrc_netdev);
+    iqueuemac_trun_off_radio(gnrc_netdev);
 
-	    //puts("iqueuemac: router is in broadcast end, switching back to sleeping period");
-	}
+    //puts("iqueuemac: router is in broadcast end, switching back to sleeping period");
+
 	gnrc_netdev->iqueuemac.need_update = true;
 }
 
@@ -690,9 +671,7 @@ void iqueuemac_t2r_re_phase_lock_prepare(gnrc_netdev_t *gnrc_netdev){
 		/*** leaving t-2-r, so initiate the state ***/
 		gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CP_INIT;
 
-		if(gnrc_netdev->iqueuemac.mac_type == ROUTER){
-			gnrc_netdev->iqueuemac.router_states.router_trans_state = R_TRANS_TO_UNKOWN;
-		}
+		gnrc_netdev->iqueuemac.router_states.router_trans_state = R_TRANS_TO_UNKOWN;
 
 		gnrc_netdev->iqueuemac.need_update = true;
 	}
@@ -938,23 +917,22 @@ void iqueuemac_t2r_end(gnrc_netdev_t *gnrc_netdev){
 
 	gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CP_INIT;
 
-	if(gnrc_netdev->iqueuemac.mac_type == ROUTER){
-		/* if phase has been changed, figure out the related phase of tx-neighbors. */
-		if(gnrc_netdev->iqueuemac.phase_changed == true){
-			iqueuemac_figure_tx_neighbor_phase(gnrc_netdev);
-		}
-
-		/*********** judge and update the states before switch back to CP listening period   ***********/
-		gnrc_netdev->iqueuemac.router_states.router_basic_state = R_LISTENNING;
-		gnrc_netdev->iqueuemac.router_states.router_listen_state = R_LISTEN_SLEEPING;
-		gnrc_netdev->iqueuemac.router_states.router_new_cycle = false;
-
-		iqueuemac_trun_off_radio(gnrc_netdev);
-		//puts("iqueuemac: router (device) is in t-2-r end.");
-
-		/* set up auto-ack for packet reception! */
-		iqueuemac_set_autoack(gnrc_netdev, NETOPT_ENABLE);
+	/* if phase has been changed, figure out the related phase of tx-neighbors. */
+	if(gnrc_netdev->iqueuemac.phase_changed == true){
+		iqueuemac_figure_tx_neighbor_phase(gnrc_netdev);
 	}
+
+	/*********** judge and update the states before switch back to CP listening period   ***********/
+	gnrc_netdev->iqueuemac.router_states.router_basic_state = R_LISTENNING;
+	gnrc_netdev->iqueuemac.router_states.router_listen_state = R_LISTEN_SLEEPING;
+	gnrc_netdev->iqueuemac.router_states.router_new_cycle = false;
+
+	iqueuemac_trun_off_radio(gnrc_netdev);
+	//puts("iqueuemac: router (device) is in t-2-r end.");
+
+	/* set up auto-ack for packet reception! */
+	iqueuemac_set_autoack(gnrc_netdev, NETOPT_ENABLE);
+
 	gnrc_netdev->iqueuemac.need_update = true;
 }
 
@@ -1330,9 +1308,7 @@ void iqueuemac_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev){
 
 	    	/*** TX_FEEDBACK_SUCCESS means the router has success received the queue-length indicator ***/
 	    	/*  add this part in the future to support vtdma in sending-to-unkown (to router type) */
-	    	if((gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue) > 0) &&
-	    	   (gnrc_netdev->tx.current_neighbor->mac_type == ROUTER)){
-
+	    	if (gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue) > 0) {
 	    		gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_INIT;
 	    		iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac,TIMEOUT_PREAMBLE);
 	    		iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac,TIMEOUT_PREAMBLE_DURATION);
@@ -1346,10 +1322,7 @@ void iqueuemac_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev){
 
 	    		gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_BEACON;
 
-	    		if(gnrc_netdev->iqueuemac.mac_type == ROUTER){
-	    			gnrc_netdev->iqueuemac.router_states.router_trans_state = R_TRANS_TO_ROUTER;
-	    		}
-
+	    		gnrc_netdev->iqueuemac.router_states.router_trans_state = R_TRANS_TO_ROUTER;
 	    	}else{
 	    		gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
 	    	}
@@ -1399,21 +1372,18 @@ void iqueuemac_t2u_end(gnrc_netdev_t *gnrc_netdev){
 
 	gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_INIT;
 
-	if(gnrc_netdev->iqueuemac.mac_type == ROUTER){
-		/*********** judge and update the states before switch back to CP listening period   ***********/
-
-		/* if phase has been changed, figure out the related phase of tx-neighbors. */
-		if(gnrc_netdev->iqueuemac.phase_changed == true){
-			iqueuemac_figure_tx_neighbor_phase(gnrc_netdev);
-		}
-
-		gnrc_netdev->iqueuemac.router_states.router_basic_state = R_LISTENNING;
-		gnrc_netdev->iqueuemac.router_states.router_listen_state = R_LISTEN_SLEEPING;
-		gnrc_netdev->iqueuemac.router_states.router_new_cycle = false;
-
-		iqueuemac_trun_off_radio(gnrc_netdev);
-		//puts("iqueuemac: router (device) is in t-2-u end.");
+	/* if phase has been changed, figure out the related phase of tx-neighbors. */
+	if(gnrc_netdev->iqueuemac.phase_changed == true){
+		iqueuemac_figure_tx_neighbor_phase(gnrc_netdev);
 	}
+
+	gnrc_netdev->iqueuemac.router_states.router_basic_state = R_LISTENNING;
+	gnrc_netdev->iqueuemac.router_states.router_listen_state = R_LISTEN_SLEEPING;
+	gnrc_netdev->iqueuemac.router_states.router_new_cycle = false;
+
+	iqueuemac_trun_off_radio(gnrc_netdev);
+	//puts("iqueuemac: router (device) is in t-2-u end.");
+
 	gnrc_netdev->iqueuemac.need_update = true;
 }
 
@@ -1908,13 +1878,6 @@ void iqueue_mac_router_update(gnrc_netdev_t *gnrc_netdev){
    }
 }
 
-void iqueue_mac_update(gnrc_netdev_t *gnrc_netdev){
-
-	if(gnrc_netdev->iqueuemac.mac_type == ROUTER){
-	  iqueue_mac_router_update(gnrc_netdev);
-	}
-}
-
 ///static void _pass_on_packet(gnrc_pktsnip_t *pkt);
 
 /**
@@ -2087,8 +2050,6 @@ static void *_gnrc_iqueuemac_thread(void *args)
     dev->driver->init(dev);
     /***************************************************************************/
 
-    gnrc_netdev->iqueuemac.mac_type = MAC_TYPE;
-
     xtimer_sleep(5);
 
     iqueuemac_init(gnrc_netdev);
@@ -2168,8 +2129,8 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
         while(gnrc_netdev->iqueuemac.need_update == true)  //&&(iqueuemac.duty_cycle_started == true)
         {
-        	gnrc_netdev->iqueuemac.need_update = false;
-            iqueue_mac_update(gnrc_netdev);
+            gnrc_netdev->iqueuemac.need_update = false;
+            iqueue_mac_router_update(gnrc_netdev);
         }
     }
     /* never reached */

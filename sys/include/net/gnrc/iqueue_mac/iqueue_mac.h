@@ -36,8 +36,6 @@ typedef enum {
     NODE
 } iqueuemac_type_t;
 
-#define MAC_TYPE  ROUTER // NODE //                                                                      NODE //        ROUTER
-
 #ifndef IQUEUEMAC_WAIT_RTT_STABLE_US
 #define IQUEUEMAC_WAIT_RTT_STABLE_US        (3000U * 1000)
 #endif

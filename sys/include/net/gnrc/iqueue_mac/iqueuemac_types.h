@@ -174,7 +174,6 @@ typedef struct {
 
 	mac_router_basic_state_t router_basic_state;
 	mac_router_init_state_t router_init_state;
-
 	mac_router_listen_state_t router_listen_state;
 	mac_router_trans_state_t router_trans_state;
 
@@ -186,11 +185,9 @@ typedef struct {
 } router_states_t;
 
 typedef struct {
-
 	iqueuemac_device_broadcast_state_t device_broadcast_state;
 	iqueuemac_device_t2r_state_t iqueuemac_device_t2r_state;
 	iqueuemac_device_t2u_state_t iqueuemac_device_t2u_state;
-
 } device_states_t;
 
 typedef struct {
@@ -229,7 +226,6 @@ typedef struct iqueuemac {
     kernel_pid_t pid;
 
     /* Internal state of MAC layer */
-	iqueuemac_type_t mac_type;
 	iqueuemac_router_state_t router_state;
 
 	router_states_t router_states;

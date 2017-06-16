@@ -238,8 +238,6 @@ int iqueue_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t
 	iqueuemac_frame_preamble_ack_t iqueuemac_preamble_ack_hdr;
 	iqueuemac_preamble_ack_hdr.header.type = FRAMETYPE_PREAMBLE_ACK;
 	iqueuemac_preamble_ack_hdr.dst_addr = info->src_addr;
-	iqueuemac_preamble_ack_hdr.device_type = gnrc_netdev->iqueuemac.mac_type;
-	//maybe we don't need this "father_router_addr" parameter anymore
 
 	phase_now_ticks = _phase_now(gnrc_netdev); //rtt_get_counter();
 
@@ -1159,7 +1157,7 @@ void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pkts
 	 }
 
 	 /***** update all the necessary information to marked as a known neighbor ****/
-	 gnrc_netdev->tx.current_neighbor->mac_type = iqueuemac_preamble_ack_hdr->device_type;
+	 gnrc_netdev->tx.current_neighbor->mac_type = ROUTER;
 
 	 /*** remember to reduce a bit the phase for locking, since there is a hand-shake procedure before ***/
 	 //uint32_t  phase_ticks;
