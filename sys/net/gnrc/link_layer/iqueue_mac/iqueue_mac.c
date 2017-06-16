@@ -102,7 +102,6 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
 	gnrc_netdev->iqueuemac.cur_pub_channel = gnrc_netdev->iqueuemac.pub_channel_1;
 
 	gnrc_netdev->iqueuemac.device_states.device_broadcast_state = DEVICE_BROADCAST_INIT;
-	gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2n_state = DEVICE_T2N_WAIT_CP_INIT;
 	gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CP_INIT;
 	gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_INIT;
 

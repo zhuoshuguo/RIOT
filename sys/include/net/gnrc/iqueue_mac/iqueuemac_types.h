@@ -65,15 +65,6 @@ typedef enum {
 } iqueuemac_device_broadcast_state_t;
 
 typedef enum {
-	DEVICE_T2N_WAIT_CP_INIT = 0,
-	DEVICE_T2N_WAIT_CP,
-	DEVICE_T2N_TRANS_IN_CP,
-	DEVICE_T2N_WAIT_CPTRANS_FEEDBACK,
-	DEVICE_T2N_RE_PHASE_LOCK_PREPARE,
-	DEVICE_T2N_TRANS_END
-} iqueuemac_device_t2n_state_t;
-
-typedef enum {
 	DEVICE_T2R_WAIT_CP_INIT = 0,
 	DEVICE_T2R_WAIT_CP,
 	DEVICE_T2R_TRANS_IN_CP,
@@ -144,37 +135,6 @@ typedef enum {
 	R_BROADCAST
 } mac_router_trans_state_t;
 
-typedef enum {
-	R_T2U_SEND_PREAMBLE_INIT = 0,
-	R_T2U_SEND_PREAMBLE,
-	R_T2U_WAIT_PREAMBLE_ACK,
-	R_T2U_SEND_DATA,
-	R_T2U_WAIT_TX_FEEDBACK,
-	R_T2U_END
-} mac_router_t2u_state_t;
-
-typedef enum {
-	/*Transmitting states of router*/
-	R_T2R_WAIT_CP_INIT = 0,
-	R_T2R_WAIT_CP,
-	R_T2R_TRANS_IN_CP,
-	R_T2R_WAIT_CPTRANS_FEEDBACK,
-	R_T2R_WAIT_BEACON,
-	R_T2R_WAIT_OWN_SLOTS,
-	R_T2R_TRANS_IN_VTDMA,
-	R_T2R_WAIT_VTDMATRANS_FEEDBACK,
-	R_T2R_TRANS_END
-} mac_router_t2r_state_t;
-
-typedef enum {
-	/*Transmitting states of router*/
-	R_T2N_WAIT_CP_INIT = 0,
-	R_T2N_WAIT_CP,
-	R_T2N_TRANS_IN_CP,
-	R_T2N_WAIT_CPTRANS_FEEDBACK,
-	R_T2N_TRANS_END
-} mac_router_t2n_state_t;
-
 /******************************router state machinies**********************************/
 
 typedef enum {
@@ -228,21 +188,16 @@ typedef struct {
 typedef struct {
 
 	iqueuemac_device_broadcast_state_t device_broadcast_state;
-	iqueuemac_device_t2n_state_t iqueuemac_device_t2n_state;
 	iqueuemac_device_t2r_state_t iqueuemac_device_t2r_state;
 	iqueuemac_device_t2u_state_t iqueuemac_device_t2u_state;
 
 } device_states_t;
-
-
-
 
 typedef struct {
 	l2_addr_t node_addr;
 	uint8_t queue_indicator;
 	iqueuemac_type_t mac_type;
 }rx_slots_schedule_unit;
-
 
 typedef struct {
 	uint8_t total_slots_num;
