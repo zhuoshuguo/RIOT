@@ -131,15 +131,6 @@ typedef enum {
 #define IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE            (30U)
 #endif
 
-/******* it seems that this should not be larger than 5 *******/
-#ifndef IQUEUEMAC_TX_QUEUE_SIZE
-#define IQUEUEMAC_TX_QUEUE_SIZE             (55U)
-#endif
-
-#ifndef IQUEUEMAC_RX_QUEUE_SIZE
-#define IQUEUEMAC_RX_QUEUE_SIZE             (8U)
-#endif
-
 /******* it seems that this should not be larger than 3 *******/
 #ifndef IQUEUEMAC_DISPATCH_BUFFER_SIZE
 #define IQUEUEMAC_DISPATCH_BUFFER_SIZE      (8U)
@@ -149,9 +140,6 @@ typedef enum {
 #define IQUEUEMAC_MAX_L2_ADDR_LEN           (2U)
 #endif
 
-#ifndef IQUEUEMAC_NEIGHBOUR_COUNT
-#define IQUEUEMAC_NEIGHBOUR_COUNT           (8U)
-#endif
 
 #ifndef IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT
 #define IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT           (10U)

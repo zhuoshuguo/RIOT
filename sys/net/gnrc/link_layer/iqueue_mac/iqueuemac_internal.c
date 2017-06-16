@@ -22,6 +22,7 @@
 #include <net/gnrc.h>
 #include "random.h"
 #include "net/gnrc/mac/types.h"
+#include "net/gnrc/mac/mac.h"
 #include "net/gnrc/iqueue_mac/iqueue_mac.h"
 #include "net/gnrc/priority_pktqueue.h"
 #include "net/gnrc/iqueue_mac/hdr.h"
@@ -205,7 +206,7 @@ int iqueuemac_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_enabl
 	csma_enable_send = csma_enable;
 	gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA, &csma_enable_send, sizeof(netopt_enable_t));
 
-	gnrc_netdev->iqueuemac.tx.tx_finished = false;
+	gnrc_netdev->tx.tx_finished = false;
 	gnrc_netdev_set_tx_feedback(gnrc_netdev,TX_FEEDBACK_UNDEF);
 	return gnrc_netdev->send(gnrc_netdev, pkt);
 
@@ -1354,7 +1355,7 @@ void iqueuemac_packet_process_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev){
             		(memcmp(&gnrc_netdev->tx.current_neighbor->l2_addr,
             		        &receive_packet_info.src_addr.addr,
             		        gnrc_netdev->tx.current_neighbor->l2_addr_len) == 0)) {
-            			gnrc_netdev->iqueuemac.tx.got_preamble_ack = true;
+            			gnrc_netdev->tx.got_preamble_ack = true;
 
             			iqueuemac_device_process_preamble_ack(gnrc_netdev, pkt, &receive_packet_info);
 
@@ -1472,21 +1473,21 @@ bool iqueue_mac_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev){
     }else{
     	/*** find the next neighbor ***/
     	uint32_t j;
-    	j = gnrc_netdev->iqueuemac.tx.last_tx_neighbor_id + 1;
+    	j = gnrc_netdev->tx.last_tx_neighbor_id + 1;
 
-    	if(j >= IQUEUEMAC_NEIGHBOUR_COUNT) {
+    	if(j >= GNRC_MAC_NEIGHBOR_COUNT) {
     		j= 1;
     	}
 
-    	for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++) {
+    	for(int i = 1; i < GNRC_MAC_NEIGHBOR_COUNT; i++) {
 
     		if(gnrc_priority_pktqueue_length(&gnrc_netdev->tx.neighbors[j].queue) > 0) {
-    			gnrc_netdev->iqueuemac.tx.last_tx_neighbor_id = j;
+    			gnrc_netdev->tx.last_tx_neighbor_id = j;
     			next = (int)j;
     			break;
     		} else {
     			j ++;
-    	    	if(j >= IQUEUEMAC_NEIGHBOUR_COUNT) {
+    	    	if(j >= GNRC_MAC_NEIGHBOR_COUNT) {
     	    		j= 1;
     	    	}
     		}
@@ -1512,8 +1513,8 @@ bool iqueue_mac_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev){
       	if(pkt != NULL){
        		gnrc_netdev->tx.packet = pkt;
        		gnrc_netdev->tx.current_neighbor = &gnrc_netdev->tx.neighbors[next];
-       		gnrc_netdev->iqueuemac.tx.tx_seq = 0;
-       		gnrc_netdev->iqueuemac.tx.t2u_retry_contuer = 0;
+       		gnrc_netdev->tx.tx_seq = 0;
+       		gnrc_netdev->tx.t2u_retry_contuer = 0;
 
        		//printf("iqueuemac: the find nearest neighbor is %d. \n", next);
        		return true;
@@ -1557,11 +1558,11 @@ void iqueuemac_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t* pkt){
 	}
 
 	schedulelist_size = iqueuemac_beacon_hdr->schedulelist_size;
-	gnrc_netdev->iqueuemac.tx.vtdma_para.sub_channel_seq = iqueuemac_beacon_hdr->sub_channel_seq;
+	gnrc_netdev->tx.vtdma_para.sub_channel_seq = iqueuemac_beacon_hdr->sub_channel_seq;
 
 	if(schedulelist_size == 0){
-		gnrc_netdev->iqueuemac.tx.vtdma_para.slots_num = 0;
-		gnrc_netdev->iqueuemac.tx.vtdma_para.slots_position = 0;
+		gnrc_netdev->tx.vtdma_para.slots_num = 0;
+		gnrc_netdev->tx.vtdma_para.slots_position = 0;
 		return;
 	}
 
@@ -1585,18 +1586,18 @@ void iqueuemac_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t* pkt){
 
 	/**** find the slots number and position ****/
 	if(got_allocated_slots == true){
-		gnrc_netdev->iqueuemac.tx.vtdma_para.slots_num = slots_list[id_position];
+		gnrc_netdev->tx.vtdma_para.slots_num = slots_list[id_position];
 
 		slots_position = 0;
 		for(i=0;i<id_position;i++){
 			slots_position += slots_list[i];
 		}
-		gnrc_netdev->iqueuemac.tx.vtdma_para.slots_position = slots_position;
+		gnrc_netdev->tx.vtdma_para.slots_position = slots_position;
 
 		//printf("iqueuemac: the allocated slots-num is %d, id-position is %d .\n", iqueuemac->tx.vtdma_para.slots_num, id_position);
 	}else{
-		gnrc_netdev->iqueuemac.tx.vtdma_para.slots_num = 0;
-		gnrc_netdev->iqueuemac.tx.vtdma_para.slots_position = 0;
+		gnrc_netdev->tx.vtdma_para.slots_num = 0;
+		gnrc_netdev->tx.vtdma_para.slots_position = 0;
 	}
 }
 
@@ -1621,7 +1622,7 @@ void iqueuemac_wait_beacon_packet_process(gnrc_netdev_t *gnrc_netdev){
             	if (memcmp(&gnrc_netdev->tx.current_neighbor->l2_addr,
             		       &receive_packet_info.src_addr.addr,
 						   gnrc_netdev->tx.current_neighbor->l2_addr_len) == 0) {
-            		gnrc_netdev->iqueuemac.tx.vtdma_para.get_beacon = true;
+            		gnrc_netdev->tx.vtdma_para.get_beacon = true;
             		iqueuemac_beacon_process(gnrc_netdev, pkt);
             	}
             	gnrc_pktbuf_release(pkt);
@@ -1724,7 +1725,7 @@ void iqueuemac_figure_tx_neighbor_phase(gnrc_netdev_t *gnrc_netdev){
 
 		gnrc_netdev->iqueuemac.phase_changed = false;
 
-    	for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++){
+    	for(int i = 1; i < GNRC_MAC_NEIGHBOR_COUNT; i++){
     		if(gnrc_netdev->tx.neighbors[i].mac_type == ROUTER){
     			long int tmp = gnrc_netdev->tx.neighbors[i].cp_phase - gnrc_netdev->iqueuemac.backoff_phase_ticks;
     		    if(tmp < 0) {
@@ -1779,7 +1780,7 @@ void update_neighbor_pubchan(gnrc_netdev_t *gnrc_netdev)
 	}
 
 	/* update tx-nighbors' current channel */
-	for(int i = 1; i < IQUEUEMAC_NEIGHBOUR_COUNT; i++){
+	for(int i = 1; i < GNRC_MAC_NEIGHBOR_COUNT; i++){
 		if(gnrc_netdev->tx.neighbors[i].mac_type == ROUTER){
 			/* switch public channel */
 			if(gnrc_netdev->tx.neighbors[i].pub_chanseq == gnrc_netdev->iqueuemac.pub_channel_1) {

@@ -173,6 +173,7 @@ typedef struct {
     gnrc_pktsnip_t *packet;                                             /**< currently scheduled packet for sending */
 #endif /* (GNRC_MAC_TX_QUEUE_SIZE != 0) || defined(DOXYGEN) */
 
+
 #ifdef MODULE_GNRC_LWMAC
     gnrc_lwmac_tx_state_t state;       /**< LWMAC specific internal transmission state */
     uint32_t wr_sent;                  /**< Count how many WRs were sent until WA received */
@@ -180,6 +181,20 @@ typedef struct {
     uint8_t bcast_seqnr;               /**< Sequence number for broadcast data to filter at receiver */
     uint8_t tx_burst_count;            /**< Count how many consecutive packets have been transmitted */
     uint8_t tx_retry_count;            /**< Count how many Tx-retrials have been executed before packet drop */
+#endif
+
+#ifdef MODULE_GNRC_IQUEUEMAC
+    uint32_t preamble_sent;
+    bool got_preamble_ack;
+    uint32_t broadcast_seq;
+    uint8_t tx_seq;
+    bool tx_finished;
+    vtdma_para_t vtdma_para;
+    uint8_t no_ack_contuer;
+    uint8_t t2u_retry_contuer;
+    bool t2u_on_public_1;
+    bool reach_max_preamble_interval;
+    uint32_t last_tx_neighbor_id;
 #endif
 } gnrc_mac_tx_t;
 

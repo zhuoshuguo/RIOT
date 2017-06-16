@@ -287,36 +287,6 @@ typedef struct {
 	bool get_beacon;
 }vtdma_para_t;
 
-
-typedef struct {
-    /* Internal state of reception state machine */
-
-	uint32_t preamble_sent;
-	bool got_preamble_ack;
-	uint32_t broadcast_seq;
-
-	/* Queue of destination node to which the current packet will be sent */
-
-	uint8_t tx_seq;
-
-	bool tx_finished;
-
-
-	vtdma_para_t vtdma_para;
-
-	uint8_t cp_retries;
-
-	uint8_t no_ack_contuer;
-	uint8_t t2u_retry_contuer;
-
-	bool t2u_on_public_1;
-
-	bool reach_max_preamble_interval;
-
-	uint32_t last_tx_neighbor_id;
-
-} iqueuemac_tx_t;
-
 /******************************************************************************/
 typedef struct iqueuemac {
     /* PID of IQUEUEMAC thread */
@@ -330,7 +300,6 @@ typedef struct iqueuemac {
 	device_states_t device_states;
 
 	iqueuemac_rx_t rx;
-	iqueuemac_tx_t tx;
 
 	in_cluster_neighbor_info_t in_cluster_node_list[IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM];
 
