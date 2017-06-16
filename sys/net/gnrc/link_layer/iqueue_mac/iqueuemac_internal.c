@@ -1403,7 +1403,7 @@ void iqueuemac_packet_process_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev){
 int iqueuemac_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable)
 {
 	gnrc_pktsnip_t* pkt;
-	pkt = gnrc_netdev->iqueuemac.tx.tx_packet;
+	pkt = gnrc_netdev->tx.packet;
 
     if (pkt == NULL) {
         puts("iqsend: pkt was NULL\n");
@@ -1423,13 +1423,13 @@ int iqueuemac_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_
 		iqueuemac_data_hdr.queue_indicator = gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue);
 
 		/* save payload pointer */
-		gnrc_pktsnip_t* payload = gnrc_netdev->iqueuemac.tx.tx_packet->next;
+		gnrc_pktsnip_t* payload = gnrc_netdev->tx.packet->next;
 
 		pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_data_hdr, sizeof(iqueuemac_data_hdr), GNRC_NETTYPE_IQUEUEMAC);
 		if(pkt->next == NULL) {
 			puts("iqueuemac: pktbuf add failed in iqueuemac_send_data_packet().");
 			/* make append payload after netif header again */
-			gnrc_netdev->iqueuemac.tx.tx_packet->next = payload;
+			gnrc_netdev->tx.packet->next = payload;
 			return -ENOBUFS;
 		}
 
@@ -1438,14 +1438,14 @@ int iqueuemac_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_
 		iqueuemac_data_hdr_pointer->queue_indicator = gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue);
 	}
 
-	gnrc_pktbuf_hold(gnrc_netdev->iqueuemac.tx.tx_packet,1);
+	gnrc_pktbuf_hold(gnrc_netdev->tx.packet,1);
 
 	int res;
-	res = iqueuemac_send(gnrc_netdev, gnrc_netdev->iqueuemac.tx.tx_packet, csma_enable);
+	res = iqueuemac_send(gnrc_netdev, gnrc_netdev->tx.packet, csma_enable);
     if(res < 0){
         /* If res is < 0, then, the old pkt will not be released in send(). so need to release old data once */
-        gnrc_pktbuf_release(gnrc_netdev->iqueuemac.tx.tx_packet);
-        gnrc_netdev->iqueuemac.tx.tx_packet = NULL;
+        gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+        gnrc_netdev->tx.packet = NULL;
 		puts("iqueuemac: tx-res < 0 in iqueuemac_send_data_packet().");
     }
 	return res;
@@ -1510,7 +1510,7 @@ bool iqueue_mac_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev){
     if(next >= 0){
        	gnrc_pktsnip_t *pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->tx.neighbors[next].queue);
       	if(pkt != NULL){
-       		gnrc_netdev->iqueuemac.tx.tx_packet = pkt;
+       		gnrc_netdev->tx.packet = pkt;
        		gnrc_netdev->tx.current_neighbor = &gnrc_netdev->tx.neighbors[next];
        		gnrc_netdev->iqueuemac.tx.tx_seq = 0;
        		gnrc_netdev->iqueuemac.tx.t2u_retry_contuer = 0;

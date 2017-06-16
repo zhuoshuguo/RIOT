@@ -262,7 +262,7 @@ void iqueuemac_device_broadcast_init(gnrc_netdev_t *gnrc_netdev){
 	iqueuemac_trun_on_radio(gnrc_netdev);
 
 	/*** assemble broadcast packet ***/
-	gnrc_pktsnip_t* pkt = gnrc_netdev->iqueuemac.tx.tx_packet;
+	gnrc_pktsnip_t* pkt = gnrc_netdev->tx.packet;
 
 	iqueuemac_frame_broadcast_t iqueuemac_broadcast_hdr;
 	iqueuemac_broadcast_hdr.header.type = FRAMETYPE_BROADCAST;
@@ -296,9 +296,9 @@ void iqueuemac_device_send_broadcast(gnrc_netdev_t *gnrc_netdev){
 	/***  disable auto-ack ***/
 	iqueuemac_set_autoack(gnrc_netdev, NETOPT_DISABLE);
 
-	gnrc_pktbuf_hold(gnrc_netdev->iqueuemac.tx.tx_packet,1);
+	gnrc_pktbuf_hold(gnrc_netdev->tx.packet,1);
 
-	iqueuemac_send(gnrc_netdev, gnrc_netdev->iqueuemac.tx.tx_packet, NETOPT_DISABLE);
+	iqueuemac_send(gnrc_netdev, gnrc_netdev->tx.packet, NETOPT_DISABLE);
 
 	/* Enable Auto ACK again for data reception */
 	iqueuemac_set_autoack(gnrc_netdev, NETOPT_ENABLE);
@@ -324,8 +324,8 @@ void iqueuemac_device_wait_broadcast_feedback(gnrc_netdev_t *gnrc_netdev){
 	if(iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_FINISH)){
 
 		iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac,TIMEOUT_BROADCAST_INTERVAL);
-		gnrc_pktbuf_release(gnrc_netdev->iqueuemac.tx.tx_packet);
-		gnrc_netdev->iqueuemac.tx.tx_packet = NULL;
+		gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+		gnrc_netdev->tx.packet = NULL;
 
 		gnrc_netdev->iqueuemac.device_states.device_broadcast_state = DEVICE_BROADCAST_END;
 		gnrc_netdev->iqueuemac.need_update = true;
@@ -344,9 +344,9 @@ void iqueuemac_device_broadcast_end(gnrc_netdev_t *gnrc_netdev){
 	iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac,TIMEOUT_BROADCAST_INTERVAL);
 	iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac,TIMEOUT_BROADCAST_FINISH);
 
-	if(gnrc_netdev->iqueuemac.tx.tx_packet){
-		gnrc_pktbuf_release(gnrc_netdev->iqueuemac.tx.tx_packet);
-		gnrc_netdev->iqueuemac.tx.tx_packet = NULL;
+	if(gnrc_netdev->tx.packet){
+		gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+		gnrc_netdev->tx.packet = NULL;
 	}
 	gnrc_netdev->tx.current_neighbor = NULL;
 
@@ -575,9 +575,9 @@ void iqueuemac_t2r_trans_in_cp(gnrc_netdev_t *gnrc_netdev){
 		printf("t2r %d, drop pkt.\n", res);
 
 		gnrc_netdev->iqueuemac.tx.no_ack_contuer = 0;
-		if(gnrc_netdev->iqueuemac.tx.tx_packet != NULL){
-			gnrc_pktbuf_release(gnrc_netdev->iqueuemac.tx.tx_packet);
-			gnrc_netdev->iqueuemac.tx.tx_packet = NULL;
+		if(gnrc_netdev->tx.packet != NULL){
+			gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+			gnrc_netdev->tx.packet = NULL;
 		}
 
 		gnrc_netdev->tx.current_neighbor = NULL;
@@ -604,8 +604,8 @@ void iqueuemac_t2r_wait_cp_transfeedback(gnrc_netdev_t *gnrc_netdev){
 
 			case TX_FEEDBACK_SUCCESS:{
 				/*** first release the pkt ***/
-				gnrc_pktbuf_release(gnrc_netdev->iqueuemac.tx.tx_packet);
-				gnrc_netdev->iqueuemac.tx.tx_packet = NULL;
+				gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+				gnrc_netdev->tx.packet = NULL;
 
 				gnrc_netdev->iqueuemac.tx.no_ack_contuer = 0;
 
@@ -750,7 +750,7 @@ void iqueuemac_t2r_wait_beacon(gnrc_netdev_t *gnrc_netdev){
     			gnrc_pktsnip_t *pkt = gnrc_priority_pktqueue_pop(&(gnrc_netdev->tx.current_neighbor->queue));
 
     			if(pkt != NULL){
-    				gnrc_netdev->iqueuemac.tx.tx_packet = pkt;
+    				gnrc_netdev->tx.packet = pkt;
     				gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
     			}else{
     				puts("iqueueMAC-Error: NUll pktbuf!");
@@ -783,7 +783,7 @@ void iqueuemac_t2r_wait_own_slots(gnrc_netdev_t *gnrc_netdev){
 		gnrc_pktsnip_t *pkt = gnrc_priority_pktqueue_pop(&(gnrc_netdev->tx.current_neighbor->queue));
 
 		if(pkt != NULL){
-			gnrc_netdev->iqueuemac.tx.tx_packet = pkt;
+			gnrc_netdev->tx.packet = pkt;
 			gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
 		}else{
 			puts("iqueueMAC-Error: NUll pktbuf, drop!");
@@ -817,9 +817,9 @@ void iqueuemac_t2r_trans_in_slots(gnrc_netdev_t *gnrc_netdev){
 		if(res < 0){
 			printf("vtdma %d, drop pkt\n", res);
 
-			if(gnrc_netdev->iqueuemac.tx.tx_packet != NULL){
-				gnrc_pktbuf_release(gnrc_netdev->iqueuemac.tx.tx_packet);
-				gnrc_netdev->iqueuemac.tx.tx_packet = NULL;
+			if(gnrc_netdev->tx.packet != NULL){
+				gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+				gnrc_netdev->tx.packet = NULL;
 			}
 			gnrc_netdev->tx.current_neighbor = NULL;
 			gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
@@ -837,9 +837,9 @@ void iqueuemac_t2r_trans_in_slots(gnrc_netdev_t *gnrc_netdev){
 		/****  switch back to the public channel ****/
 		//puts("v-end1");
 		//iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
-		if(gnrc_netdev->iqueuemac.tx.tx_packet != NULL) {
-			gnrc_pktbuf_release(gnrc_netdev->iqueuemac.tx.tx_packet);
-			gnrc_netdev->iqueuemac.tx.tx_packet = NULL;
+		if(gnrc_netdev->tx.packet != NULL) {
+			gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+			gnrc_netdev->tx.packet = NULL;
 			puts("v3:drop pkt");
 			gnrc_netdev->tx.current_neighbor = NULL;
 		}
@@ -860,8 +860,8 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev){
 			case TX_FEEDBACK_SUCCESS:{
 				//puts("v");
 				/*** first release the pkt ***/
-				gnrc_pktbuf_release(gnrc_netdev->iqueuemac.tx.tx_packet);
-				gnrc_netdev->iqueuemac.tx.tx_packet = NULL;
+				gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+				gnrc_netdev->tx.packet = NULL;
 
 				gnrc_netdev->iqueuemac.tx.no_ack_contuer = 0;
 
@@ -871,7 +871,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev){
 					gnrc_pktsnip_t *pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->tx.current_neighbor->queue);
 
 					if(pkt != NULL){
-						gnrc_netdev->iqueuemac.tx.tx_packet = pkt;
+						gnrc_netdev->tx.packet = pkt;
 						gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
 					}else{
 						puts("iqueueMAC-Error: NUll pktbuf!");
@@ -924,10 +924,10 @@ void iqueuemac_t2r_end(gnrc_netdev_t *gnrc_netdev){
 
 	/* if t-2-r success or IQUEUEMAC_REPHASELOCK_THRESHOLD has been reached,
 	 * clean the tx current_neighbour address. */
-	if((gnrc_netdev->iqueuemac.tx.tx_packet != NULL) && (gnrc_netdev->iqueuemac.tx.no_ack_contuer == 0)){
+	if((gnrc_netdev->tx.packet != NULL) && (gnrc_netdev->iqueuemac.tx.no_ack_contuer == 0)){
 		puts("t2r:drop pkt");
-		gnrc_pktbuf_release(gnrc_netdev->iqueuemac.tx.tx_packet);
-		gnrc_netdev->iqueuemac.tx.tx_packet = NULL;
+		gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+		gnrc_netdev->tx.packet = NULL;
 	}
 
 	/* if IQUEUEMAC_REPHASELOCK_THRESHOLD hasn't been reached yet,
@@ -1051,16 +1051,16 @@ void iqueuemac_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
 
 		puts("memory full, drop one pkt");
 
-		if(gnrc_netdev->iqueuemac.tx.tx_packet != NULL){
-			gnrc_pktbuf_release(gnrc_netdev->iqueuemac.tx.tx_packet);
-			gnrc_netdev->iqueuemac.tx.tx_packet = NULL;
+		if(gnrc_netdev->tx.packet != NULL){
+			gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+			gnrc_netdev->tx.packet = NULL;
 			gnrc_netdev->iqueuemac.tx.no_ack_contuer = 0;
 		}
 
 		gnrc_pktsnip_t *pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->tx.current_neighbor->queue);
 
 		if(pkt != NULL){
-			gnrc_netdev->iqueuemac.tx.tx_packet = pkt;
+			gnrc_netdev->tx.packet = pkt;
 		}else{
 			puts("iqueueMAC: NUll pkt, goto t2u end");
 			gnrc_netdev->tx.current_neighbor = NULL;
@@ -1180,16 +1180,16 @@ void iqueuemac_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
 
 		puts("memory full, drop one pkt");
 
-		if(gnrc_netdev->iqueuemac.tx.tx_packet != NULL){
-			gnrc_pktbuf_release(gnrc_netdev->iqueuemac.tx.tx_packet);
-			gnrc_netdev->iqueuemac.tx.tx_packet = NULL;
+		if(gnrc_netdev->tx.packet != NULL){
+			gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+			gnrc_netdev->tx.packet = NULL;
 			gnrc_netdev->iqueuemac.tx.no_ack_contuer = 0;
 		}
 
 		gnrc_pktsnip_t *pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->tx.current_neighbor->queue);
 
 		if(pkt != NULL){
-			gnrc_netdev->iqueuemac.tx.tx_packet = pkt;
+			gnrc_netdev->tx.packet = pkt;
 		}else{
 			puts("iqueueMAC: NUll pkt, goto t2u end");
 			gnrc_netdev->tx.current_neighbor = NULL;
@@ -1329,8 +1329,8 @@ void iqueuemac_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev){
 	 * namely, completed, to ensure router gets the data correctly***/
 	    if(gnrc_netdev_get_tx_feedback(gnrc_netdev) == TX_FEEDBACK_SUCCESS){
 
-	    	gnrc_pktbuf_release(gnrc_netdev->iqueuemac.tx.tx_packet);
-	    	gnrc_netdev->iqueuemac.tx.tx_packet = NULL;
+	    	gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+	    	gnrc_netdev->tx.packet = NULL;
 
 	    	gnrc_netdev->iqueuemac.tx.no_ack_contuer = 0;
 	    	gnrc_netdev->iqueuemac.tx.t2u_retry_contuer = 0;
@@ -1365,8 +1365,8 @@ void iqueuemac_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev){
 
 	    	if(gnrc_netdev->iqueuemac.tx.t2u_retry_contuer >= IQUEUEMAC_T2U_RETYR_THRESHOLD) {
 	    	    printf("t2u data failed on ch %d. drop pkt.\n",gnrc_netdev->tx.current_neighbor->pub_chanseq);
-	    	    gnrc_pktbuf_release(gnrc_netdev->iqueuemac.tx.tx_packet);
-	    	    gnrc_netdev->iqueuemac.tx.tx_packet = NULL;
+	    	    gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+	    	    gnrc_netdev->tx.packet = NULL;
 	    	    gnrc_netdev->tx.current_neighbor = NULL;
 	    	    gnrc_netdev->iqueuemac.tx.no_ack_contuer = 0;
 	    	    gnrc_netdev->iqueuemac.tx.t2u_retry_contuer = 0;
@@ -1395,9 +1395,9 @@ void iqueuemac_t2u_end(gnrc_netdev_t *gnrc_netdev){
 	/* in case of quit_current_cycle is true, don't release tx-pkt and tx-neighbor, will try immediately next cycle.*/
 	if(gnrc_netdev->iqueuemac.quit_current_cycle == false)
 	{
-		if(gnrc_netdev->iqueuemac.tx.tx_packet != NULL){
-			gnrc_pktbuf_release(gnrc_netdev->iqueuemac.tx.tx_packet);
-			gnrc_netdev->iqueuemac.tx.tx_packet = NULL;
+		if(gnrc_netdev->tx.packet != NULL){
+			gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+			gnrc_netdev->tx.packet = NULL;
 			gnrc_netdev->iqueuemac.tx.no_ack_contuer = 0;
 			puts("drop pkt");
 		}

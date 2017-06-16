@@ -295,8 +295,6 @@ typedef struct {
 	bool got_preamble_ack;
 	uint32_t broadcast_seq;
 
-	/* Packet that is currently scheduled to be sent */
-	gnrc_pktsnip_t* tx_packet;
 	/* Queue of destination node to which the current packet will be sent */
 
 	uint8_t tx_seq;
