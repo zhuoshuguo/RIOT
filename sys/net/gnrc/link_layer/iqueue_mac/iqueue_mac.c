@@ -259,7 +259,7 @@ void iqueuemac_device_broadcast_init(gnrc_netdev_t *gnrc_netdev){
 void iqueuemac_device_send_broadcast(gnrc_netdev_t *gnrc_netdev){
 
 	/* if rx start, wait until rx is completed. */
-	if(gnrc_netdev->iqueuemac.rx_started == true){
+	if(gnrc_netdev_get_rx_started(gnrc_netdev)){
 		return;
 	}
 
@@ -287,7 +287,7 @@ void iqueuemac_device_send_broadcast(gnrc_netdev_t *gnrc_netdev){
 void iqueuemac_device_wait_broadcast_feedback(gnrc_netdev_t *gnrc_netdev){
 
 	/* if rx start, wait until rx is completed. */
-	if(gnrc_netdev->iqueuemac.rx_started == true){
+	if(gnrc_netdev_get_rx_started(gnrc_netdev)){
 		return;
 	}
 
@@ -960,7 +960,7 @@ void iqueuemac_t2u_send_preamble_init(gnrc_netdev_t *gnrc_netdev){
 
 	puts("r");
 	/* in case that rx_started was left as true during last t-2-u ending, so set it to false. */
-	gnrc_netdev->iqueuemac.rx_started = false;
+	gnrc_netdev_set_rx_started(gnrc_netdev, false);
 
 	/** since t-2-u is right following beacon, so the radio is still on, so we don't need to turn on it again. **/
 	//iqueuemac_trun_on_radio(iqueuemac);
@@ -1445,7 +1445,7 @@ void iqueue_mac_router_listen_cp_init(gnrc_netdev_t *gnrc_netdev){
 	/* turn to public channel */
 	iqueuemac_turn_radio_channel(gnrc_netdev, gnrc_netdev->iqueuemac.cur_pub_channel);
 
-	gnrc_netdev->iqueuemac.rx_started = false;
+	gnrc_netdev_set_rx_started(gnrc_netdev, false);
 	gnrc_netdev->iqueuemac.packet_received = false;
 	iqueuemac_trun_on_radio(gnrc_netdev);
 
@@ -1905,7 +1905,7 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
         switch(event) {
 
             case NETDEV_EVENT_RX_STARTED:
-            	gnrc_netdev->iqueuemac.rx_started = true;
+            	gnrc_netdev_set_rx_started(gnrc_netdev, true);
             	//puts("iqueuemac: rx-started event triggered.");
             	gnrc_netdev->iqueuemac.need_update = true;
             	break;
@@ -1920,19 +1920,19 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                     	gnrc_netdev->iqueuemac.rx_memory_full = true;
                     	puts("rx: pkt is NULL, memory full?");
                     	gnrc_netdev->iqueuemac.packet_received = false;
-                    	gnrc_netdev->iqueuemac.rx_started = false;
+                    	gnrc_netdev_set_rx_started(gnrc_netdev, false);
                     	break;
                     }
 
-                    if(!gnrc_netdev->iqueuemac.rx_started) {
+                    if(!gnrc_netdev_get_rx_started(gnrc_netdev)) {
        				   //LOG_WARNING("Maybe sending kicked in and frame buffer is now corrupted\n");
                     	puts("rx_pkt corrupted?");
        				    gnrc_pktbuf_release(pkt);
-       				 gnrc_netdev->iqueuemac.rx_started = false;
+       			        gnrc_netdev_set_rx_started(gnrc_netdev, false);
                         break;
                     }
 
-                    gnrc_netdev->iqueuemac.rx_started = false;
+                    gnrc_netdev_set_rx_started(gnrc_netdev, false);
 
                     /* update the seq to avoid duplicate pkt.
                     gnrc_netif_hdr_t* netif_hdr;

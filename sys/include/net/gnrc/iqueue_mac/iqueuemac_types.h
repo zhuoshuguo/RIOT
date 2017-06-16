@@ -150,25 +150,10 @@ typedef enum {
    // STATE_COUNT
 } iqueuemac_router_state_t;
 
-/******************************node state machinies**********************************/
-
 /******************************************************************************/
 typedef struct {
     uint8_t  addr[IQUEUEMAC_MAX_L2_ADDR_LEN];
 } l2_id_t;
-
-
-typedef struct {
-    /* Address of neighbour node */
-    l2_addr_t l2_addr;
-    /* MAC type of the neighbor*/
-
-    /* Phase relative to iqueuemac: the start of its CP period */
-
-    /* Indicating that whether this neighbor is within the same cluster*/
-    //bool in_same_cluster;
-
-} iqueuemac_tx_neighbour_t;
 
 typedef struct {
 
@@ -245,7 +230,6 @@ typedef struct iqueuemac {
     uint32_t backoff_phase_ticks;
 
     /* Track if a transmission might have corrupted a received packet */
-    bool rx_started;
     bool packet_received;
     bool quit_current_cycle;
     bool got_preamble;
