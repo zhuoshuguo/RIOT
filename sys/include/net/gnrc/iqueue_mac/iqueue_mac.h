@@ -135,7 +135,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_MAX_L2_ADDR_LEN
-#define IQUEUEMAC_MAX_L2_ADDR_LEN           (2U)
+#define IQUEUEMAC_MAX_L2_ADDR_LEN           (8U)
 #endif
 
 

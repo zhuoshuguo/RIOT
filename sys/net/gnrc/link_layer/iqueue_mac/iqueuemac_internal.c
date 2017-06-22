@@ -1045,7 +1045,7 @@ void iqueuemac_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev)
 
     memcpy(&own_id,
            gnrc_netdev->l2_addr,
-           gnrc_netdev->l2_addr_len);
+           2);
 
     /* range from 12 to 25 */
     //own_id = 12;

@@ -70,7 +70,7 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
 {
 
     gnrc_netdev->l2_addr_len = gnrc_netdev->dev->driver->get(gnrc_netdev->dev,
-                                                             NETOPT_ADDRESS,
+                                                             NETOPT_ADDRESS_LONG,
                                                              gnrc_netdev->l2_addr,
                                                              sizeof(gnrc_netdev->l2_addr));
 
@@ -2109,6 +2109,9 @@ static void *_gnrc_iqueuemac_thread(void *args)
     /***************************************************************************/
 
     xtimer_sleep(5);
+
+    uint16_t src_len = 8;
+    dev->driver->set(dev, NETOPT_SRC_LEN, &src_len, sizeof(src_len));
 
     iqueuemac_init(gnrc_netdev);
 
