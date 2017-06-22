@@ -22,12 +22,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <kernel_types.h>
+#include "kernel_types.h"
 #include "msg.h"
 #include "thread.h"
 #include "random.h"
-#include <timex.h>
-#include <periph/rtt.h>
+#include "timex.h"
+#include "periph/rtt.h"
 #include "net/gnrc.h"
 #include "net/gnrc/nettype.h"
 #include "net/netdev.h"
