@@ -1777,6 +1777,73 @@ void update_neighbor_pubchan(gnrc_netdev_t *gnrc_netdev)
 }
 
 
+void iqueuemac_broadcast_receive_packet_process(gnrc_netdev_t *gnrc_netdev){
+	gnrc_pktsnip_t* pkt;
+
+	iqueuemac_packet_info_t receive_packet_info;
+
+    while( (pkt = packet_queue_pop(&iqueuemac->rx.queue)) != NULL ) {
+    	/* parse the packet */
+    	int res = _parse_packet(pkt, &receive_packet_info);
+    	if(res != 0) {
+            //LOG_DEBUG("Packet could not be parsed: %i\n", ret);
+            gnrc_pktbuf_release(pkt);
+            continue;
+        }
+
+    	switch(receive_packet_info.header->type){
+            case FRAMETYPE_BEACON:{
+            	/* it is very unlikely that we will receive beacon here.  */
+            	gnrc_pktbuf_release(pkt);
+            }break;
+
+            case FRAMETYPE_PREAMBLE:{
+            	/* Due to non-overlap CP rule, it is very unlikely that we will receive preamble here.
+            	 * But, in case it happens, quit this t-2-u for collision avoidance.
+            	 * Release all received preamle here to reduce complexity. Only reply preamble in CP.*/
+            	gnrc_pktbuf_release(pkt);
+            	iqueuemac->quit_current_cycle = true;
+            }break;
+
+            case FRAMETYPE_PREAMBLE_ACK:{
+            	gnrc_pktbuf_release(pkt);
+            }break;
+
+            case FRAMETYPE_IQUEUE_DATA:{
+            	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr))
+            	{
+            		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+
+                	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
+                		gnrc_pktbuf_release(pkt);
+                		puts("dup pkt.");
+                		return;
+                	}
+
+            		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+            		_dispatch(iqueuemac->rx.dispatch_buffer);
+            	}else {/* if the data is not for the node, release it.  */
+
+            		gnrc_pktbuf_release(pkt);
+            	}
+            }break;
+
+            case FRAMETYPE_BROADCAST:{
+            	/* Due to non-overlap CP rule, it is very unlikely that we will receive broadcast here.
+            	 * But, in case it happens, quit this t-2-u for collision avoidance.
+            	 * Release the broadcast pkt, and receive it in CP, thus to reduce complexity.*/
+        		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
+        		_dispatch(iqueuemac->rx.dispatch_buffer);
+        		//puts("get bcast when send bcast");
+            	iqueuemac->quit_current_cycle = true;
+            }break;
+
+            default:gnrc_pktbuf_release(pkt);break;
+  	    }
+
+    }/* end of while loop */
+
+}
 
 /******************************************************************************/
 

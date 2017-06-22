@@ -159,6 +159,7 @@ void iqueuemac_router_vtdma_receive_packet_process(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_figure_tx_neighbor_phase(gnrc_netdev_t *gnrc_netdev);
 void _dispatch(gnrc_pktsnip_t **buffer);
 void update_neighbor_pubchan(gnrc_netdev_t *gnrc_netdev);
+void iqueuemac_broadcast_receive_packet_process(gnrc_netdev_t *gnrc_netdev);
 
 #ifdef __cplusplus
 }
