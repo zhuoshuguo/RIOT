@@ -287,7 +287,7 @@ void iqueuemac_device_send_broadcast(gnrc_netdev_t *gnrc_netdev)
 
     	/* queue the pkt for transmission in next cycle */
     	if(!gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet)){
-    	   	puts("Push pkt failed in t2r");
+    	   	puts("Push pkt failed in bcast");
     	   	gnrc_pktbuf_release(gnrc_netdev->tx.packet);
     	}
     	gnrc_netdev->tx.packet = NULL;
@@ -324,13 +324,6 @@ void iqueuemac_device_wait_broadcast_feedback(gnrc_netdev_t *gnrc_netdev)
     /* if rx start, wait until rx is completed. */
     if (gnrc_netdev_get_rx_started(gnrc_netdev)) {
         return;
-    }
-
-    /* when rx completed, will reach here */
-    if (gnrc_netdev->iqueuemac.packet_received == true) {
-    	gnrc_netdev->iqueuemac.packet_received = false;
-    	iqueuemac_broadcast_receive_packet_process(gnrc_netdev);
-    	gnrc_netdev->iqueuemac.quit_current_cycle = true;
     }
 
     /* if rx is going, quit send bcast. */
