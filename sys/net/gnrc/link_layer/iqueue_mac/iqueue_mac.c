@@ -2198,6 +2198,11 @@ static void *_gnrc_iqueuemac_thread(void *args)
     uint32_t seed;
     seed = (uint32_t)gnrc_netdev->l2_addr[0];
 
+    seed = 0;
+    seed = gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len-2];
+    seed = seed << 8;
+    seed |= gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len-1];
+
     random_init(seed);
 
     gnrc_netdev->iqueuemac.need_update = true;
