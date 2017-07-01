@@ -441,7 +441,9 @@ void iqueuemac_init_prepare(gnrc_netdev_t *gnrc_netdev)
     /******set TIMEOUT_COLLECT_BEACON_END timeout ******/
     iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_COLLECT_BEACON_END, listen_period);
 
-    gnrc_netdev->iqueuemac.router_states.router_init_state = R_INIT_COLLECT_BEACONS;
+    //gnrc_netdev->iqueuemac.router_states.router_init_state = R_INIT_COLLECT_BEACONS;
+    /* since node doesn't bcast beacon on default, no need to collect beacons. */
+    gnrc_netdev->iqueuemac.router_states.router_init_state = R_INIT_ANNOUNCE_SUBCHANNEL;
     gnrc_netdev->iqueuemac.need_update = true;
 
 }
@@ -480,6 +482,7 @@ void iqueuemac_init_collec_beacons(gnrc_netdev_t *gnrc_netdev)
 
 void iqueuemac_init_wait_busy_end(gnrc_netdev_t *gnrc_netdev)
 {
+    iqueuemac_init_choose_subchannel(gnrc_netdev);
     if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_FINISH)) {
         iqueuemac_trun_on_radio(gnrc_netdev);
         gnrc_netdev->iqueuemac.router_states.router_init_state = R_INIT_PREPARE;
@@ -499,7 +502,10 @@ void iqueuemac_init_announce_subchannel(gnrc_netdev_t *gnrc_netdev)
 void iqueuemac_init_wait_announce_feedback(gnrc_netdev_t *gnrc_netdev)
 {
     if (gnrc_netdev->tx.tx_finished == true) {
-
+        gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
+        gnrc_netdev->iqueuemac.router_states.router_init_state = R_INIT_END;
+        gnrc_netdev->iqueuemac.need_update = true;
+#if 0
         /*** add another condition here in the furture: the tx-feedback must be ACK-got,
          * namely, completed, to ensure router gets the data correctly***/
         if (gnrc_netdev_get_tx_feedback(gnrc_netdev) == TX_FEEDBACK_SUCCESS) {
@@ -512,6 +518,7 @@ void iqueuemac_init_wait_announce_feedback(gnrc_netdev_t *gnrc_netdev)
             gnrc_netdev->iqueuemac.router_states.router_init_state = R_INIT_PREPARE;
             gnrc_netdev->iqueuemac.need_update = true;
         }
+#endif
     }
 }
 
