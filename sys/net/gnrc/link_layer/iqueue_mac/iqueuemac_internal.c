@@ -1782,7 +1782,7 @@ void iqueuemac_broadcast_receive_packet_process(gnrc_netdev_t *gnrc_netdev){
 
 	iqueuemac_packet_info_t receive_packet_info;
 
-    while( (pkt = packet_queue_pop(&iqueuemac->rx.queue)) != NULL ) {
+    while( (pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL ) {
     	/* parse the packet */
     	int res = _parse_packet(pkt, &receive_packet_info);
     	if(res != 0) {
@@ -1802,7 +1802,7 @@ void iqueuemac_broadcast_receive_packet_process(gnrc_netdev_t *gnrc_netdev){
             	 * But, in case it happens, quit this t-2-u for collision avoidance.
             	 * Release all received preamle here to reduce complexity. Only reply preamble in CP.*/
             	gnrc_pktbuf_release(pkt);
-            	iqueuemac->quit_current_cycle = true;
+            	gnrc_netdev->iqueuemac.quit_current_cycle = true;
             }break;
 
             case FRAMETYPE_PREAMBLE_ACK:{
@@ -1810,18 +1810,17 @@ void iqueuemac_broadcast_receive_packet_process(gnrc_netdev_t *gnrc_netdev){
             }break;
 
             case FRAMETYPE_IQUEUE_DATA:{
-            	if(_addr_match(&iqueuemac->own_addr, &receive_packet_info.dst_addr))
-            	{
-            		iqueuemac_router_queue_indicator_update(iqueuemac, pkt, &receive_packet_info);
+            	if (memcmp(&gnrc_netdev->l2_addr, &receive_packet_info.dst_addr.addr, gnrc_netdev->l2_addr_len) == 0) {
+            		iqueuemac_router_queue_indicator_update(gnrc_netdev, pkt, &receive_packet_info);
 
-                	if((iqueuemac_check_duplicate(iqueuemac, &receive_packet_info))){
+                	if((iqueuemac_check_duplicate(gnrc_netdev, &receive_packet_info))){
                 		gnrc_pktbuf_release(pkt);
                 		puts("dup pkt.");
                 		return;
                 	}
 
-            		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
-            		_dispatch(iqueuemac->rx.dispatch_buffer);
+            		iqueue_push_packet_to_dispatch_queue(gnrc_netdev->rx.dispatch_buffer, pkt, &receive_packet_info);
+            		_dispatch(gnrc_netdev->rx.dispatch_buffer);
             	}else {/* if the data is not for the node, release it.  */
 
             		gnrc_pktbuf_release(pkt);
@@ -1832,10 +1831,10 @@ void iqueuemac_broadcast_receive_packet_process(gnrc_netdev_t *gnrc_netdev){
             	/* Due to non-overlap CP rule, it is very unlikely that we will receive broadcast here.
             	 * But, in case it happens, quit this t-2-u for collision avoidance.
             	 * Release the broadcast pkt, and receive it in CP, thus to reduce complexity.*/
-        		iqueue_push_packet_to_dispatch_queue(iqueuemac->rx.dispatch_buffer, pkt, &receive_packet_info, iqueuemac);
-        		_dispatch(iqueuemac->rx.dispatch_buffer);
+        		iqueue_push_packet_to_dispatch_queue(gnrc_netdev->rx.dispatch_buffer, pkt, &receive_packet_info);
+        		_dispatch(gnrc_netdev->rx.dispatch_buffer);
         		//puts("get bcast when send bcast");
-            	iqueuemac->quit_current_cycle = true;
+        		gnrc_netdev->iqueuemac.quit_current_cycle = true;
             }break;
 
             default:gnrc_pktbuf_release(pkt);break;

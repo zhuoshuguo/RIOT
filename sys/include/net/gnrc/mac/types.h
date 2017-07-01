@@ -201,6 +201,7 @@ typedef struct {
     bool t2u_on_public_1;
     bool reach_max_preamble_interval;
     uint32_t last_tx_neighbor_id;
+    uint8_t t2r_busy_rety_counter;
 #endif
 } gnrc_mac_tx_t;
 

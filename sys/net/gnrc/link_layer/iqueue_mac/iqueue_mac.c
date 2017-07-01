@@ -564,6 +564,8 @@ void iqueuemac_t2r_init(gnrc_netdev_t *gnrc_netdev)
     /*** flush the rx-queue here to reduce possible buffered packet in RIOT!! ***/
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
 
+    gnrc_netdev->tx.t2r_busy_rety_counter = 0;
+
     gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CP;
     gnrc_netdev->iqueuemac.need_update = true;
 }
@@ -575,6 +577,15 @@ void iqueuemac_t2r_wait_cp(gnrc_netdev_t *gnrc_netdev)
         /* set up auto-ack for packet reception! */
         iqueuemac_set_autoack(gnrc_netdev, NETOPT_DISABLE);
         iqueuemac_set_ack_req(gnrc_netdev, NETOPT_ENABLE);
+
+        netopt_enable_t csma_enable;
+        csma_enable = NETOPT_ENABLE;
+        gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA, &csma_enable, sizeof(netopt_enable_t));
+
+        uint8_t csma_retry;
+        csma_retry = 5;
+        gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_RETRANS, &csma_retry, sizeof(csma_retry));
+        gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA_RETRIES, &csma_retry, sizeof(csma_retry));
 
         iqueuemac_trun_on_radio(gnrc_netdev);
         gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_CP;
@@ -605,7 +616,7 @@ void iqueuemac_t2r_trans_in_cp(gnrc_netdev_t *gnrc_netdev)
         ; //return;
        }*/
 
-    if (gnrc_netdev->tx.no_ack_contuer > 0) {
+    if ((gnrc_netdev->tx.no_ack_contuer > 0) || (gnrc_netdev->tx.t2r_busy_rety_counter > 0)) {
         netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
         device_state->seq = gnrc_netdev->tx.tx_seq;
     }
@@ -669,7 +680,17 @@ void iqueuemac_t2r_wait_cp_transfeedback(gnrc_netdev_t *gnrc_netdev)
             } break;
 
             case TX_FEEDBACK_BUSY:
-            /*** if NOACK, regards it as phase-lock failed, mark the destination as unknown will try t-2-u next time. ***/
+            /*** If channel busy counter is below threshold, retry CSMA immediately. ***/
+            	if(gnrc_netdev->tx.t2r_busy_rety_counter < IQUEUEMAC_MAX_TX_BUSY_COUNTER) {
+            		gnrc_netdev->tx.t2r_busy_rety_counter ++;
+
+            		netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
+            		gnrc_netdev->tx.tx_seq = device_state->seq - 1;
+
+            		gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_CP;
+            		gnrc_netdev->iqueuemac.need_update = true;
+            		return;
+            	}
             case TX_FEEDBACK_NOACK:
             default: {
                 /* this is for debug, delete when formal iqueuemac version is release! */
@@ -677,10 +698,10 @@ void iqueuemac_t2r_wait_cp_transfeedback(gnrc_netdev_t *gnrc_netdev)
                  * since it (turn-off radio func here) is mainly for debug */
                 iqueuemac_trun_off_radio(gnrc_netdev);
                 if (gnrc_netdev_get_tx_feedback(gnrc_netdev) == TX_FEEDBACK_BUSY) {
-                    puts("t2r:busy");
+                    //puts("t2r:busy");
                 }
                 else if (gnrc_netdev_get_tx_feedback(gnrc_netdev) == TX_FEEDBACK_NOACK) {
-                    puts("t2r:noack");
+                    //puts("t2r:noack");
                 }
                 gnrc_netdev->tx.no_ack_contuer++;
 
@@ -690,7 +711,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(gnrc_netdev_t *gnrc_netdev)
                 if (gnrc_netdev->tx.no_ack_contuer >= IQUEUEMAC_REPHASELOCK_THRESHOLD) {
                     //iqueuemac->tx.no_ack_contuer = 0xFF; //0;
 
-                    printf("t2r:noack %d, go t2u\n", gnrc_netdev->tx.no_ack_contuer);
+                    //printf("t2r:noack %d, go t2u\n", gnrc_netdev->tx.no_ack_contuer);
                     gnrc_netdev->tx.current_neighbor->mac_type = UNKNOWN;
 
                     gnrc_netdev->tx.t2u_retry_contuer = 0;
@@ -699,7 +720,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(gnrc_netdev_t *gnrc_netdev)
 
                 }
                 else {
-                    printf("t2r:noack %d, go t2r\n", gnrc_netdev->tx.no_ack_contuer);
+                    printf("t2r:noack %d\n", gnrc_netdev->tx.no_ack_contuer);
                     /* go to t-2-r end and try t-2-r again. */
                     gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
                 }
@@ -1590,7 +1611,6 @@ void iqueue_mac_router_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
         }
         else {
             if ((gnrc_netdev->iqueuemac.get_other_preamble == false) &&
-                (gnrc_netdev->iqueuemac.cp_end == false) &&
                 (gnrc_netdev->iqueuemac.quit_current_cycle == false)) {
                 gnrc_netdev->iqueuemac.got_preamble = false;
                 gnrc_netdev->iqueuemac.cp_end = false;
