@@ -140,7 +140,7 @@ typedef enum {
 
 
 #ifndef IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT
-#define IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT           (10U)
+#define IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT           (11U)
 #endif
 
 #ifndef IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM
@@ -153,10 +153,6 @@ typedef enum {
 
 #ifndef IQUEUEMAC_T2U_RETYR_THRESHOLD
 #define IQUEUEMAC_T2U_RETYR_THRESHOLD      (2U)
-#endif
-
-#ifndef IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM
-#define IQUEUEMAC_MAX_IN_CLUSTER_NEIGH_INFO_NUM           (10U)
 #endif
 
 #define IQUEUEMAC_LPM_MASK                  (1 << 17)

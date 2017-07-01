@@ -1190,10 +1190,10 @@ void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pkts
         /* this means that the node is already in a new cycle when doing phase changed.
          * So, give some compensation for later phase adjust */
         phase_ticks = _phase_now(gnrc_netdev) + gnrc_netdev->iqueuemac.backoff_phase_ticks - iqueuemac_preamble_ack_hdr->phase_in_ticks;
-        phase_ticks += (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US) / 4);
+        //phase_ticks += (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US) / 4);
     }
     else {
-        phase_ticks = _phase_now(gnrc_netdev) - iqueuemac_preamble_ack_hdr->phase_in_ticks + (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US) / 4);
+        phase_ticks = _phase_now(gnrc_netdev) - iqueuemac_preamble_ack_hdr->phase_in_ticks;
     }
 
     if (phase_ticks < 0) {
