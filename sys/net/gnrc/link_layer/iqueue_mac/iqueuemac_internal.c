@@ -1020,6 +1020,7 @@ void iqueuemac_packet_process_in_init(gnrc_netdev_t *gnrc_netdev)
             case FRAMETYPE_BROADCAST: {
                 gnrc_netdev->iqueuemac.quit_current_cycle = true;
                 iqueue_push_packet_to_dispatch_queue(gnrc_netdev->rx.dispatch_buffer, pkt, &receive_packet_info);
+                _dispatch(gnrc_netdev->rx.dispatch_buffer);
                 //puts("iqueuemac: router receives a broadcast data !!");
             } break;
 
