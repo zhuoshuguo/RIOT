@@ -566,6 +566,26 @@ void iqueuemac_t2r_init(gnrc_netdev_t *gnrc_netdev)
 
     wait_phase_duration = _ticks_until_phase(gnrc_netdev, gnrc_netdev->tx.current_neighbor->cp_phase);
     wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration); // + IQUEUEMAC_WAIT_CP_SECUR_GAP_US;
+
+    if(gnrc_netdev->tx.no_ack_contuer == (IQUEUEMAC_REPHASELOCK_THRESHOLD -2)) {
+        //puts("ahead");
+
+    	if (wait_phase_duration < IQUEUEMAC_CP_DURATION_US) {
+    		wait_phase_duration = (wait_phase_duration + IQUEUEMAC_SUPERFRAME_DURATION_US) - IQUEUEMAC_CP_DURATION_US;
+    	} else {
+    		wait_phase_duration = wait_phase_duration - IQUEUEMAC_CP_DURATION_US;
+    	}
+    }
+
+    if(gnrc_netdev->tx.no_ack_contuer == (IQUEUEMAC_REPHASELOCK_THRESHOLD -1)) {
+    	//puts("delay phase");
+    	wait_phase_duration = wait_phase_duration + IQUEUEMAC_CP_DURATION_US + IQUEUEMAC_REPHASE_ADJUST_US;
+
+    	if (wait_phase_duration > IQUEUEMAC_SUPERFRAME_DURATION_US) {
+    		wait_phase_duration = wait_phase_duration - IQUEUEMAC_SUPERFRAME_DURATION_US;
+        }
+    }
+
     iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
 
     /*** flush the rx-queue here to reduce possible buffered packet in RIOT!! ***/
@@ -667,6 +687,34 @@ void iqueuemac_t2r_wait_cp_transfeedback(gnrc_netdev_t *gnrc_netdev)
                 /*** first release the pkt ***/
                 gnrc_pktbuf_release(gnrc_netdev->tx.packet);
                 gnrc_netdev->tx.packet = NULL;
+
+                if(gnrc_netdev->tx.no_ack_contuer == (IQUEUEMAC_REPHASELOCK_THRESHOLD -2)) {
+                   // puts("advance neighbor phase");
+
+                    if(gnrc_netdev->tx.current_neighbor->cp_phase >=
+                       RTT_US_TO_TICKS((IQUEUEMAC_CP_DURATION_US+IQUEUEMAC_REPHASE_ADJUST_US))) {
+                    	gnrc_netdev->tx.current_neighbor->cp_phase -=
+                    	    RTT_US_TO_TICKS((IQUEUEMAC_CP_DURATION_US+IQUEUEMAC_REPHASE_ADJUST_US));
+                    } else {
+                    	gnrc_netdev->tx.current_neighbor->cp_phase +=
+                    	    RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+                    	gnrc_netdev->tx.current_neighbor->cp_phase -=
+                    	    RTT_US_TO_TICKS((IQUEUEMAC_CP_DURATION_US+IQUEUEMAC_REPHASE_ADJUST_US));
+                    }
+                }
+
+                if(gnrc_netdev->tx.no_ack_contuer == (IQUEUEMAC_REPHASELOCK_THRESHOLD -1)) {
+                    //puts("delay neighbor phase");
+
+                	gnrc_netdev->tx.current_neighbor->cp_phase +=
+                        (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)+RTT_US_TO_TICKS(4*IQUEUEMAC_REPHASE_ADJUST_US));
+
+                	if(gnrc_netdev->tx.current_neighbor->cp_phase >=
+                	   RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US)) {
+                		gnrc_netdev->tx.current_neighbor->cp_phase -=
+                		    RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+                	}
+                }
 
                 gnrc_netdev->tx.no_ack_contuer = 0;
 

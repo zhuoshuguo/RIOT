@@ -45,7 +45,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_CP_DURATION_US
-#define IQUEUEMAC_CP_DURATION_US        (13U * 1000)
+#define IQUEUEMAC_CP_DURATION_US        (10U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_CP_RANDOM_END_US
@@ -67,6 +67,10 @@ typedef enum {
 
 #ifndef IQUEUEMAC_CP_MIN_GAP_US
 #define IQUEUEMAC_CP_MIN_GAP_US        (25U * 1000)
+#endif
+
+#ifndef IQUEUEMAC_REPHASE_ADJUST_US
+#define IQUEUEMAC_REPHASE_ADJUST_US        (5U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_WAIT_RX_END_US
