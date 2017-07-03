@@ -97,10 +97,10 @@ typedef enum {
     STOP,
     RESET,  */
     /*Basic mode of simple mode*/
-    R_LISTENNING,
-    R_TRANSMITTING,
-    R_INIT
-} mac_router_basic_state_t;
+    GNRC_GOMACH_INIT,
+    GNRC_GOMACH_LISTEN,
+    GNRC_GOMACH_TRANSMIT
+} gnrc_gomach_basic_state_t;
 
 typedef enum {
     /*Listening states of simple mode*/
@@ -110,7 +110,7 @@ typedef enum {
     R_INIT_ANNOUNCE_SUBCHANNEL,
     R_INIT_WAIT_ANNOUNCE_FEEDBACK,
     R_INIT_END
-} mac_router_init_state_t;
+} gnrc_gomach_init_state_t;
 
 typedef enum {
     /*Listening states of simple mode*/
@@ -126,7 +126,7 @@ typedef enum {
     R_LISTEN_SLEEPING_INIT,
     R_LISTEN_SLEEPING,
     R_LISTEN_SLEEPING_END
-} mac_router_listen_state_t;
+} gnrc_gomach_listen_state_t;
 
 typedef enum {
     /*Transmitting states of router*/
@@ -134,41 +134,12 @@ typedef enum {
     R_TRANS_TO_ROUTER,
     R_TRANS_TO_NODE,
     R_BROADCAST
-} mac_router_trans_state_t;
-
-/******************************router state machinies**********************************/
-
-typedef enum {
-    /*   UNDEF = -1,
-       STOPPED,
-       START,
-       STOP,
-       RESET,   */
-    R_CP,
-    R_BEACON,
-    R_VTDMA,
-    R_SLEEPING,
-    // STATE_COUNT
-} iqueuemac_router_state_t;
+} gnrc_gomach_transmit_state_t;
 
 /******************************************************************************/
 typedef struct {
     uint8_t addr[IQUEUEMAC_MAX_L2_ADDR_LEN];
 } l2_id_t;
-
-typedef struct {
-
-    mac_router_basic_state_t router_basic_state;
-    mac_router_init_state_t router_init_state;
-    mac_router_listen_state_t router_listen_state;
-    mac_router_trans_state_t router_trans_state;
-
-    bool extend_cp;
-    bool router_new_cycle;
-    bool init_retry;
-    uint16_t subchannel_occu_flags;
-
-} router_states_t;
 
 typedef struct {
     iqueuemac_device_broadcast_state_t device_broadcast_state;
@@ -212,13 +183,14 @@ typedef struct iqueuemac {
     kernel_pid_t pid;
 
     /* Internal state of MAC layer */
-    iqueuemac_router_state_t router_state;
-
-    router_states_t router_states;
     device_states_t device_states;
+
+    gnrc_gomach_basic_state_t basic_state;
+    gnrc_gomach_init_state_t init_state;
 
     iqueuemac_timeout_t timeouts[IQUEUEMAC_TIMEOUT_COUNT];
 
+    uint16_t subchannel_occu_flags;
     uint16_t sub_channel_num;
     uint16_t pub_channel_1;
     uint16_t pub_channel_2;
@@ -231,6 +203,7 @@ typedef struct iqueuemac {
     uint32_t backoff_phase_ticks;
 
     /* Track if a transmission might have corrupted a received packet */
+    bool init_retry;
     bool packet_received;
     bool quit_current_cycle;
     bool got_preamble;
@@ -246,8 +219,6 @@ typedef struct iqueuemac {
     bool rx_memory_full;
 
 } iqueuemac_t;
-
-
 
 #ifdef __cplusplus
 }

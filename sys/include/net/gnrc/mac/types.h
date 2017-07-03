@@ -77,6 +77,8 @@ typedef struct {
 #endif
 
 #ifdef MODULE_GNRC_IQUEUEMAC
+    gnrc_gomach_listen_state_t listen_state;
+    bool enter_new_cycle;
     rx_slots_schedule_unit rx_register_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
     rx_vtdma_mana_t router_vtdma_mana;
     check_dup_pkt_t check_dup_pkt;
@@ -190,6 +192,7 @@ typedef struct {
 #endif
 
 #ifdef MODULE_GNRC_IQUEUEMAC
+    gnrc_gomach_transmit_state_t transmit_state;
     uint32_t preamble_sent;
     bool got_preamble_ack;
     uint32_t broadcast_seq;

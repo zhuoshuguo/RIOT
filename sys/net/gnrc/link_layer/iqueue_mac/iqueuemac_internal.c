@@ -976,8 +976,8 @@ void iqueuemac_update_subchannel_occu_flags(gnrc_netdev_t *gnrc_netdev, gnrc_pkt
 
     flag = (1 << subchannel_seq);
 
-    gnrc_netdev->iqueuemac.router_states.subchannel_occu_flags = gnrc_netdev->iqueuemac.router_states.subchannel_occu_flags | flag;
-    //printf("iqueuemac: subchannel flag is %d .\n", iqueuemac->router_states.subchannel_occu_flags);
+    gnrc_netdev->iqueuemac.subchannel_occu_flags = gnrc_netdev->iqueuemac.subchannel_occu_flags | flag;
+    //printf("iqueuemac: subchannel flag is %d .\n", iqueuemac->subchannel_occu_flags);
 
 }
 
@@ -1058,7 +1058,7 @@ void iqueuemac_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev)
     //own_id = 12;
     subchannel_seq = 12 + (own_id % 14);
     //printf("iqueuemac: the random selected subchannel is %d .\n", subchannel_seq);
-    //printf("iqueuemac: subchannel flag is %d .\n", iqueuemac->router_states.subchannel_occu_flags);
+    //printf("iqueuemac: subchannel flag is %d .\n", iqueuemac->subchannel_occu_flags);
 
     int i = 0;
     for (i = 0; i < 14; i++) {
@@ -1066,7 +1066,7 @@ void iqueuemac_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev)
         check_seq = subchannel_seq - 11;
         check_seq = (1 << check_seq);
 
-        if (check_seq & gnrc_netdev->iqueuemac.router_states.subchannel_occu_flags) {
+        if (check_seq & gnrc_netdev->iqueuemac.subchannel_occu_flags) {
             //puts("iqueuemac: subchannel exist, find next subchannel.");
             own_id += 1;
             subchannel_seq = 12 + (own_id % 14);
@@ -1192,7 +1192,7 @@ void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pkts
 
     long int phase_ticks;
 
-    if ((gnrc_netdev->iqueuemac.phase_changed == true) && (gnrc_netdev->iqueuemac.router_states.router_new_cycle == true)) {
+    if ((gnrc_netdev->iqueuemac.phase_changed == true) && (gnrc_netdev->rx.enter_new_cycle == true)) {
         /* this means that the node is already in a new cycle when doing phase changed.
          * So, give some compensation for later phase adjust */
         phase_ticks = _phase_now(gnrc_netdev) + gnrc_netdev->iqueuemac.backoff_phase_ticks - iqueuemac_preamble_ack_hdr->phase_in_ticks;
