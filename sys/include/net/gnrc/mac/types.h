@@ -193,6 +193,9 @@ typedef struct {
 
 #ifdef MODULE_GNRC_IQUEUEMAC
     gnrc_gomach_transmit_state_t transmit_state;
+    gnrc_gomach_bcast_state_t bcast_state;
+	gnrc_gomach_t2k_state_t t2k_state;
+	gnrc_gomach_t2u_state_t t2u_state;
     uint32_t preamble_sent;
     bool got_preamble_ack;
     uint32_t broadcast_seq;

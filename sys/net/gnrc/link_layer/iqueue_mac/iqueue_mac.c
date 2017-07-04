@@ -97,9 +97,9 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->iqueuemac.pub_channel_2 = 11;
     gnrc_netdev->iqueuemac.cur_pub_channel = gnrc_netdev->iqueuemac.pub_channel_1;
 
-    gnrc_netdev->iqueuemac.device_states.device_broadcast_state = DEVICE_BROADCAST_INIT;
-    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CP_INIT;
-    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_INIT;
+    gnrc_netdev->tx.bcast_state = DEVICE_BROADCAST_INIT;
+    gnrc_netdev->tx.t2k_state = DEVICE_T2R_WAIT_CP_INIT;
+    gnrc_netdev->tx.t2u_state = DEVICE_T2U_SEND_PREAMBLE_INIT;
 
     gnrc_netdev->tx.no_ack_contuer = 0;
 
@@ -263,7 +263,7 @@ void iqueuemac_device_broadcast_init(gnrc_netdev_t *gnrc_netdev)
     }
     iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_FINISH, IQUEUEMAC_SUPERFRAME_DURATION_US);
 
-    gnrc_netdev->iqueuemac.device_states.device_broadcast_state = DEVICE_SEND_BROADCAST;
+    gnrc_netdev->tx.bcast_state = DEVICE_SEND_BROADCAST;
     gnrc_netdev->iqueuemac.need_update = true;
 
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
@@ -294,7 +294,7 @@ void iqueuemac_device_send_broadcast(gnrc_netdev_t *gnrc_netdev)
 
     	puts("quit send bcast-0");
 
-    	gnrc_netdev->iqueuemac.device_states.device_broadcast_state = DEVICE_BROADCAST_END;
+    	gnrc_netdev->tx.bcast_state = DEVICE_BROADCAST_END;
     	gnrc_netdev->iqueuemac.need_update = true;
     	return;
     }
@@ -305,7 +305,7 @@ void iqueuemac_device_send_broadcast(gnrc_netdev_t *gnrc_netdev)
 
     //iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_INTERVAL, IQUEUEMAC_BROADCAST_INTERVAL_US);
 
-    gnrc_netdev->iqueuemac.device_states.device_broadcast_state = DEVICE_WAIT_BROADCAST_TX_FINISH;
+    gnrc_netdev->tx.bcast_state = DEVICE_WAIT_BROADCAST_TX_FINISH;
     gnrc_netdev->iqueuemac.need_update = false;
 }
 
@@ -314,7 +314,7 @@ void iqueuemac_device_wait_broadcast_txfinish(gnrc_netdev_t *gnrc_netdev){
     if(gnrc_netdev->tx.tx_finished == true){
 		iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_INTERVAL, IQUEUEMAC_BROADCAST_INTERVAL_US);
 
-		gnrc_netdev->iqueuemac.device_states.device_broadcast_state = DEVICE_WAIT_BROADCAST_FEEDBACK;
+		gnrc_netdev->tx.bcast_state = DEVICE_WAIT_BROADCAST_FEEDBACK;
 		gnrc_netdev->iqueuemac.need_update = false;
     }
 }
@@ -349,7 +349,7 @@ void iqueuemac_device_wait_broadcast_feedback(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->tx.packet = NULL;
 
         //puts("quit send bcast-1");
-        gnrc_netdev->iqueuemac.device_states.device_broadcast_state = DEVICE_BROADCAST_END;
+        gnrc_netdev->tx.bcast_state = DEVICE_BROADCAST_END;
         gnrc_netdev->iqueuemac.need_update = true;
    		return;
     }
@@ -360,7 +360,7 @@ void iqueuemac_device_wait_broadcast_feedback(gnrc_netdev_t *gnrc_netdev)
         gnrc_pktbuf_release(gnrc_netdev->tx.packet);
         gnrc_netdev->tx.packet = NULL;
 
-        gnrc_netdev->iqueuemac.device_states.device_broadcast_state = DEVICE_BROADCAST_END;
+        gnrc_netdev->tx.bcast_state = DEVICE_BROADCAST_END;
         gnrc_netdev->iqueuemac.need_update = true;
         return;
     }
@@ -374,7 +374,7 @@ void iqueuemac_device_wait_broadcast_feedback(gnrc_netdev_t *gnrc_netdev)
     	   	gnrc_netdev->tx.t2u_on_public_1 = true;
     	}
 
-        gnrc_netdev->iqueuemac.device_states.device_broadcast_state = DEVICE_SEND_BROADCAST;
+        gnrc_netdev->tx.bcast_state = DEVICE_SEND_BROADCAST;
         gnrc_netdev->iqueuemac.need_update = true;
     }
 }
@@ -391,7 +391,7 @@ void iqueuemac_device_broadcast_end(gnrc_netdev_t *gnrc_netdev)
     }
     gnrc_netdev->tx.current_neighbor = NULL;
 
-    gnrc_netdev->iqueuemac.device_states.device_broadcast_state = DEVICE_BROADCAST_INIT;
+    gnrc_netdev->tx.bcast_state = DEVICE_BROADCAST_INIT;
 
     /*********** judge and update the states before switch back to CP listening period   ***********/
     gnrc_netdev->iqueuemac.basic_state = GNRC_GOMACH_LISTEN;
@@ -409,7 +409,7 @@ void iqueuemac_device_broadcast_end(gnrc_netdev_t *gnrc_netdev)
 void iqueuemac_device_broadcast_update(gnrc_netdev_t *gnrc_netdev)
 {
 
-    switch (gnrc_netdev->iqueuemac.device_states.device_broadcast_state) {
+    switch (gnrc_netdev->tx.bcast_state) {
         case DEVICE_BROADCAST_INIT: iqueuemac_device_broadcast_init(gnrc_netdev); break;
         case DEVICE_SEND_BROADCAST: iqueuemac_device_send_broadcast(gnrc_netdev); break;
         case DEVICE_WAIT_BROADCAST_TX_FINISH: iqueuemac_device_wait_broadcast_txfinish(gnrc_netdev); break;
@@ -538,19 +538,6 @@ void iqueuemac_init_end(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->iqueuemac.need_update = true;
 }
 
-void iqueuemac_init_update(gnrc_netdev_t *gnrc_netdev)
-{
-    switch (gnrc_netdev->iqueuemac.init_state) {
-        case R_INIT_PREPARE: iqueuemac_init_prepare(gnrc_netdev); break;
-        case R_INIT_COLLECT_BEACONS: iqueuemac_init_collec_beacons(gnrc_netdev); break;
-        case R_INIT_WAIT_BUSY_END: iqueuemac_init_wait_busy_end(gnrc_netdev); break;
-        case R_INIT_ANNOUNCE_SUBCHANNEL: iqueuemac_init_announce_subchannel(gnrc_netdev); break;
-        case R_INIT_WAIT_ANNOUNCE_FEEDBACK: iqueuemac_init_wait_announce_feedback(gnrc_netdev); break;
-        case R_INIT_END: iqueuemac_init_end(gnrc_netdev); break;
-        default: break;
-    }
-}
-
 /****************** iQueuemac: Transmit to router *****/
 void iqueuemac_t2r_init(gnrc_netdev_t *gnrc_netdev)
 {
@@ -593,7 +580,7 @@ void iqueuemac_t2r_init(gnrc_netdev_t *gnrc_netdev)
 
     gnrc_netdev->tx.t2r_busy_rety_counter = 0;
 
-    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CP;
+    gnrc_netdev->tx.t2k_state = DEVICE_T2R_WAIT_CP;
     gnrc_netdev->iqueuemac.need_update = true;
 }
 
@@ -615,7 +602,7 @@ void iqueuemac_t2r_wait_cp(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA_RETRIES, &csma_retry, sizeof(csma_retry));
 
         iqueuemac_trun_on_radio(gnrc_netdev);
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_CP;
+        gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_IN_CP;
 
         /* set up auto-ack for packet reception! */
         //iqueuemac_set_autoack(iqueuemac, NETOPT_ENABLE);
@@ -662,14 +649,14 @@ void iqueuemac_t2r_trans_in_cp(gnrc_netdev_t *gnrc_netdev)
         }
 
         gnrc_netdev->tx.current_neighbor = NULL;
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+        gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_END;
         gnrc_netdev->iqueuemac.need_update = true;
         return;
     }
 
     //iqueuemac->tx.tx_packet = NULL;
 
-    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CPTRANS_FEEDBACK;
+    gnrc_netdev->tx.t2k_state = DEVICE_T2R_WAIT_CPTRANS_FEEDBACK;
     gnrc_netdev->iqueuemac.need_update = false;
 
 }
@@ -726,10 +713,10 @@ void iqueuemac_t2r_wait_cp_transfeedback(gnrc_netdev_t *gnrc_netdev)
                     // need to flush the rx-queue ??
                     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
 
-                    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_BEACON;
+                    gnrc_netdev->tx.t2k_state = DEVICE_T2R_WAIT_BEACON;
                 }
                 else {
-                    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+                    gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_END;
                 }
                 gnrc_netdev->iqueuemac.need_update = true;
             } break;
@@ -742,7 +729,7 @@ void iqueuemac_t2r_wait_cp_transfeedback(gnrc_netdev_t *gnrc_netdev)
             		netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
             		gnrc_netdev->tx.tx_seq = device_state->seq - 1;
 
-            		gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_CP;
+            		gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_IN_CP;
             		gnrc_netdev->iqueuemac.need_update = true;
             		return;
             	}
@@ -771,13 +758,13 @@ void iqueuemac_t2r_wait_cp_transfeedback(gnrc_netdev_t *gnrc_netdev)
 
                     gnrc_netdev->tx.t2u_retry_contuer = 0;
 
-                    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END; //DEVICE_T2R_RE_PHASE_LOCK_PREPARE;
+                    gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_END; //DEVICE_T2R_RE_PHASE_LOCK_PREPARE;
 
                 }
                 else {
                     printf("t2r:noack %d\n", gnrc_netdev->tx.no_ack_contuer);
                     /* go to t-2-r end and try t-2-r again. */
-                    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+                    gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_END;
                 }
                 gnrc_netdev->iqueuemac.need_update = true;
                 /*** pkt trans failed, don't release the pkt here, retry to transmit in t-2-u procedure. ***/
@@ -817,7 +804,7 @@ void iqueuemac_t2r_re_phase_lock_prepare(gnrc_netdev_t *gnrc_netdev)
 {
     if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RE_PHASE_LOCK)) {
         /*** leaving t-2-r, so initiate the state ***/
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CP_INIT;
+        gnrc_netdev->tx.t2k_state = DEVICE_T2R_WAIT_CP_INIT;
 
         gnrc_netdev->tx.transmit_state = R_TRANS_TO_UNKOWN;
 
@@ -838,7 +825,7 @@ void iqueuemac_t2r_wait_beacon(gnrc_netdev_t *gnrc_netdev)
         //iqueuemac->tx.current_neighbour = NULL;
 
         iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_BEACON);
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+        gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_END;
         gnrc_netdev->iqueuemac.need_update = true;
         return;
     }
@@ -862,7 +849,7 @@ void iqueuemac_t2r_wait_beacon(gnrc_netdev_t *gnrc_netdev)
                 wait_slots_duration = gnrc_netdev->tx.vtdma_para.slots_position * IQUEUEMAC_VTDMA_SLOT_SIZE_US;
                 iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_OWN_SLOTS, wait_slots_duration);
 
-                gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_OWN_SLOTS;
+                gnrc_netdev->tx.t2k_state = DEVICE_T2R_WAIT_OWN_SLOTS;
                 gnrc_netdev->iqueuemac.need_update = true;
             }
             else { // be the first sender in vtdma
@@ -871,18 +858,18 @@ void iqueuemac_t2r_wait_beacon(gnrc_netdev_t *gnrc_netdev)
 
                 if (pkt != NULL) {
                     gnrc_netdev->tx.packet = pkt;
-                    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
+                    gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_IN_VTDMA;
                 }
                 else {
                     puts("iqueueMAC-Error: NUll pktbuf!");
-                    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+                    gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_END;
                 }
 
                 gnrc_netdev->iqueuemac.need_update = true;
             }
         }
         else { /*** no slots get allocated, go to t-2-r end ***/
-            gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+            gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_END;
             gnrc_netdev->iqueuemac.need_update = true;
         }
         return;
@@ -891,7 +878,7 @@ void iqueuemac_t2r_wait_beacon(gnrc_netdev_t *gnrc_netdev)
     if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_BEACON)) {
         gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
         puts("t2r:no beacon");
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+        gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_END;
         gnrc_netdev->iqueuemac.need_update = true;
     }
 }
@@ -907,11 +894,11 @@ void iqueuemac_t2r_wait_own_slots(gnrc_netdev_t *gnrc_netdev)
 
         if (pkt != NULL) {
             gnrc_netdev->tx.packet = pkt;
-            gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
+            gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_IN_VTDMA;
         }
         else {
             puts("iqueueMAC-Error: NUll pktbuf, drop!");
-            gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+            gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_END;
         }
         gnrc_netdev->iqueuemac.need_update = true;
     }
@@ -947,7 +934,7 @@ void iqueuemac_t2r_trans_in_slots(gnrc_netdev_t *gnrc_netdev)
                 gnrc_netdev->tx.packet = NULL;
             }
             gnrc_netdev->tx.current_neighbor = NULL;
-            gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+            gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_END;
             gnrc_netdev->iqueuemac.need_update = true;
             return;
         }
@@ -955,7 +942,7 @@ void iqueuemac_t2r_trans_in_slots(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->tx.vtdma_para.slots_num--;
         //iqueuemac->tx.tx_packet = NULL;
 
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_VTDMATRANS_FEEDBACK;
+        gnrc_netdev->tx.t2k_state = DEVICE_T2R_WAIT_VTDMATRANS_FEEDBACK;
         gnrc_netdev->iqueuemac.need_update = true;
 
     }
@@ -970,7 +957,7 @@ void iqueuemac_t2r_trans_in_slots(gnrc_netdev_t *gnrc_netdev)
             gnrc_netdev->tx.current_neighbor = NULL;
         }
 
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+        gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_END;
         gnrc_netdev->iqueuemac.need_update = true;
     }
 }
@@ -999,11 +986,11 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev)
 
                     if (pkt != NULL) {
                         gnrc_netdev->tx.packet = pkt;
-                        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
+                        gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_IN_VTDMA;
                     }
                     else {
                         puts("iqueueMAC-Error: NUll pktbuf!");
-                        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+                        gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_END;
                     }
                 }
                 else {
@@ -1011,7 +998,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev)
                     //puts("v-end2");
                     //iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
 
-                    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+                    gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_END;
                 }
                 gnrc_netdev->iqueuemac.need_update = true;
             } break;
@@ -1030,7 +1017,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev)
                 if (gnrc_netdev->tx.vtdma_para.slots_num > 0) {
                     puts("v1");
 
-                    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_IN_VTDMA;
+                    gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_IN_VTDMA;
 
                 }
                 else { /* if no slots for sending, queue the pkt for retry in next cycle */
@@ -1038,7 +1025,7 @@ void iqueuemac_t2r_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev)
 
                     /****  vtdma period ends, switch back to the public channel ****/
                     //iqueuemac_turn_radio_channel(iqueuemac, iqueuemac->cur_pub_channel);
-                    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
+                    gnrc_netdev->tx.t2k_state = DEVICE_T2R_TRANS_END;
                 }
                 gnrc_netdev->iqueuemac.need_update = true;
 
@@ -1073,7 +1060,7 @@ void iqueuemac_t2r_end(gnrc_netdev_t *gnrc_netdev)
     iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_BEACON);
     iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_OWN_SLOTS);
 
-    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_CP_INIT;
+    gnrc_netdev->tx.t2k_state = DEVICE_T2R_WAIT_CP_INIT;
 
     /* if phase has been changed, figure out the related phase of tx-neighbors. */
     if (gnrc_netdev->iqueuemac.phase_changed == true) {
@@ -1096,7 +1083,7 @@ void iqueuemac_t2r_end(gnrc_netdev_t *gnrc_netdev)
 
 void iqueuemac_t2r_update(gnrc_netdev_t *gnrc_netdev)
 {
-    switch (gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state) {
+    switch (gnrc_netdev->tx.t2k_state) {
         case DEVICE_T2R_WAIT_CP_INIT: iqueuemac_t2r_init(gnrc_netdev); break;
         case DEVICE_T2R_WAIT_CP: iqueuemac_t2r_wait_cp(gnrc_netdev); break;
         case DEVICE_T2R_TRANS_IN_CP: iqueuemac_t2r_trans_in_cp(gnrc_netdev); break;
@@ -1129,7 +1116,7 @@ void iqueuemac_t2u_send_preamble_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->tx.got_preamble_ack = false;
     gnrc_netdev->iqueuemac.rx_memory_full = false;
 
-    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
+    gnrc_netdev->tx.t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
     gnrc_netdev->iqueuemac.need_update = true;
 
     /*** Must disable auto-ack here!! need this sentence!! becuase it may due to other's unknwn reasons,
@@ -1170,7 +1157,7 @@ void iqueuemac_t2u_send_preamble_prepare(gnrc_netdev_t *gnrc_netdev)
 
     gnrc_netdev->tx.reach_max_preamble_interval = false;
 
-    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE;
+    gnrc_netdev->tx.t2u_state = DEVICE_T2U_SEND_PREAMBLE;
     gnrc_netdev->iqueuemac.need_update = true;
 
 }
@@ -1197,7 +1184,7 @@ void iqueuemac_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
         else {
             puts("iqueueMAC: NUll pkt, goto t2u end");
             gnrc_netdev->tx.current_neighbor = NULL;
-            gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+            gnrc_netdev->tx.t2u_state = DEVICE_T2U_END;
             gnrc_netdev->iqueuemac.need_update = true;
             return;
         }
@@ -1237,13 +1224,13 @@ void iqueuemac_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
         iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE_DURATION);
         iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL);
 
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+        gnrc_netdev->tx.t2u_state = DEVICE_T2U_END;
         gnrc_netdev->iqueuemac.need_update = true;
         return;
     }
 
     if (gnrc_netdev->tx.reach_max_preamble_interval == true) {
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
+        gnrc_netdev->tx.t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
         gnrc_netdev->iqueuemac.need_update = true;
         return;
     }
@@ -1277,12 +1264,12 @@ void iqueuemac_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
         iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE);
         iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE_DURATION);
 
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+        gnrc_netdev->tx.t2u_state = DEVICE_T2U_END;
         gnrc_netdev->iqueuemac.need_update = true;
         return;
     }
 
-    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_WAIT_PREAMBLE_TX_END;
+    gnrc_netdev->tx.t2u_state = DEVICE_T2U_WAIT_PREAMBLE_TX_END;
     gnrc_netdev->iqueuemac.need_update = true;
 }
 
@@ -1292,14 +1279,14 @@ void iqueuemac_t2u_wait_preamble_tx_end(gnrc_netdev_t *gnrc_netdev)
         /******set preamble interval timeout ******/
         iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE, IQUEUEMAC_PREAMBLE_INTERVAL_US);
 
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_WAIT_PREAMBLE_ACK;
+        gnrc_netdev->tx.t2u_state = DEVICE_T2U_WAIT_PREAMBLE_ACK;
         gnrc_netdev->iqueuemac.need_update = false;
         return;
     }
 
     if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL)) {
         gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
+        gnrc_netdev->tx.t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
         gnrc_netdev->iqueuemac.need_update = true;
         return;
     }
@@ -1328,7 +1315,7 @@ void iqueuemac_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
         else {
             puts("iqueueMAC: NUll pkt, goto t2u end");
             gnrc_netdev->tx.current_neighbor = NULL;
-            gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+            gnrc_netdev->tx.t2u_state = DEVICE_T2U_END;
             gnrc_netdev->iqueuemac.need_update = true;
             return;
         }
@@ -1365,7 +1352,7 @@ void iqueuemac_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
         iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE_DURATION);
         iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL);
 
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+        gnrc_netdev->tx.t2u_state = DEVICE_T2U_END;
         gnrc_netdev->iqueuemac.need_update = true;
         return;
     }
@@ -1384,7 +1371,7 @@ void iqueuemac_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
         iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE);
         iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE_DURATION);
         iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL);
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_DATA;
+        gnrc_netdev->tx.t2u_state = DEVICE_T2U_SEND_DATA;
         gnrc_netdev->iqueuemac.need_update = true;
         return;
     }
@@ -1396,7 +1383,7 @@ void iqueuemac_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
         if (gnrc_netdev->tx.t2u_retry_contuer >= IQUEUEMAC_T2U_RETYR_THRESHOLD) {
             puts("no preamble-ack, drop pkt.");
             gnrc_netdev->tx.t2u_retry_contuer = 0;
-            gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+            gnrc_netdev->tx.t2u_state = DEVICE_T2U_END;
             iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE);
             iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RX_END);
             iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL);
@@ -1409,7 +1396,7 @@ void iqueuemac_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
             puts("t2u no-preamack, rety");
             /* thus not to set current_neighbour to NULL in t2u-end */
             gnrc_netdev->iqueuemac.quit_current_cycle = true;
-            gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+            gnrc_netdev->tx.t2u_state = DEVICE_T2U_END;
         }
 
         gnrc_netdev->iqueuemac.need_update = true;
@@ -1417,13 +1404,13 @@ void iqueuemac_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
     }
 
     if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE)) {
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
+        gnrc_netdev->tx.t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
         gnrc_netdev->iqueuemac.need_update = true;
         return;
     }
 
     if (gnrc_netdev->tx.reach_max_preamble_interval == true) {
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
+        gnrc_netdev->tx.t2u_state = DEVICE_T2U_SEND_PREAMBLE_PREPARE;
         gnrc_netdev->iqueuemac.need_update = true;
         return;
     }
@@ -1444,14 +1431,14 @@ void iqueuemac_t2u_send_data(gnrc_netdev_t *gnrc_netdev)
     if (res < 0) {
         printf("t2u %d, drop pkt\n", res);
 
-        gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+        gnrc_netdev->tx.t2u_state = DEVICE_T2U_END;
         gnrc_netdev->iqueuemac.need_update = true;
         return;
     }
 
     //iqueuemac->tx.tx_packet = NULL;
 
-    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_WAIT_TX_FEEDBACK;
+    gnrc_netdev->tx.t2u_state = DEVICE_T2U_WAIT_TX_FEEDBACK;
     gnrc_netdev->iqueuemac.need_update = true;
     /**** add a "wait-for-tx feedback" period to wait for the ending of the tx operation ***/
 
@@ -1477,7 +1464,7 @@ void iqueuemac_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
             /*** TX_FEEDBACK_SUCCESS means the router has success received the queue-length indicator ***/
             /*  add this part in the future to support vtdma in sending-to-unkown (to router type) */
             if (gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue) > 0) {
-                gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_INIT;
+                gnrc_netdev->tx.t2u_state = DEVICE_T2U_SEND_PREAMBLE_INIT;
                 iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE);
                 iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE_DURATION);
                 iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RX_END);
@@ -1488,12 +1475,12 @@ void iqueuemac_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
                 // need to flush the rx-queue ??
                 gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
 
-                gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2r_state = DEVICE_T2R_WAIT_BEACON;
+                gnrc_netdev->tx.t2k_state = DEVICE_T2R_WAIT_BEACON;
 
                 gnrc_netdev->tx.transmit_state = R_TRANS_TO_ROUTER;
             }
             else {
-                gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+                gnrc_netdev->tx.t2u_state = DEVICE_T2U_END;
             }
         }
         else {
@@ -1506,7 +1493,7 @@ void iqueuemac_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
                 gnrc_netdev->tx.current_neighbor = NULL;
                 gnrc_netdev->tx.no_ack_contuer = 0;
                 gnrc_netdev->tx.t2u_retry_contuer = 0;
-                gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+                gnrc_netdev->tx.t2u_state = DEVICE_T2U_END;
             }
             else {
                 gnrc_netdev->tx.no_ack_contuer = IQUEUEMAC_REPHASELOCK_THRESHOLD;
@@ -1516,7 +1503,7 @@ void iqueuemac_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
                 printf("t2u data failed on ch %d. rety.\n", gnrc_netdev->tx.current_neighbor->pub_chanseq);
                 /* thus not to set current_neighbour to NULL in t2u-end */
                 gnrc_netdev->iqueuemac.quit_current_cycle = true;
-                gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+                gnrc_netdev->tx.t2u_state = DEVICE_T2U_END;
             }
         }
 
@@ -1541,7 +1528,7 @@ void iqueuemac_t2u_end(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->tx.current_neighbor = NULL;
     }
 
-    gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state = DEVICE_T2U_SEND_PREAMBLE_INIT;
+    gnrc_netdev->tx.t2u_state = DEVICE_T2U_SEND_PREAMBLE_INIT;
 
     /* if phase has been changed, figure out the related phase of tx-neighbors. */
     if (gnrc_netdev->iqueuemac.phase_changed == true) {
@@ -1560,7 +1547,7 @@ void iqueuemac_t2u_end(gnrc_netdev_t *gnrc_netdev)
 
 void iqueuemac_t2u_update(gnrc_netdev_t *gnrc_netdev)
 {
-    switch (gnrc_netdev->iqueuemac.device_states.iqueuemac_device_t2u_state) {
+    switch (gnrc_netdev->tx.t2u_state) {
         case DEVICE_T2U_SEND_PREAMBLE_INIT: iqueuemac_t2u_send_preamble_init(gnrc_netdev); break;
         case DEVICE_T2U_SEND_PREAMBLE_PREPARE: iqueuemac_t2u_send_preamble_prepare(gnrc_netdev); break;
         case DEVICE_T2U_SEND_PREAMBLE: iqueuemac_t2u_send_preamble(gnrc_netdev); break;
@@ -2028,44 +2015,48 @@ void iqueue_mac_router_sleep_end(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->iqueuemac.need_update = true;
 }
 
-void iqueue_mac_router_listen_update(gnrc_netdev_t *gnrc_netdev)
-{
-
-    switch (gnrc_netdev->rx.listen_state) {
-        case R_LISTEN_CP_INIT: iqueue_mac_router_listen_cp_init(gnrc_netdev); break;
-        case R_LISTEN_CP_LISTEN: iqueue_mac_router_listen_cp_listen(gnrc_netdev); break;
-        case R_LISTEN_CP_END: iqueue_mac_router_cp_end(gnrc_netdev); break;
-        //case R_LISTEN_CREATE_BEACON: iqueue_mac_router_create_beacon(iqueuemac); break;
-        case R_LISTEN_SEND_BEACON: iqueue_mac_router_send_beacon(gnrc_netdev); break;
-        case R_LISTEN_WAIT_BEACON_FEEDBACK: iqueuemac_router_wait_beacon_feedback(gnrc_netdev); break;
-        case R_LISTEN_VTDMA_INIT: iqueue_mac_router_vtdma_init(gnrc_netdev); break;
-        case R_LISTEN_VTDMA: iqueue_mac_router_vtdma(gnrc_netdev); break;
-        case R_LISTEN_VTDMA_END: iqueue_mac_router_vtdma_end(gnrc_netdev); break;
-        case R_LISTEN_SLEEPING_INIT: iqueue_mac_router_sleep_init(gnrc_netdev); break;
-        case R_LISTEN_SLEEPING: iqueue_mac_router_sleep(gnrc_netdev); break;
-        case R_LISTEN_SLEEPING_END: iqueue_mac_router_sleep_end(gnrc_netdev); break;
-        default: break;
-    }
-}
-//////////////////////////////////////////////////
-void iqueue_mac_router_transmit_update(gnrc_netdev_t *gnrc_netdev)
-{
-
-    switch (gnrc_netdev->tx.transmit_state) {
-        case R_TRANS_TO_UNKOWN: iqueuemac_t2u_update(gnrc_netdev); break;   //iqueuemac_router_t2u_update(iqueuemac); break;
-        case R_TRANS_TO_ROUTER: iqueuemac_t2r_update(gnrc_netdev); break;   //iqueuemac_router_t2r_update(iqueuemac);
-        case R_BROADCAST: iqueuemac_device_broadcast_update(gnrc_netdev); break;
-        default: break;
-    }
-
-}
-
-void iqueue_mac_router_update(gnrc_netdev_t *gnrc_netdev)
+void gomach_update(gnrc_netdev_t *gnrc_netdev)
 {
     switch (gnrc_netdev->iqueuemac.basic_state) {
-        case GNRC_GOMACH_INIT: iqueuemac_init_update(gnrc_netdev); break;
-        case GNRC_GOMACH_LISTEN: iqueue_mac_router_listen_update(gnrc_netdev); break;
-        case GNRC_GOMACH_TRANSMIT: iqueue_mac_router_transmit_update(gnrc_netdev); break;
+        case GNRC_GOMACH_INIT: {
+            switch (gnrc_netdev->iqueuemac.init_state) {
+                case R_INIT_PREPARE: iqueuemac_init_prepare(gnrc_netdev); break;
+                case R_INIT_COLLECT_BEACONS: iqueuemac_init_collec_beacons(gnrc_netdev); break;
+                case R_INIT_WAIT_BUSY_END: iqueuemac_init_wait_busy_end(gnrc_netdev); break;
+                case R_INIT_ANNOUNCE_SUBCHANNEL: iqueuemac_init_announce_subchannel(gnrc_netdev); break;
+                case R_INIT_WAIT_ANNOUNCE_FEEDBACK: iqueuemac_init_wait_announce_feedback(gnrc_netdev); break;
+                case R_INIT_END: iqueuemac_init_end(gnrc_netdev); break;
+                default: break;
+            }
+            break;
+        }
+        case GNRC_GOMACH_LISTEN: {
+            switch (gnrc_netdev->rx.listen_state) {
+                case R_LISTEN_CP_INIT: iqueue_mac_router_listen_cp_init(gnrc_netdev); break;
+                case R_LISTEN_CP_LISTEN: iqueue_mac_router_listen_cp_listen(gnrc_netdev); break;
+                case R_LISTEN_CP_END: iqueue_mac_router_cp_end(gnrc_netdev); break;
+                //case R_LISTEN_CREATE_BEACON: iqueue_mac_router_create_beacon(iqueuemac); break;
+                case R_LISTEN_SEND_BEACON: iqueue_mac_router_send_beacon(gnrc_netdev); break;
+                case R_LISTEN_WAIT_BEACON_FEEDBACK: iqueuemac_router_wait_beacon_feedback(gnrc_netdev); break;
+                case R_LISTEN_VTDMA_INIT: iqueue_mac_router_vtdma_init(gnrc_netdev); break;
+                case R_LISTEN_VTDMA: iqueue_mac_router_vtdma(gnrc_netdev); break;
+                case R_LISTEN_VTDMA_END: iqueue_mac_router_vtdma_end(gnrc_netdev); break;
+                case R_LISTEN_SLEEPING_INIT: iqueue_mac_router_sleep_init(gnrc_netdev); break;
+                case R_LISTEN_SLEEPING: iqueue_mac_router_sleep(gnrc_netdev); break;
+                case R_LISTEN_SLEEPING_END: iqueue_mac_router_sleep_end(gnrc_netdev); break;
+                default: break;
+            }
+            break;
+        }
+        case GNRC_GOMACH_TRANSMIT: {
+            switch (gnrc_netdev->tx.transmit_state) {
+                case R_TRANS_TO_UNKOWN: iqueuemac_t2u_update(gnrc_netdev); break;
+                case R_TRANS_TO_ROUTER: iqueuemac_t2r_update(gnrc_netdev); break;
+                case R_BROADCAST: iqueuemac_device_broadcast_update(gnrc_netdev); break;
+                default: break;
+            }
+            break;
+        }
         default: break;
     }
 }
@@ -2330,7 +2321,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
         while (gnrc_netdev->iqueuemac.need_update == true) {
             gnrc_netdev->iqueuemac.need_update = false;
-            iqueue_mac_router_update(gnrc_netdev);
+            gomach_update(gnrc_netdev);
         }
     }
     /* never reached */

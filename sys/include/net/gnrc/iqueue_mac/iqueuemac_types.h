@@ -63,7 +63,7 @@ typedef enum {
     DEVICE_WAIT_BROADCAST_TX_FINISH,
     DEVICE_WAIT_BROADCAST_FEEDBACK,
     DEVICE_BROADCAST_END
-} iqueuemac_device_broadcast_state_t;
+} gnrc_gomach_bcast_state_t;
 
 typedef enum {
     DEVICE_T2R_WAIT_CP_INIT = 0,
@@ -76,7 +76,7 @@ typedef enum {
     DEVICE_T2R_TRANS_IN_VTDMA,
     DEVICE_T2R_WAIT_VTDMATRANS_FEEDBACK,
     DEVICE_T2R_TRANS_END
-} iqueuemac_device_t2r_state_t;
+} gnrc_gomach_t2k_state_t;
 
 typedef enum {
     DEVICE_T2U_SEND_PREAMBLE_INIT = 0,
@@ -87,7 +87,7 @@ typedef enum {
     DEVICE_T2U_SEND_DATA,
     DEVICE_T2U_WAIT_TX_FEEDBACK,
     DEVICE_T2U_END
-} iqueuemac_device_t2u_state_t;
+} gnrc_gomach_t2u_state_t;
 
 /******************************router state machinies**********************************/
 typedef enum {
@@ -142,12 +142,6 @@ typedef struct {
 } l2_id_t;
 
 typedef struct {
-    iqueuemac_device_broadcast_state_t device_broadcast_state;
-    iqueuemac_device_t2r_state_t iqueuemac_device_t2r_state;
-    iqueuemac_device_t2u_state_t iqueuemac_device_t2u_state;
-} device_states_t;
-
-typedef struct {
     l2_addr_t node_addr;
     uint8_t queue_indicator;
     iqueuemac_type_t mac_type;
@@ -183,8 +177,6 @@ typedef struct iqueuemac {
     kernel_pid_t pid;
 
     /* Internal state of MAC layer */
-    device_states_t device_states;
-
     gnrc_gomach_basic_state_t basic_state;
     gnrc_gomach_init_state_t init_state;
 
