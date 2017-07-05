@@ -42,9 +42,7 @@
 #include "net/csma_sender.h"
 #endif
 
-
 #include "net/gnrc/iqueue_mac/iqueuemac_types.h"
-
 
 #ifdef __cplusplus
 extern "C" {

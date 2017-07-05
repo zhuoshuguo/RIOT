@@ -124,7 +124,7 @@ uint32_t _ticks_until_phase(gnrc_netdev_t *gnrc_netdev, uint32_t phase)  //
 /******************************************************************************/
 
 
-void iqueuemac_trun_on_radio(gnrc_netdev_t *gnrc_netdev)
+inline void gomach_turn_on_radio(gnrc_netdev_t *gnrc_netdev)
 {
     netopt_state_t devstate;
 
@@ -135,7 +135,7 @@ void iqueuemac_trun_on_radio(gnrc_netdev_t *gnrc_netdev)
                                   sizeof(devstate));
 }
 
-void iqueuemac_trun_off_radio(gnrc_netdev_t *gnrc_netdev)
+inline void gomach_turn_off_radio(gnrc_netdev_t *gnrc_netdev)
 {
     netopt_state_t devstate;
 
@@ -147,7 +147,7 @@ void iqueuemac_trun_off_radio(gnrc_netdev_t *gnrc_netdev)
 }
 
 
-void iqueuemac_set_autoack(gnrc_netdev_t *gnrc_netdev, netopt_enable_t autoack)
+void gomach_set_autoack(gnrc_netdev_t *gnrc_netdev, netopt_enable_t autoack)
 {
     netopt_enable_t setautoack = autoack;
 
@@ -157,7 +157,7 @@ void iqueuemac_set_autoack(gnrc_netdev_t *gnrc_netdev, netopt_enable_t autoack)
                                   sizeof(setautoack));
 }
 
-void iqueuemac_set_ack_req(gnrc_netdev_t *gnrc_netdev, netopt_enable_t ack_req)
+void gomach_set_ack_req(gnrc_netdev_t *gnrc_netdev, netopt_enable_t ack_req)
 {
     netopt_enable_t set_ack_req = ack_req;
 
@@ -195,15 +195,18 @@ netopt_state_t _get_netdev_state(gnrc_netdev_t *gnrc_netdev)
  */
 
 
-void iqueuemac_turn_radio_channel(gnrc_netdev_t *gnrc_netdev, uint16_t channel_num)
+void gomach_turn_channel(gnrc_netdev_t *gnrc_netdev, uint16_t channel_num)
 {
-    gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CHANNEL, &channel_num, sizeof(channel_num));
+    gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
+                                  NETOPT_CHANNEL,
+                                  &channel_num,
+                                  sizeof(channel_num));
 }
 
 void iqueuemac_set_raddio_to_listen_mode(gnrc_netdev_t *gnrc_netdev)
 {
 
-    iqueuemac_trun_on_radio(gnrc_netdev);
+    gomach_turn_on_radio(gnrc_netdev);
 }
 
 int iqueuemac_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable)
@@ -213,7 +216,7 @@ int iqueuemac_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_enabl
     csma_enable_send = csma_enable;
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA, &csma_enable_send, sizeof(netopt_enable_t));
 
-    gnrc_netdev->tx.tx_finished = false;
+    gnrc_netdev_gomach_set_tx_finish(gnrc_netdev, false);
     gnrc_netdev_set_tx_feedback(gnrc_netdev, TX_FEEDBACK_UNDEF);
     return gnrc_netdev->send(gnrc_netdev, pkt);
 
@@ -874,7 +877,7 @@ void iqueue_router_cp_receive_packet_process(gnrc_netdev_t *gnrc_netdev)
                      * also, don't send preamble-ACK if CP ends. **/
                     if (_get_netdev_state(gnrc_netdev) == NETOPT_STATE_IDLE) {
                         /***  disable auto-ack ***/
-                        iqueuemac_set_autoack(gnrc_netdev, NETOPT_DISABLE);
+                        gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
 
                         int res;
                         res = iqueue_send_preamble_ack(gnrc_netdev, &receive_packet_info);
@@ -883,7 +886,7 @@ void iqueue_router_cp_receive_packet_process(gnrc_netdev_t *gnrc_netdev)
                         }
 
                         /* Enable Auto ACK again for data reception */
-                        iqueuemac_set_autoack(gnrc_netdev, NETOPT_ENABLE);
+                        gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
                     }
                 }
                 else {
@@ -1378,7 +1381,7 @@ void iqueuemac_packet_process_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
 
 }
 
-int iqueuemac_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable)
+int gomach_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable)
 {
     gnrc_pktsnip_t *pkt;
 
@@ -1496,7 +1499,7 @@ bool iqueue_mac_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev)
             gnrc_netdev->tx.packet = pkt;
             gnrc_netdev->tx.current_neighbor = &gnrc_netdev->tx.neighbors[next];
             gnrc_netdev->tx.tx_seq = 0;
-            gnrc_netdev->tx.t2u_retry_contuer = 0;
+            gnrc_netdev->tx.t2u_retry_counter = 0;
 
             //printf("iqueuemac: the find nearest neighbor is %d. \n", next);
             return true;
@@ -1587,7 +1590,7 @@ void iqueuemac_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
 }
 
 /****** check whether this function can be merged with router-wait-beacon-packet-process!!! ******/
-void iqueuemac_wait_beacon_packet_process(gnrc_netdev_t *gnrc_netdev)
+void gomach_wait_beacon_packet_process(gnrc_netdev_t *gnrc_netdev)
 {
     gnrc_pktsnip_t *pkt;
 
@@ -1706,7 +1709,7 @@ void iqueuemac_router_vtdma_receive_packet_process(gnrc_netdev_t *gnrc_netdev)
     } /* end of while loop */
 }
 
-void iqueuemac_figure_tx_neighbor_phase(gnrc_netdev_t *gnrc_netdev)
+void gomach_figure_neighbors_new_phase(gnrc_netdev_t *gnrc_netdev)
 {
 
     if (gnrc_netdev->iqueuemac.phase_changed == true) {

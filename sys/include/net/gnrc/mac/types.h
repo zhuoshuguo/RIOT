@@ -200,14 +200,13 @@ typedef struct {
     bool got_preamble_ack;
     uint32_t broadcast_seq;
     uint8_t tx_seq;
-    bool tx_finished;
     vtdma_para_t vtdma_para;
-    uint8_t no_ack_contuer;
-    uint8_t t2u_retry_contuer;
+    uint8_t no_ack_counter;
+    uint8_t t2u_retry_counter;
     bool t2u_on_public_1;
     bool reach_max_preamble_interval;
     uint32_t last_tx_neighbor_id;
-    uint8_t t2r_busy_rety_counter;
+    uint8_t tx_busy_count;
 #endif
 } gnrc_mac_tx_t;
 

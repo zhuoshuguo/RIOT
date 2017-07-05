@@ -66,16 +66,15 @@ typedef enum {
 } gnrc_gomach_bcast_state_t;
 
 typedef enum {
-    DEVICE_T2R_WAIT_CP_INIT = 0,
-    DEVICE_T2R_WAIT_CP,
-    DEVICE_T2R_TRANS_IN_CP,
-    DEVICE_T2R_WAIT_CPTRANS_FEEDBACK,
-    DEVICE_T2R_RE_PHASE_LOCK_PREPARE,
-    DEVICE_T2R_WAIT_BEACON,
-    DEVICE_T2R_WAIT_OWN_SLOTS,
-    DEVICE_T2R_TRANS_IN_VTDMA,
-    DEVICE_T2R_WAIT_VTDMATRANS_FEEDBACK,
-    DEVICE_T2R_TRANS_END
+    GNRC_GOMACH_T2K_INIT = 0,
+	GNRC_GOMACH_T2K_WAIT_CP,
+	GNRC_GOMACH_T2K_IN_CP,
+	GNRC_GOMACH_T2K_WAIT_CPTX_FEEDBACK,
+	GNRC_GOMACH_T2K_WAIT_BEACON,
+	GNRC_GOMACH_T2K_WAIT_SLOTS,
+	GNRC_GOMACH_T2K_VTDMA_TRANS,
+	GNRC_GOMACH_T2K_WAIT_VTDMA_FEEDBACK,
+	GNRC_GOMACH_T2K_END
 } gnrc_gomach_t2k_state_t;
 
 typedef enum {
@@ -165,7 +164,7 @@ typedef struct {
 }check_dup_pkt_t;
 
 typedef struct {
-    uint8_t sub_channel_seq;
+    uint16_t sub_channel_seq;
     uint8_t slots_position;
     uint8_t slots_num;
     bool get_beacon;
@@ -196,7 +195,6 @@ typedef struct iqueuemac {
 
     /* Track if a transmission might have corrupted a received packet */
     bool init_retry;
-    bool packet_received;
     bool quit_current_cycle;
     bool got_preamble;
     bool cp_end;

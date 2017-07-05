@@ -31,6 +31,41 @@
 extern "C" {
 #endif
 
+
+#define GNRC_NETDEV_GOMACH_INFO_TX_FINISHED         (0x0008U)
+
+#define GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED        (0x0010U)
+
+static inline void gnrc_netdev_gomach_set_tx_finish(gnrc_netdev_t *dev, bool tx_finish)
+{
+    if (tx_finish) {
+        dev->mac_info |= GNRC_NETDEV_GOMACH_INFO_TX_FINISHED;
+    }
+    else {
+        dev->mac_info &= ~GNRC_NETDEV_GOMACH_INFO_TX_FINISHED;
+    }
+}
+
+static inline bool gnrc_netdev_gomach_get_tx_finish(gnrc_netdev_t *dev)
+{
+    return (dev->mac_info & GNRC_NETDEV_GOMACH_INFO_TX_FINISHED);
+}
+
+static inline void gnrc_netdev_gomach_set_pkt_received(gnrc_netdev_t *dev, bool received)
+{
+    if (received) {
+        dev->mac_info |= GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED;
+    }
+    else {
+        dev->mac_info &= ~GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED;
+    }
+}
+
+static inline bool gnrc_netdev_gomach_get_pkt_received(gnrc_netdev_t *dev)
+{
+    return (dev->mac_info & GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED);
+}
+
 /* @brief   Type to pass information about parsing */
 typedef struct {
     iqueuemac_hdr_t *header;    /**< iqueuemac header of packet */
@@ -126,13 +161,13 @@ static inline bool _addr_match(l2_addr_t *addr1, l2_addr_t *addr2)
     return (memcmp(addr1->addr, addr2->addr, addr1->len) == 0);
 }
 
-void iqueuemac_trun_on_radio(gnrc_netdev_t *gnrc_netdev);
-void iqueuemac_trun_off_radio(gnrc_netdev_t *gnrc_netdev);
-void iqueuemac_set_autoack(gnrc_netdev_t *gnrc_netdev, netopt_enable_t autoack);
-void iqueuemac_set_ack_req(gnrc_netdev_t *gnrc_netdev, netopt_enable_t ack_req);
+void gomach_turn_on_radio(gnrc_netdev_t *gnrc_netdev);
+void gomach_turn_off_radio(gnrc_netdev_t *gnrc_netdev);
+void gomach_set_autoack(gnrc_netdev_t *gnrc_netdev, netopt_enable_t autoack);
+void gomach_set_ack_req(gnrc_netdev_t *gnrc_netdev, netopt_enable_t ack_req);
 netopt_state_t _get_netdev_state(gnrc_netdev_t *gnrc_netdev);
 //void iqueuemac_set_promiscuousmode(iqueuemac_t* iqueuemac, netopt_enable_t enable);
-void iqueuemac_turn_radio_channel(gnrc_netdev_t *gnrc_netdev, uint16_t channel_num);
+void gomach_turn_channel(gnrc_netdev_t *gnrc_netdev, uint16_t channel_num);
 void iqueuemac_set_raddio_to_listen_mode(gnrc_netdev_t *gnrc_netdev);
 
 bool iqueuemac_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t *pa_info);
@@ -150,13 +185,13 @@ void iqueuemac_send_announce(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csm
 int iqueue_mac_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma);
 void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *pa_info);
 void iqueuemac_packet_process_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev);
-int iqueuemac_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable);
+int gomach_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable);
 bool iqueue_mac_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev);
 //bool iqueuemac_check_has_pending_packet(packet_queue_t* q);
 void iqueuemac_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt);
-void iqueuemac_wait_beacon_packet_process(gnrc_netdev_t *gnrc_netdev);
+void gomach_wait_beacon_packet_process(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_router_vtdma_receive_packet_process(gnrc_netdev_t *gnrc_netdev);
-void iqueuemac_figure_tx_neighbor_phase(gnrc_netdev_t *gnrc_netdev);
+void gomach_figure_neighbors_new_phase(gnrc_netdev_t *gnrc_netdev);
 void _dispatch(gnrc_pktsnip_t **buffer);
 void update_neighbor_pubchan(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_broadcast_receive_packet_process(gnrc_netdev_t *gnrc_netdev);
