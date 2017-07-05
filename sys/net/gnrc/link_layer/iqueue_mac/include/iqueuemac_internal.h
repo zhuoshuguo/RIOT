@@ -182,7 +182,7 @@ void iqueuemac_update_subchannel_occu_flags(gnrc_netdev_t *gnrc_netdev, gnrc_pkt
 void iqueuemac_packet_process_in_init(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_send_announce(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma);
-int iqueue_mac_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma);
+int gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma);
 void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *pa_info);
 void iqueuemac_packet_process_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev);
 int gomach_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable);

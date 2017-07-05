@@ -68,7 +68,7 @@ typedef enum {
 typedef enum {
     GNRC_GOMACH_T2K_INIT = 0,
 	GNRC_GOMACH_T2K_WAIT_CP,
-	GNRC_GOMACH_T2K_IN_CP,
+	GNRC_GOMACH_T2K_TRANS_IN_CP,
 	GNRC_GOMACH_T2K_WAIT_CPTX_FEEDBACK,
 	GNRC_GOMACH_T2K_WAIT_BEACON,
 	GNRC_GOMACH_T2K_WAIT_SLOTS,
@@ -78,14 +78,14 @@ typedef enum {
 } gnrc_gomach_t2k_state_t;
 
 typedef enum {
-    DEVICE_T2U_SEND_PREAMBLE_INIT = 0,
-    DEVICE_T2U_SEND_PREAMBLE_PREPARE,
-    DEVICE_T2U_SEND_PREAMBLE,
-    DEVICE_T2U_WAIT_PREAMBLE_TX_END,
-    DEVICE_T2U_WAIT_PREAMBLE_ACK,
-    DEVICE_T2U_SEND_DATA,
-    DEVICE_T2U_WAIT_TX_FEEDBACK,
-    DEVICE_T2U_END
+	GNRC_GOMACH_T2U_INIT = 0,
+	GNRC_GOMACH_T2U_PREAMBLE_PREPARE,
+	GNRC_GOMACH_T2U_SEND_PREAMBLE,
+	GNRC_GOMACH_T2U_WAIT_PREAMBLE_TX,
+	GNRC_GOMACH_T2U_WAIT_PREAMBLE_ACK,
+	GNRC_GOMACH_T2U_SEND_DATA,
+	GNRC_GOMACH_T2U_WAIT_DATA_TX,
+	GNRC_GOMACH_T2U_END
 } gnrc_gomach_t2u_state_t;
 
 /******************************router state machinies**********************************/
@@ -128,11 +128,9 @@ typedef enum {
 } gnrc_gomach_listen_state_t;
 
 typedef enum {
-    /*Transmitting states of router*/
-    R_TRANS_TO_UNKOWN,
-    R_TRANS_TO_ROUTER,
-    R_TRANS_TO_NODE,
-    R_BROADCAST
+    GNRC_GOMACH_TRANS_TO_UNKNOWN,
+    GNRC_GOMACH_TRANS_TO_KNOWN,
+    GNRC_GOMACH_BROADCAST
 } gnrc_gomach_transmit_state_t;
 
 /******************************************************************************/

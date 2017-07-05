@@ -1083,7 +1083,7 @@ void iqueuemac_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev)
     //printf("iqueuemac: the final selected subchannel is %d .\n", subchannel_seq);
 }
 
-int iqueue_mac_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma)
+int gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma)
 {
     /****** assemble and send the beacon ******/
     gnrc_pktsnip_t *pkt;
