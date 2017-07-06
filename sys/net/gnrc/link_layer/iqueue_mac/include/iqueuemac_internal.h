@@ -171,7 +171,7 @@ void gomach_turn_channel(gnrc_netdev_t *gnrc_netdev, uint16_t channel_num);
 void iqueuemac_set_raddio_to_listen_mode(gnrc_netdev_t *gnrc_netdev);
 
 bool iqueuemac_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t *pa_info);
-int iqueuemac_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable);
+int gomach_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable);
 int iqueue_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t *info);
 int iqueuemac_assemble_and_send_beacon(gnrc_netdev_t *gnrc_netdev);
 int _parse_packet(gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *info);

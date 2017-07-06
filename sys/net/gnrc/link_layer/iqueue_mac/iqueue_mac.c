@@ -87,7 +87,7 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->iqueuemac.pub_channel_2 = 11;
     gnrc_netdev->iqueuemac.cur_pub_channel = gnrc_netdev->iqueuemac.pub_channel_1;
 
-    gnrc_netdev->tx.bcast_state = DEVICE_BROADCAST_INIT;
+    gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_INIT;
     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_INIT;
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_INIT;
 
@@ -220,52 +220,54 @@ void iqueuemac_phase_backoff(gnrc_netdev_t *gnrc_netdev)
     printf("bp %lu\n", backoff_us);
 }
 
-
-/****************** Device (both router and node) broadcast state machines*****/
-
-void iqueuemac_device_broadcast_init(gnrc_netdev_t *gnrc_netdev)
+static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
 {
-    gomach_turn_on_radio(gnrc_netdev);
-
-    ////////////////////////////////////////////////////////////////
-    gomach_turn_channel(gnrc_netdev, gnrc_netdev->iqueuemac.pub_channel_1);
-    /* disable autoACK when sending broadcast pkts */
+    /* Disable auto-ACK when sending broadcast packets, thus not to receive packet. */
     gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
 
-    gomach_turn_channel(gnrc_netdev, gnrc_netdev->iqueuemac.pub_channel_2);
-    gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
-
+    /* Firstly turn the radio to public channel 1. */
     gomach_turn_channel(gnrc_netdev, gnrc_netdev->iqueuemac.pub_channel_1);
     gnrc_netdev->tx.t2u_on_public_1 = true;
 
+    gnrc_netdev->tx.broadcast_seq ++;
 
-    /*** assemble broadcast packet ***/
+    /* Assemble the broadcast packet. */
     gnrc_pktsnip_t *pkt = gnrc_netdev->tx.packet;
+    gnrc_pktsnip_t *payload = gnrc_netdev->tx.packet->next;
 
     iqueuemac_frame_broadcast_t iqueuemac_broadcast_hdr;
     iqueuemac_broadcast_hdr.header.type = FRAMETYPE_BROADCAST;
     iqueuemac_broadcast_hdr.seq_nr = gnrc_netdev->tx.broadcast_seq;
-
-    pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_broadcast_hdr, sizeof(iqueuemac_broadcast_hdr), GNRC_NETTYPE_IQUEUEMAC);
-    if (pkt == NULL) {
-        puts("iqueuemac: pktbuf add failed in iqueuemac_device_broadcast_init.");
-        //relase the broadcast pkt and go to listen state??.
+    pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_broadcast_hdr,
+                                sizeof(iqueuemac_broadcast_hdr),
+                                GNRC_NETTYPE_IQUEUEMAC);
+    if (pkt->next == NULL) {
+        /* Make append payload after netif header again */
+        gnrc_netdev->tx.packet->next = payload;
+        gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+        gnrc_netdev->tx.packet = NULL;
+        LOG_ERROR("ERROR: [GOMACH] bcast: no memory to assemble bcast packet, drop packet.\n");
+        LOG_ERROR("ERROR: [GOMACH] bcast failed, go to listen mode.\n");
+        gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_END;
+        gnrc_netdev->iqueuemac.need_update = true;
+        return;
     }
-    iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_FINISH, IQUEUEMAC_SUPERFRAME_DURATION_US);
 
-    gnrc_netdev->tx.bcast_state = DEVICE_SEND_BROADCAST;
-    gnrc_netdev->iqueuemac.need_update = true;
+    iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_FINISH,
+                          IQUEUEMAC_SUPERFRAME_DURATION_US);
 
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
+    gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_SEND;
+    gnrc_netdev->iqueuemac.need_update = true;
 }
 
-void iqueuemac_device_send_broadcast(gnrc_netdev_t *gnrc_netdev)
+static bool _gomach_send_bcast_busy_handle(gnrc_netdev_t *gnrc_netdev)
 {
-
-	/* if rx is going, quit send bcast. */
-    if((_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) || (gnrc_netdev_get_rx_started(gnrc_netdev) == true)) {
-    	/* found ongoing transmissions, quit send broadcast,delay to next cycle */
-    	/* save payload pointer */
+    /* Quit sending broadcast packet if we found ongoing transmissions, for collision avoidance. */
+    if((_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) ||
+       (gnrc_netdev_get_rx_started(gnrc_netdev) == true)) {
+        LOG_WARNING("WARNING: [GOMACH] bcast: found ongoing transmission, quit broadcast.\n");
+    	/* Queue the broadcast packet back to the queue. */
     	gnrc_pktsnip_t* payload = gnrc_netdev->tx.packet->next->next;
 
     	/* remove iqueuemac header */
@@ -275,86 +277,69 @@ void iqueuemac_device_send_broadcast(gnrc_netdev_t *gnrc_netdev)
     	/* make append payload after netif header again */
     	gnrc_netdev->tx.packet->next = payload;
 
-    	/* queue the pkt for transmission in next cycle */
     	if(!gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet)){
-    	   	puts("Push pkt failed in bcast");
+    	   	LOG_WARNING("WARNING: [GOMACH] bcast: TX queue full, release packet.\n");
     	   	gnrc_pktbuf_release(gnrc_netdev->tx.packet);
     	}
     	gnrc_netdev->tx.packet = NULL;
 
-    	puts("quit send bcast-0");
-
-    	gnrc_netdev->tx.bcast_state = DEVICE_BROADCAST_END;
+    	gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_END;
     	gnrc_netdev->iqueuemac.need_update = true;
-    	return;
+    	return false;
+    }
+    return true;
+}
+
+static void gomach_send_bcast_packet(gnrc_netdev_t *gnrc_netdev)
+{
+    /* Quit sending broadcast packet if we found ongoing transmissions, for collision avoidance. */
+    if (!_gomach_send_bcast_busy_handle(gnrc_netdev)) {
+        return;
     }
 
     gnrc_pktbuf_hold(gnrc_netdev->tx.packet, 1);
 
-    iqueuemac_send(gnrc_netdev, gnrc_netdev->tx.packet, NETOPT_DISABLE);
+    /* Start sending the broadcast packet. */
+    gomach_send(gnrc_netdev, gnrc_netdev->tx.packet, NETOPT_DISABLE);
 
-    //iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_INTERVAL, IQUEUEMAC_BROADCAST_INTERVAL_US);
-
-    gnrc_netdev->tx.bcast_state = DEVICE_WAIT_BROADCAST_TX_FINISH;
+    gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_WAIT_TX_FINISH;
     gnrc_netdev->iqueuemac.need_update = false;
 }
 
-void iqueuemac_device_wait_broadcast_txfinish(gnrc_netdev_t *gnrc_netdev){
-
+static void gomach_wait_bcast_tx_finish(gnrc_netdev_t *gnrc_netdev){
     if (gnrc_netdev_gomach_get_tx_finish(gnrc_netdev)) {
-		iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_INTERVAL, IQUEUEMAC_BROADCAST_INTERVAL_US);
+	    iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_INTERVAL,
+	                          IQUEUEMAC_BROADCAST_INTERVAL_US);
+        gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_WAIT_NEXT_TX;
+        gnrc_netdev->iqueuemac.need_update = false;
+    }
 
-		gnrc_netdev->tx.bcast_state = DEVICE_WAIT_BROADCAST_FEEDBACK;
-		gnrc_netdev->iqueuemac.need_update = false;
+    /* This is to handle no-TX-complete issue. In case there is no no-TX-complete event,
+     * we will quit broadcasting, i.e., not getting stucked here. */
+    if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_FINISH)) {
+        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_INTERVAL);
+        gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_END;
+        gnrc_netdev->iqueuemac.need_update = true;
     }
 }
-void iqueuemac_device_wait_broadcast_feedback(gnrc_netdev_t *gnrc_netdev)
+static void gomach_wait_bcast_wait_next_tx(gnrc_netdev_t *gnrc_netdev)
 {
-
-    /* if rx start, wait until rx is completed. */
-    if (gnrc_netdev_get_rx_started(gnrc_netdev)) {
+    /* Quit sending broadcast packet if we found ongoing transmissions, for collision avoidance. */
+    if (!_gomach_send_bcast_busy_handle(gnrc_netdev)) {
         return;
     }
 
-    /* if rx is going, quit send bcast. */
-    if((_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) ||
-    	(gnrc_netdev_get_rx_started(gnrc_netdev) == true) || (gnrc_netdev->iqueuemac.quit_current_cycle == true)) {
-    	/* found ongoing transmissions, quit send broadcast,delay to next cycle */
-
-        /* save payload pointer */
-        gnrc_pktsnip_t* payload = gnrc_netdev->tx.packet->next->next;
-
-        /* remove iqueuemac header */
-        gnrc_netdev->tx.packet->next->next = NULL;
-        gnrc_pktbuf_release(gnrc_netdev->tx.packet->next);
-
-        /* make append payload after netif header again */
-        gnrc_netdev->tx.packet->next = payload;
-
-        /* queue the pkt for transmission in next cycle */
-        if(!gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet)){
-        	puts("Push pkt failed in t2r");
-        	gnrc_pktbuf_release(gnrc_netdev->tx.packet);
-        }
-        gnrc_netdev->tx.packet = NULL;
-
-        //puts("quit send bcast-1");
-        gnrc_netdev->tx.bcast_state = DEVICE_BROADCAST_END;
-        gnrc_netdev->iqueuemac.need_update = true;
-   		return;
-    }
-
+    /* If the whole broadcast duration timeouts, release the packet and go to t2u end. */
     if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_FINISH)) {
-
         iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_INTERVAL);
         gnrc_pktbuf_release(gnrc_netdev->tx.packet);
         gnrc_netdev->tx.packet = NULL;
-
-        gnrc_netdev->tx.bcast_state = DEVICE_BROADCAST_END;
+        gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_END;
         gnrc_netdev->iqueuemac.need_update = true;
         return;
     }
 
+    /* Toggle the radio channel and go to send the next broadcast packet. */
     if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_INTERVAL)) {
     	if(gnrc_netdev->tx.t2u_on_public_1 == true){
     	    gomach_turn_channel(gnrc_netdev, gnrc_netdev->iqueuemac.pub_channel_2);
@@ -364,14 +349,14 @@ void iqueuemac_device_wait_broadcast_feedback(gnrc_netdev_t *gnrc_netdev)
     	   	gnrc_netdev->tx.t2u_on_public_1 = true;
     	}
 
-        gnrc_netdev->tx.bcast_state = DEVICE_SEND_BROADCAST;
+        gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_SEND;
         gnrc_netdev->iqueuemac.need_update = true;
     }
 }
 
-void iqueuemac_device_broadcast_end(gnrc_netdev_t *gnrc_netdev)
+static void gomach_bcast_end(gnrc_netdev_t *gnrc_netdev)
 {
-
+    gomach_turn_off_radio(gnrc_netdev);
     iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_INTERVAL);
     iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_FINISH);
 
@@ -381,34 +366,42 @@ void iqueuemac_device_broadcast_end(gnrc_netdev_t *gnrc_netdev)
     }
     gnrc_netdev->tx.current_neighbor = NULL;
 
-    gnrc_netdev->tx.bcast_state = DEVICE_BROADCAST_INIT;
+    /* Reset the t2u state. */
+    gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_INIT;
 
-    /*********** judge and update the states before switch back to CP listening period   ***********/
+    /* Switch to the listen mode. */
     gnrc_netdev->iqueuemac.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING;
     gnrc_netdev->rx.enter_new_cycle = false;
-
-    gomach_turn_off_radio(gnrc_netdev);
-
-    //puts("iqueuemac: router is in broadcast end, switching back to sleeping period");
-
     gnrc_netdev->iqueuemac.need_update = true;
 }
 
-
-void iqueuemac_device_broadcast_update(gnrc_netdev_t *gnrc_netdev)
+static void gomach_bcast_update(gnrc_netdev_t *gnrc_netdev)
 {
-
     switch (gnrc_netdev->tx.bcast_state) {
-        case DEVICE_BROADCAST_INIT: iqueuemac_device_broadcast_init(gnrc_netdev); break;
-        case DEVICE_SEND_BROADCAST: iqueuemac_device_send_broadcast(gnrc_netdev); break;
-        case DEVICE_WAIT_BROADCAST_TX_FINISH: iqueuemac_device_wait_broadcast_txfinish(gnrc_netdev); break;
-        case DEVICE_WAIT_BROADCAST_FEEDBACK: iqueuemac_device_wait_broadcast_feedback(gnrc_netdev); break;
-        case DEVICE_BROADCAST_END: iqueuemac_device_broadcast_end(gnrc_netdev); break;
+        case GNRC_GOMACH_BCAST_INIT: {
+            gomach_bcast_init(gnrc_netdev);
+            break;
+        }
+        case GNRC_GOMACH_BCAST_SEND: {
+            gomach_send_bcast_packet(gnrc_netdev);
+            break;
+        }
+        case GNRC_GOMACH_BCAST_WAIT_TX_FINISH: {
+            gomach_wait_bcast_tx_finish(gnrc_netdev);
+            break;
+        }
+        case GNRC_GOMACH_BCAST_WAIT_NEXT_TX: {
+            gomach_wait_bcast_wait_next_tx(gnrc_netdev);
+            break;
+        }
+        case GNRC_GOMACH_BCAST_END: {
+            gomach_bcast_end(gnrc_netdev);
+            break;
+        }
         default: break;
     }
 }
-
 
 /****************** iQueue-MAC transmission to node state machines *****/
 
@@ -1923,7 +1916,7 @@ static void gomach_update(gnrc_netdev_t *gnrc_netdev)
                     break;
                 }
                 case GNRC_GOMACH_BROADCAST: {
-                    iqueuemac_device_broadcast_update(gnrc_netdev);
+                	gomach_bcast_update(gnrc_netdev);
                     break;
                 }
                 default: break;

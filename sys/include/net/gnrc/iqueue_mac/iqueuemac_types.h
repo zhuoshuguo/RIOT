@@ -58,11 +58,11 @@ extern "C" {
 
 /******************************************************************************/
 typedef enum {
-    DEVICE_BROADCAST_INIT = 0,
-    DEVICE_SEND_BROADCAST,
-    DEVICE_WAIT_BROADCAST_TX_FINISH,
-    DEVICE_WAIT_BROADCAST_FEEDBACK,
-    DEVICE_BROADCAST_END
+	GNRC_GOMACH_BCAST_INIT = 0,
+	GNRC_GOMACH_BCAST_SEND,
+	GNRC_GOMACH_BCAST_WAIT_TX_FINISH,
+	GNRC_GOMACH_BCAST_WAIT_NEXT_TX,
+	GNRC_GOMACH_BCAST_END
 } gnrc_gomach_bcast_state_t;
 
 typedef enum {

@@ -209,7 +209,7 @@ void iqueuemac_set_raddio_to_listen_mode(gnrc_netdev_t *gnrc_netdev)
     gomach_turn_on_radio(gnrc_netdev);
 }
 
-int iqueuemac_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable)
+int gomach_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable)
 {
     netopt_enable_t csma_enable_send;
 
@@ -283,7 +283,7 @@ int iqueue_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t
     netopt_enable_t csma_enable;
     csma_enable = NETOPT_DISABLE;
     int res;
-    res = iqueuemac_send(gnrc_netdev, pkt, csma_enable);
+    res = gomach_send(gnrc_netdev, pkt, csma_enable);
     if (res < 0) {
         puts("iqueuemac: send preamble-ack failed in iqueue_send_preamble_ack().");
         gnrc_pktbuf_release(pkt_iqmac);
@@ -478,7 +478,7 @@ int iqueuemac_assemble_and_send_beacon(gnrc_netdev_t *gnrc_netdev)
         csma_enable = NETOPT_DISABLE;  // NETOPT_ENABLE
     }
     int res;
-    res = iqueuemac_send(gnrc_netdev, pkt, csma_enable);
+    res = gomach_send(gnrc_netdev, pkt, csma_enable);
     if (res < 0) {
         puts("iqueuemac: send beacon failed, release it.");
         gnrc_pktbuf_release(pkt);
@@ -1129,7 +1129,7 @@ int gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma)
     csma_enable = use_csma;
     int res;
 
-    res = iqueuemac_send(gnrc_netdev, pkt, csma_enable);
+    res = gomach_send(gnrc_netdev, pkt, csma_enable);
     if (res < 0) {
         puts("iqueuemac: send preamble failed in iqueue_mac_send_preamble().");
         gnrc_pktbuf_release(pkt_iqmac);
@@ -1171,7 +1171,7 @@ void iqueuemac_send_announce(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csm
 
     netopt_enable_t csma_enable;
     csma_enable = use_csma;
-    iqueuemac_send(gnrc_netdev, pkt, csma_enable);
+    gomach_send(gnrc_netdev, pkt, csma_enable);
 }
 
 void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *pa_info)
@@ -1424,7 +1424,7 @@ int gomach_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_ena
     gnrc_pktbuf_hold(gnrc_netdev->tx.packet, 1);
 
     int res;
-    res = iqueuemac_send(gnrc_netdev, gnrc_netdev->tx.packet, csma_enable);
+    res = gomach_send(gnrc_netdev, gnrc_netdev->tx.packet, csma_enable);
     if (res < 0) {
         /* If res is < 0, then, the old pkt will not be released in send(). so need to release old data once */
         gnrc_pktbuf_release(gnrc_netdev->tx.packet);
