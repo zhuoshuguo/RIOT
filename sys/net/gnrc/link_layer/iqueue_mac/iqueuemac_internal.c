@@ -292,13 +292,12 @@ int iqueue_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t
 
 }
 
-int iqueuemac_assemble_and_send_beacon(gnrc_netdev_t *gnrc_netdev)
+int gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
 {
     int i;
     int j = 0;
     uint8_t total_tdma_node_num = 0;
     uint8_t total_tdma_slot_num = 0;
-    bool slots_full = false;
 
     gnrc_netdev->rx.router_vtdma_mana.total_slots_num = 0;
 
@@ -342,7 +341,7 @@ int iqueuemac_assemble_and_send_beacon(gnrc_netdev_t *gnrc_netdev)
 
     /**** search router-type first ****/
     for (i = 0; i < IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT; i++) {
-        if ((gnrc_netdev->rx.rx_register_list[i].mac_type == ROUTER) && (gnrc_netdev->rx.rx_register_list[i].queue_indicator > 0)) {
+        if (gnrc_netdev->rx.rx_register_list[i].queue_indicator > 0) {
             //id_list[j].addr = gomach->rx.rx_register_list[i].node_addr.addr;
             memcpy(id_list[j].addr,
                    gnrc_netdev->rx.rx_register_list[i].node_addr.addr,
@@ -359,40 +358,11 @@ int iqueuemac_assemble_and_send_beacon(gnrc_netdev_t *gnrc_netdev)
                 slots_list[j] -= redueced_slots_num;
                 total_tdma_slot_num -= redueced_slots_num;
                 //j++;
-                slots_full = true;
                 break;
             }
             j++;
         }
 
-    }
-    /**** search node-type then ****/
-    for (i = 0; i < IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT; i++) {
-        if (slots_full == true) {
-            break;
-        }
-
-        if ((gnrc_netdev->rx.rx_register_list[i].mac_type == NODE) &&
-            (gnrc_netdev->rx.rx_register_list[i].queue_indicator > 0)) {
-            //id_list[j].addr = gomach->rx.rx_register_list[i].node_addr.addr;
-            memcpy(id_list[j].addr,
-                   gnrc_netdev->rx.rx_register_list[i].node_addr.addr,
-                   gnrc_netdev->rx.rx_register_list[i].node_addr.len);
-            slots_list[j] = gnrc_netdev->rx.rx_register_list[i].queue_indicator;
-
-            total_tdma_node_num++;
-            total_tdma_slot_num += slots_list[j];
-
-            if (total_tdma_slot_num >= IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM) {
-                uint8_t redueced_slots_num;
-                redueced_slots_num = total_tdma_slot_num - IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM;
-                slots_list[j] -= redueced_slots_num;
-                total_tdma_slot_num -= redueced_slots_num;
-                slots_full = true;
-                break;
-            }
-            j++;
-        }
     }
 
     iqueuemac_hdr.schedulelist_size = total_tdma_node_num;
@@ -655,18 +625,6 @@ void iqueuemac_router_queue_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pk
                    pa_info->src_addr.addr,
                    pa_info->src_addr.len);
 
-            /****  extra mac type process ***/
-            uint8_t extra_mac_type;
-            extra_mac_type = iqueuemac_data_hdr->queue_indicator & 0x80;
-            if (extra_mac_type == 0x80) {
-                gnrc_netdev->rx.rx_register_list[i].mac_type = NODE;
-                //puts("gomach: the registered device is node type.");
-            }
-            else {
-                gnrc_netdev->rx.rx_register_list[i].mac_type = ROUTER;
-                //puts("gomach: the registered device is router type.");
-            }
-
             gnrc_netdev->rx.rx_register_list[i].queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x3F;
             //printf("gomach: the registered queue-indicator is %d. \n", iqueuemac_data_hdr->queue_indicator);
             return;
@@ -803,7 +761,7 @@ bool iqueuemac_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info
 
 }
 
-void iqueue_router_cp_receive_packet_process(gnrc_netdev_t *gnrc_netdev)
+void gpmach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
 {
     gnrc_pktsnip_t *pkt;
 
@@ -1187,7 +1145,7 @@ void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pkts
     }
 
     /***** update all the necessary information to marked as a known neighbor ****/
-    gnrc_netdev->tx.current_neighbor->mac_type = ROUTER;
+    gnrc_netdev->tx.current_neighbor->mac_type = KNOWN;
 
     /*** remember to reduce a bit the phase for locking, since there is a hand-shake procedure before ***/
     //uint32_t  phase_ticks;
@@ -1436,10 +1394,8 @@ int gomach_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_ena
 }
 
 
-bool iqueue_mac_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev)
+bool gomach_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev)
 {
-
-    //////////////
     int next = -1;
 
     //uint32_t phase_check;
@@ -1677,18 +1633,6 @@ void iqueuemac_router_vtdma_receive_packet_process(gnrc_netdev_t *gnrc_netdev)
         }
 
         switch (receive_packet_info.header->type) {
-            case FRAMETYPE_BEACON: {
-                gnrc_pktbuf_release(pkt);
-            } break;
-
-            case FRAMETYPE_PREAMBLE: {
-                gnrc_pktbuf_release(pkt);
-            } break;
-
-            case FRAMETYPE_PREAMBLE_ACK: {
-                gnrc_pktbuf_release(pkt);
-            } break;
-
             case FRAMETYPE_IQUEUE_DATA: {
                 iqueuemac_router_queue_indicator_update(gnrc_netdev, pkt, &receive_packet_info);
 
@@ -1703,7 +1647,10 @@ void iqueuemac_router_vtdma_receive_packet_process(gnrc_netdev_t *gnrc_netdev)
                 //puts("gomach: router receives a data in vtdma!!");
             } break;
 
-            default: gnrc_pktbuf_release(pkt); break;
+            default: {
+                gnrc_pktbuf_release(pkt);
+                break;
+            }
         }
 
     } /* end of while loop */
@@ -1717,7 +1664,7 @@ void gomach_figure_neighbors_new_phase(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->gomach.phase_changed = false;
 
         for (int i = 1; i < GNRC_MAC_NEIGHBOR_COUNT; i++) {
-            if (gnrc_netdev->tx.neighbors[i].mac_type == ROUTER) {
+            if (gnrc_netdev->tx.neighbors[i].mac_type == KNOWN) {
                 long int tmp = gnrc_netdev->tx.neighbors[i].cp_phase - gnrc_netdev->gomach.backoff_phase_ticks;
                 if (tmp < 0) {
                     tmp += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
@@ -1774,7 +1721,7 @@ void update_neighbor_pubchan(gnrc_netdev_t *gnrc_netdev)
 
     /* update tx-nighbors' current channel */
     for (int i = 1; i < GNRC_MAC_NEIGHBOR_COUNT; i++) {
-        if (gnrc_netdev->tx.neighbors[i].mac_type == ROUTER) {
+        if (gnrc_netdev->tx.neighbors[i].mac_type == KNOWN) {
             /* switch public channel */
             if (gnrc_netdev->tx.neighbors[i].pub_chanseq == gnrc_netdev->gomach.pub_channel_1) {
                 gnrc_netdev->tx.neighbors[i].pub_chanseq = gnrc_netdev->gomach.pub_channel_2;

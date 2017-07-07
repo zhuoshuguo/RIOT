@@ -32,8 +32,7 @@ typedef struct gnrc_netdev gnrc_netdev_t;
 
 typedef enum {
     UNKNOWN = 0,
-    ROUTER,
-    NODE
+	KNOWN,
 } iqueuemac_type_t;
 
 #ifndef IQUEUEMAC_WAIT_RTT_STABLE_US
@@ -41,7 +40,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_SUPERFRAME_DURATION_US
-#define IQUEUEMAC_SUPERFRAME_DURATION_US        (150U * 1000)
+#define IQUEUEMAC_SUPERFRAME_DURATION_US        (200U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_CP_DURATION_US

@@ -53,8 +53,7 @@
 
 #define NETDEV_NETAPI_MSG_QUEUE_SIZE 8
 
-kernel_pid_t iqueuemac_pid;
-//static iqueuemac_t gomach;
+static kernel_pid_t iqueuemac_pid;
 
 void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
 {
@@ -69,7 +68,7 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_INIT;  //GNRC_GOMACH_LISTEN;
     gnrc_netdev->gomach.init_state = GNRC_GOMACH_INIT_PREPARE;
 
-    gnrc_netdev->rx.listen_state = R_LISTEN_CP_INIT;
+    gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
     gnrc_netdev->tx.transmit_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
 
     gnrc_netdev->rx.enter_new_cycle = false;
@@ -200,23 +199,6 @@ void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
 
     }
 
-}
-
-void iqueuemac_phase_backoff(gnrc_netdev_t *gnrc_netdev)
-{
-    uint32_t alarm;
-
-    /*** execute phase backoff for avoiding CP overlap. ***/
-    rtt_clear_alarm();
-    alarm = gnrc_netdev->gomach.last_wakeup +
-            RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US) +
-            gnrc_netdev->gomach.backoff_phase_ticks;
-    rtt_set_alarm(alarm, rtt_cb, (void *) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
-    gnrc_netdev->gomach.phase_changed = true;
-
-    uint32_t backoff_us;
-    backoff_us = RTT_TICKS_TO_US(gnrc_netdev->gomach.backoff_phase_ticks);
-    printf("bp %lu\n", backoff_us);
 }
 
 static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
@@ -370,7 +352,7 @@ static void gomach_bcast_end(gnrc_netdev_t *gnrc_netdev)
 
     /* Switch to the listen mode. */
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
-    gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING;
+    gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_netdev->rx.enter_new_cycle = false;
     gnrc_netdev->gomach.need_update = true;
 }
@@ -421,7 +403,7 @@ static void gomach_init_prepare(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.need_update = true;
 }
 
-void gomach_init_announce_subchannel(gnrc_netdev_t *gnrc_netdev)
+static void gomach_init_announce_subchannel(gnrc_netdev_t *gnrc_netdev)
 {
     /* Announce the device's chosen sub-channel sequence to its neighbors. */
 	gomach_bcast_subchann_seq(gnrc_netdev, NETOPT_ENABLE);
@@ -430,7 +412,7 @@ void gomach_init_announce_subchannel(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.need_update = false;
 }
 
-void gomach_init_wait_announce_feedback(gnrc_netdev_t *gnrc_netdev)
+static void gomach_init_wait_announce_feedback(gnrc_netdev_t *gnrc_netdev)
 {
     if (gnrc_netdev_gomach_get_tx_finish(gnrc_netdev)) {
         gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
@@ -439,13 +421,13 @@ void gomach_init_wait_announce_feedback(gnrc_netdev_t *gnrc_netdev)
     }
 }
 
-void gomach_init_end(gnrc_netdev_t *gnrc_netdev)
+static void gomach_init_end(gnrc_netdev_t *gnrc_netdev)
 {
     /* Reset initialization state. */
     gnrc_netdev->gomach.init_state = GNRC_GOMACH_INIT_PREPARE;
     /* Switch to duty-cycle listen mode. */
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
-    gnrc_netdev->rx.listen_state = R_LISTEN_CP_INIT;
+    gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
 
     /* Start duty-cycle scheme. */
     gnrc_netdev->gomach.duty_cycle_started = false;
@@ -890,7 +872,7 @@ static void gomach_t2k_end(gnrc_netdev_t *gnrc_netdev)
     gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
 
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
-    gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING;
+    gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_netdev->rx.enter_new_cycle = false;
     gnrc_netdev->gomach.need_update = true;
 }
@@ -1310,7 +1292,7 @@ static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
 
     /* Resume to listen state and go to sleep. */
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
-    gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING;
+    gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_netdev->rx.enter_new_cycle = false;
     gnrc_netdev->gomach.need_update = true;
 }
@@ -1354,15 +1336,31 @@ static void gomach_t2u_update(gnrc_netdev_t *gnrc_netdev)
     }
 }
 
-/******************new router state machines*****/
-void iqueue_mac_router_listen_cp_init(gnrc_netdev_t *gnrc_netdev)
+static void _gomach_phase_backoff(gnrc_netdev_t *gnrc_netdev)
 {
+    uint32_t alarm;
 
-    /* reset last_seq_info. important! need to do every cycle.*/
+    /* Execute phase backoff for avoiding CP (wake-up period) overlap. */
+    rtt_clear_alarm();
+    alarm = gnrc_netdev->gomach.last_wakeup +
+            RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US) +
+            gnrc_netdev->gomach.backoff_phase_ticks;
+    rtt_set_alarm(alarm, rtt_cb, (void *) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
+
+    gnrc_netdev->gomach.phase_changed = true;
+    LOG_INFO("INFO: [GOMACH] phase backoffed: %lu us.\n",
+             RTT_TICKS_TO_US(gnrc_netdev->gomach.backoff_phase_ticks));
+}
+
+static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
+{
+    /* Reset last_seq_info, for avoiding receiving duplicate packets.
+     * To-do: remove this in the future? */
     for (int i = 0; i < IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE; i++) {
         if (gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len != 0) {
             gnrc_netdev->rx.check_dup_pkt.last_nodes[i].life_cycle++;
-            if (gnrc_netdev->rx.check_dup_pkt.last_nodes[i].life_cycle >= IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE) {
+            if (gnrc_netdev->rx.check_dup_pkt.last_nodes[i].life_cycle >=
+                IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE) {
                 gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
                 gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.addr[0] = 0;
                 gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.addr[1] = 0;
@@ -1372,100 +1370,72 @@ void iqueue_mac_router_listen_cp_init(gnrc_netdev_t *gnrc_netdev)
         }
     }
 
-
-#if 0
-    gomach->rx.check_dup_pkt.last_1.node_addr.addr[0] = 0;
-    gomach->rx.check_dup_pkt.last_1.node_addr.addr[1] = 0;
-    gomach->rx.check_dup_pkt.last_1.seq = 0;
-
-    gomach->rx.check_dup_pkt.last_2.node_addr.addr[0] = 0;
-    gomach->rx.check_dup_pkt.last_2.node_addr.addr[1] = 0;
-    gomach->rx.check_dup_pkt.last_2.seq = 0;
-#endif
-
     gnrc_netdev->rx.enter_new_cycle = false;
-    /******set cp timeout ******/
-    uint32_t listen_period;
-    listen_period = random_uint32_range(0, IQUEUEMAC_CP_RANDOM_END_US) + IQUEUEMAC_CP_DURATION_US;
 
+    /* Set listen period timeout. */
+    uint32_t listen_period = random_uint32_range(0, IQUEUEMAC_CP_RANDOM_END_US) +
+                             IQUEUEMAC_CP_DURATION_US;
     iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END, listen_period);
     iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_MAX, IQUEUEMAC_CP_DURATION_MAX_US);
 
-    /* Enable Auto ACK again for data reception */
+    /* Enable Auto-ACK for data packet reception. */
     gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
 
-    /* turn to public channel */
+    /* Turn to current public channel. */
     gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
 
     gnrc_netdev_set_rx_started(gnrc_netdev, false);
     gnrc_netdev_gomach_set_pkt_received(gnrc_netdev, false);
-    gomach_turn_on_radio(gnrc_netdev);
-
-    gnrc_netdev->rx.listen_state = R_LISTEN_CP_LISTEN;
-    gnrc_netdev->gomach.need_update = true;
-
-    //puts("CP");
-
     gnrc_netdev->gomach.cp_backoff_counter = 0;
     gnrc_netdev->gomach.quit_current_cycle = false;
     gnrc_netdev->gomach.get_other_preamble = false;
     gnrc_netdev->gomach.send_beacon_fail = false;
     gnrc_netdev->gomach.cp_end = false;
     gnrc_netdev->gomach.got_preamble = false;
-
     gnrc_netdev->gomach.phase_changed = false;
 
+    /* Flush RX queue and turn on radio. */
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
+    gomach_turn_on_radio(gnrc_netdev);
 
-    /* backoff phase if needed */
+    /* Run phase-backoff if needed, select a new wake-up phase. */
     if (gnrc_netdev->gomach.phase_backoff == true) {
         gnrc_netdev->gomach.phase_backoff = false;
-        iqueuemac_phase_backoff(gnrc_netdev);
+        _gomach_phase_backoff(gnrc_netdev);
     }
+    gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_LISTEN;
+    gnrc_netdev->gomach.need_update = false;
 }
 
-void iqueue_mac_router_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
+static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
 {
-
-    /* in the future, we will add CP extension func. And we should remember to disable CP extension when
-     * gomach->get_other_preamble is true occurs!!!
-     */
-
     if (gnrc_netdev_gomach_get_pkt_received(gnrc_netdev)) {
         gnrc_netdev_gomach_set_pkt_received(gnrc_netdev, false);
-        iqueue_router_cp_receive_packet_process(gnrc_netdev);
+        gpmach_cp_packet_process(gnrc_netdev);
 
-        /*  here is the CP extension func.
-         * Add a CP maximum limit in the future. */
-
-        /* if sent preamble-ACK, must wait for data. */
+        /* If the device has replied a preamble-ACK, it must waits for the data.
+         * Here, we extend the CP. */
         if (gnrc_netdev->gomach.got_preamble == true) {
             gnrc_netdev->gomach.got_preamble = false;
             gnrc_netdev->gomach.cp_end = false;
             iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END);
             iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
         }
-        else {
-            if ((gnrc_netdev->gomach.get_other_preamble == false) &&
+        else if ((gnrc_netdev->gomach.get_other_preamble == false) &&
                 (gnrc_netdev->gomach.quit_current_cycle == false)) {
-                gnrc_netdev->gomach.got_preamble = false;
-                gnrc_netdev->gomach.cp_end = false;
-                iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END);
-                iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
-            }
+            gnrc_netdev->gomach.got_preamble = false;
+            gnrc_netdev->gomach.cp_end = false;
+            iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END);
+            iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
         }
     }
 
-    if ((gnrc_netdev->gomach.phase_backoff == true) && (gnrc_netdev->gomach.phase_changed == false)) {
-        gnrc_netdev->gomach.phase_backoff = false;
-        iqueuemac_phase_backoff(gnrc_netdev);
-    }
-
+    /* If we have reached the maximum CP duration, quit CP. */
     if (iqueuemac_timeout_is_expired(&gnrc_netdev->gomach, TIMEOUT_CP_MAX)) {
         iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END);
         iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END);
         iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_MAX);
-        gnrc_netdev->rx.listen_state = R_LISTEN_CP_END;
+        gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_END;
         gnrc_netdev->gomach.need_update = true;
         return;
     }
@@ -1475,88 +1445,55 @@ void iqueue_mac_router_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
         iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END);
     }
 
+    /* If CP duration timeouted or we must quit CP, go to CP end. */
     if ((gnrc_netdev->gomach.cp_end == true) || (gnrc_netdev->gomach.quit_current_cycle == true)) {
+        /* If we found ongoing reception, wait for reception complete. */
         if ((_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) &&
             (gnrc_netdev->gomach.cp_backoff_counter < IQUEUEMAC_MAX_CP_BACKOFF_COUNTER)) {
             gnrc_netdev->gomach.cp_backoff_counter++;
             iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END);
-            iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
+            iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END,
+                                  IQUEUEMAC_WAIT_RX_END_US);
         }
         else {
-            /** only timeout event and rx_complete event will reach here! **/
             iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END);
             iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END);
             iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_MAX);
-            gnrc_netdev->rx.listen_state = R_LISTEN_CP_END;
+            gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_END;
             gnrc_netdev->gomach.need_update = true;
         }
     }
-
-    /**  ensure that don't break the reception
-       if(gomach->rx_started == false){
-
-        if((iqueuemac_timeout_is_expired(gomach, TIMEOUT_CP_END))||(gomach->quit_current_cycle == true)){
-            iqueuemac_clear_timeout(gomach,TIMEOUT_CP_END);
-            gomach->router_states.router_listen_state = R_LISTEN_CP_END;
-            gomach->need_update = true;
-        }
-       }**/
-
-    /*
-       if(gomach->quit_current_cycle == true){
-        iqueuemac_clear_timeout(gomach,TIMEOUT_CP_END);
-        gomach->router_states.router_listen_state = R_LISTEN_CP_END;
-        gomach->need_update = true;
-       }*/
 }
 
-void iqueue_mac_router_cp_end(gnrc_netdev_t *gnrc_netdev)
+static void gomach_listen_cp_end(gnrc_netdev_t *gnrc_netdev)
 {
-
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
-
     _dispatch(gnrc_netdev->rx.dispatch_buffer);
 
+    /* If we need to quit communications in this cycle, go to sleep. */
     if (gnrc_netdev->gomach.quit_current_cycle == true) {
-        gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING_INIT;
+        gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
     }
     else {
-        gnrc_netdev->rx.listen_state = R_LISTEN_SEND_BEACON;
+        gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SEND_BEACON;
     }
     gnrc_netdev->gomach.need_update = true;
 }
 
-void iqueue_mac_router_send_beacon(gnrc_netdev_t *gnrc_netdev)
+static void gomach_listen_send_beacon(gnrc_netdev_t *gnrc_netdev)
 {
-    /**** run the sub-channel selection algorithm to select the sub-channel sequence ****/
-    // iqueuemac_select_sub_channel_num(gomach);
-
-    /* set device seq
-       netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gomach->netdev->dev;
-       if(device_state->seq > 20){
-        device_state->seq = 0;
-       }
-       printf("seq: %d\n",device_state->seq);
-     */
-
-    /***  disable auto-ack ***/
+    /* Disable auto-ACK. Thus not to receive packet (attempt to reply ACK) anymore. */
     gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
 
-    /****** assemble and send the beacon ******/
+    /* Assemble and send the beacon. */
     int res;
-    res = iqueuemac_assemble_and_send_beacon(gnrc_netdev);
-
-    /* Enable Auto ACK again for data reception */
-    //gomach_set_autoack(gomach, NETOPT_ENABLE);
-
+    res = gomach_send_beacon(gnrc_netdev);
     if (res < 0) {
-        printf("beacon %d\n", res);
-
+        LOG_ERROR("ERROR: [GOMACH] send beacon error: %d.\n", res);
         gnrc_netdev->gomach.send_beacon_fail = true;
         gnrc_netdev->gomach.need_update = true;
     }
     else {
-        /* if the beacon has not been sent due to no slots. */
         if (gnrc_netdev->rx.router_vtdma_mana.total_slots_num == 0) {
             gnrc_netdev->gomach.send_beacon_fail = true;
             gnrc_netdev->gomach.need_update = true;
@@ -1566,101 +1503,113 @@ void iqueue_mac_router_send_beacon(gnrc_netdev_t *gnrc_netdev)
         }
     }
 
-    gnrc_netdev->rx.listen_state = R_LISTEN_WAIT_BEACON_FEEDBACK;
-    //puts("gomach: router is now sending the beacon!!!");
+    gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_WAIT_BEACON_TX;
 }
 
-void iqueuemac_router_wait_beacon_feedback(gnrc_netdev_t *gnrc_netdev)
+static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
 {
+    if (gnrc_netdev_gomach_get_tx_finish(gnrc_netdev) ||
+        (gnrc_netdev->gomach.send_beacon_fail == true)) {
 
-    if (gnrc_netdev_gomach_get_tx_finish(gnrc_netdev) || (gnrc_netdev->gomach.send_beacon_fail == true)) {
-
-        /****** router switch to sleep period or vTDMA period ******/
-        if ((gnrc_netdev->rx.router_vtdma_mana.total_slots_num > 0) && (gnrc_netdev->gomach.send_beacon_fail == false)) {
-            gnrc_netdev->rx.listen_state = R_LISTEN_VTDMA_INIT;
+        if ((gnrc_netdev->rx.router_vtdma_mana.total_slots_num > 0) &&
+            (gnrc_netdev->gomach.send_beacon_fail == false)) {
+            /* If the device has allocated transmission slots to other nodes,
+             *  switch to vTDMA period to receive packets. */
+            gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_VTDMA_INIT;
             gnrc_netdev->gomach.need_update = true;
         }
-        else { /**** no vTDMA period ****/
+        else {
+            /* If the device hasn't allocated transmission slots, check whether it has packets
+             * to transmit to neighbor. */
+            if (gomach_find_next_tx_neighbor(gnrc_netdev)) {
+                /* Now, we have packet to send. */
 
-            /* has packet to send */
-            if (iqueue_mac_find_next_tx_neighbor(gnrc_netdev)) {
-
-                /* if it is for broadcast */
                 if (gnrc_netdev->tx.current_neighbor == &gnrc_netdev->tx.neighbors[0]) {
+                    /* The packet is for broadcasting. */
+
+                    /* If we didn't find ongoing preamble stream, go to send broadcast packet. */
                     if (gnrc_netdev->gomach.get_other_preamble == false) {
                         gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                         gnrc_netdev->tx.transmit_state = GNRC_GOMACH_BROADCAST;
                     }
                     else {
-                        gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING_INIT;
+                    	/* If we find ongoing preamble stream, go to sleep. */
+                        gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
                     }
-                    /* if phase has been changed, figure out the related phase of tx-neighbors. */
+                    /* If the device's wakeup-phase has been changed,
+                     * figure out the new phases of all neighbors. */
                     if (gnrc_netdev->gomach.phase_changed == true) {
                         gomach_figure_neighbors_new_phase(gnrc_netdev);
                     }
                 }
                 else {
+                    /* The packet waiting to be sent is for unicast. */
                     switch (gnrc_netdev->tx.current_neighbor->mac_type) {
                         case UNKNOWN: {
+                            /* The neighbor's phase is unknown yet, try to run t2u (transmission
+                             * to unknown device) procedure to phase-lock the neighbor. */
+
+                            /* If we didn't find ongoing preamble stream, go to t2u procedure. */
                             if (gnrc_netdev->gomach.get_other_preamble == false) {
                                 gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                                 gnrc_netdev->tx.transmit_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
                             }
                             else {
-                                gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING_INIT;
+                                gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
                             }
                             break;
                         }
-                        case ROUTER: {
+                        case KNOWN: {
+                            /* If the neighbor's phase is known, go to t2k (transmission
+                             * to known device) procedure. Here, we don't worry that the t2k
+                             * unicast transmission will interrupt with possible ongoing
+                             * preamble transmissions of other devices. */
                             gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                             gnrc_netdev->tx.transmit_state = GNRC_GOMACH_TRANS_TO_KNOWN;
                             break;
                         }
                         default: {
-                            puts("gomach: error! Unknow MAC type.");
+                            LOG_ERROR("ERROR: [GOMACH] vTDMA: unknown MAC type of "
+                                      "the neighbor.\n");
                             break;
                         }
                     }
                 }
                 gnrc_netdev->gomach.need_update = true;
             }
-            else { /**** no packet to send, go to sleep ****/
-                gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING_INIT;
+            else {
+                /* No packet to send, go to sleep. */
+                gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
                 gnrc_netdev->gomach.need_update = true;
             }
         }
     }
 }
 
-void iqueue_mac_router_vtdma_init(gnrc_netdev_t *gnrc_netdev)
+static void gomach_vtdma_init(gnrc_netdev_t *gnrc_netdev)
 {
-
-    /*** switch the radio to the subchannel ***/
+    /* Switch the radio to the device's sub-channel. */
     gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.sub_channel_num);
+
     /* Enable Auto ACK again for data reception */
     gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
 
-    /*** set the vTDMA period timeout!!! ***/
-    uint32_t vtdma_duration;
-    vtdma_duration = gnrc_netdev->rx.router_vtdma_mana.total_slots_num * IQUEUEMAC_VTDMA_SLOT_SIZE_US;
-
+    /* Set the vTDMA period timeout. */
+    uint32_t vtdma_duration = gnrc_netdev->rx.router_vtdma_mana.total_slots_num *
+                              IQUEUEMAC_VTDMA_SLOT_SIZE_US;
     iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_VTDMA, vtdma_duration);
 
     gnrc_netdev->gomach.vtdma_end = false;
 
-    gnrc_netdev->rx.listen_state = R_LISTEN_VTDMA;
-    gnrc_netdev->gomach.need_update = true;
-
+    gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_VTDMA;
+    gnrc_netdev->gomach.need_update = false;
 }
 
-void iqueue_mac_router_vtdma(gnrc_netdev_t *gnrc_netdev)
+static void gomach_vtdma(gnrc_netdev_t *gnrc_netdev)
 {
-
+    /* Process received packet here. */
     if (gnrc_netdev_gomach_get_pkt_received(gnrc_netdev)) {
         gnrc_netdev_gomach_set_pkt_received(gnrc_netdev, false);
-
-        /*** check whether this packet-process func. can be merged with cp-packet-process func. due to similar functionalities!!! ***/
-        //iqueue_router_cp_receive_packet_process(gomach);
         iqueuemac_router_vtdma_receive_packet_process(gnrc_netdev);
     }
 
@@ -1668,139 +1617,112 @@ void iqueue_mac_router_vtdma(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->gomach.vtdma_end = true;
     }
 
+    /* Go to vTDMA end after vTDMA timeout expires. */
     if (gnrc_netdev->gomach.vtdma_end == true) {
-
+        /* Wait for reception complete if found ongoing transmission. */
         if (_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) {
             iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END);
-            iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
+            iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END,
+                                  IQUEUEMAC_WAIT_RX_END_US);
             return;
         }
 
-        //puts("gomach: Router vTDMA ends!!");
         iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END);
-        gnrc_netdev->rx.listen_state = R_LISTEN_VTDMA_END;
+        gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_VTDMA_END;
         gnrc_netdev->gomach.need_update = true;
     }
 }
 
-void iqueue_mac_router_vtdma_end(gnrc_netdev_t *gnrc_netdev)
+static void gomach_vtdma_end(gnrc_netdev_t *gnrc_netdev)
 {
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
     _dispatch(gnrc_netdev->rx.dispatch_buffer);
 
-    /*** switch the radio to the public-channel!!! ***/
+    /* Switch the radio to the public-channel. */
     gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
 
-    /*** ensure that the channel-switching is finished before go to sleep to turn it off !!! ***/
-
-    /*** see if there is pkt to send ***/
-    if (iqueue_mac_find_next_tx_neighbor(gnrc_netdev)) {
-
+    /* Check if there is packet to send. */
+    if (gomach_find_next_tx_neighbor(gnrc_netdev)) {
         if (gnrc_netdev->tx.current_neighbor == &gnrc_netdev->tx.neighbors[0]) {
+        	/* The packet is for broadcasting. */
             if (gnrc_netdev->gomach.get_other_preamble == false) {
                 gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                 gnrc_netdev->tx.transmit_state = GNRC_GOMACH_BROADCAST;
             }
             else {
-                gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING_INIT;
+                gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
             }
-            /* if phase has been changed, figure out the related phase of tx-neighbors. */
+
+            /* If the device's wakeup-phase has been changed,
+             * figure out the new phases of all neighbors. */
             if (gnrc_netdev->gomach.phase_changed == true) {
                 gomach_figure_neighbors_new_phase(gnrc_netdev);
             }
         }
         else {
             switch (gnrc_netdev->tx.current_neighbor->mac_type) {
+                /* The packet waiting to be sent is for unicast. */
                 case UNKNOWN: {
+                    /* The neighbor's phase is unknown yet, try to run t2u (transmission
+                     * to unknown device) procedure to phase-lock the neighbor. */
                     if (gnrc_netdev->gomach.get_other_preamble == false) {
                         gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                         gnrc_netdev->tx.transmit_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
                     }
                     else {
-                        gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING_INIT;
+                        gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
                     }
                 } break;
-                case ROUTER: {
+                case KNOWN: {
+                    /* If the neighbor's phase is known, go to t2k (transmission
+                     * to known device) procedure. Here, we don't worry that the t2k
+                     * unicast transmission will interrupt with possible ongoing
+                     * preamble transmissions of other devices. */
                     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                     gnrc_netdev->tx.transmit_state = GNRC_GOMACH_TRANS_TO_KNOWN;
                 } break;
                 default: {
-                    puts("gomach: error! Unknow MAC type."); break;
+                    LOG_ERROR("ERROR: [GOMACH] vTDMA: unknown MAC type of the neighbor.\n");
+                    break;
                 }
             }
         }
     }
     else {
-        gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING_INIT;
+        /* No packet to send, go to sleep. */
+        gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
     }
 
     gnrc_netdev->gomach.need_update = true;
-
 }
 
-void iqueue_mac_router_sleep_init(gnrc_netdev_t *gnrc_netdev)
+static void gomach_sleep_init(gnrc_netdev_t *gnrc_netdev)
 {
-
-    /* if phase has been changed, figure out the related phase of tx-neighbors. */
+    /* If the device's wakeup-phase has been changed,
+     * figure out the new phases of all neighbors. */
     if (gnrc_netdev->gomach.phase_changed == true) {
         gomach_figure_neighbors_new_phase(gnrc_netdev);
     }
 
+    /* Turn off the radio during sleep period to conserve power. */
     gomach_turn_off_radio(gnrc_netdev);
-    gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING;
+    gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_netdev->gomach.need_update = true;
-
-    //puts("gomach: router is now entering sleeping period");
 }
 
-void iqueue_mac_router_sleep(gnrc_netdev_t *gnrc_netdev)
+static void gomach_sleep(gnrc_netdev_t *gnrc_netdev)
 {
-
-#if 0
-    if (iqueue_mac_find_next_tx_neighbor(gomach)) {
-
-        /*  stop lpm mode */
-        lpm_prevent_sleep |= IQUEUEMAC_LPM_MASK;
-
-        gomach->router_states.basic_state = GNRC_GOMACH_TRANSMIT;
-
-        if (gomach->tx.current_neighbour == &gomach->tx.neighbours[0]) {
-            gomach->router_states.router_trans_state = GNRC_GOMACH_BROADCAST;
-        }
-        else {
-            switch (gomach->tx.current_neighbour->mac_type) {
-                case UNKNOWN: {
-                    gomach->router_states.router_trans_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
-                } break;
-                case ROUTER: {
-                    gomach->router_states.router_trans_state = GNRC_GOMACH_TRANS_TO_KNOWN;
-                } break;
-                case NODE: {
-                    gomach->router_states.router_trans_state = R_TRANS_TO_NODE;
-                } break;
-                default: break;
-            }
-        }
-        gomach->need_update = true;
-        //puts("gomach: router sends in sleep");
-    }
-    else {
-        if (gomach->router_states.router_new_cycle == false) {
-            /*  enable lpm mode, enter the sleep mode */
-            lpm_prevent_sleep &= ~(IQUEUEMAC_LPM_MASK);
-        }
-    }
-#endif
+    /* If we are entering a new cycle, quit sleeping. */
     if (gnrc_netdev->rx.enter_new_cycle == true) {
-
-        gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING_END;
+        gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_END;
         gnrc_netdev->gomach.need_update = true;
     }
 }
 
-void iqueue_mac_router_sleep_end(gnrc_netdev_t *gnrc_netdev)
+static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 {
-    gnrc_netdev->rx.listen_state = R_LISTEN_CP_INIT;
+   /* Go to CP (start of the new cycle), start listening on the public-channel. */
+    gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
     gnrc_netdev->gomach.need_update = true;
 }
 
@@ -1831,18 +1753,50 @@ static void gomach_update(gnrc_netdev_t *gnrc_netdev)
         }
         case GNRC_GOMACH_LISTEN: {
             switch (gnrc_netdev->rx.listen_state) {
-                case R_LISTEN_CP_INIT: iqueue_mac_router_listen_cp_init(gnrc_netdev); break;
-                case R_LISTEN_CP_LISTEN: iqueue_mac_router_listen_cp_listen(gnrc_netdev); break;
-                case R_LISTEN_CP_END: iqueue_mac_router_cp_end(gnrc_netdev); break;
-                //case R_LISTEN_CREATE_BEACON: iqueue_mac_router_create_beacon(gomach); break;
-                case R_LISTEN_SEND_BEACON: iqueue_mac_router_send_beacon(gnrc_netdev); break;
-                case R_LISTEN_WAIT_BEACON_FEEDBACK: iqueuemac_router_wait_beacon_feedback(gnrc_netdev); break;
-                case R_LISTEN_VTDMA_INIT: iqueue_mac_router_vtdma_init(gnrc_netdev); break;
-                case R_LISTEN_VTDMA: iqueue_mac_router_vtdma(gnrc_netdev); break;
-                case R_LISTEN_VTDMA_END: iqueue_mac_router_vtdma_end(gnrc_netdev); break;
-                case R_LISTEN_SLEEPING_INIT: iqueue_mac_router_sleep_init(gnrc_netdev); break;
-                case R_LISTEN_SLEEPING: iqueue_mac_router_sleep(gnrc_netdev); break;
-                case R_LISTEN_SLEEPING_END: iqueue_mac_router_sleep_end(gnrc_netdev); break;
+                case GNRC_GOMACH_LISTEN_CP_INIT: {
+                    gomach_listen_init(gnrc_netdev);
+                    break;
+                }
+                case GNRC_GOMACH_LISTEN_CP_LISTEN: {
+                    gomach_listen_cp_listen(gnrc_netdev);
+                    break;
+                }
+                case GNRC_GOMACH_LISTEN_CP_END: {
+                    gomach_listen_cp_end(gnrc_netdev);
+                    break;
+                }
+                case GNRC_GOMACH_LISTEN_SEND_BEACON: {
+                    gomach_listen_send_beacon(gnrc_netdev);
+                    break;
+                }
+                case GNRC_GOMACH_LISTEN_WAIT_BEACON_TX: {
+                    gomach_listen_wait_beacon_tx(gnrc_netdev);
+                    break;
+                }
+                case GNRC_GOMACH_LISTEN_VTDMA_INIT: {
+                    gomach_vtdma_init(gnrc_netdev);
+                    break;
+                }
+                case GNRC_GOMACH_LISTEN_VTDMA: {
+                    gomach_vtdma(gnrc_netdev);
+                    break;
+                }
+                case GNRC_GOMACH_LISTEN_VTDMA_END: {
+                    gomach_vtdma_end(gnrc_netdev);
+                    break;
+                }
+                case GNRC_GOMACH_LISTEN_SLEEP_INIT: {
+                    gomach_sleep_init(gnrc_netdev);
+                    break;
+                }
+                case GNRC_GOMACH_LISTEN_SLEEP: {
+                    gomach_sleep(gnrc_netdev);
+                    break;
+                }
+                case GNRC_GOMACH_LISTEN_SLEEP_END: {
+                    gomach_sleep_end(gnrc_netdev);
+                    break;
+                }
                 default: break;
             }
             break;
@@ -1868,8 +1822,6 @@ static void gomach_update(gnrc_netdev_t *gnrc_netdev)
         default: break;
     }
 }
-
-///static void _pass_on_packet(gnrc_pktsnip_t *pkt);
 
 /**
  * @brief   Function called by the device driver on device events
