@@ -177,7 +177,7 @@ int gomach_send_beacon(gnrc_netdev_t *gnrc_netdev);
 int _parse_packet(gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *info);
 int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t * buffer[], gnrc_pktsnip_t * pkt, iqueuemac_packet_info_t * pa_info);
 void iqueuemac_router_queue_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *pa_info);
-void gpmach_cp_packet_process(gnrc_netdev_t *gnrc_netdev);
+void gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_update_subchannel_occu_flags(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *pa_info);
 void iqueuemac_packet_process_in_init(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev);

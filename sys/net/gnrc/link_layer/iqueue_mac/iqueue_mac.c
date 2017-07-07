@@ -1411,7 +1411,7 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
 {
     if (gnrc_netdev_gomach_get_pkt_received(gnrc_netdev)) {
         gnrc_netdev_gomach_set_pkt_received(gnrc_netdev, false);
-        gpmach_cp_packet_process(gnrc_netdev);
+        gomach_cp_packet_process(gnrc_netdev);
 
         /* If the device has replied a preamble-ACK, it must waits for the data.
          * Here, we extend the CP. */

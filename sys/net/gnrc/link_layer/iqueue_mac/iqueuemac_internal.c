@@ -761,7 +761,7 @@ bool iqueuemac_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info
 
 }
 
-void gpmach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
+void gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
 {
     gnrc_pktsnip_t *pkt;
 
