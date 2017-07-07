@@ -163,7 +163,7 @@ typedef struct gnrc_netdev {
 #endif
 
 #ifdef MODULE_GNRC_IQUEUEMAC
-    iqueuemac_t iqueuemac;
+    gomach_t gomach;
 #endif
 #endif /* MODULE_GNRC_MAC */
 } gnrc_netdev_t;

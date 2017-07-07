@@ -42,7 +42,7 @@ char *iqueuemac_timeout_names[] = {
 
 /******************************************************************************/
 
-static inline void _iqueuemac_clear_timeout(iqueuemac_timeout_t *timeout)
+static inline void _iqueuemac_clear_timeout(gomach_timeout_t *timeout)
 {
     assert(timeout);
 
@@ -53,12 +53,12 @@ static inline void _iqueuemac_clear_timeout(iqueuemac_timeout_t *timeout)
 /******************************************************************************/
 
 /* Return index >= 0 if found, -ENONENT if not found */
-static int _iqueuemac_find_timeout(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type)
+static int _iqueuemac_find_timeout(gomach_t *gomach, gomach_timeout_type_t type)
 {
-    assert(iqueuemac);
+    assert(gomach);
 
     for (unsigned i = 0; i < IQUEUEMAC_TIMEOUT_COUNT; i++) {
-        if (iqueuemac->timeouts[i].type == type) {
+        if (gomach->timeouts[i].type == type) {
             return i;
         }
     }
@@ -67,42 +67,42 @@ static int _iqueuemac_find_timeout(iqueuemac_t *iqueuemac, iqueuemac_timeout_typ
 
 /******************************************************************************/
 
-inline bool iqueuemac_timeout_is_running(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type)
+inline bool iqueuemac_timeout_is_running(gomach_t *gomach, gomach_timeout_type_t type)
 {
-    assert(iqueuemac);
-    return (_iqueuemac_find_timeout(iqueuemac, type) >= 0);
+    assert(gomach);
+    return (_iqueuemac_find_timeout(gomach, type) >= 0);
 }
 
 /******************************************************************************/
 
-bool iqueuemac_timeout_is_expired(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type)
+bool iqueuemac_timeout_is_expired(gomach_t *gomach, gomach_timeout_type_t type)
 {
-    assert(iqueuemac);
+    assert(gomach);
 
-    int index = _iqueuemac_find_timeout(iqueuemac, type);
+    int index = _iqueuemac_find_timeout(gomach, type);
     if (index >= 0) {
-        if (iqueuemac->timeouts[index].expired) {
-            _iqueuemac_clear_timeout(&iqueuemac->timeouts[index]);
+        if (gomach->timeouts[index].expired) {
+            _iqueuemac_clear_timeout(&gomach->timeouts[index]);
         }
-        return iqueuemac->timeouts[index].expired;
+        return gomach->timeouts[index].expired;
     }
     return false;
 }
 
 /******************************************************************************/
 
-iqueuemac_timeout_t *_iqueuemac_acquire_timeout(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type)
+gomach_timeout_t *_iqueuemac_acquire_timeout(gomach_t *gomach, gomach_timeout_type_t type)
 {
-    assert(iqueuemac);
+    assert(gomach);
 
-    if (iqueuemac_timeout_is_running(iqueuemac, type)) {
+    if (iqueuemac_timeout_is_running(gomach, type)) {
         return NULL;
     }
 
     for (unsigned i = 0; i < IQUEUEMAC_TIMEOUT_COUNT; i++) {
-        if (iqueuemac->timeouts[i].type == TIMEOUT_DISABLED) {
-            iqueuemac->timeouts[i].type = type;
-            return &iqueuemac->timeouts[i];
+        if (gomach->timeouts[i].type == TIMEOUT_DISABLED) {
+            gomach->timeouts[i].type = type;
+            return &gomach->timeouts[i];
         }
     }
     return NULL;
@@ -110,58 +110,58 @@ iqueuemac_timeout_t *_iqueuemac_acquire_timeout(iqueuemac_t *iqueuemac, iqueuema
 
 /******************************************************************************/
 
-void iqueuemac_timeout_make_expire(iqueuemac_timeout_t *timeout)
+void iqueuemac_timeout_make_expire(gomach_timeout_t *timeout)
 {
     assert(timeout);
 
-    DEBUG("[iqueuemac] Timeout %s expired\n", iqueuemac_timeout_names[timeout->type]);
+    DEBUG("[gomach] Timeout %s expired\n", iqueuemac_timeout_names[timeout->type]);
     timeout->expired = true;
 }
 
 /******************************************************************************/
 
-void iqueuemac_clear_timeout(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type)
+void iqueuemac_clear_timeout(gomach_t *gomach, gomach_timeout_type_t type)
 {
-    assert(iqueuemac);
+    assert(gomach);
 
-    int index = _iqueuemac_find_timeout(iqueuemac, type);
+    int index = _iqueuemac_find_timeout(gomach, type);
     if (index >= 0) {
-        _iqueuemac_clear_timeout(&iqueuemac->timeouts[index]);
+        _iqueuemac_clear_timeout(&gomach->timeouts[index]);
     }
 }
 
 /******************************************************************************/
 
-void iqueuemac_set_timeout(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type, uint32_t offset)
+void iqueuemac_set_timeout(gomach_t *gomach, gomach_timeout_type_t type, uint32_t offset)
 {
-    assert(iqueuemac);
+    assert(gomach);
 
-    iqueuemac_timeout_t *timeout;
-    if ((timeout = _iqueuemac_acquire_timeout(iqueuemac, type))) {
-        DEBUG("[iqueuemac] Set timeout %s in %" PRIu32 " us\n",
+    gomach_timeout_t *timeout;
+    if ((timeout = _iqueuemac_acquire_timeout(gomach, type))) {
+        DEBUG("[gomach] Set timeout %s in %" PRIu32 " us\n",
               iqueuemac_timeout_names[type], offset);
         timeout->expired = false;
         timeout->msg.type = IQUEUEMAC_EVENT_TIMEOUT_TYPE;
         timeout->msg.content.ptr = (void *) timeout;
         xtimer_set_msg(&(timeout->timer), offset,
-                       &(timeout->msg), iqueuemac->pid);
+                       &(timeout->msg), gomach->pid);
     }
     else {
 
-        DEBUG("[iqueuemac] Cannot set timeout %s, too many concurrent timeouts\n",
+        DEBUG("[gomach] Cannot set timeout %s, too many concurrent timeouts\n",
               iqueuemac_timeout_names[type]);
     }
 }
 
 /******************************************************************************/
 
-void iqueuemac_reset_timeouts(iqueuemac_t *iqueuemac)
+void iqueuemac_reset_timeouts(gomach_t *gomach)
 {
-    assert(iqueuemac);
+    assert(gomach);
 
     for (unsigned i = 0; i < IQUEUEMAC_TIMEOUT_COUNT; i++) {
-        if (iqueuemac->timeouts[i].type != TIMEOUT_DISABLED) {
-            _iqueuemac_clear_timeout(&iqueuemac->timeouts[i]);
+        if (gomach->timeouts[i].type != TIMEOUT_DISABLED) {
+            _iqueuemac_clear_timeout(&gomach->timeouts[i]);
         }
     }
 }

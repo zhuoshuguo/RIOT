@@ -54,7 +54,7 @@
 #define NETDEV_NETAPI_MSG_QUEUE_SIZE 8
 
 kernel_pid_t iqueuemac_pid;
-//static iqueuemac_t iqueuemac;
+//static iqueuemac_t gomach;
 
 void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
 {
@@ -64,10 +64,10 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
                                                              gnrc_netdev->l2_addr,
                                                              sizeof(gnrc_netdev->l2_addr));
 
-    //printf("iqueuemac: iqueuemac's own addrs is: %d, %d . \n ", iqueuemac->own_addr.addr[1], iqueuemac->own_addr.addr[0]);
+    //printf("gomach: gomach's own addrs is: %d, %d . \n ", gomach->own_addr.addr[1], gomach->own_addr.addr[0]);
 
-    gnrc_netdev->iqueuemac.basic_state = GNRC_GOMACH_INIT;  //GNRC_GOMACH_LISTEN;
-    gnrc_netdev->iqueuemac.init_state = GNRC_GOMACH_INIT_PREPARE;
+    gnrc_netdev->gomach.basic_state = GNRC_GOMACH_INIT;  //GNRC_GOMACH_LISTEN;
+    gnrc_netdev->gomach.init_state = GNRC_GOMACH_INIT_PREPARE;
 
     gnrc_netdev->rx.listen_state = R_LISTEN_CP_INIT;
     gnrc_netdev->tx.transmit_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
@@ -76,16 +76,16 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
 
     gnrc_netdev->rx.router_vtdma_mana.sub_channel_seq = 26;
 
-    gnrc_netdev->iqueuemac.subchannel_occu_flags = 0;
+    gnrc_netdev->gomach.subchannel_occu_flags = 0;
 
     /*** initiate the sub_channel_num  ***/
-    //uint16_t random_channel = iqueuemac->own_addr.addr[0] % 15;
-    //iqueuemac->sub_channel_num = 11 + random_channel;
-    gnrc_netdev->iqueuemac.sub_channel_num = 13;
+    //uint16_t random_channel = gomach->own_addr.addr[0] % 15;
+    //gomach->sub_channel_num = 11 + random_channel;
+    gnrc_netdev->gomach.sub_channel_num = 13;
 
-    gnrc_netdev->iqueuemac.pub_channel_1 = 26;
-    gnrc_netdev->iqueuemac.pub_channel_2 = 11;
-    gnrc_netdev->iqueuemac.cur_pub_channel = gnrc_netdev->iqueuemac.pub_channel_1;
+    gnrc_netdev->gomach.pub_channel_1 = 26;
+    gnrc_netdev->gomach.pub_channel_2 = 11;
+    gnrc_netdev->gomach.cur_pub_channel = gnrc_netdev->gomach.pub_channel_1;
 
     gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_INIT;
     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_INIT;
@@ -101,36 +101,36 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
 
     /* Enable preloading, so packet will only be sent when netdev state will be
      * set to NETOPT_STATE_TX */
-    //iqueuemac->netdev->dev->driver->set(iqueuemac->netdev->dev, NETOPT_PRELOADING, &enable, sizeof(enable));
+    //gomach->netdev->dev->driver->set(gomach->netdev->dev, NETOPT_PRELOADING, &enable, sizeof(enable));
 
     /* Initialize broadcast sequence number. This at least differs from board
      * to board */
     gnrc_netdev->tx.broadcast_seq = gnrc_netdev->l2_addr[0];
 
     /* First neighbour queue is supposed to be broadcast queue */
-    //int broadcast_queue_id = _alloc_neighbour(&gnrc_netdev->iqueuemac);
+    //int broadcast_queue_id = _alloc_neighbour(&gnrc_netdev->gomach);
     //assert(broadcast_queue_id == 0);
 
     /* Setup broadcast tx queue */
     //uint8_t broadcast_addr[] = {0xff, 0xff};
-    //_init_neighbour(_get_neighbour(gnrc_netdev->iqueuemac, 0), broadcast_addr, sizeof(broadcast_addr));
+    //_init_neighbour(_get_neighbour(gnrc_netdev->gomach, 0), broadcast_addr, sizeof(broadcast_addr));
 
     /* Initialize receive packet queue
-       packet_queue_init(&(iqueuemac->rx.queue),
-                      iqueuemac->rx._queue_nodes,
-                      (sizeof(iqueuemac->rx._queue_nodes) / sizeof(packet_queue_node_t)));
+       packet_queue_init(&(gomach->rx.queue),
+                      gomach->rx._queue_nodes,
+                      (sizeof(gomach->rx._queue_nodes) / sizeof(packet_queue_node_t)));
      */
 
     /* Reset all timeouts just to be sure */
-    iqueuemac_reset_timeouts(&gnrc_netdev->iqueuemac);
+    iqueuemac_reset_timeouts(&gnrc_netdev->gomach);
 
     gnrc_netdev_gomach_set_pkt_received(gnrc_netdev, false);
-    gnrc_netdev->iqueuemac.need_update = false;
-    gnrc_netdev->iqueuemac.duty_cycle_started = false;
-    gnrc_netdev->iqueuemac.quit_current_cycle = false;
-    gnrc_netdev->iqueuemac.send_beacon_fail = false;
-    gnrc_netdev->iqueuemac.rx_memory_full = false;
-    gnrc_netdev->iqueuemac.phase_backoff = false;
+    gnrc_netdev->gomach.need_update = false;
+    gnrc_netdev->gomach.duty_cycle_started = false;
+    gnrc_netdev->gomach.quit_current_cycle = false;
+    gnrc_netdev->gomach.send_beacon_fail = false;
+    gnrc_netdev->gomach.rx_memory_full = false;
+    gnrc_netdev->gomach.phase_backoff = false;
 
     gnrc_netdev->rx.check_dup_pkt.queue_head = 0;
     gnrc_netdev->tx.last_tx_neighbor_id = 0;
@@ -165,14 +165,14 @@ void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
     switch (event & 0xffff) {
         /*******************************Router RTT management***************************/
         case IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE: {
-            if (gnrc_netdev->iqueuemac.duty_cycle_started == false) {
-                gnrc_netdev->iqueuemac.duty_cycle_started = true;
+            if (gnrc_netdev->gomach.duty_cycle_started == false) {
+                gnrc_netdev->gomach.duty_cycle_started = true;
                 rtt_clear_alarm();
                 /*** record the starting phase of iQueuemac ***/
-                gnrc_netdev->iqueuemac.last_wakeup = rtt_get_counter();
+                gnrc_netdev->gomach.last_wakeup = rtt_get_counter();
             }
             else {
-                gnrc_netdev->iqueuemac.last_wakeup = rtt_get_alarm(); //rtt_get_counter();
+                gnrc_netdev->gomach.last_wakeup = rtt_get_alarm(); //rtt_get_counter();
                 gnrc_netdev->rx.enter_new_cycle = true;
                 // iqueuemac_stop_lpm();
             }
@@ -181,19 +181,19 @@ void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
 
 
             //alarm = RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-            alarm = gnrc_netdev->iqueuemac.last_wakeup + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+            alarm = gnrc_netdev->gomach.last_wakeup + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
             rtt_set_alarm(alarm, rtt_cb, (void *) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
 
             update_neighbor_pubchan(gnrc_netdev);
 
-            gnrc_netdev->iqueuemac.need_update = true;
+            gnrc_netdev->gomach.need_update = true;
 
         } break;
 
         /********************************************************/
         case IQUEUEMAC_EVENT_RTT_START: {
-            gnrc_netdev->iqueuemac.duty_cycle_started = true;
-            gnrc_netdev->iqueuemac.need_update = true;
+            gnrc_netdev->gomach.duty_cycle_started = true;
+            gnrc_netdev->gomach.need_update = true;
         } break;
 
         default: break;
@@ -208,14 +208,14 @@ void iqueuemac_phase_backoff(gnrc_netdev_t *gnrc_netdev)
 
     /*** execute phase backoff for avoiding CP overlap. ***/
     rtt_clear_alarm();
-    alarm = gnrc_netdev->iqueuemac.last_wakeup +
+    alarm = gnrc_netdev->gomach.last_wakeup +
             RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US) +
-            gnrc_netdev->iqueuemac.backoff_phase_ticks;
+            gnrc_netdev->gomach.backoff_phase_ticks;
     rtt_set_alarm(alarm, rtt_cb, (void *) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
-    gnrc_netdev->iqueuemac.phase_changed = true;
+    gnrc_netdev->gomach.phase_changed = true;
 
     uint32_t backoff_us;
-    backoff_us = RTT_TICKS_TO_US(gnrc_netdev->iqueuemac.backoff_phase_ticks);
+    backoff_us = RTT_TICKS_TO_US(gnrc_netdev->gomach.backoff_phase_ticks);
     printf("bp %lu\n", backoff_us);
 }
 
@@ -225,7 +225,7 @@ static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
     gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
 
     /* Firstly turn the radio to public channel 1. */
-    gomach_turn_channel(gnrc_netdev, gnrc_netdev->iqueuemac.pub_channel_1);
+    gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
     gnrc_netdev->tx.t2u_on_public_1 = true;
 
     gnrc_netdev->tx.broadcast_seq ++;
@@ -248,16 +248,16 @@ static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
         LOG_ERROR("ERROR: [GOMACH] bcast: no memory to assemble bcast packet, drop packet.\n");
         LOG_ERROR("ERROR: [GOMACH] bcast failed, go to listen mode.\n");
         gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_END;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
         return;
     }
 
-    iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_FINISH,
+    iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_BROADCAST_FINISH,
                           IQUEUEMAC_SUPERFRAME_DURATION_US);
 
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
     gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_SEND;
-    gnrc_netdev->iqueuemac.need_update = true;
+    gnrc_netdev->gomach.need_update = true;
 }
 
 static bool _gomach_send_bcast_busy_handle(gnrc_netdev_t *gnrc_netdev)
@@ -269,7 +269,7 @@ static bool _gomach_send_bcast_busy_handle(gnrc_netdev_t *gnrc_netdev)
     	/* Queue the broadcast packet back to the queue. */
     	gnrc_pktsnip_t* payload = gnrc_netdev->tx.packet->next->next;
 
-    	/* remove iqueuemac header */
+    	/* remove gomach header */
     	gnrc_netdev->tx.packet->next->next = NULL;
     	gnrc_pktbuf_release(gnrc_netdev->tx.packet->next);
 
@@ -283,7 +283,7 @@ static bool _gomach_send_bcast_busy_handle(gnrc_netdev_t *gnrc_netdev)
     	gnrc_netdev->tx.packet = NULL;
 
     	gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_END;
-    	gnrc_netdev->iqueuemac.need_update = true;
+    	gnrc_netdev->gomach.need_update = true;
     	return false;
     }
     return true;
@@ -302,23 +302,23 @@ static void gomach_send_bcast_packet(gnrc_netdev_t *gnrc_netdev)
     gomach_send(gnrc_netdev, gnrc_netdev->tx.packet, NETOPT_DISABLE);
 
     gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_WAIT_TX_FINISH;
-    gnrc_netdev->iqueuemac.need_update = false;
+    gnrc_netdev->gomach.need_update = false;
 }
 
 static void gomach_wait_bcast_tx_finish(gnrc_netdev_t *gnrc_netdev){
     if (gnrc_netdev_gomach_get_tx_finish(gnrc_netdev)) {
-	    iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_INTERVAL,
+	    iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_BROADCAST_INTERVAL,
 	                          IQUEUEMAC_BROADCAST_INTERVAL_US);
         gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_WAIT_NEXT_TX;
-        gnrc_netdev->iqueuemac.need_update = false;
+        gnrc_netdev->gomach.need_update = false;
     }
 
     /* This is to handle no-TX-complete issue. In case there is no no-TX-complete event,
      * we will quit broadcasting, i.e., not getting stucked here. */
-    if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_FINISH)) {
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_INTERVAL);
+    if (iqueuemac_timeout_is_expired(&gnrc_netdev->gomach, TIMEOUT_BROADCAST_FINISH)) {
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_BROADCAST_INTERVAL);
         gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_END;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
     }
 }
 static void gomach_wait_bcast_wait_next_tx(gnrc_netdev_t *gnrc_netdev)
@@ -329,35 +329,35 @@ static void gomach_wait_bcast_wait_next_tx(gnrc_netdev_t *gnrc_netdev)
     }
 
     /* If the whole broadcast duration timeouts, release the packet and go to t2u end. */
-    if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_FINISH)) {
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_INTERVAL);
+    if (iqueuemac_timeout_is_expired(&gnrc_netdev->gomach, TIMEOUT_BROADCAST_FINISH)) {
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_BROADCAST_INTERVAL);
         gnrc_pktbuf_release(gnrc_netdev->tx.packet);
         gnrc_netdev->tx.packet = NULL;
         gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_END;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
         return;
     }
 
     /* Toggle the radio channel and go to send the next broadcast packet. */
-    if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_INTERVAL)) {
+    if (iqueuemac_timeout_is_expired(&gnrc_netdev->gomach, TIMEOUT_BROADCAST_INTERVAL)) {
     	if(gnrc_netdev->tx.t2u_on_public_1 == true){
-    	    gomach_turn_channel(gnrc_netdev, gnrc_netdev->iqueuemac.pub_channel_2);
+    	    gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_2);
     	    gnrc_netdev->tx.t2u_on_public_1 = false;
     	}else{
-    	   	gomach_turn_channel(gnrc_netdev, gnrc_netdev->iqueuemac.pub_channel_1);
+    	   	gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
     	   	gnrc_netdev->tx.t2u_on_public_1 = true;
     	}
 
         gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_SEND;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
     }
 }
 
 static void gomach_bcast_end(gnrc_netdev_t *gnrc_netdev)
 {
     gomach_turn_off_radio(gnrc_netdev);
-    iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_INTERVAL);
-    iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_FINISH);
+    iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_BROADCAST_INTERVAL);
+    iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_BROADCAST_FINISH);
 
     if (gnrc_netdev->tx.packet) {
         gnrc_pktbuf_release(gnrc_netdev->tx.packet);
@@ -369,10 +369,10 @@ static void gomach_bcast_end(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_INIT;
 
     /* Switch to the listen mode. */
-    gnrc_netdev->iqueuemac.basic_state = GNRC_GOMACH_LISTEN;
+    gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING;
     gnrc_netdev->rx.enter_new_cycle = false;
-    gnrc_netdev->iqueuemac.need_update = true;
+    gnrc_netdev->gomach.need_update = true;
 }
 
 static void gomach_bcast_update(gnrc_netdev_t *gnrc_netdev)
@@ -410,15 +410,15 @@ static void gomach_init_prepare(gnrc_netdev_t *gnrc_netdev)
     uint32_t random_backoff = random_uint32_range(0, IQUEUEMAC_SUPERFRAME_DURATION_US);
     xtimer_usleep(random_backoff);
 
-    gnrc_netdev->iqueuemac.quit_current_cycle = false;
-    gnrc_netdev->iqueuemac.subchannel_occu_flags = 0;
+    gnrc_netdev->gomach.quit_current_cycle = false;
+    gnrc_netdev->gomach.subchannel_occu_flags = 0;
 
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
 
     /* Since devices don't broadcast beacons on default, so no need to collect beacons.
      * Go to announce its chosen sub-channel sequence. */
-    gnrc_netdev->iqueuemac.init_state = GNRC_GOMACH_INIT_ANNC_SUBCHAN;
-    gnrc_netdev->iqueuemac.need_update = true;
+    gnrc_netdev->gomach.init_state = GNRC_GOMACH_INIT_ANNC_SUBCHAN;
+    gnrc_netdev->gomach.need_update = true;
 }
 
 void gomach_init_announce_subchannel(gnrc_netdev_t *gnrc_netdev)
@@ -426,31 +426,31 @@ void gomach_init_announce_subchannel(gnrc_netdev_t *gnrc_netdev)
     /* Announce the device's chosen sub-channel sequence to its neighbors. */
 	gomach_bcast_subchann_seq(gnrc_netdev, NETOPT_ENABLE);
 
-    gnrc_netdev->iqueuemac.init_state = GNRC_GOMACH_INIT_WAIT_FEEDBACK;
-    gnrc_netdev->iqueuemac.need_update = false;
+    gnrc_netdev->gomach.init_state = GNRC_GOMACH_INIT_WAIT_FEEDBACK;
+    gnrc_netdev->gomach.need_update = false;
 }
 
 void gomach_init_wait_announce_feedback(gnrc_netdev_t *gnrc_netdev)
 {
     if (gnrc_netdev_gomach_get_tx_finish(gnrc_netdev)) {
         gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
-        gnrc_netdev->iqueuemac.init_state = GNRC_GOMACH_INIT_END;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.init_state = GNRC_GOMACH_INIT_END;
+        gnrc_netdev->gomach.need_update = true;
     }
 }
 
 void gomach_init_end(gnrc_netdev_t *gnrc_netdev)
 {
     /* Reset initialization state. */
-    gnrc_netdev->iqueuemac.init_state = GNRC_GOMACH_INIT_PREPARE;
+    gnrc_netdev->gomach.init_state = GNRC_GOMACH_INIT_PREPARE;
     /* Switch to duty-cycle listen mode. */
-    gnrc_netdev->iqueuemac.basic_state = GNRC_GOMACH_LISTEN;
+    gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = R_LISTEN_CP_INIT;
 
     /* Start duty-cycle scheme. */
-    gnrc_netdev->iqueuemac.duty_cycle_started = false;
+    gnrc_netdev->gomach.duty_cycle_started = false;
     rtt_handler(IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE, gnrc_netdev);
-    gnrc_netdev->iqueuemac.need_update = true;
+    gnrc_netdev->gomach.need_update = true;
 }
 
 /* GoMacH: transmit packet to phase-known device*/
@@ -462,7 +462,7 @@ static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
     /* Turn radio onto the neighbor's public channel, which will not change in this cycle. */
     gomach_turn_channel(gnrc_netdev, gnrc_netdev->tx.current_neighbor->pub_chanseq);
 
-    gnrc_netdev->iqueuemac.quit_current_cycle = false;
+    gnrc_netdev->gomach.quit_current_cycle = false;
 
     /* Set waiting timer for the targeted device! */
     uint32_t wait_phase_duration;
@@ -493,7 +493,7 @@ static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
         }
     }
 
-    iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_CP, wait_phase_duration);
+    iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_CP, wait_phase_duration);
 
     /* Flush the rx-queue. */
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
@@ -501,12 +501,12 @@ static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->tx.tx_busy_count = 0;
 
     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_WAIT_CP;
-    gnrc_netdev->iqueuemac.need_update = false;
+    gnrc_netdev->gomach.need_update = false;
 }
 
 static void gomach_t2k_wait_cp(gnrc_netdev_t *gnrc_netdev)
 {
-    if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_CP)) {
+    if (iqueuemac_timeout_is_expired(&gnrc_netdev->gomach, TIMEOUT_WAIT_CP)) {
         /* Disable auto-ack, don't try to receive packet! */
         gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
         /* Require ACK for the packet waiting to be sent! */
@@ -528,7 +528,7 @@ static void gomach_t2k_wait_cp(gnrc_netdev_t *gnrc_netdev)
 
         gomach_turn_on_radio(gnrc_netdev);
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_TRANS_IN_CP;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
     }
 }
 
@@ -557,12 +557,12 @@ static void gomach_t2k_trans_in_cp(gnrc_netdev_t *gnrc_netdev)
 
         gnrc_netdev->tx.current_neighbor = NULL;
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
         return;
     }
 
     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_WAIT_CPTX_FEEDBACK;
-    gnrc_netdev->iqueuemac.need_update = false;
+    gnrc_netdev->gomach.need_update = false;
 }
 
 static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
@@ -610,7 +610,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                 /* If has pending packets, join the vTDMA period, first wait for receiver's beacon. */
                 if (gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue) > 0) {
                     gnrc_netdev->tx.vtdma_para.get_beacon = false;
-                    iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_BEACON,
+                    iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_BEACON,
                                           IQUEUEMAC_WAIT_BEACON_TIME_US);
                     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
                     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_WAIT_BEACON;
@@ -618,7 +618,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                 else {
                     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
                 }
-                gnrc_netdev->iqueuemac.need_update = true;
+                gnrc_netdev->gomach.need_update = true;
                 break;
             }
             case TX_FEEDBACK_BUSY:
@@ -634,7 +634,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
             		gnrc_netdev->tx.tx_seq = device_state->seq - 1;
 
             		gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_TRANS_IN_CP;
-            		gnrc_netdev->iqueuemac.need_update = true;
+            		gnrc_netdev->gomach.need_update = true;
             		return;
             	}
             case TX_FEEDBACK_NOACK:
@@ -664,7 +664,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
 
                 }
                 gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
-                gnrc_netdev->iqueuemac.need_update = true;
+                gnrc_netdev->gomach.need_update = true;
                 break;
             }
         }
@@ -681,15 +681,15 @@ static void gomach_t2k_wait_beacon(gnrc_netdev_t *gnrc_netdev)
 
     /* If we need to quit t2k, don't release the current neighbor pointer. In the
      * next cycle, we will try to send to the same receiver. */
-    if (gnrc_netdev->iqueuemac.quit_current_cycle == true) {
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_BEACON);
+    if (gnrc_netdev->gomach.quit_current_cycle == true) {
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_BEACON);
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
         return;
     }
 
     if (gnrc_netdev->tx.vtdma_para.get_beacon == true) {
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_BEACON);
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_BEACON);
 
         /* If the sender gets allocated slots, go to attend the receiver's vTDMA for
          * burst sending all the pending packets to the receiver. */
@@ -704,11 +704,11 @@ static void gomach_t2k_wait_beacon(gnrc_netdev_t *gnrc_netdev)
 
                 uint32_t wait_slots_duration = gnrc_netdev->tx.vtdma_para.slots_position *
                                                IQUEUEMAC_VTDMA_SLOT_SIZE_US;
-                iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_OWN_SLOTS,
+                iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_OWN_SLOTS,
                                       wait_slots_duration);
 
                 gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_WAIT_SLOTS;
-                gnrc_netdev->iqueuemac.need_update = true;
+                gnrc_netdev->gomach.need_update = true;
             }
             else {
                 /* If the allocated slots period is the first one in vTDMA,
@@ -722,29 +722,29 @@ static void gomach_t2k_wait_beacon(gnrc_netdev_t *gnrc_netdev)
                     LOG_ERROR("ERROR: [GOMACH] t2k vTDMA: null packet.\n");
                     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
                 }
-                gnrc_netdev->iqueuemac.need_update = true;
+                gnrc_netdev->gomach.need_update = true;
             }
         }
         else {
             /* No slots get allocated, go to t2k end. */
             gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
-            gnrc_netdev->iqueuemac.need_update = true;
+            gnrc_netdev->gomach.need_update = true;
         }
         return;
     }
 
     /* If no beacon during waiting period, go to t2k end. */
-    if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_BEACON)) {
+    if (iqueuemac_timeout_is_expired(&gnrc_netdev->gomach, TIMEOUT_WAIT_BEACON)) {
         gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
         LOG_WARNING("WARNING: [GOMACH] t2k: no beacon.\n");
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
     }
 }
 
 static void gomach_t2k_wait_own_slots(gnrc_netdev_t *gnrc_netdev)
 {
-    if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_OWN_SLOTS)) {
+    if (iqueuemac_timeout_is_expired(&gnrc_netdev->gomach, TIMEOUT_WAIT_OWN_SLOTS)) {
     	/* The node is now in its scheduled slots period, start burst sending packets. */
         gomach_turn_on_radio(gnrc_netdev);
 
@@ -757,7 +757,7 @@ static void gomach_t2k_wait_own_slots(gnrc_netdev_t *gnrc_netdev)
         	LOG_ERROR("ERROR: [GOMACH] t2k vTDMA: null packet.\n");
             gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
         }
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
     }
 }
 
@@ -779,13 +779,13 @@ static void gomach_t2k_trans_in_slots(gnrc_netdev_t *gnrc_netdev)
         }
         gnrc_netdev->tx.current_neighbor = NULL;
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
         return;
     }
 
     gnrc_netdev->tx.vtdma_para.slots_num--;
     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_WAIT_VTDMA_FEEDBACK;
-    gnrc_netdev->iqueuemac.need_update = false;
+    gnrc_netdev->gomach.need_update = false;
 }
 
 static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev)
@@ -816,7 +816,7 @@ static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev)
                     /* If no scheduled slots or pending packets, go to t2k end. */
                     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
                 }
-                gnrc_netdev->iqueuemac.need_update = true;
+                gnrc_netdev->gomach.need_update = true;
                 break;
             }
             case TX_FEEDBACK_BUSY:
@@ -847,7 +847,7 @@ static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev)
 
                     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
                 }
-                gnrc_netdev->iqueuemac.need_update = true;
+                gnrc_netdev->gomach.need_update = true;
                 break;
             }
         }
@@ -874,25 +874,25 @@ static void gomach_t2k_end(gnrc_netdev_t *gnrc_netdev)
     }
 
     /* Clear all timeouts. */
-    iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_CP);
-    iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_BEACON);
-    iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_OWN_SLOTS);
+    iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_CP);
+    iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_BEACON);
+    iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_OWN_SLOTS);
 
     /* Reset t2k_state to the initial state. */
     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_INIT;
 
     /* If the sender's phase has been changed, figure out the related phase of tx-neighbors. */
-    if (gnrc_netdev->iqueuemac.phase_changed == true) {
+    if (gnrc_netdev->gomach.phase_changed == true) {
         gomach_figure_neighbors_new_phase(gnrc_netdev);
     }
 
     /* Enable Auto ACK again for data reception */
     gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
 
-    gnrc_netdev->iqueuemac.basic_state = GNRC_GOMACH_LISTEN;
+    gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING;
     gnrc_netdev->rx.enter_new_cycle = false;
-    gnrc_netdev->iqueuemac.need_update = true;
+    gnrc_netdev->gomach.need_update = true;
 }
 
 static void gomach_t2k_update(gnrc_netdev_t *gnrc_netdev)
@@ -948,39 +948,39 @@ static void gomach_t2u_init(gnrc_netdev_t *gnrc_netdev)
 	LOG_DEBUG("[GOMACH] t2u initialization.\n");
 
     gnrc_netdev_set_rx_started(gnrc_netdev, false);
-    gnrc_netdev->iqueuemac.quit_current_cycle = false;
+    gnrc_netdev->gomach.quit_current_cycle = false;
     gnrc_netdev_gomach_set_pkt_received(gnrc_netdev, false);
     gnrc_netdev->tx.preamble_sent = 0;
     gnrc_netdev->tx.got_preamble_ack = false;
-    gnrc_netdev->iqueuemac.rx_memory_full = false;
+    gnrc_netdev->gomach.rx_memory_full = false;
 
     /* Disable auto-ACK here! Don't try to reply ACK to any node. */
     gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
     /* Start sending the preamble firstly on public channel 1. */
-    gomach_turn_channel(gnrc_netdev, gnrc_netdev->iqueuemac.pub_channel_1);
+    gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
     gnrc_netdev->tx.t2u_on_public_1 = true;
 
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
 
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
-    gnrc_netdev->iqueuemac.need_update = true;
+    gnrc_netdev->gomach.need_update = true;
 }
 
 static void gomach_t2u_send_preamble_prepare(gnrc_netdev_t *gnrc_netdev)
 {
-    iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL);
+    iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_MAX_PREAM_INTERVAL);
 
     if (gnrc_netdev->tx.preamble_sent != 0) {
         /* Toggle the radio channel after each preamble transmission. */
         if (gnrc_netdev->tx.t2u_on_public_1 == true) {
-            gomach_turn_channel(gnrc_netdev, gnrc_netdev->iqueuemac.pub_channel_2);
+            gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_2);
             gnrc_netdev->tx.t2u_on_public_1 = false;
         }
         else {
-            gomach_turn_channel(gnrc_netdev, gnrc_netdev->iqueuemac.pub_channel_1);
+            gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
             gnrc_netdev->tx.t2u_on_public_1 = true;
         }
-        iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL,
+        iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_MAX_PREAM_INTERVAL,
                               IQUEUEMAC_MAX_PREAM_INTERVAL_US);
     }
     else {
@@ -988,13 +988,13 @@ static void gomach_t2u_send_preamble_prepare(gnrc_netdev_t *gnrc_netdev)
          * 5*MAX_PREAM_INTERVAL due to the fact that the first preamble is
          * using csma for sending, and csma costs some time before actually sending
          * the packet. */
-        iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL,
+        iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_MAX_PREAM_INTERVAL,
                               (5 * IQUEUEMAC_MAX_PREAM_INTERVAL_US));
     }
 
     gnrc_netdev->tx.reach_max_preamble_interval = false;
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_SEND_PREAMBLE;
-    gnrc_netdev->iqueuemac.need_update = true;
+    gnrc_netdev->gomach.need_update = true;
 }
 
 static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
@@ -1002,10 +1002,10 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     /* If packet buffer is full, release one packet to release memory,
      * and reload the next packet.
      * In t2u, we need at least some minimum memory to build the preamble packet. */
-    if (gnrc_netdev->iqueuemac.rx_memory_full == true) {
-        gnrc_netdev->iqueuemac.rx_memory_full = false;
+    if (gnrc_netdev->gomach.rx_memory_full == true) {
+        gnrc_netdev->gomach.rx_memory_full = false;
 
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
 
         /* To-do: should we release all the buffered packets in the queue to
          * release memory in such a critical situation? */
@@ -1030,7 +1030,7 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
         }
     }
 
-    if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL)) {
+    if (iqueuemac_timeout_is_expired(&gnrc_netdev->gomach, TIMEOUT_MAX_PREAM_INTERVAL)) {
         gnrc_netdev->tx.reach_max_preamble_interval = true;
     }
 
@@ -1038,16 +1038,16 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     if ((_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) &&
         (gnrc_netdev->tx.reach_max_preamble_interval == false)) {
         /* Set a timeout to wait for the complete of reception. */
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RX_END);
-        if (gnrc_netdev->iqueuemac.quit_current_cycle == false) {
-            iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RX_END,
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END);
+        if (gnrc_netdev->gomach.quit_current_cycle == false) {
+            iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END,
                                   IQUEUEMAC_WAIT_RX_END_US);
             return false;
         }
     }
 
     /* if we are here, we are not receiving packet or reception is over. */
-    iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RX_END);
+    iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END);
 
     if (gnrc_netdev_gomach_get_pkt_received(gnrc_netdev)) {
         gnrc_netdev_gomach_set_pkt_received(gnrc_netdev, false);
@@ -1055,14 +1055,14 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     }
 
     /* Quit t2u if we have to, e.g., the device found ongoing bcast of other devices. */
-    if (gnrc_netdev->iqueuemac.quit_current_cycle == true) {
+    if (gnrc_netdev->gomach.quit_current_cycle == true) {
         LOG_WARNING("WARNING: [GOMACH] quit t2u.\n");
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE);
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE_DURATION);
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL);
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_PREAMBLE);
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_PREAMBLE_DURATION);
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_MAX_PREAM_INTERVAL);
 
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
         return false;
     }
     return true;
@@ -1077,7 +1077,7 @@ static void gomach_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     /* If we have reached the maximum preamble interval, go to send next preamble. */
     if (gnrc_netdev->tx.reach_max_preamble_interval == true) {
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
         return;
     }
 
@@ -1086,7 +1086,7 @@ static void gomach_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     /* The first preamble is sent with csma for collision avoidance. */
     if (gnrc_netdev->tx.preamble_sent == 0) {
         res = gomach_send_preamble(gnrc_netdev, NETOPT_ENABLE);
-        iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE_DURATION,
+        iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_PREAMBLE_DURATION,
                               IQUEUEMAC_PREAMBLE_DURATION_US);
     }
     else {
@@ -1100,16 +1100,16 @@ static void gomach_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     /* In case that packet-buffer is full, quit t2u and release packet. */
     if (res == -ENOBUFS) {
         LOG_ERROR("ERROR: [GOMACH] t2u: no pkt-buffer for sending preamble.\n");
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE_DURATION);
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_PREAMBLE_DURATION);
 
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
         return;
     }
 
     gnrc_netdev->tx.preamble_sent++;
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_WAIT_PREAMBLE_TX;
-    gnrc_netdev->iqueuemac.need_update = false;
+    gnrc_netdev->gomach.need_update = false;
 }
 
 static void gomach_t2u_wait_preamble_tx(gnrc_netdev_t *gnrc_netdev)
@@ -1117,21 +1117,21 @@ static void gomach_t2u_wait_preamble_tx(gnrc_netdev_t *gnrc_netdev)
     if (gnrc_netdev_gomach_get_tx_finish(gnrc_netdev)) {
         /* Set preamble interval timeout. This is a very short timeout (1ms),
          * just to catch the rx-start event of receiving possible preamble-ACK. */
-        iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE,
+        iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_PREAMBLE,
                               IQUEUEMAC_PREAMBLE_INTERVAL_US);
 
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_WAIT_PREAMBLE_ACK;
-        gnrc_netdev->iqueuemac.need_update = false;
+        gnrc_netdev->gomach.need_update = false;
         return;
     }
 
     /* This is mainly to handle no-TX-complete error. Once the max preamble interval
      * timeout expired here (i.e., no-TX-complete error), we will quit waiting here
      * and go to send the next preamble, thus the MAC will not get stucked here. */
-    if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL)) {
+    if (iqueuemac_timeout_is_expired(&gnrc_netdev->gomach, TIMEOUT_MAX_PREAM_INTERVAL)) {
         gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
         return;
     }
 }
@@ -1145,24 +1145,24 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
     if (gnrc_netdev->tx.got_preamble_ack == true) {
         /* Record the public-channel phase of the receiver. */
         if (gnrc_netdev->tx.t2u_on_public_1 == true) {
-            gnrc_netdev->tx.current_neighbor->pub_chanseq = gnrc_netdev->iqueuemac.pub_channel_1;
+            gnrc_netdev->tx.current_neighbor->pub_chanseq = gnrc_netdev->gomach.pub_channel_1;
         }
         else {
-            gnrc_netdev->tx.current_neighbor->pub_chanseq = gnrc_netdev->iqueuemac.pub_channel_2;
+            gnrc_netdev->tx.current_neighbor->pub_chanseq = gnrc_netdev->gomach.pub_channel_2;
         }
 
         /* Require ACK for the packet waiting to be sent! */
         gomach_set_ack_req(gnrc_netdev, NETOPT_ENABLE);
 
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE);
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE_DURATION);
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL);
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_PREAMBLE);
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_PREAMBLE_DURATION);
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_MAX_PREAM_INTERVAL);
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_SEND_DATA;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
         return;
     }
 
-    if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE_DURATION)) {
+    if (iqueuemac_timeout_is_expired(&gnrc_netdev->gomach, TIMEOUT_PREAMBLE_DURATION)) {
         gnrc_netdev->tx.t2u_retry_counter++;
 
         /* If we reach the maximum t2u retry limit, release the data packet. */
@@ -1170,26 +1170,26 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
             LOG_WARNING("WARNING: [GOMACH] t2u failed: no preamble-ACK.\n");
             gnrc_netdev->tx.t2u_retry_counter = 0;
             gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
-            iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE);
-            iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RX_END);
-            iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL);
+            iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_PREAMBLE);
+            iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END);
+            iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_MAX_PREAM_INTERVAL);
         }
         else {
             /* If we haven't reach the maximum t2u limit, try again. Set quit_current_cycle
              * to true such that we will release the current neighbor pointer.  */
-            gnrc_netdev->iqueuemac.quit_current_cycle = true;
+            gnrc_netdev->gomach.quit_current_cycle = true;
             gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
         }
 
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
         return;
     }
 
     /* If we didn't catch the RX-start event, go to send the next preamble. */
-    if ((iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE)) ||
+    if ((iqueuemac_timeout_is_expired(&gnrc_netdev->gomach, TIMEOUT_PREAMBLE)) ||
         (gnrc_netdev->tx.reach_max_preamble_interval == true)) {
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
     }
 }
 
@@ -1208,12 +1208,12 @@ static void gomach_t2u_send_data(gnrc_netdev_t *gnrc_netdev)
         LOG_ERROR("ERROR: [GOMACH] t2u data sending error: %d.\n", res);
 
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
         return;
     }
 
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_WAIT_DATA_TX;
-    gnrc_netdev->iqueuemac.need_update = false;
+    gnrc_netdev->gomach.need_update = false;
 }
 
 static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
@@ -1230,14 +1230,14 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
             /* Attend the vTDMA procedure if the sender has pending packets for the receiver. */
             if (gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue) > 0) {
                 gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_INIT;
-                iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE);
-                iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE_DURATION);
-                iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RX_END);
-                iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL);
+                iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_PREAMBLE);
+                iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_PREAMBLE_DURATION);
+                iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END);
+                iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_MAX_PREAM_INTERVAL);
 
                 /* Switch to t2k procedure and wait for the beacon of the receiver. */
                 gnrc_netdev->tx.vtdma_para.get_beacon = false;
-                iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_BEACON,
+                iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_BEACON,
                                       IQUEUEMAC_WAIT_BEACON_TIME_US);
                 gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
 
@@ -1271,25 +1271,25 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
                             gnrc_netdev->tx.current_neighbor->pub_chanseq);
                 /* Set quit_current_cycle to true, thus not to release current_neighbour pointer
                  * in t2u-end */
-                gnrc_netdev->iqueuemac.quit_current_cycle = true;
+                gnrc_netdev->gomach.quit_current_cycle = true;
                 gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
             }
         }
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
     }
 }
 
 static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
 {
     gomach_turn_off_radio(gnrc_netdev);
-    iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE);
-    iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_PREAMBLE_DURATION);
-    iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RX_END);
-    iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_MAX_PREAM_INTERVAL);
+    iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_PREAMBLE);
+    iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_PREAMBLE_DURATION);
+    iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END);
+    iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_MAX_PREAM_INTERVAL);
 
     /* In case quit_current_cycle is true, don't release neighbor pointer,
      * will retry t2u immediately in next cycle.*/
-    if (gnrc_netdev->iqueuemac.quit_current_cycle == false) {
+    if (gnrc_netdev->gomach.quit_current_cycle == false) {
         if (gnrc_netdev->tx.packet != NULL) {
             gnrc_pktbuf_release(gnrc_netdev->tx.packet);
             gnrc_netdev->tx.packet = NULL;
@@ -1304,15 +1304,15 @@ static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_INIT;
 
     /* If the node's phase has been changed, figure out the related phase of all neighbors. */
-    if (gnrc_netdev->iqueuemac.phase_changed == true) {
+    if (gnrc_netdev->gomach.phase_changed == true) {
         gomach_figure_neighbors_new_phase(gnrc_netdev);
     }
 
     /* Resume to listen state and go to sleep. */
-    gnrc_netdev->iqueuemac.basic_state = GNRC_GOMACH_LISTEN;
+    gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING;
     gnrc_netdev->rx.enter_new_cycle = false;
-    gnrc_netdev->iqueuemac.need_update = true;
+    gnrc_netdev->gomach.need_update = true;
 }
 
 static void gomach_t2u_update(gnrc_netdev_t *gnrc_netdev)
@@ -1374,13 +1374,13 @@ void iqueue_mac_router_listen_cp_init(gnrc_netdev_t *gnrc_netdev)
 
 
 #if 0
-    iqueuemac->rx.check_dup_pkt.last_1.node_addr.addr[0] = 0;
-    iqueuemac->rx.check_dup_pkt.last_1.node_addr.addr[1] = 0;
-    iqueuemac->rx.check_dup_pkt.last_1.seq = 0;
+    gomach->rx.check_dup_pkt.last_1.node_addr.addr[0] = 0;
+    gomach->rx.check_dup_pkt.last_1.node_addr.addr[1] = 0;
+    gomach->rx.check_dup_pkt.last_1.seq = 0;
 
-    iqueuemac->rx.check_dup_pkt.last_2.node_addr.addr[0] = 0;
-    iqueuemac->rx.check_dup_pkt.last_2.node_addr.addr[1] = 0;
-    iqueuemac->rx.check_dup_pkt.last_2.seq = 0;
+    gomach->rx.check_dup_pkt.last_2.node_addr.addr[0] = 0;
+    gomach->rx.check_dup_pkt.last_2.node_addr.addr[1] = 0;
+    gomach->rx.check_dup_pkt.last_2.seq = 0;
 #endif
 
     gnrc_netdev->rx.enter_new_cycle = false;
@@ -1388,38 +1388,38 @@ void iqueue_mac_router_listen_cp_init(gnrc_netdev_t *gnrc_netdev)
     uint32_t listen_period;
     listen_period = random_uint32_range(0, IQUEUEMAC_CP_RANDOM_END_US) + IQUEUEMAC_CP_DURATION_US;
 
-    iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_CP_END, listen_period);
-    iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_CP_MAX, IQUEUEMAC_CP_DURATION_MAX_US);
+    iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END, listen_period);
+    iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_MAX, IQUEUEMAC_CP_DURATION_MAX_US);
 
     /* Enable Auto ACK again for data reception */
     gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
 
     /* turn to public channel */
-    gomach_turn_channel(gnrc_netdev, gnrc_netdev->iqueuemac.cur_pub_channel);
+    gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
 
     gnrc_netdev_set_rx_started(gnrc_netdev, false);
     gnrc_netdev_gomach_set_pkt_received(gnrc_netdev, false);
     gomach_turn_on_radio(gnrc_netdev);
 
     gnrc_netdev->rx.listen_state = R_LISTEN_CP_LISTEN;
-    gnrc_netdev->iqueuemac.need_update = true;
+    gnrc_netdev->gomach.need_update = true;
 
     //puts("CP");
 
-    gnrc_netdev->iqueuemac.cp_backoff_counter = 0;
-    gnrc_netdev->iqueuemac.quit_current_cycle = false;
-    gnrc_netdev->iqueuemac.get_other_preamble = false;
-    gnrc_netdev->iqueuemac.send_beacon_fail = false;
-    gnrc_netdev->iqueuemac.cp_end = false;
-    gnrc_netdev->iqueuemac.got_preamble = false;
+    gnrc_netdev->gomach.cp_backoff_counter = 0;
+    gnrc_netdev->gomach.quit_current_cycle = false;
+    gnrc_netdev->gomach.get_other_preamble = false;
+    gnrc_netdev->gomach.send_beacon_fail = false;
+    gnrc_netdev->gomach.cp_end = false;
+    gnrc_netdev->gomach.got_preamble = false;
 
-    gnrc_netdev->iqueuemac.phase_changed = false;
+    gnrc_netdev->gomach.phase_changed = false;
 
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
 
     /* backoff phase if needed */
-    if (gnrc_netdev->iqueuemac.phase_backoff == true) {
-        gnrc_netdev->iqueuemac.phase_backoff = false;
+    if (gnrc_netdev->gomach.phase_backoff == true) {
+        gnrc_netdev->gomach.phase_backoff = false;
         iqueuemac_phase_backoff(gnrc_netdev);
     }
 }
@@ -1428,7 +1428,7 @@ void iqueue_mac_router_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
 {
 
     /* in the future, we will add CP extension func. And we should remember to disable CP extension when
-     * iqueuemac->get_other_preamble is true occurs!!!
+     * gomach->get_other_preamble is true occurs!!!
      */
 
     if (gnrc_netdev_gomach_get_pkt_received(gnrc_netdev)) {
@@ -1439,74 +1439,74 @@ void iqueue_mac_router_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
          * Add a CP maximum limit in the future. */
 
         /* if sent preamble-ACK, must wait for data. */
-        if (gnrc_netdev->iqueuemac.got_preamble == true) {
-            gnrc_netdev->iqueuemac.got_preamble = false;
-            gnrc_netdev->iqueuemac.cp_end = false;
-            iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_CP_END);
-            iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
+        if (gnrc_netdev->gomach.got_preamble == true) {
+            gnrc_netdev->gomach.got_preamble = false;
+            gnrc_netdev->gomach.cp_end = false;
+            iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END);
+            iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
         }
         else {
-            if ((gnrc_netdev->iqueuemac.get_other_preamble == false) &&
-                (gnrc_netdev->iqueuemac.quit_current_cycle == false)) {
-                gnrc_netdev->iqueuemac.got_preamble = false;
-                gnrc_netdev->iqueuemac.cp_end = false;
-                iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_CP_END);
-                iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
+            if ((gnrc_netdev->gomach.get_other_preamble == false) &&
+                (gnrc_netdev->gomach.quit_current_cycle == false)) {
+                gnrc_netdev->gomach.got_preamble = false;
+                gnrc_netdev->gomach.cp_end = false;
+                iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END);
+                iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
             }
         }
     }
 
-    if ((gnrc_netdev->iqueuemac.phase_backoff == true) && (gnrc_netdev->iqueuemac.phase_changed == false)) {
-        gnrc_netdev->iqueuemac.phase_backoff = false;
+    if ((gnrc_netdev->gomach.phase_backoff == true) && (gnrc_netdev->gomach.phase_changed == false)) {
+        gnrc_netdev->gomach.phase_backoff = false;
         iqueuemac_phase_backoff(gnrc_netdev);
     }
 
-    if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_CP_MAX)) {
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RX_END);
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_CP_END);
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_CP_MAX);
+    if (iqueuemac_timeout_is_expired(&gnrc_netdev->gomach, TIMEOUT_CP_MAX)) {
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END);
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END);
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_MAX);
         gnrc_netdev->rx.listen_state = R_LISTEN_CP_END;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
         return;
     }
 
-    if ((iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_CP_END))) {
-        gnrc_netdev->iqueuemac.cp_end = true;
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_CP_END);
+    if ((iqueuemac_timeout_is_expired(&gnrc_netdev->gomach, TIMEOUT_CP_END))) {
+        gnrc_netdev->gomach.cp_end = true;
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END);
     }
 
-    if ((gnrc_netdev->iqueuemac.cp_end == true) || (gnrc_netdev->iqueuemac.quit_current_cycle == true)) {
+    if ((gnrc_netdev->gomach.cp_end == true) || (gnrc_netdev->gomach.quit_current_cycle == true)) {
         if ((_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) &&
-            (gnrc_netdev->iqueuemac.cp_backoff_counter < IQUEUEMAC_MAX_CP_BACKOFF_COUNTER)) {
-            gnrc_netdev->iqueuemac.cp_backoff_counter++;
-            iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RX_END);
-            iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
+            (gnrc_netdev->gomach.cp_backoff_counter < IQUEUEMAC_MAX_CP_BACKOFF_COUNTER)) {
+            gnrc_netdev->gomach.cp_backoff_counter++;
+            iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END);
+            iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
         }
         else {
             /** only timeout event and rx_complete event will reach here! **/
-            iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RX_END);
-            iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_CP_END);
-            iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_CP_MAX);
+            iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END);
+            iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_END);
+            iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_CP_MAX);
             gnrc_netdev->rx.listen_state = R_LISTEN_CP_END;
-            gnrc_netdev->iqueuemac.need_update = true;
+            gnrc_netdev->gomach.need_update = true;
         }
     }
 
     /**  ensure that don't break the reception
-       if(iqueuemac->rx_started == false){
+       if(gomach->rx_started == false){
 
-        if((iqueuemac_timeout_is_expired(iqueuemac, TIMEOUT_CP_END))||(iqueuemac->quit_current_cycle == true)){
-            iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
-            iqueuemac->router_states.router_listen_state = R_LISTEN_CP_END;
-            iqueuemac->need_update = true;
+        if((iqueuemac_timeout_is_expired(gomach, TIMEOUT_CP_END))||(gomach->quit_current_cycle == true)){
+            iqueuemac_clear_timeout(gomach,TIMEOUT_CP_END);
+            gomach->router_states.router_listen_state = R_LISTEN_CP_END;
+            gomach->need_update = true;
         }
        }**/
 
     /*
-       if(iqueuemac->quit_current_cycle == true){
-        iqueuemac_clear_timeout(iqueuemac,TIMEOUT_CP_END);
-        iqueuemac->router_states.router_listen_state = R_LISTEN_CP_END;
-        iqueuemac->need_update = true;
+       if(gomach->quit_current_cycle == true){
+        iqueuemac_clear_timeout(gomach,TIMEOUT_CP_END);
+        gomach->router_states.router_listen_state = R_LISTEN_CP_END;
+        gomach->need_update = true;
        }*/
 }
 
@@ -1517,22 +1517,22 @@ void iqueue_mac_router_cp_end(gnrc_netdev_t *gnrc_netdev)
 
     _dispatch(gnrc_netdev->rx.dispatch_buffer);
 
-    if (gnrc_netdev->iqueuemac.quit_current_cycle == true) {
+    if (gnrc_netdev->gomach.quit_current_cycle == true) {
         gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING_INIT;
     }
     else {
         gnrc_netdev->rx.listen_state = R_LISTEN_SEND_BEACON;
     }
-    gnrc_netdev->iqueuemac.need_update = true;
+    gnrc_netdev->gomach.need_update = true;
 }
 
 void iqueue_mac_router_send_beacon(gnrc_netdev_t *gnrc_netdev)
 {
     /**** run the sub-channel selection algorithm to select the sub-channel sequence ****/
-    // iqueuemac_select_sub_channel_num(iqueuemac);
+    // iqueuemac_select_sub_channel_num(gomach);
 
     /* set device seq
-       netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)iqueuemac->netdev->dev;
+       netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gomach->netdev->dev;
        if(device_state->seq > 20){
         device_state->seq = 0;
        }
@@ -1547,38 +1547,38 @@ void iqueue_mac_router_send_beacon(gnrc_netdev_t *gnrc_netdev)
     res = iqueuemac_assemble_and_send_beacon(gnrc_netdev);
 
     /* Enable Auto ACK again for data reception */
-    //gomach_set_autoack(iqueuemac, NETOPT_ENABLE);
+    //gomach_set_autoack(gomach, NETOPT_ENABLE);
 
     if (res < 0) {
         printf("beacon %d\n", res);
 
-        gnrc_netdev->iqueuemac.send_beacon_fail = true;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.send_beacon_fail = true;
+        gnrc_netdev->gomach.need_update = true;
     }
     else {
         /* if the beacon has not been sent due to no slots. */
         if (gnrc_netdev->rx.router_vtdma_mana.total_slots_num == 0) {
-            gnrc_netdev->iqueuemac.send_beacon_fail = true;
-            gnrc_netdev->iqueuemac.need_update = true;
+            gnrc_netdev->gomach.send_beacon_fail = true;
+            gnrc_netdev->gomach.need_update = true;
         }
         else {
-            gnrc_netdev->iqueuemac.need_update = false;
+            gnrc_netdev->gomach.need_update = false;
         }
     }
 
     gnrc_netdev->rx.listen_state = R_LISTEN_WAIT_BEACON_FEEDBACK;
-    //puts("iqueuemac: router is now sending the beacon!!!");
+    //puts("gomach: router is now sending the beacon!!!");
 }
 
 void iqueuemac_router_wait_beacon_feedback(gnrc_netdev_t *gnrc_netdev)
 {
 
-    if (gnrc_netdev_gomach_get_tx_finish(gnrc_netdev) || (gnrc_netdev->iqueuemac.send_beacon_fail == true)) {
+    if (gnrc_netdev_gomach_get_tx_finish(gnrc_netdev) || (gnrc_netdev->gomach.send_beacon_fail == true)) {
 
         /****** router switch to sleep period or vTDMA period ******/
-        if ((gnrc_netdev->rx.router_vtdma_mana.total_slots_num > 0) && (gnrc_netdev->iqueuemac.send_beacon_fail == false)) {
+        if ((gnrc_netdev->rx.router_vtdma_mana.total_slots_num > 0) && (gnrc_netdev->gomach.send_beacon_fail == false)) {
             gnrc_netdev->rx.listen_state = R_LISTEN_VTDMA_INIT;
-            gnrc_netdev->iqueuemac.need_update = true;
+            gnrc_netdev->gomach.need_update = true;
         }
         else { /**** no vTDMA period ****/
 
@@ -1587,23 +1587,23 @@ void iqueuemac_router_wait_beacon_feedback(gnrc_netdev_t *gnrc_netdev)
 
                 /* if it is for broadcast */
                 if (gnrc_netdev->tx.current_neighbor == &gnrc_netdev->tx.neighbors[0]) {
-                    if (gnrc_netdev->iqueuemac.get_other_preamble == false) {
-                        gnrc_netdev->iqueuemac.basic_state = GNRC_GOMACH_TRANSMIT;
+                    if (gnrc_netdev->gomach.get_other_preamble == false) {
+                        gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                         gnrc_netdev->tx.transmit_state = GNRC_GOMACH_BROADCAST;
                     }
                     else {
                         gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING_INIT;
                     }
                     /* if phase has been changed, figure out the related phase of tx-neighbors. */
-                    if (gnrc_netdev->iqueuemac.phase_changed == true) {
+                    if (gnrc_netdev->gomach.phase_changed == true) {
                         gomach_figure_neighbors_new_phase(gnrc_netdev);
                     }
                 }
                 else {
                     switch (gnrc_netdev->tx.current_neighbor->mac_type) {
                         case UNKNOWN: {
-                            if (gnrc_netdev->iqueuemac.get_other_preamble == false) {
-                                gnrc_netdev->iqueuemac.basic_state = GNRC_GOMACH_TRANSMIT;
+                            if (gnrc_netdev->gomach.get_other_preamble == false) {
+                                gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                                 gnrc_netdev->tx.transmit_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
                             }
                             else {
@@ -1612,21 +1612,21 @@ void iqueuemac_router_wait_beacon_feedback(gnrc_netdev_t *gnrc_netdev)
                             break;
                         }
                         case ROUTER: {
-                            gnrc_netdev->iqueuemac.basic_state = GNRC_GOMACH_TRANSMIT;
+                            gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                             gnrc_netdev->tx.transmit_state = GNRC_GOMACH_TRANS_TO_KNOWN;
                             break;
                         }
                         default: {
-                            puts("iqueuemac: error! Unknow MAC type.");
+                            puts("gomach: error! Unknow MAC type.");
                             break;
                         }
                     }
                 }
-                gnrc_netdev->iqueuemac.need_update = true;
+                gnrc_netdev->gomach.need_update = true;
             }
             else { /**** no packet to send, go to sleep ****/
                 gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING_INIT;
-                gnrc_netdev->iqueuemac.need_update = true;
+                gnrc_netdev->gomach.need_update = true;
             }
         }
     }
@@ -1636,7 +1636,7 @@ void iqueue_mac_router_vtdma_init(gnrc_netdev_t *gnrc_netdev)
 {
 
     /*** switch the radio to the subchannel ***/
-    gomach_turn_channel(gnrc_netdev, gnrc_netdev->iqueuemac.sub_channel_num);
+    gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.sub_channel_num);
     /* Enable Auto ACK again for data reception */
     gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
 
@@ -1644,12 +1644,12 @@ void iqueue_mac_router_vtdma_init(gnrc_netdev_t *gnrc_netdev)
     uint32_t vtdma_duration;
     vtdma_duration = gnrc_netdev->rx.router_vtdma_mana.total_slots_num * IQUEUEMAC_VTDMA_SLOT_SIZE_US;
 
-    iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_VTDMA, vtdma_duration);
+    iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_VTDMA, vtdma_duration);
 
-    gnrc_netdev->iqueuemac.vtdma_end = false;
+    gnrc_netdev->gomach.vtdma_end = false;
 
     gnrc_netdev->rx.listen_state = R_LISTEN_VTDMA;
-    gnrc_netdev->iqueuemac.need_update = true;
+    gnrc_netdev->gomach.need_update = true;
 
 }
 
@@ -1660,26 +1660,26 @@ void iqueue_mac_router_vtdma(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev_gomach_set_pkt_received(gnrc_netdev, false);
 
         /*** check whether this packet-process func. can be merged with cp-packet-process func. due to similar functionalities!!! ***/
-        //iqueue_router_cp_receive_packet_process(iqueuemac);
+        //iqueue_router_cp_receive_packet_process(gomach);
         iqueuemac_router_vtdma_receive_packet_process(gnrc_netdev);
     }
 
-    if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_VTDMA)) {
-        gnrc_netdev->iqueuemac.vtdma_end = true;
+    if (iqueuemac_timeout_is_expired(&gnrc_netdev->gomach, TIMEOUT_VTDMA)) {
+        gnrc_netdev->gomach.vtdma_end = true;
     }
 
-    if (gnrc_netdev->iqueuemac.vtdma_end == true) {
+    if (gnrc_netdev->gomach.vtdma_end == true) {
 
         if (_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) {
-            iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RX_END);
-            iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
+            iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END);
+            iqueuemac_set_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END, IQUEUEMAC_WAIT_RX_END_US);
             return;
         }
 
-        //puts("iqueuemac: Router vTDMA ends!!");
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_WAIT_RX_END);
+        //puts("gomach: Router vTDMA ends!!");
+        iqueuemac_clear_timeout(&gnrc_netdev->gomach, TIMEOUT_WAIT_RX_END);
         gnrc_netdev->rx.listen_state = R_LISTEN_VTDMA_END;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
     }
 }
 
@@ -1689,7 +1689,7 @@ void iqueue_mac_router_vtdma_end(gnrc_netdev_t *gnrc_netdev)
     _dispatch(gnrc_netdev->rx.dispatch_buffer);
 
     /*** switch the radio to the public-channel!!! ***/
-    gomach_turn_channel(gnrc_netdev, gnrc_netdev->iqueuemac.cur_pub_channel);
+    gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
 
     /*** ensure that the channel-switching is finished before go to sleep to turn it off !!! ***/
 
@@ -1697,23 +1697,23 @@ void iqueue_mac_router_vtdma_end(gnrc_netdev_t *gnrc_netdev)
     if (iqueue_mac_find_next_tx_neighbor(gnrc_netdev)) {
 
         if (gnrc_netdev->tx.current_neighbor == &gnrc_netdev->tx.neighbors[0]) {
-            if (gnrc_netdev->iqueuemac.get_other_preamble == false) {
-                gnrc_netdev->iqueuemac.basic_state = GNRC_GOMACH_TRANSMIT;
+            if (gnrc_netdev->gomach.get_other_preamble == false) {
+                gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                 gnrc_netdev->tx.transmit_state = GNRC_GOMACH_BROADCAST;
             }
             else {
                 gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING_INIT;
             }
             /* if phase has been changed, figure out the related phase of tx-neighbors. */
-            if (gnrc_netdev->iqueuemac.phase_changed == true) {
+            if (gnrc_netdev->gomach.phase_changed == true) {
                 gomach_figure_neighbors_new_phase(gnrc_netdev);
             }
         }
         else {
             switch (gnrc_netdev->tx.current_neighbor->mac_type) {
                 case UNKNOWN: {
-                    if (gnrc_netdev->iqueuemac.get_other_preamble == false) {
-                        gnrc_netdev->iqueuemac.basic_state = GNRC_GOMACH_TRANSMIT;
+                    if (gnrc_netdev->gomach.get_other_preamble == false) {
+                        gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                         gnrc_netdev->tx.transmit_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
                     }
                     else {
@@ -1721,11 +1721,11 @@ void iqueue_mac_router_vtdma_end(gnrc_netdev_t *gnrc_netdev)
                     }
                 } break;
                 case ROUTER: {
-                    gnrc_netdev->iqueuemac.basic_state = GNRC_GOMACH_TRANSMIT;
+                    gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                     gnrc_netdev->tx.transmit_state = GNRC_GOMACH_TRANS_TO_KNOWN;
                 } break;
                 default: {
-                    puts("iqueuemac: error! Unknow MAC type."); break;
+                    puts("gomach: error! Unknow MAC type."); break;
                 }
             }
         }
@@ -1734,7 +1734,7 @@ void iqueue_mac_router_vtdma_end(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING_INIT;
     }
 
-    gnrc_netdev->iqueuemac.need_update = true;
+    gnrc_netdev->gomach.need_update = true;
 
 }
 
@@ -1742,50 +1742,50 @@ void iqueue_mac_router_sleep_init(gnrc_netdev_t *gnrc_netdev)
 {
 
     /* if phase has been changed, figure out the related phase of tx-neighbors. */
-    if (gnrc_netdev->iqueuemac.phase_changed == true) {
+    if (gnrc_netdev->gomach.phase_changed == true) {
         gomach_figure_neighbors_new_phase(gnrc_netdev);
     }
 
     gomach_turn_off_radio(gnrc_netdev);
     gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING;
-    gnrc_netdev->iqueuemac.need_update = true;
+    gnrc_netdev->gomach.need_update = true;
 
-    //puts("iqueuemac: router is now entering sleeping period");
+    //puts("gomach: router is now entering sleeping period");
 }
 
 void iqueue_mac_router_sleep(gnrc_netdev_t *gnrc_netdev)
 {
 
 #if 0
-    if (iqueue_mac_find_next_tx_neighbor(iqueuemac)) {
+    if (iqueue_mac_find_next_tx_neighbor(gomach)) {
 
         /*  stop lpm mode */
         lpm_prevent_sleep |= IQUEUEMAC_LPM_MASK;
 
-        iqueuemac->router_states.basic_state = GNRC_GOMACH_TRANSMIT;
+        gomach->router_states.basic_state = GNRC_GOMACH_TRANSMIT;
 
-        if (iqueuemac->tx.current_neighbour == &iqueuemac->tx.neighbours[0]) {
-            iqueuemac->router_states.router_trans_state = GNRC_GOMACH_BROADCAST;
+        if (gomach->tx.current_neighbour == &gomach->tx.neighbours[0]) {
+            gomach->router_states.router_trans_state = GNRC_GOMACH_BROADCAST;
         }
         else {
-            switch (iqueuemac->tx.current_neighbour->mac_type) {
+            switch (gomach->tx.current_neighbour->mac_type) {
                 case UNKNOWN: {
-                    iqueuemac->router_states.router_trans_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
+                    gomach->router_states.router_trans_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
                 } break;
                 case ROUTER: {
-                    iqueuemac->router_states.router_trans_state = GNRC_GOMACH_TRANS_TO_KNOWN;
+                    gomach->router_states.router_trans_state = GNRC_GOMACH_TRANS_TO_KNOWN;
                 } break;
                 case NODE: {
-                    iqueuemac->router_states.router_trans_state = R_TRANS_TO_NODE;
+                    gomach->router_states.router_trans_state = R_TRANS_TO_NODE;
                 } break;
                 default: break;
             }
         }
-        iqueuemac->need_update = true;
-        //puts("iqueuemac: router sends in sleep");
+        gomach->need_update = true;
+        //puts("gomach: router sends in sleep");
     }
     else {
-        if (iqueuemac->router_states.router_new_cycle == false) {
+        if (gomach->router_states.router_new_cycle == false) {
             /*  enable lpm mode, enter the sleep mode */
             lpm_prevent_sleep &= ~(IQUEUEMAC_LPM_MASK);
         }
@@ -1794,21 +1794,21 @@ void iqueue_mac_router_sleep(gnrc_netdev_t *gnrc_netdev)
     if (gnrc_netdev->rx.enter_new_cycle == true) {
 
         gnrc_netdev->rx.listen_state = R_LISTEN_SLEEPING_END;
-        gnrc_netdev->iqueuemac.need_update = true;
+        gnrc_netdev->gomach.need_update = true;
     }
 }
 
 void iqueue_mac_router_sleep_end(gnrc_netdev_t *gnrc_netdev)
 {
     gnrc_netdev->rx.listen_state = R_LISTEN_CP_INIT;
-    gnrc_netdev->iqueuemac.need_update = true;
+    gnrc_netdev->gomach.need_update = true;
 }
 
 static void gomach_update(gnrc_netdev_t *gnrc_netdev)
 {
-    switch (gnrc_netdev->iqueuemac.basic_state) {
+    switch (gnrc_netdev->gomach.basic_state) {
         case GNRC_GOMACH_INIT: {
-            switch (gnrc_netdev->iqueuemac.init_state) {
+            switch (gnrc_netdev->gomach.init_state) {
                 case GNRC_GOMACH_INIT_PREPARE: {
                     gomach_init_prepare(gnrc_netdev);
                     break;
@@ -1834,7 +1834,7 @@ static void gomach_update(gnrc_netdev_t *gnrc_netdev)
                 case R_LISTEN_CP_INIT: iqueue_mac_router_listen_cp_init(gnrc_netdev); break;
                 case R_LISTEN_CP_LISTEN: iqueue_mac_router_listen_cp_listen(gnrc_netdev); break;
                 case R_LISTEN_CP_END: iqueue_mac_router_cp_end(gnrc_netdev); break;
-                //case R_LISTEN_CREATE_BEACON: iqueue_mac_router_create_beacon(iqueuemac); break;
+                //case R_LISTEN_CREATE_BEACON: iqueue_mac_router_create_beacon(gomach); break;
                 case R_LISTEN_SEND_BEACON: iqueue_mac_router_send_beacon(gnrc_netdev); break;
                 case R_LISTEN_WAIT_BEACON_FEEDBACK: iqueuemac_router_wait_beacon_feedback(gnrc_netdev); break;
                 case R_LISTEN_VTDMA_INIT: iqueue_mac_router_vtdma_init(gnrc_netdev); break;
@@ -1897,18 +1897,18 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
 
             case NETDEV_EVENT_RX_STARTED:
                 gnrc_netdev_set_rx_started(gnrc_netdev, true);
-                //puts("iqueuemac: rx-started event triggered.");
-                gnrc_netdev->iqueuemac.need_update = true;
+                //puts("gomach: rx-started event triggered.");
+                gnrc_netdev->gomach.need_update = true;
                 break;
 
             case NETDEV_EVENT_RX_COMPLETE:
             {
-                gnrc_netdev->iqueuemac.need_update = true;
+                gnrc_netdev->gomach.need_update = true;
 
                 gnrc_pktsnip_t *pkt = gnrc_netdev->recv(gnrc_netdev);
 
                 if (pkt == NULL) {
-                    gnrc_netdev->iqueuemac.rx_memory_full = true;
+                    gnrc_netdev->gomach.rx_memory_full = true;
                     puts("rx: pkt is NULL, memory full?");
                     gnrc_netdev_gomach_set_pkt_received(gnrc_netdev, false);
                     gnrc_netdev_set_rx_started(gnrc_netdev, false);
@@ -1928,8 +1928,8 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                 /* update the seq to avoid duplicate pkt.
                    gnrc_netif_hdr_t* netif_hdr;
                    netif_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
-                   //printf("iqueuemac: the received packet rssi is: %d .\n", netif_hdr->rssi);
-                   iqueuemac.rx.last_seq_info.seq = netif_hdr->seq;
+                   //printf("gomach: the received packet rssi is: %d .\n", netif_hdr->rssi);
+                   gomach.rx.last_seq_info.seq = netif_hdr->seq;
                  */
 
                 if (!gnrc_mac_queue_rx_packet(&gnrc_netdev->rx, 0, pkt)) {
@@ -1948,26 +1948,26 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                 gnrc_netdev_set_tx_feedback(gnrc_netdev, TX_FEEDBACK_SUCCESS);
                 gnrc_netdev_gomach_set_tx_finish(gnrc_netdev, true);
                 iqueuemac_set_raddio_to_listen_mode(gnrc_netdev);
-                gnrc_netdev->iqueuemac.need_update = true;
+                gnrc_netdev->gomach.need_update = true;
             } break;
 
             case NETDEV_EVENT_TX_NOACK: {
                 gnrc_netdev_set_tx_feedback(gnrc_netdev, TX_FEEDBACK_NOACK);
                 gnrc_netdev_gomach_set_tx_finish(gnrc_netdev, true);
                 iqueuemac_set_raddio_to_listen_mode(gnrc_netdev);
-                gnrc_netdev->iqueuemac.need_update = true;
+                gnrc_netdev->gomach.need_update = true;
             } break;
 
             case NETDEV_EVENT_TX_MEDIUM_BUSY: {
                 gnrc_netdev_set_tx_feedback(gnrc_netdev, TX_FEEDBACK_BUSY);
                 gnrc_netdev_gomach_set_tx_finish(gnrc_netdev, true);
                 iqueuemac_set_raddio_to_listen_mode(gnrc_netdev);
-                gnrc_netdev->iqueuemac.need_update = true;
+                gnrc_netdev->gomach.need_update = true;
             } break;
 /*
             case NETDEV_EVENT_TX_STARTED:{
                 if(tx.got_preamble_ack == true){
-                  puts("iqueuemac: data packet transmission tx started!");
+                  puts("gomach: data packet transmission tx started!");
                  }
             }break;*/
 
@@ -2019,7 +2019,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
     rtt_init();
 
     /* Store pid globally, so that IRQ can use it to send msg */
-    gnrc_netdev->iqueuemac.pid = thread_getpid();
+    gnrc_netdev->gomach.pid = thread_getpid();
     iqueuemac_pid = thread_getpid();
     /*************************************iqueue-mac**************************************/
 
@@ -2052,7 +2052,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
     random_init(seed);
 
-    gnrc_netdev->iqueuemac.need_update = true;
+    gnrc_netdev->gomach.need_update = true;
 
     /* start the event loop */
     while (1) {
@@ -2097,9 +2097,9 @@ static void *_gnrc_iqueuemac_thread(void *args)
             } break;
 
             case IQUEUEMAC_EVENT_TIMEOUT_TYPE: {
-                // printf("iqueuemac: Hitting a timeout event.\n");
-                iqueuemac_timeout_make_expire((iqueuemac_timeout_t *) msg.content.ptr);
-                gnrc_netdev->iqueuemac.need_update = true;
+                // printf("gomach: Hitting a timeout event.\n");
+                iqueuemac_timeout_make_expire((gomach_timeout_t *) msg.content.ptr);
+                gnrc_netdev->gomach.need_update = true;
             } break;
 
             case GNRC_NETAPI_MSG_TYPE_SND: {
@@ -2111,7 +2111,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
                     LOG(LOG_WARNING, "WARNING: [GoMacH] TX queue full, drop packet\n");
                     gnrc_pktbuf_release(pkt);
                 }
-                gnrc_netdev->iqueuemac.need_update = true;
+                gnrc_netdev->gomach.need_update = true;
 
             } break;
             /**************************************iqueue-mac********************************************/
@@ -2121,8 +2121,8 @@ static void *_gnrc_iqueuemac_thread(void *args)
                 break;
         }
 
-        while (gnrc_netdev->iqueuemac.need_update == true) {
-            gnrc_netdev->iqueuemac.need_update = false;
+        while (gnrc_netdev->gomach.need_update == true) {
+            gnrc_netdev->gomach.need_update = false;
             gomach_update(gnrc_netdev);
         }
     }

@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 /* Foward declaration */
-typedef struct iqueuemac iqueuemac_t;
+typedef struct gomach gomach_t;
 
 
 typedef enum {
@@ -56,28 +56,29 @@ typedef enum {
     TIMEOUT_N_CP_DURATION,
     TIMEOUT_BEACON_END
 
-} iqueuemac_timeout_type_t;
+} gomach_timeout_type_t;
 
 typedef struct {
     xtimer_t timer;
     msg_t msg;
     /* If type != DISABLED, this indicates if timeout has expired */
     bool expired;
-    iqueuemac_timeout_type_t type;
-} iqueuemac_timeout_t;
+    gomach_timeout_type_t type;
+} gomach_timeout_t;
+
 #define IQUEUEMAC_TIMEOUT_INIT  { {}, {}, false, TIMEOUT_DISABLED }
 
-void iqueuemac_set_timeout(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type, uint32_t offset);
+void iqueuemac_set_timeout(gomach_t *iqueuemac, gomach_timeout_type_t type, uint32_t offset);
 
-void iqueuemac_clear_timeout(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type);
+void iqueuemac_clear_timeout(gomach_t *iqueuemac, gomach_timeout_type_t type);
 
-bool iqueuemac_timeout_is_running(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type);
+bool iqueuemac_timeout_is_running(gomach_t *iqueuemac, gomach_timeout_type_t type);
 
-bool iqueuemac_timeout_is_expired(iqueuemac_t *iqueuemac, iqueuemac_timeout_type_t type);
+bool iqueuemac_timeout_is_expired(gomach_t *iqueuemac, gomach_timeout_type_t type);
 
-void iqueuemac_reset_timeouts(iqueuemac_t *iqueuemac);
+void iqueuemac_reset_timeouts(gomach_t *iqueuemac);
 
-void iqueuemac_timeout_make_expire(iqueuemac_timeout_t *timeout);
+void iqueuemac_timeout_make_expire(gomach_timeout_t *timeout);
 
 #ifdef __cplusplus
 }

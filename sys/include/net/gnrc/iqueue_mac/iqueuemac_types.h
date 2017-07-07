@@ -166,7 +166,7 @@ typedef struct {
 }vtdma_para_t;
 
 /******************************************************************************/
-typedef struct iqueuemac {
+typedef struct gomach {
     /* PID of IQUEUEMAC thread */
     kernel_pid_t pid;
 
@@ -174,7 +174,7 @@ typedef struct iqueuemac {
     gnrc_gomach_basic_state_t basic_state;
     gnrc_gomach_init_state_t init_state;
 
-    iqueuemac_timeout_t timeouts[IQUEUEMAC_TIMEOUT_COUNT];
+    gomach_timeout_t timeouts[IQUEUEMAC_TIMEOUT_COUNT];
 
     uint16_t subchannel_occu_flags;
     uint16_t sub_channel_num;
@@ -202,7 +202,7 @@ typedef struct iqueuemac {
     bool send_beacon_fail;
     bool rx_memory_full;
 
-} iqueuemac_t;
+} gomach_t;
 
 #ifdef __cplusplus
 }
