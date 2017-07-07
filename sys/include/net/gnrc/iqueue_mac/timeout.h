@@ -48,7 +48,6 @@ typedef enum {
     TIMEOUT_WAIT_OWN_SLOTS,
     TIMEOUT_WAIT_RE_PHASE_LOCK,
     /*****************router******************/
-    TIMEOUT_COLLECT_BEACON_END,
     TIMEOUT_CP_END,
     TIMEOUT_CP_MAX,
     TIMEOUT_WAIT_RX_END,

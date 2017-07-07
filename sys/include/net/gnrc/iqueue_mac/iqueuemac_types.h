@@ -102,13 +102,10 @@ typedef enum {
 } gnrc_gomach_basic_state_t;
 
 typedef enum {
-    /*Listening states of simple mode*/
-    R_INIT_PREPARE,
-    R_INIT_COLLECT_BEACONS,
-    R_INIT_WAIT_BUSY_END,
-    R_INIT_ANNOUNCE_SUBCHANNEL,
-    R_INIT_WAIT_ANNOUNCE_FEEDBACK,
-    R_INIT_END
+    GNRC_GOMACH_INIT_PREPARE,
+	GNRC_GOMACH_INIT_ANNC_SUBCHAN,
+	GNRC_GOMACH_INIT_WAIT_FEEDBACK,
+	GNRC_GOMACH_INIT_END
 } gnrc_gomach_init_state_t;
 
 typedef enum {
@@ -192,7 +189,6 @@ typedef struct iqueuemac {
     uint32_t backoff_phase_ticks;
 
     /* Track if a transmission might have corrupted a received packet */
-    bool init_retry;
     bool quit_current_cycle;
     bool got_preamble;
     bool cp_end;

@@ -1138,7 +1138,7 @@ int gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma)
 }
 
 
-void iqueuemac_send_announce(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma)
+void gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma)
 {
     /****** assemble and send the beacon ******/
     gnrc_pktsnip_t *pkt;

@@ -67,7 +67,7 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
     //printf("iqueuemac: iqueuemac's own addrs is: %d, %d . \n ", iqueuemac->own_addr.addr[1], iqueuemac->own_addr.addr[0]);
 
     gnrc_netdev->iqueuemac.basic_state = GNRC_GOMACH_INIT;  //GNRC_GOMACH_LISTEN;
-    gnrc_netdev->iqueuemac.init_state = R_INIT_PREPARE;
+    gnrc_netdev->iqueuemac.init_state = GNRC_GOMACH_INIT_PREPARE;
 
     gnrc_netdev->rx.listen_state = R_LISTEN_CP_INIT;
     gnrc_netdev->tx.transmit_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
@@ -165,7 +165,6 @@ void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
     switch (event & 0xffff) {
         /*******************************Router RTT management***************************/
         case IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE: {
-
             if (gnrc_netdev->iqueuemac.duty_cycle_started == false) {
                 gnrc_netdev->iqueuemac.duty_cycle_started = true;
                 rtt_clear_alarm();
@@ -403,118 +402,52 @@ static void gomach_bcast_update(gnrc_netdev_t *gnrc_netdev)
     }
 }
 
-/****************** iQueue-MAC transmission to node state machines *****/
-
-void iqueuemac_init_prepare(gnrc_netdev_t *gnrc_netdev)
+static void gomach_init_prepare(gnrc_netdev_t *gnrc_netdev)
 {
-
     rtt_clear_alarm();
 
-    uint32_t listen_period;
-
-    listen_period = random_uint32_range(0, IQUEUEMAC_SUPERFRAME_DURATION_US);
-    listen_period = (IQUEUEMAC_SUPERFRAME_DURATION_US * 11 / 10) + listen_period + IQUEUEMAC_WAIT_RTT_STABLE_US;
+    /* Random delay for avoiding the same wake-up phase among devices. */
+    uint32_t random_backoff = random_uint32_range(0, IQUEUEMAC_SUPERFRAME_DURATION_US);
+    xtimer_usleep(random_backoff);
 
     gnrc_netdev->iqueuemac.quit_current_cycle = false;
-    gnrc_netdev->iqueuemac.init_retry = false;
     gnrc_netdev->iqueuemac.subchannel_occu_flags = 0;
 
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
 
-    /******set TIMEOUT_COLLECT_BEACON_END timeout ******/
-    iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_COLLECT_BEACON_END, listen_period);
-
-    //gnrc_netdev->iqueuemac.init_state = R_INIT_COLLECT_BEACONS;
-    /* since node doesn't bcast beacon on default, no need to collect beacons. */
-    gnrc_netdev->iqueuemac.init_state = R_INIT_ANNOUNCE_SUBCHANNEL;
-    gnrc_netdev->iqueuemac.need_update = true;
-
-}
-
-void iqueuemac_init_collec_beacons(gnrc_netdev_t *gnrc_netdev)
-{
-    if (gnrc_netdev_gomach_get_pkt_received(gnrc_netdev)) {
-        gnrc_netdev_gomach_set_pkt_received(gnrc_netdev, false);
-        iqueuemac_packet_process_in_init(gnrc_netdev);
-    }
-
-    if (gnrc_netdev->iqueuemac.quit_current_cycle == true) {
-        gomach_turn_off_radio(gnrc_netdev);
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_COLLECT_BEACON_END);
-        iqueuemac_set_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_FINISH, IQUEUEMAC_SUPERFRAME_DURATION_US);
-        gnrc_netdev->iqueuemac.init_state = R_INIT_WAIT_BUSY_END;
-        gnrc_netdev->iqueuemac.need_update = true;
-        return;
-    }
-
-    /*** it seems that this "init_retry" procedure is unnecessary here!! maybe delete it in the future ***/
-    if (gnrc_netdev->iqueuemac.init_retry == true) {
-        iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_COLLECT_BEACON_END);
-        gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
-        gnrc_netdev->iqueuemac.init_state = R_INIT_PREPARE;
-        gnrc_netdev->iqueuemac.need_update = true;
-    }
-
-    if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_COLLECT_BEACON_END)) {
-        iqueuemac_init_choose_subchannel(gnrc_netdev);
-        gnrc_netdev->iqueuemac.init_state = R_INIT_ANNOUNCE_SUBCHANNEL;
-        gnrc_netdev->iqueuemac.need_update = true;
-    }
-}
-
-void iqueuemac_init_wait_busy_end(gnrc_netdev_t *gnrc_netdev)
-{
-    iqueuemac_init_choose_subchannel(gnrc_netdev);
-    if (iqueuemac_timeout_is_expired(&gnrc_netdev->iqueuemac, TIMEOUT_BROADCAST_FINISH)) {
-        gomach_turn_on_radio(gnrc_netdev);
-        gnrc_netdev->iqueuemac.init_state = R_INIT_PREPARE;
-        gnrc_netdev->iqueuemac.need_update = true;
-    }
-}
-
-void iqueuemac_init_announce_subchannel(gnrc_netdev_t *gnrc_netdev)
-{
-    //set csma retry number here??
-    iqueuemac_send_announce(gnrc_netdev, NETOPT_ENABLE);
-
-    gnrc_netdev->iqueuemac.init_state = R_INIT_WAIT_ANNOUNCE_FEEDBACK;
+    /* Since devices don't broadcast beacons on default, so no need to collect beacons.
+     * Go to announce its chosen sub-channel sequence. */
+    gnrc_netdev->iqueuemac.init_state = GNRC_GOMACH_INIT_ANNC_SUBCHAN;
     gnrc_netdev->iqueuemac.need_update = true;
 }
 
-void iqueuemac_init_wait_announce_feedback(gnrc_netdev_t *gnrc_netdev)
+void gomach_init_announce_subchannel(gnrc_netdev_t *gnrc_netdev)
+{
+    /* Announce the device's chosen sub-channel sequence to its neighbors. */
+	gomach_bcast_subchann_seq(gnrc_netdev, NETOPT_ENABLE);
+
+    gnrc_netdev->iqueuemac.init_state = GNRC_GOMACH_INIT_WAIT_FEEDBACK;
+    gnrc_netdev->iqueuemac.need_update = false;
+}
+
+void gomach_init_wait_announce_feedback(gnrc_netdev_t *gnrc_netdev)
 {
     if (gnrc_netdev_gomach_get_tx_finish(gnrc_netdev)) {
         gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
-        gnrc_netdev->iqueuemac.init_state = R_INIT_END;
+        gnrc_netdev->iqueuemac.init_state = GNRC_GOMACH_INIT_END;
         gnrc_netdev->iqueuemac.need_update = true;
-#if 0
-        /*** add another condition here in the furture: the tx-feedback must be ACK-got,
-         * namely, completed, to ensure router gets the data correctly***/
-        if (gnrc_netdev_get_tx_feedback(gnrc_netdev) == TX_FEEDBACK_SUCCESS) {
-            gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
-            gnrc_netdev->iqueuemac.init_state = R_INIT_END;
-            gnrc_netdev->iqueuemac.need_update = true;
-            return;
-        }
-        else { //if(iqueuemac->tx.tx_feedback == TX_FEEDBACK_BUSY)
-            gnrc_netdev->iqueuemac.init_state = R_INIT_PREPARE;
-            gnrc_netdev->iqueuemac.need_update = true;
-        }
-#endif
     }
 }
 
-void iqueuemac_init_end(gnrc_netdev_t *gnrc_netdev)
+void gomach_init_end(gnrc_netdev_t *gnrc_netdev)
 {
-    iqueuemac_clear_timeout(&gnrc_netdev->iqueuemac, TIMEOUT_COLLECT_BEACON_END);
-
-    gnrc_netdev->iqueuemac.init_state = R_INIT_PREPARE;
-    /*** switch to duty-cycle operation ***/
+    /* Reset initialization state. */
+    gnrc_netdev->iqueuemac.init_state = GNRC_GOMACH_INIT_PREPARE;
+    /* Switch to duty-cycle listen mode. */
     gnrc_netdev->iqueuemac.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = R_LISTEN_CP_INIT;
 
-    //puts("router random ends.");
-    /*** start duty-cycle ***/
+    /* Start duty-cycle scheme. */
     gnrc_netdev->iqueuemac.duty_cycle_started = false;
     rtt_handler(IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE, gnrc_netdev);
     gnrc_netdev->iqueuemac.need_update = true;
@@ -1867,7 +1800,6 @@ void iqueue_mac_router_sleep(gnrc_netdev_t *gnrc_netdev)
 
 void iqueue_mac_router_sleep_end(gnrc_netdev_t *gnrc_netdev)
 {
-
     gnrc_netdev->rx.listen_state = R_LISTEN_CP_INIT;
     gnrc_netdev->iqueuemac.need_update = true;
 }
@@ -1877,12 +1809,22 @@ static void gomach_update(gnrc_netdev_t *gnrc_netdev)
     switch (gnrc_netdev->iqueuemac.basic_state) {
         case GNRC_GOMACH_INIT: {
             switch (gnrc_netdev->iqueuemac.init_state) {
-                case R_INIT_PREPARE: iqueuemac_init_prepare(gnrc_netdev); break;
-                case R_INIT_COLLECT_BEACONS: iqueuemac_init_collec_beacons(gnrc_netdev); break;
-                case R_INIT_WAIT_BUSY_END: iqueuemac_init_wait_busy_end(gnrc_netdev); break;
-                case R_INIT_ANNOUNCE_SUBCHANNEL: iqueuemac_init_announce_subchannel(gnrc_netdev); break;
-                case R_INIT_WAIT_ANNOUNCE_FEEDBACK: iqueuemac_init_wait_announce_feedback(gnrc_netdev); break;
-                case R_INIT_END: iqueuemac_init_end(gnrc_netdev); break;
+                case GNRC_GOMACH_INIT_PREPARE: {
+                    gomach_init_prepare(gnrc_netdev);
+                    break;
+                }
+                case GNRC_GOMACH_INIT_ANNC_SUBCHAN: {
+                    gomach_init_announce_subchannel(gnrc_netdev);
+                    break;
+                }
+                case GNRC_GOMACH_INIT_WAIT_FEEDBACK: {
+                    gomach_init_wait_announce_feedback(gnrc_netdev);
+                    break;
+                }
+                case GNRC_GOMACH_INIT_END: {
+                    gomach_init_end(gnrc_netdev);
+                    break;
+                }
                 default: break;
             }
             break;
