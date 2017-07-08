@@ -47,7 +47,7 @@ extern "C" {
 #define IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP           (0x4303)
 #define IQUEUEMAC_EVENT_RTT_N_NEW_CYCLE           (0x4305)
 /****************************** router RTT event types **********************************/
-#define IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE           (0x4304)
+#define GOMACH_EVENT_RTT_NEW_CYCLE           (0x4304)
 
 
 #define IQUEUEMAC_EVENT_TIMEOUT_TYPE        (0x4400)

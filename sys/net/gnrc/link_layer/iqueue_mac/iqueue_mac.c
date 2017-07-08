@@ -156,49 +156,39 @@ static void rtt_cb(void *arg)
     }
 }
 
-
-void rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
+static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
 {
     uint32_t alarm;
 
     switch (event & 0xffff) {
-        /*******************************Router RTT management***************************/
-        case IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE: {
+        case GOMACH_EVENT_RTT_NEW_CYCLE: {
+            /* A new cycle starts. */
             if (gnrc_netdev->gomach.duty_cycle_started == false) {
                 gnrc_netdev->gomach.duty_cycle_started = true;
                 rtt_clear_alarm();
-                /*** record the starting phase of iQueuemac ***/
+                /* Record the new cycle's starting time. */
                 gnrc_netdev->gomach.last_wakeup = rtt_get_counter();
             }
             else {
-                gnrc_netdev->gomach.last_wakeup = rtt_get_alarm(); //rtt_get_counter();
+                /* Record the new cycle's starting time. */
+                gnrc_netdev->gomach.last_wakeup = rtt_get_alarm();
                 gnrc_netdev->rx.enter_new_cycle = true;
-                // iqueuemac_stop_lpm();
             }
 
-            //lpm_prevent_sleep |= IQUEUEMAC_LPM_MASK;
+            /* Set next cycle's starting time. */
+            alarm = gnrc_netdev->gomach.last_wakeup +
+                    RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+            rtt_set_alarm(alarm, rtt_cb, (void *) GOMACH_EVENT_RTT_NEW_CYCLE);
 
-
-            //alarm = RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-            alarm = gnrc_netdev->gomach.last_wakeup + RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-            rtt_set_alarm(alarm, rtt_cb, (void *) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
-
+            /* Update neighbors' public channel phases. */
             update_neighbor_pubchan(gnrc_netdev);
-
-            gnrc_netdev->gomach.need_update = true;
-
-        } break;
-
-        /********************************************************/
-        case IQUEUEMAC_EVENT_RTT_START: {
-            gnrc_netdev->gomach.duty_cycle_started = true;
             gnrc_netdev->gomach.need_update = true;
         } break;
-
-        default: break;
-
+        default: {
+            LOG_ERROR("ERROR: [GOMACH] error RTT message type\n");
+            break;
+        }
     }
-
 }
 
 static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
@@ -359,6 +349,7 @@ static void gomach_bcast_end(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_bcast_update(gnrc_netdev_t *gnrc_netdev)
 {
+    /* State machine of GoMacH's broadcast procedure. */
     switch (gnrc_netdev->tx.bcast_state) {
         case GNRC_GOMACH_BCAST_INIT: {
             gomach_bcast_init(gnrc_netdev);
@@ -431,7 +422,7 @@ static void gomach_init_end(gnrc_netdev_t *gnrc_netdev)
 
     /* Start duty-cycle scheme. */
     gnrc_netdev->gomach.duty_cycle_started = false;
-    rtt_handler(IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE, gnrc_netdev);
+    _gomach_rtt_handler(GOMACH_EVENT_RTT_NEW_CYCLE, gnrc_netdev);
     gnrc_netdev->gomach.need_update = true;
 }
 
@@ -879,6 +870,7 @@ static void gomach_t2k_end(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_t2k_update(gnrc_netdev_t *gnrc_netdev)
 {
+    /* State machine of GoMacH's t2k (transmit to phase-known device) procedure. */
     switch (gnrc_netdev->tx.t2k_state) {
         case GNRC_GOMACH_T2K_INIT: {
             gomach_t2k_init(gnrc_netdev);
@@ -1299,6 +1291,7 @@ static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_t2u_update(gnrc_netdev_t *gnrc_netdev)
 {
+    /* State machine of GoMacH's t2u (transmit to phase-unknown device) procedure. */
     switch (gnrc_netdev->tx.t2u_state) {
         case GNRC_GOMACH_T2U_INIT: {
         	gomach_t2u_init(gnrc_netdev);
@@ -1345,7 +1338,7 @@ static void _gomach_phase_backoff(gnrc_netdev_t *gnrc_netdev)
     alarm = gnrc_netdev->gomach.last_wakeup +
             RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US) +
             gnrc_netdev->gomach.backoff_phase_ticks;
-    rtt_set_alarm(alarm, rtt_cb, (void *) IQUEUEMAC_EVENT_RTT_R_NEW_CYCLE);
+    rtt_set_alarm(alarm, rtt_cb, (void *) GOMACH_EVENT_RTT_NEW_CYCLE);
 
     gnrc_netdev->gomach.phase_changed = true;
     LOG_INFO("INFO: [GOMACH] phase backoffed: %lu us.\n",
@@ -1730,6 +1723,7 @@ static void gomach_update(gnrc_netdev_t *gnrc_netdev)
 {
     switch (gnrc_netdev->gomach.basic_state) {
         case GNRC_GOMACH_INIT: {
+            /* State machine of GoMacH's initialization procedure. */
             switch (gnrc_netdev->gomach.init_state) {
                 case GNRC_GOMACH_INIT_PREPARE: {
                     gomach_init_prepare(gnrc_netdev);
@@ -1752,6 +1746,7 @@ static void gomach_update(gnrc_netdev_t *gnrc_netdev)
             break;
         }
         case GNRC_GOMACH_LISTEN: {
+            /* State machine of GoMacH's duty-cycled listen procedure. */
             switch (gnrc_netdev->rx.listen_state) {
                 case GNRC_GOMACH_LISTEN_CP_INIT: {
                     gomach_listen_init(gnrc_netdev);
@@ -1802,6 +1797,7 @@ static void gomach_update(gnrc_netdev_t *gnrc_netdev)
             break;
         }
         case GNRC_GOMACH_TRANSMIT: {
+            /* State machine of GoMacH's basic transmission scheme. */
             switch (gnrc_netdev->tx.transmit_state) {
                 case GNRC_GOMACH_TRANS_TO_UNKNOWN: {
                     gomach_t2u_update(gnrc_netdev);
@@ -2045,7 +2041,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
 
             /**************************************iqueue-mac********************************************/
             case IQUEUEMAC_EVENT_RTT_TYPE: {
-                rtt_handler(msg.content.value, gnrc_netdev);
+                _gomach_rtt_handler(msg.content.value, gnrc_netdev);
             } break;
 
             case IQUEUEMAC_EVENT_TIMEOUT_TYPE: {
