@@ -54,7 +54,7 @@
 
 #define NETDEV_NETAPI_MSG_QUEUE_SIZE 8
 
-static kernel_pid_t iqueuemac_pid;
+static kernel_pid_t gomach_pid;
 
 static void gomach_init(gnrc_netdev_t *gnrc_netdev)
 {
@@ -109,7 +109,7 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->tx.last_tx_neighbor_id = 0;
 
     netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
-    device_state->seq = gnrc_netdev->l2_addr[0];
+    device_state->seq = gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len - 1];
 
     /* Initialize GoMacH's duplicate-check scheme. */
     for (int i = 0; i < IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE; i++) {
@@ -123,7 +123,7 @@ static void _gomach_rtt_cb(void *arg)
 
     msg.content.value = ((uint32_t) arg) & 0xffff;
     msg.type = IQUEUEMAC_EVENT_RTT_TYPE;
-    msg_send(&msg, iqueuemac_pid);
+    msg_send(&msg, gomach_pid);
 
     if (sched_context_switch_request) {
         thread_yield();
@@ -1943,7 +1943,7 @@ static void *_gnrc_gomach_thread(void *args)
 
     /* Store pid globally, so that IRQ can use it to send msg */
     gnrc_netdev->gomach.pid = thread_getpid();
-    iqueuemac_pid = thread_getpid();
+    gomach_pid = thread_getpid();
     /*************************************iqueue-mac**************************************/
 
     /***************************************************************************/

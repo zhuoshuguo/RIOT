@@ -113,22 +113,6 @@ void *_gnrc_pktbuf_find(gnrc_pktsnip_t *pkt, gnrc_nettype_t type);
  */
 //int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info);
 
-
-/* @brief Check if packet is broadcast
- *
- * @param[in]   pkt             packet to check
- */
-
-static inline bool _packet_is_broadcast(gnrc_pktsnip_t *pkt)
-{
-    gnrc_netif_hdr_t *netif_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
-
-    return ((netif_hdr == NULL) ? false :
-            (netif_hdr->flags & GNRC_NETIF_HDR_FLAGS_BROADCAST));
-}
-
-/* TX queue handling */
-
 /* RTT phase calculation */
 uint32_t _ticks_to_phase(uint32_t ticks);
 //uint32_t _phase_to_ticks(uint32_t phase);

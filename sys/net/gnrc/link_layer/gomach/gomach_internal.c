@@ -17,18 +17,17 @@
  * @}
  */
 
-#include "../gomach/include/gomach_internal.h"
-
 #include <stdbool.h>
-#include <periph/rtt.h>
-#include <net/gnrc.h>
+
+#include "periph/rtt.h"
+#include "random.h"
+#include "net/gnrc.h"
+#include "net/gnrc/mac/types.h"
+#include "net/gnrc/mac/mac.h"
 #include "net/gnrc/gomach/hdr.h"
 #include "net/gnrc/gomach/gomach.h"
 #include "net/gnrc/gomach/gomach_types.h"
-#include "random.h"
-#include "net/gnrc/mac/types.h"
-#include "net/gnrc/mac/mac.h"
-#include "net/gnrc/priority_pktqueue.h"
+#include "include/gomach_internal.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
