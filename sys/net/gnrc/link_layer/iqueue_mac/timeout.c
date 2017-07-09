@@ -7,19 +7,19 @@
  */
 
 /**
+ * @ingroup     net_gnrc_gomach
  * @{
- * @ingroup     net_iqueuemac
- * @file
- * @brief       Timeout handling.
  *
- * @author      Daniel Krebs <github@daniel-krebs.net>
+ * @file
+ * @brief       Implementation of GoMacH's timeout module.
+ *
  * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  * @}
  */
 
 #include <xtimer.h>
-#include "net/gnrc/iqueue_mac/iqueue_mac.h"
 
+#include "net/gnrc/iqueue_mac/iqueue_mac.h"
 #include "net/gnrc/iqueue_mac/timeout.h"
 #include "net/gnrc/iqueue_mac/iqueuemac_types.h"
 

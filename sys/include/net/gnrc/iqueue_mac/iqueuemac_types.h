@@ -7,15 +7,13 @@
  */
 
 /**
- * @defgroup    net_iqueue_mac
- * @ingroup     net
- * @brief       Internal types of iqueue_mac
+ * @ingroup     net_gnrc_gomach
  * @{
  *
  * @file
- * @brief       Internal types used by the iqueue_mac protocol
- *
- * @author      Shuguo Zhuo <shuguo.zhuo@inria.fr>
+ * @brief       Internal types of GoMacH
+ * @internal
+ * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  */
 
 #ifndef GNRC_IQUEUEMAC_TYPES_H_

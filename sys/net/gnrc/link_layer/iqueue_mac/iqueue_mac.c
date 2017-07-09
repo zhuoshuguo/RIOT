@@ -7,12 +7,13 @@
  */
 
 /**
+ * @ingroup     net_gnrc_gomach
  * @{
- * @ingroup     net_iqueue_mac
- * @file
- * @brief       implementation of iqueue_mac
  *
- * @author      Shuguo Zhuo <shuguo.zhuo@iniria.fr>
+ * @file
+ * @brief       Implementation of GoMacH
+ *
+ * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  * @}
  */
 
@@ -55,42 +56,29 @@
 
 static kernel_pid_t iqueuemac_pid;
 
-void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
+static void gomach_init(gnrc_netdev_t *gnrc_netdev)
 {
-
+    /* Get the MAC address of the device. */
     gnrc_netdev->l2_addr_len = gnrc_netdev->dev->driver->get(gnrc_netdev->dev,
                                                              NETOPT_ADDRESS_LONG,
                                                              gnrc_netdev->l2_addr,
                                                              sizeof(gnrc_netdev->l2_addr));
 
-    //printf("gomach: gomach's own addrs is: %d, %d . \n ", gomach->own_addr.addr[1], gomach->own_addr.addr[0]);
-
-    gnrc_netdev->gomach.basic_state = GNRC_GOMACH_INIT;  //GNRC_GOMACH_LISTEN;
+    /* Initialize GoMacH's state machines. */
+    gnrc_netdev->gomach.basic_state = GNRC_GOMACH_INIT;
     gnrc_netdev->gomach.init_state = GNRC_GOMACH_INIT_PREPARE;
-
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
     gnrc_netdev->tx.transmit_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
-
-    gnrc_netdev->rx.enter_new_cycle = false;
-
-    gnrc_netdev->rx.router_vtdma_mana.sub_channel_seq = 26;
-
-    gnrc_netdev->gomach.subchannel_occu_flags = 0;
-
-    /*** initiate the sub_channel_num  ***/
-    //uint16_t random_channel = gomach->own_addr.addr[0] % 15;
-    //gomach->sub_channel_num = 11 + random_channel;
-    gnrc_netdev->gomach.sub_channel_num = 13;
-
-    gnrc_netdev->gomach.pub_channel_1 = 26;
-    gnrc_netdev->gomach.pub_channel_2 = 11;
-    gnrc_netdev->gomach.cur_pub_channel = gnrc_netdev->gomach.pub_channel_1;
-
     gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_INIT;
     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_INIT;
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_INIT;
 
-    gnrc_netdev->tx.no_ack_counter = 0;
+    /* Initialize GoMacH's channels. */
+    gnrc_netdev->gomach.sub_channel_num = 13;
+    gnrc_netdev->gomach.pub_channel_1 = 26;
+    gnrc_netdev->gomach.pub_channel_2 = 11;
+    gnrc_netdev->gomach.cur_pub_channel = gnrc_netdev->gomach.pub_channel_1;
+    gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
 
     /* Enable RX-start and TX-started and TX-END interrupts  */
     netopt_enable_t enable = NETOPT_ENABLE;
@@ -98,31 +86,18 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_TX_START_IRQ, &enable, sizeof(enable));
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_TX_END_IRQ, &enable, sizeof(enable));
 
-    /* Enable preloading, so packet will only be sent when netdev state will be
-     * set to NETOPT_STATE_TX */
-    //gomach->netdev->dev->driver->set(gomach->netdev->dev, NETOPT_PRELOADING, &enable, sizeof(enable));
-
     /* Initialize broadcast sequence number. This at least differs from board
      * to board */
-    gnrc_netdev->tx.broadcast_seq = gnrc_netdev->l2_addr[0];
-
-    /* First neighbour queue is supposed to be broadcast queue */
-    //int broadcast_queue_id = _alloc_neighbour(&gnrc_netdev->gomach);
-    //assert(broadcast_queue_id == 0);
-
-    /* Setup broadcast tx queue */
-    //uint8_t broadcast_addr[] = {0xff, 0xff};
-    //_init_neighbour(_get_neighbour(gnrc_netdev->gomach, 0), broadcast_addr, sizeof(broadcast_addr));
-
-    /* Initialize receive packet queue
-       packet_queue_init(&(gomach->rx.queue),
-                      gomach->rx._queue_nodes,
-                      (sizeof(gomach->rx._queue_nodes) / sizeof(packet_queue_node_t)));
-     */
+    gnrc_netdev->tx.broadcast_seq = gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len - 1];
 
     /* Reset all timeouts just to be sure */
     iqueuemac_reset_timeouts(&gnrc_netdev->gomach);
 
+    /* Initialize GoMacH's other key parameters. */
+    gnrc_netdev->tx.no_ack_counter = 0;
+    gnrc_netdev->rx.enter_new_cycle = false;
+    gnrc_netdev->rx.router_vtdma_mana.sub_channel_seq = 26;
+    gnrc_netdev->gomach.subchannel_occu_flags = 0;
     gnrc_netdev_gomach_set_pkt_received(gnrc_netdev, false);
     gnrc_netdev->gomach.need_update = false;
     gnrc_netdev->gomach.duty_cycle_started = false;
@@ -130,20 +105,19 @@ void iqueuemac_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.send_beacon_fail = false;
     gnrc_netdev->gomach.rx_memory_full = false;
     gnrc_netdev->gomach.phase_backoff = false;
-
     gnrc_netdev->rx.check_dup_pkt.queue_head = 0;
     gnrc_netdev->tx.last_tx_neighbor_id = 0;
 
     netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
     device_state->seq = gnrc_netdev->l2_addr[0];
 
+    /* Initialize GoMacH's duplicate-check scheme. */
     for (int i = 0; i < IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE; i++) {
         gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
     }
-
 }
 
-static void rtt_cb(void *arg)
+static void _gomach_rtt_cb(void *arg)
 {
     msg_t msg;
 
@@ -162,7 +136,7 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
 
     switch (event & 0xffff) {
         case GOMACH_EVENT_RTT_NEW_CYCLE: {
-            /* A new cycle starts. */
+            /* Start duty-cycle scheme. */
             if (gnrc_netdev->gomach.duty_cycle_started == false) {
                 gnrc_netdev->gomach.duty_cycle_started = true;
                 rtt_clear_alarm();
@@ -170,7 +144,8 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
                 gnrc_netdev->gomach.last_wakeup = rtt_get_counter();
             }
             else {
-                /* Record the new cycle's starting time. */
+                /* The duty-cycle scheme has already started,
+                 * record the new cycle's starting time. */
                 gnrc_netdev->gomach.last_wakeup = rtt_get_alarm();
                 gnrc_netdev->rx.enter_new_cycle = true;
             }
@@ -178,7 +153,7 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
             /* Set next cycle's starting time. */
             alarm = gnrc_netdev->gomach.last_wakeup +
                     RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-            rtt_set_alarm(alarm, rtt_cb, (void *) GOMACH_EVENT_RTT_NEW_CYCLE);
+            rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GOMACH_EVENT_RTT_NEW_CYCLE);
 
             /* Update neighbors' public channel phases. */
             update_neighbor_pubchan(gnrc_netdev);
@@ -1338,7 +1313,7 @@ static void _gomach_phase_backoff(gnrc_netdev_t *gnrc_netdev)
     alarm = gnrc_netdev->gomach.last_wakeup +
             RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US) +
             gnrc_netdev->gomach.backoff_phase_ticks;
-    rtt_set_alarm(alarm, rtt_cb, (void *) GOMACH_EVENT_RTT_NEW_CYCLE);
+    rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GOMACH_EVENT_RTT_NEW_CYCLE);
 
     gnrc_netdev->gomach.phase_changed = true;
     LOG_INFO("INFO: [GOMACH] phase backoffed: %lu us.\n",
@@ -1988,7 +1963,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
     uint16_t src_len = 8;
     dev->driver->set(dev, NETOPT_SRC_LEN, &src_len, sizeof(src_len));
 
-    iqueuemac_init(gnrc_netdev);
+    gomach_init(gnrc_netdev);
 
     uint32_t seed;
     seed = (uint32_t)gnrc_netdev->l2_addr[0];

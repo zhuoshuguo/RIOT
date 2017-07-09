@@ -7,22 +7,20 @@
  */
 
 /**
- * @defgroup    net_iqueue_mac traffic adaptive MAC
- * @ingroup     net
- * @brief       Internal functions if iqueue_mac
+ * @ingroup     net_gnrc_gomach
  * @{
  *
  * @file
- * @brief       Interface definition for internal functions of iqueue_mac protocol
- *
- * @author      Daniel Krebs <github@daniel-krebs.net>
- * @author      Shuguo Zhuo <shuguo.zhuo@inria.fr>
+ * @brief       GoMacH's internal functions.
+ * @internal
+ * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  */
 
 #ifndef GNRC_IQUEUEMAC_INTERNAL_H_
 #define GNRC_IQUEUEMAC_INTERNAL_H_
 
 #include <stdint.h>
+
 #include "periph/rtt.h"
 #include "net/gnrc/netdev.h"
 #include "net/gnrc/iqueue_mac/iqueuemac_types.h"

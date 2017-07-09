@@ -7,19 +7,20 @@
  */
 
 /**
+ * @ingroup     net_gnrc_gomach
  * @{
- * @ingroup     net_iqueuemac
- * @file
- * @brief       Internal functions of iqueue_mac
  *
- * @author      Daniel Krebs <github@daniel-krebs.net>
- * @author      shuguo Zhuo <shuguo.zhuo@inria.fr>
+ * @file
+ * @brief       Implementation of GoMacH's internal functions.
+ *
+ * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  * @}
  */
 
 #include <stdbool.h>
 #include <periph/rtt.h>
 #include <net/gnrc.h>
+
 #include "random.h"
 #include "net/gnrc/mac/types.h"
 #include "net/gnrc/mac/mac.h"

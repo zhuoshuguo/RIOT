@@ -7,14 +7,14 @@
  */
 
 /**
- * @defgroup    net_iqueue_mac traffic adaptive MAC
+ * @defgroup    net_gnrc_gomach A traffic-adaptive multi-channel MAC
  * @ingroup     net
- * @brief       Traffic adaptive MAC protocol that allows for duty cycling to save
- *              energy.
+ * @brief       A traffic adaptive MAC protocol that provides high traffic adaptability,
+ *              high energy efficiency and high robustness.
  * @{
  *
  * @file
- * @brief       Interface definition for the iqueue_mac protocol
+ * @brief       Implementation of GoMacH protocol
  *
  * @author      Shuguo Zhuo <shuguo.zhuo@inria.fr>
  */

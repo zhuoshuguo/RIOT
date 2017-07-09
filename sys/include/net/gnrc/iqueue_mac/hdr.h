@@ -7,14 +7,13 @@
  */
 
 /**
- * @defgroup    net_iqueue_mac traffic adaptive MAC layer
- * @ingroup     net
+ * @ingroup     net_gnrc_gomach
  * @{
  *
  * @file
- * @brief       Header definition of iqueue_mac protocol
- *
- * @author      Shuguo Zhuo <shuguo.zhuo@inria.fr>
+ * @brief       Header definition of GoMacH
+ * @internal
+ * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  */
 
 #ifndef GNRC_IQUEUEMAC_HDR_H_

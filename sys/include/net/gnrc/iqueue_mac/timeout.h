@@ -7,14 +7,13 @@
  */
 
 /**
+ * @ingroup     net_gnrc_gomach
  * @{
- * @ingroup     net_iqueuemac
- * @file
- * @brief       Timeout handling.
  *
- * @author      Daniel Krebs <github@daniel-krebs.net>
- * @author      Shuguo Zhuo <shuguo.zhuo@inria.fr>
- * @}
+ * @file
+ * @brief       Timeout handling of GoMacH.
+ * @internal
+ * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  */
 
 #ifndef IQUEUEMAC_TIMEOUT_H
@@ -22,10 +21,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <msg.h>
-#include <xtimer.h>
 
-//#include "include/iqueue_types.h"
+#include "msg.h"
+#include "xtimer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,3 +83,4 @@ void iqueuemac_timeout_make_expire(gomach_timeout_t *timeout);
 #endif
 
 #endif /* IQUEUEMAC_TIMEOUT_H */
+/** @} */
