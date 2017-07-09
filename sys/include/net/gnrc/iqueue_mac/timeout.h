@@ -66,17 +66,17 @@ typedef struct {
 
 #define IQUEUEMAC_TIMEOUT_INIT  { {}, {}, false, TIMEOUT_DISABLED }
 
-void iqueuemac_set_timeout(gomach_t *iqueuemac, gomach_timeout_type_t type, uint32_t offset);
+void gomach_set_timeout(gomach_t *iqueuemac, gomach_timeout_type_t type, uint32_t offset);
 
-void iqueuemac_clear_timeout(gomach_t *iqueuemac, gomach_timeout_type_t type);
+void gomach_clear_timeout(gomach_t *iqueuemac, gomach_timeout_type_t type);
 
-bool iqueuemac_timeout_is_running(gomach_t *iqueuemac, gomach_timeout_type_t type);
+bool gomach_timeout_is_running(gomach_t *iqueuemac, gomach_timeout_type_t type);
 
-bool iqueuemac_timeout_is_expired(gomach_t *iqueuemac, gomach_timeout_type_t type);
+bool gomach_timeout_is_expired(gomach_t *iqueuemac, gomach_timeout_type_t type);
 
-void iqueuemac_reset_timeouts(gomach_t *iqueuemac);
+void gomach_reset_timeouts(gomach_t *iqueuemac);
 
-void iqueuemac_timeout_make_expire(gomach_timeout_t *timeout);
+void gomach_timeout_make_expire(gomach_timeout_t *timeout);
 
 #ifdef __cplusplus
 }

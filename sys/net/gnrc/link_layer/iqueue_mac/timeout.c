@@ -67,7 +67,7 @@ static int _iqueuemac_find_timeout(gomach_t *gomach, gomach_timeout_type_t type)
 
 /******************************************************************************/
 
-inline bool iqueuemac_timeout_is_running(gomach_t *gomach, gomach_timeout_type_t type)
+inline bool gomach_timeout_is_running(gomach_t *gomach, gomach_timeout_type_t type)
 {
     assert(gomach);
     return (_iqueuemac_find_timeout(gomach, type) >= 0);
@@ -75,7 +75,7 @@ inline bool iqueuemac_timeout_is_running(gomach_t *gomach, gomach_timeout_type_t
 
 /******************************************************************************/
 
-bool iqueuemac_timeout_is_expired(gomach_t *gomach, gomach_timeout_type_t type)
+bool gomach_timeout_is_expired(gomach_t *gomach, gomach_timeout_type_t type)
 {
     assert(gomach);
 
@@ -95,7 +95,7 @@ gomach_timeout_t *_iqueuemac_acquire_timeout(gomach_t *gomach, gomach_timeout_ty
 {
     assert(gomach);
 
-    if (iqueuemac_timeout_is_running(gomach, type)) {
+    if (gomach_timeout_is_running(gomach, type)) {
         return NULL;
     }
 
@@ -110,7 +110,7 @@ gomach_timeout_t *_iqueuemac_acquire_timeout(gomach_t *gomach, gomach_timeout_ty
 
 /******************************************************************************/
 
-void iqueuemac_timeout_make_expire(gomach_timeout_t *timeout)
+void gomach_timeout_make_expire(gomach_timeout_t *timeout)
 {
     assert(timeout);
 
@@ -120,7 +120,7 @@ void iqueuemac_timeout_make_expire(gomach_timeout_t *timeout)
 
 /******************************************************************************/
 
-void iqueuemac_clear_timeout(gomach_t *gomach, gomach_timeout_type_t type)
+void gomach_clear_timeout(gomach_t *gomach, gomach_timeout_type_t type)
 {
     assert(gomach);
 
@@ -132,7 +132,7 @@ void iqueuemac_clear_timeout(gomach_t *gomach, gomach_timeout_type_t type)
 
 /******************************************************************************/
 
-void iqueuemac_set_timeout(gomach_t *gomach, gomach_timeout_type_t type, uint32_t offset)
+void gomach_set_timeout(gomach_t *gomach, gomach_timeout_type_t type, uint32_t offset)
 {
     assert(gomach);
 
@@ -155,7 +155,7 @@ void iqueuemac_set_timeout(gomach_t *gomach, gomach_timeout_type_t type, uint32_
 
 /******************************************************************************/
 
-void iqueuemac_reset_timeouts(gomach_t *gomach)
+void gomach_reset_timeouts(gomach_t *gomach)
 {
     assert(gomach);
 
