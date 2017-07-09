@@ -34,11 +34,11 @@
 #include "net/netdev.h"
 #include "net/gnrc/netdev.h"
 #include "net/gnrc/mac/internal.h"
-#include "net/gnrc/iqueue_mac/iqueue_mac.h"
-#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
 #include "net/gnrc/netdev/ieee802154.h"
-#include "include/iqueuemac_internal.h"
-#include "net/gnrc/iqueue_mac/timeout.h"
+#include "net/gnrc/gomach/gomach.h"
+#include "net/gnrc/gomach/gomach_types.h"
+#include "net/gnrc/gomach/gomach_timeout.h"
+#include "include/gomach_internal.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
@@ -186,7 +186,7 @@ static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
     iqueuemac_broadcast_hdr.seq_nr = gnrc_netdev->tx.broadcast_seq;
     pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_broadcast_hdr,
                                 sizeof(iqueuemac_broadcast_hdr),
-                                GNRC_NETTYPE_IQUEUEMAC);
+                                GNRC_NETTYPE_GOMACH);
     if (pkt->next == NULL) {
         /* Make append payload after netif header again */
         gnrc_netdev->tx.packet->next = payload;

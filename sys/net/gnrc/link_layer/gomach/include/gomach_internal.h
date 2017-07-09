@@ -21,9 +21,9 @@
 
 #include <stdint.h>
 
+#include "net/gnrc/gomach/gomach_types.h"
 #include "periph/rtt.h"
 #include "net/gnrc/netdev.h"
-#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
 
 #ifdef __cplusplus
 extern "C" {

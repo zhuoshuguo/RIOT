@@ -21,7 +21,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "net/gnrc/iqueue_mac/iqueue_mac.h"
+
+#include "gomach.h"
 
 #ifdef __cplusplus
 extern "C" {

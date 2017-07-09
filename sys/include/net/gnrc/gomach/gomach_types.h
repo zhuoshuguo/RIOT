@@ -26,9 +26,9 @@
 #include <net/gnrc.h>
 #include <net/netdev.h>
 
-#include "net/gnrc/iqueue_mac/iqueue_mac.h"
-#include "net/gnrc/iqueue_mac/hdr.h"
-#include "net/gnrc/iqueue_mac/timeout.h"
+#include "net/gnrc/gomach/hdr.h"
+#include "net/gnrc/gomach/gomach.h"
+#include "net/gnrc/gomach/gomach_timeout.h"
 
 #ifdef __cplusplus
 extern "C" {

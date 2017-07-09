@@ -34,6 +34,8 @@
 
 #include "kernel_types.h"
 #include "net/netdev.h"
+
+#include "gomach/gomach_types.h"
 #include "net/gnrc.h"
 #include "net/gnrc/mac/types.h"
 #include "net/ieee802154.h"
@@ -42,7 +44,6 @@
 #include "net/csma_sender.h"
 #endif
 
-#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -162,7 +163,7 @@ typedef struct gnrc_netdev {
     gnrc_lwmac_t lwmac;
 #endif
 
-#ifdef MODULE_GNRC_IQUEUEMAC
+#ifdef MODULE_GNRC_GOMACH
     gomach_t gomach;
 #endif
 #endif /* MODULE_GNRC_MAC */

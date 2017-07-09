@@ -17,11 +17,10 @@
  * @}
  */
 
-#include <xtimer.h>
-
-#include "net/gnrc/iqueue_mac/iqueue_mac.h"
-#include "net/gnrc/iqueue_mac/timeout.h"
-#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
+#include "xtimer.h"
+#include "net/gnrc/gomach/gomach.h"
+#include "net/gnrc/gomach/gomach_types.h"
+#include "net/gnrc/gomach/gomach_timeout.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"

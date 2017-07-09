@@ -30,7 +30,7 @@
 #include "net/ieee802154.h"
 #include "net/gnrc/mac/mac.h"
 #include "net/gnrc/lwmac/types.h"
-#include "net/gnrc/iqueue_mac/iqueuemac_types.h"
+#include "net/gnrc/gomach/gomach_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -76,7 +76,7 @@ typedef struct {
     uint8_t rx_bad_exten_count;   /**< Count how many unnecessary RX extensions have been executed */
 #endif
 
-#ifdef MODULE_GNRC_IQUEUEMAC
+#ifdef MODULE_GNRC_GOMACH
     gnrc_gomach_listen_state_t listen_state;
     bool enter_new_cycle;
     rx_slots_schedule_unit rx_register_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
@@ -119,7 +119,7 @@ typedef struct {
     gnrc_priority_pktqueue_t queue;                  /**< TX queue for this particular Neighbor */
 #endif /* (GNRC_MAC_TX_QUEUE_SIZE != 0) || defined(DOXYGEN) */
 
-#ifdef MODULE_GNRC_IQUEUEMAC
+#ifdef MODULE_GNRC_GOMACH
     uint16_t pub_chanseq;                            /**< Neighbor's current public channel sequence */
     uint32_t cp_phase;                               /**< Neighbor's wakeup phase */
     iqueuemac_type_t mac_type;                       /**< UNKONW when this neighbor is not phase-locked yet*/
@@ -181,7 +181,6 @@ typedef struct {
     gnrc_pktsnip_t *packet;                                             /**< currently scheduled packet for sending */
 #endif /* (GNRC_MAC_TX_QUEUE_SIZE != 0) || defined(DOXYGEN) */
 
-
 #ifdef MODULE_GNRC_LWMAC
     gnrc_lwmac_tx_state_t state;       /**< LWMAC specific internal transmission state */
     uint32_t wr_sent;                  /**< Count how many WRs were sent until WA received */
@@ -191,7 +190,7 @@ typedef struct {
     uint8_t tx_retry_count;            /**< Count how many Tx-retrials have been executed before packet drop */
 #endif
 
-#ifdef MODULE_GNRC_IQUEUEMAC
+#ifdef MODULE_GNRC_GOMACH
     gnrc_gomach_transmit_state_t transmit_state;
     gnrc_gomach_bcast_state_t bcast_state;
 	gnrc_gomach_t2k_state_t t2k_state;

@@ -1,3 +1,3 @@
-MODULE = gnrc_iqueuemac
+MODULE = gnrc_gomach
 
 include $(RIOTBASE)/Makefile.base

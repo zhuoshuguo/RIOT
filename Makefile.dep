@@ -18,7 +18,7 @@ ifneq (,$(filter gnrc_mac,$(USEMODULE)))
   USEMODULE += csma_sender
 endif
 
-ifneq (,$(filter gnrc_iqueuemac,$(USEMODULE)))
+ifneq (,$(filter gnrc_gomach,$(USEMODULE)))
   USEMODULE += gnrc_netdev
   USEMODULE += random
   USEMODULE += xtimer

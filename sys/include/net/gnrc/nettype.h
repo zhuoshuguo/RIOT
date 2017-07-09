@@ -60,8 +60,8 @@ typedef enum {
 	  * @{
 	  * @name Link layer
 	  */
-#ifdef MODULE_GNRC_IQUEUEMAC
-	GNRC_NETTYPE_IQUEUEMAC,         /**< Protocol is iQueue-MAC */
+#ifdef MODULE_GNRC_GOMACH
+	GNRC_NETTYPE_GOMACH,         /**< Protocol is GoMacH */
 #endif
 	 /**
 	  * @}
