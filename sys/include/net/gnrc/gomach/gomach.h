@@ -19,10 +19,10 @@
  * @author      Shuguo Zhuo <shuguo.zhuo@inria.fr>
  */
 
-#ifndef GNRC_IQUEUE_MAC_H
-#define GNRC_IQUEUE_MAC_H
+#ifndef NET_GNRC_GOMACH_GOMACH_H
+#define NET_GNRC_GOMACH_GOMACH_H
 
-#include <kernel_types.h>
+#include "kernel_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -177,12 +177,12 @@ typedef enum {
  * @return                  -EINVAL if creation of thread fails
  * @return                  -ENODEV if *dev* is invalid
  */
-kernel_pid_t gnrc_iqueuemac_init(char *stack, int stacksize, char priority,
+kernel_pid_t gnrc_gomach_init(char *stack, int stacksize, char priority,
                                  const char *name, gnrc_netdev_t *dev);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* GNRC_LWMAC_H */
+#endif /* NET_GNRC_GOMACH_GOMACH_H */
 /** @} */

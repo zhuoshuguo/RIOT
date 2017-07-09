@@ -16,14 +16,14 @@
  * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  */
 
-#ifndef GNRC_IQUEUEMAC_INTERNAL_H_
-#define GNRC_IQUEUEMAC_INTERNAL_H_
+#ifndef GOMACH_INTERNAL_H
+#define GOMACH_INTERNAL_H
 
 #include <stdint.h>
 
-#include "net/gnrc/gomach/gomach_types.h"
 #include "periph/rtt.h"
 #include "net/gnrc/netdev.h"
+#include "net/gnrc/gomach/gomach_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -198,5 +198,5 @@ void iqueuemac_broadcast_receive_packet_process(gnrc_netdev_t *gnrc_netdev);
 }
 #endif
 
-#endif /* GNRC_IQUEUEMAC_INTERNAL_H_ */
+#endif /* GOMACH_INTERNAL_H */
 /** @} */

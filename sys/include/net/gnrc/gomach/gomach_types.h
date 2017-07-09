@@ -16,16 +16,16 @@
  * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  */
 
-#ifndef GNRC_IQUEUEMAC_TYPES_H_
-#define GNRC_IQUEUEMAC_TYPES_H_
+#ifndef NET_GNRC_GOMACH_GOMACH_TYPES_H
+#define NET_GNRC_GOMACH_GOMACH_TYPES_H
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <kernel_types.h>
-#include <xtimer.h>
-#include <net/gnrc.h>
-#include <net/netdev.h>
 
+#include "kernel_types.h"
+#include "xtimer.h"
+#include "net/gnrc.h"
+#include "net/netdev.h"
 #include "net/gnrc/gomach/hdr.h"
 #include "net/gnrc/gomach/gomach.h"
 #include "net/gnrc/gomach/gomach_timeout.h"
@@ -205,5 +205,5 @@ typedef struct gomach {
 }
 #endif
 
-#endif /* GNRC_IQUEUEMAC_TYPES_H_ */
+#endif /* NET_GNRC_GOMACH_GOMACH_TYPES_H */
 /** @} */

@@ -67,11 +67,11 @@ void auto_init_at86rf2xx(void)
                             "at86rf2xx-lwmac",
                             &gnrc_adpt[i]);
 #else ifdef MODULE_GNRC_GOMACH
-            gnrc_iqueuemac_init(_at86rf2xx_stacks[i],
-                              AT86RF2XX_MAC_STACKSIZE,
-                              AT86RF2XX_MAC_PRIO,
-                              "at86rf2xx-iqueuemac",
-                              &gnrc_adpt[i]);
+            gnrc_gomach_init(_at86rf2xx_stacks[i],
+                             AT86RF2XX_MAC_STACKSIZE,
+                             AT86RF2XX_MAC_PRIO,
+                             "at86rf2xx-iqueuemac",
+                             &gnrc_adpt[i]);
 #else
             gnrc_netdev_init(_at86rf2xx_stacks[i],
                              AT86RF2XX_MAC_STACKSIZE,

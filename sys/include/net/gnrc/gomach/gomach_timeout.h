@@ -16,8 +16,8 @@
  * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  */
 
-#ifndef IQUEUEMAC_TIMEOUT_H
-#define IQUEUEMAC_TIMEOUT_H
+#ifndef NET_GNRC_GOMACH_GOMACH_TIMEOUT_H
+#define NET_GNRC_GOMACH_GOMACH_TIMEOUT_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -82,5 +82,5 @@ void gomach_timeout_make_expire(gomach_timeout_t *timeout);
 }
 #endif
 
-#endif /* IQUEUEMAC_TIMEOUT_H */
+#endif /* NET_GNRC_GOMACH_GOMACH_TIMEOUT_H */
 /** @} */

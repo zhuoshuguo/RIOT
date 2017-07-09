@@ -1916,7 +1916,7 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
  *
  * @return          never returns
  */
-static void *_gnrc_iqueuemac_thread(void *args)
+static void *_gnrc_gomach_thread(void *args)
 {
 
     gnrc_netdev_t *gnrc_netdev = (gnrc_netdev_t *)args;
@@ -2053,7 +2053,7 @@ static void *_gnrc_iqueuemac_thread(void *args)
     return NULL;
 }
 
-kernel_pid_t gnrc_iqueuemac_init(char *stack, int stacksize, char priority,
+kernel_pid_t gnrc_gomach_init(char *stack, int stacksize, char priority,
                                  const char *name, gnrc_netdev_t *gnrc_netdev)
 {
     kernel_pid_t res;
@@ -2065,7 +2065,7 @@ kernel_pid_t gnrc_iqueuemac_init(char *stack, int stacksize, char priority,
 
     /* create new gnrc_netdev thread */
     res = thread_create(stack, stacksize, priority, THREAD_CREATE_STACKTEST,
-                        _gnrc_iqueuemac_thread, (void *)gnrc_netdev, name);
+                        _gnrc_gomach_thread, (void *)gnrc_netdev, name);
     if (res <= 0) {
         return -EINVAL;
     }
