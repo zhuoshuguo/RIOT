@@ -66,18 +66,21 @@ void auto_init_at86rf2xx(void)
                             AT86RF2XX_MAC_PRIO,
                             "at86rf2xx-lwmac",
                             &gnrc_adpt[i]);
-#else ifdef MODULE_GNRC_GOMACH
+#else
+#ifdef MODULE_GNRC_GOMACH
             gnrc_gomach_init(_at86rf2xx_stacks[i],
                              AT86RF2XX_MAC_STACKSIZE,
                              AT86RF2XX_MAC_PRIO,
-                             "at86rf2xx-iqueuemac",
+                             "at86rf2xx-gomach",
                              &gnrc_adpt[i]);
 #else
+
             gnrc_netdev_init(_at86rf2xx_stacks[i],
                              AT86RF2XX_MAC_STACKSIZE,
                              AT86RF2XX_MAC_PRIO,
                              "at86rf2xx",
                              &gnrc_adpt[i]);
+#endif
 #endif
         }
     }
