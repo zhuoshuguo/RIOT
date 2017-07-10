@@ -418,10 +418,12 @@ int _parse_packet(gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *info)
     assert(info != NULL);
     assert(pkt != NULL);
 
-    netif_hdr = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF)->data;
+    netif_hdr = (gnrc_netif_hdr_t *) gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
     if (netif_hdr == NULL) {
         return -1;
     }
+
+    netif_hdr = ((gnrc_pktsnip_t *)netif_hdr)->data;
 
     if (netif_hdr->dst_l2addr_len > sizeof(info->dst_addr)) {
         return -3;
@@ -546,12 +548,13 @@ void iqueuemac_router_queue_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pk
 
     iqueuemac_frame_data_t *iqueuemac_data_hdr;
 
-    iqueuemac_data_hdr = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH)->data;
+    iqueuemac_data_hdr = (iqueuemac_frame_data_t *) gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
 
     if (iqueuemac_data_hdr == NULL) {
         puts("iqueuemac_data_hdr is null");
         return;
     }
+    iqueuemac_data_hdr = ((gnrc_pktsnip_t *) iqueuemac_data_hdr)->data;
 
     int i;
     /* check whether the node has registered or not  */
@@ -849,49 +852,6 @@ void gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
     } /* end of while loop */
 }
 
-void iqueuemac_update_subchannel_occu_flags(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *pa_info)
-{
-
-    uint16_t subchannel_seq, flag;
-
-    subchannel_seq = 0;
-
-    switch (pa_info->header->type) {
-        case FRAMETYPE_BEACON: {
-            iqueuemac_frame_beacon_t *iqueuemac_beacon_hdr;
-            iqueuemac_beacon_hdr = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH))->data;
-            if (iqueuemac_beacon_hdr == NULL) {
-                puts("iqueuemac_beacon_hdr is null");
-                return;
-            }
-            subchannel_seq = (uint16_t)iqueuemac_beacon_hdr->sub_channel_seq;
-            //printf("gomach: received beacon's subchannel is %d .\n", subchannel_seq);
-
-        } break;
-        case FRAMETYPE_ANNOUNCE: {
-            iqueuemac_frame_announce_t *iqueuemac_announce_hdr;
-            iqueuemac_announce_hdr = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH))->data;
-            if (iqueuemac_announce_hdr == NULL) {
-                puts("iqueuemac_announce_hdr is null");
-                return;
-            }
-            subchannel_seq = (uint16_t)iqueuemac_announce_hdr->subchannel_seq;
-            //printf("gomach: received announce's subchannel is %d .\n", subchannel_seq);
-
-        } break;
-        default: break;
-    }
-
-    subchannel_seq = subchannel_seq - 11;
-
-    flag = (1 << subchannel_seq);
-
-    gnrc_netdev->gomach.subchannel_occu_flags = gnrc_netdev->gomach.subchannel_occu_flags | flag;
-    //printf("gomach: subchannel flag is %d .\n", gomach->subchannel_occu_flags);
-
-}
-
-
 void iqueuemac_packet_process_in_init(gnrc_netdev_t *gnrc_netdev)
 {
     gnrc_pktsnip_t *pkt;
@@ -910,7 +870,6 @@ void iqueuemac_packet_process_in_init(gnrc_netdev_t *gnrc_netdev)
 
         switch (receive_packet_info.header->type) {
             case FRAMETYPE_BEACON: {
-                iqueuemac_update_subchannel_occu_flags(gnrc_netdev, pkt, &receive_packet_info);
                 gnrc_pktbuf_release(pkt);
             } break;
 
@@ -935,8 +894,6 @@ void iqueuemac_packet_process_in_init(gnrc_netdev_t *gnrc_netdev)
             } break;
 
             case FRAMETYPE_ANNOUNCE: {
-                iqueuemac_update_subchannel_occu_flags(gnrc_netdev, pkt, &receive_packet_info);
-
                 /*** it seems that this "init_retry" procedure is unnecessary here!! maybe delete it in the future ***/
                 //gomach->router_states.init_retry = true;
                 gnrc_pktbuf_release(pkt);
@@ -1088,12 +1045,14 @@ void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pkts
 
     iqueuemac_frame_preamble_ack_t *iqueuemac_preamble_ack_hdr;
 
-    iqueuemac_preamble_ack_hdr = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH))->data;
+    iqueuemac_preamble_ack_hdr = (iqueuemac_frame_preamble_ack_t *) gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
 
     if (iqueuemac_preamble_ack_hdr == NULL) {
         puts("iqueuemac_preamble_ack_hdr is null");
         return;
     }
+
+    iqueuemac_preamble_ack_hdr = ((gnrc_pktsnip_t *)iqueuemac_preamble_ack_hdr)->data;
 
     /***** update all the necessary information to marked as a known neighbor ****/
     gnrc_netdev->tx.current_neighbor->mac_type = KNOWN;
@@ -1305,7 +1264,7 @@ int gomach_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_ena
 
     /* Insert iqueue-mac header above NETIF header */
     iqueuemac_frame_data_t *iqueuemac_data_hdr_pointer;
-    iqueuemac_data_hdr_pointer = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH))->data;
+    iqueuemac_data_hdr_pointer = (iqueuemac_frame_data_t *) gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
 
     if (iqueuemac_data_hdr_pointer == NULL) {
 
@@ -1444,12 +1403,14 @@ void iqueuemac_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
     uint8_t id_position;
     uint8_t slots_position;
 
-    iqueuemac_beacon_hdr = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH))->data;
+    iqueuemac_beacon_hdr = (iqueuemac_frame_beacon_t *) gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
 
     if (iqueuemac_beacon_hdr == NULL) {
         puts("iqueuemac_beacon_hdr is null");
         return;
     }
+
+    iqueuemac_beacon_hdr = ((gnrc_pktsnip_t *) iqueuemac_beacon_hdr)->data;
 
     schedulelist_size = iqueuemac_beacon_hdr->schedulelist_size;
     gnrc_netdev->tx.vtdma_para.sub_channel_seq = iqueuemac_beacon_hdr->sub_channel_seq;
