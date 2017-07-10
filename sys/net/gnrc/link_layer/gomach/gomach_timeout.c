@@ -25,22 +25,6 @@
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
-/******************************************************************************/
-
-#if ENABLE_DEBUG
-char *iqueuemac_timeout_names[] = {
-    [TIMEOUT_DISABLED]              = "DISABLED",
-    [TIMEOUT_WR]                    = "WR",
-    [TIMEOUT_NO_RESPONSE]           = "NO_RESPONSE",
-    [TIMEOUT_WA]                    = "WA",
-    [TIMEOUT_DATA]                  = "DATA",
-    [TIMEOUT_WAIT_FOR_DEST_WAKEUP]  = "WAIT_FOR_DEST_WAKEUP",
-    [TIMEOUT_WAKEUP_PERIOD]         = "WAKEUP_PERIOD",
-};
-#endif
-
-/******************************************************************************/
-
 static inline void _iqueuemac_clear_timeout(gomach_timeout_t *timeout)
 {
     assert(timeout);
@@ -66,42 +50,42 @@ static int _iqueuemac_find_timeout(gomach_t *gomach, gomach_timeout_type_t type)
 
 /******************************************************************************/
 
-inline bool gomach_timeout_is_running(gomach_t *gomach, gomach_timeout_type_t type)
+inline bool gomach_timeout_is_running(gnrc_netdev_t *netdev, gomach_timeout_type_t type)
 {
-    assert(gomach);
-    return (_iqueuemac_find_timeout(gomach, type) >= 0);
+    assert(netdev);
+    return (_iqueuemac_find_timeout(&netdev->gomach, type) >= 0);
 }
 
 /******************************************************************************/
 
-bool gomach_timeout_is_expired(gomach_t *gomach, gomach_timeout_type_t type)
+bool gomach_timeout_is_expired(gnrc_netdev_t *netdev, gomach_timeout_type_t type)
 {
-    assert(gomach);
+    assert(netdev);
 
-    int index = _iqueuemac_find_timeout(gomach, type);
+    int index = _iqueuemac_find_timeout(&netdev->gomach, type);
     if (index >= 0) {
-        if (gomach->timeouts[index].expired) {
-            _iqueuemac_clear_timeout(&gomach->timeouts[index]);
+        if (netdev->gomach.timeouts[index].expired) {
+            _iqueuemac_clear_timeout(&netdev->gomach.timeouts[index]);
         }
-        return gomach->timeouts[index].expired;
+        return netdev->gomach.timeouts[index].expired;
     }
     return false;
 }
 
 /******************************************************************************/
 
-gomach_timeout_t *_iqueuemac_acquire_timeout(gomach_t *gomach, gomach_timeout_type_t type)
+gomach_timeout_t *_iqueuemac_acquire_timeout(gnrc_netdev_t *netdev, gomach_timeout_type_t type)
 {
-    assert(gomach);
+    assert(netdev);
 
-    if (gomach_timeout_is_running(gomach, type)) {
+    if (gomach_timeout_is_running(netdev, type)) {
         return NULL;
     }
 
     for (unsigned i = 0; i < IQUEUEMAC_TIMEOUT_COUNT; i++) {
-        if (gomach->timeouts[i].type == TIMEOUT_DISABLED) {
-            gomach->timeouts[i].type = type;
-            return &gomach->timeouts[i];
+        if (netdev->gomach.timeouts[i].type == TIMEOUT_DISABLED) {
+        	netdev->gomach.timeouts[i].type = type;
+            return &netdev->gomach.timeouts[i];
         }
     }
     return NULL;
@@ -119,31 +103,31 @@ void gomach_timeout_make_expire(gomach_timeout_t *timeout)
 
 /******************************************************************************/
 
-void gomach_clear_timeout(gomach_t *gomach, gomach_timeout_type_t type)
+void gomach_clear_timeout(gnrc_netdev_t *netdev, gomach_timeout_type_t type)
 {
-    assert(gomach);
+    assert(netdev);
 
-    int index = _iqueuemac_find_timeout(gomach, type);
+    int index = _iqueuemac_find_timeout(&netdev->gomach, type);
     if (index >= 0) {
-        _iqueuemac_clear_timeout(&gomach->timeouts[index]);
+        _iqueuemac_clear_timeout(&netdev->gomach.timeouts[index]);
     }
 }
 
 /******************************************************************************/
 
-void gomach_set_timeout(gomach_t *gomach, gomach_timeout_type_t type, uint32_t offset)
+void gomach_set_timeout(gnrc_netdev_t *netdev, gomach_timeout_type_t type, uint32_t offset)
 {
-    assert(gomach);
+    assert(netdev);
 
     gomach_timeout_t *timeout;
-    if ((timeout = _iqueuemac_acquire_timeout(gomach, type))) {
+    if ((timeout = _iqueuemac_acquire_timeout(netdev, type))) {
         DEBUG("[gomach] Set timeout %s in %" PRIu32 " us\n",
               iqueuemac_timeout_names[type], offset);
         timeout->expired = false;
-        timeout->msg.type = IQUEUEMAC_EVENT_TIMEOUT_TYPE;
+        timeout->msg.type = GNRC_GOMACH_EVENT_TIMEOUT_TYPE;
         timeout->msg.content.ptr = (void *) timeout;
         xtimer_set_msg(&(timeout->timer), offset,
-                       &(timeout->msg), gomach->pid);
+                       &(timeout->msg), netdev->pid);
     }
     else {
 
@@ -154,13 +138,13 @@ void gomach_set_timeout(gomach_t *gomach, gomach_timeout_type_t type, uint32_t o
 
 /******************************************************************************/
 
-void gomach_reset_timeouts(gomach_t *gomach)
+void gomach_reset_timeouts(gnrc_netdev_t *netdev)
 {
-    assert(gomach);
+    assert(netdev);
 
     for (unsigned i = 0; i < IQUEUEMAC_TIMEOUT_COUNT; i++) {
-        if (gomach->timeouts[i].type != TIMEOUT_DISABLED) {
-            _iqueuemac_clear_timeout(&gomach->timeouts[i]);
+        if (netdev->gomach.timeouts[i].type != TIMEOUT_DISABLED) {
+            _iqueuemac_clear_timeout(&netdev->gomach.timeouts[i]);
         }
     }
 }

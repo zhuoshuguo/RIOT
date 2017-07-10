@@ -150,7 +150,10 @@ void gomach_set_ack_req(gnrc_netdev_t *gnrc_netdev, netopt_enable_t ack_req);
 netopt_state_t _get_netdev_state(gnrc_netdev_t *gnrc_netdev);
 //void iqueuemac_set_promiscuousmode(iqueuemac_t* iqueuemac, netopt_enable_t enable);
 void gomach_turn_channel(gnrc_netdev_t *gnrc_netdev, uint16_t channel_num);
-void iqueuemac_set_raddio_to_listen_mode(gnrc_netdev_t *gnrc_netdev);
+
+static inline void gomach_set_raddio_to_listen_mode(gnrc_netdev_t *gnrc_netdev){
+    gomach_turn_on_radio(gnrc_netdev);
+}
 
 bool iqueuemac_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t *pa_info);
 int gomach_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable);

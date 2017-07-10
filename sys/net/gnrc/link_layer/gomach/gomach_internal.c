@@ -202,12 +202,6 @@ void gomach_turn_channel(gnrc_netdev_t *gnrc_netdev, uint16_t channel_num)
                                   sizeof(channel_num));
 }
 
-void iqueuemac_set_raddio_to_listen_mode(gnrc_netdev_t *gnrc_netdev)
-{
-
-    gomach_turn_on_radio(gnrc_netdev);
-}
-
 int gomach_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable)
 {
     netopt_enable_t csma_enable_send;

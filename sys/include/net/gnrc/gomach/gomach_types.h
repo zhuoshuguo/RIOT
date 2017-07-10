@@ -25,10 +25,8 @@
 #include "kernel_types.h"
 #include "xtimer.h"
 #include "net/gnrc.h"
-#include "net/netdev.h"
 #include "net/gnrc/gomach/hdr.h"
 #include "net/gnrc/gomach/gomach.h"
-#include "net/gnrc/gomach/gomach_timeout.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,7 +34,7 @@ extern "C" {
 
 /******************************************************************************/
 
-#define IQUEUEMAC_EVENT_RTT_TYPE            (0x4300)
+#define GNRC_GOMACH_EVENT_RTT_TYPE            (0x4300)
 
 #define IQUEUEMAC_EVENT_RTT_START           (0x4301)
 
@@ -48,7 +46,7 @@ extern "C" {
 #define GOMACH_EVENT_RTT_NEW_CYCLE           (0x4304)
 
 
-#define IQUEUEMAC_EVENT_TIMEOUT_TYPE        (0x4400)
+#define GNRC_GOMACH_EVENT_TIMEOUT_TYPE        (0x4400)
 
 #define IQUEUEMAC_PHASE_UNINITIALIZED (0)
 
@@ -162,11 +160,39 @@ typedef struct {
     bool get_beacon;
 }vtdma_para_t;
 
+typedef enum {
+    TIMEOUT_DISABLED = 0,
+
+    TIMEOUT_BROADCAST_FINISH,
+    TIMEOUT_BROADCAST_INTERVAL,
+    TIMEOUT_PREAMBLE,
+    TIMEOUT_MAX_PREAM_INTERVAL,
+    TIMEOUT_PREAMBLE_DURATION,
+    TIMEOUT_WAIT_CP,
+    TIMEOUT_WAIT_BEACON,
+    TIMEOUT_WAIT_OWN_SLOTS,
+    TIMEOUT_WAIT_RE_PHASE_LOCK,
+    /*****************router******************/
+    TIMEOUT_CP_END,
+    TIMEOUT_CP_MAX,
+    TIMEOUT_WAIT_RX_END,
+    TIMEOUT_VTDMA,
+    /*****************simple-node******************/
+    TIMEOUT_N_CP_DURATION,
+    TIMEOUT_BEACON_END
+
+} gomach_timeout_type_t;
+
+typedef struct {
+    xtimer_t timer;
+    msg_t msg;
+    /* If type != DISABLED, this indicates if timeout has expired */
+    bool expired;
+    gomach_timeout_type_t type;
+} gomach_timeout_t;
+
 /******************************************************************************/
 typedef struct gomach {
-    /* PID of IQUEUEMAC thread */
-    kernel_pid_t pid;
-
     /* Internal state of MAC layer */
     gnrc_gomach_basic_state_t basic_state;
     gnrc_gomach_init_state_t init_state;
