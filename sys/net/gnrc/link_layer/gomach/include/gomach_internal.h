@@ -88,31 +88,19 @@ static inline uint32_t _ticks_to_phase(uint32_t ticks)
 }
 
 uint32_t _phase_now(gnrc_netdev_t *gnrc_netdev);
-uint32_t _ticks_until_phase(gnrc_netdev_t *gnrc_netdev, uint32_t phase); //uint32_t _ticks_until_phase(uint32_t phase);
 
-
-static inline gnrc_mac_tx_neighbor_t *_get_neighbour(gnrc_netdev_t *gnrc_netdev, unsigned int id)
+static inline uint32_t _ticks_until_phase(gnrc_netdev_t *gnrc_netdev, uint32_t phase)
 {
-    return &(gnrc_netdev->tx.neighbors[id]);
+    long int tmp = phase - _phase_now(gnrc_netdev);
+
+    if (tmp < 0) {
+        tmp += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+    }
+
+    return (uint32_t)tmp;
 }
 
 uint32_t _next_inphase_event(uint32_t last, uint32_t interval);
-
-//int _dispatch_defer(gnrc_pktsnip_t* buffer[], gnrc_pktsnip_t* pkt);
-
-//void _dispatch(gnrc_pktsnip_t* buffer[]);
-
-static inline bool _addr_match(l2_addr_t *addr1, l2_addr_t *addr2)
-{
-    assert(addr1);
-    assert(addr2);
-
-    if (addr1->len != addr2->len) {
-        return false;
-    }
-
-    return (memcmp(addr1->addr, addr2->addr, addr1->len) == 0);
-}
 
 void gomach_turn_on_radio(gnrc_netdev_t *gnrc_netdev);
 void gomach_turn_off_radio(gnrc_netdev_t *gnrc_netdev);

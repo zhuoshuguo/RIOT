@@ -51,31 +51,6 @@ uint32_t _phase_now(gnrc_netdev_t *gnrc_netdev)
     return phase_now;
 }
 
-uint32_t _ticks_until_phase(gnrc_netdev_t *gnrc_netdev, uint32_t phase)  //
-{
-    /*
-       uint32_t phase_now;
-       uint32_t wait_phase_duration;
-
-       phase_now = rtt_get_counter();
-
-       if(phase >= phase_now){
-        wait_phase_duration = phase - phase_now;
-       }else{
-        wait_phase_duration = phase_now - phase;
-        wait_phase_duration += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-       }*/
-
-
-    long int tmp = phase - _phase_now(gnrc_netdev); //rtt_get_counter();
-
-    if (tmp < 0) {
-        tmp += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-    }
-
-    return (uint32_t)tmp;
-}
-
 /******************************************************************************/
 
 
@@ -559,8 +534,9 @@ void iqueuemac_router_queue_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pk
     int i;
     /* check whether the node has registered or not  */
     for (i = 0; i < IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT; i++) {
-        if (_addr_match(&gnrc_netdev->rx.rx_register_list[i].node_addr, &pa_info->src_addr)) {
-
+        if (memcmp(&gnrc_netdev->rx.rx_register_list[i].node_addr.addr,
+                   &pa_info->src_addr.addr,
+                   pa_info->src_addr.len) == 0) {
             //iqueuemac_data_hdr->queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x7F;
 
             gnrc_netdev->rx.rx_register_list[i].queue_indicator = iqueuemac_data_hdr->queue_indicator & 0x3F;
@@ -571,7 +547,8 @@ void iqueuemac_router_queue_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pk
 
     /********* the sender has not registered yet   **********/
     for (i = 0; i < IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT; i++) {
-        if ((gnrc_netdev->rx.rx_register_list[i].node_addr.len == 0) || (gnrc_netdev->rx.rx_register_list[i].queue_indicator == 0)) {
+        if ((gnrc_netdev->rx.rx_register_list[i].node_addr.len == 0) ||
+            (gnrc_netdev->rx.rx_register_list[i].queue_indicator == 0)) {
             gnrc_netdev->rx.rx_register_list[i].node_addr.len = pa_info->src_addr.len;
             memcpy(gnrc_netdev->rx.rx_register_list[i].node_addr.addr,
                    pa_info->src_addr.addr,
@@ -590,7 +567,9 @@ bool iqueuemac_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info
     int i;
 
     for (i = 0; i < IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE; i++) {
-        if (_addr_match(&gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr, &pa_info->src_addr)) {
+        if (memcmp(&gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.addr,
+                   &pa_info->src_addr.addr,
+                   pa_info->src_addr.len) == 0) {
             gnrc_netdev->rx.check_dup_pkt.last_nodes[i].life_cycle = 0;
             if (gnrc_netdev->rx.check_dup_pkt.last_nodes[i].seq == pa_info->seq) {
                 return true;
