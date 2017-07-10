@@ -31,6 +31,7 @@
 #include "net/gnrc/mac/mac.h"
 #include "net/gnrc/lwmac/types.h"
 #include "net/gnrc/gomach/gomach_types.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {

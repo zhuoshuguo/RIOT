@@ -29,9 +29,14 @@
 extern "C" {
 #endif
 
-
+/**
+ * @brief   Flag to track if transmission has finished.
+ */
 #define GNRC_NETDEV_GOMACH_INFO_TX_FINISHED         (0x0008U)
 
+/**
+ * @brief   Flag to track if a packet has been successfully received.
+ */
 #define GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED        (0x0010U)
 
 static inline void gnrc_netdev_gomach_set_tx_finish(gnrc_netdev_t *dev, bool tx_finish)
@@ -64,43 +69,6 @@ static inline bool gnrc_netdev_gomach_get_pkt_received(gnrc_netdev_t *dev)
     return (dev->mac_info & GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED);
 }
 
-/* @brief   Type to pass information about parsing */
-typedef struct {
-    iqueuemac_hdr_t *header;    /**< iqueuemac header of packet */
-    l2_addr_t src_addr;         /**< copied source address of packet  */
-    l2_addr_t dst_addr;         /**< copied destination address of packet */
-    uint8_t seq;                /**< seq of the received packet */
-} iqueuemac_packet_info_t;
-
-/* @brief   Next RTT event must be at least this far in the future
- *
- * When setting an RTT alarm to short in the future it could be possible that
- * the counter already passed the calculated alarm before it could be set. This
- * margin will be applied when using `_next_inphase_event()`.
- */
-//#define iqueuemac_RTT_EVENT_MARGIN_TICKS    ( RTT_MS_TO_TICKS(2) )
-
-/* @brief Extract the destination address out of an GNRC_NETTYPE_NETIF pktsnip
- *
- * @param[in]   pkt                 pktsnip from whom to extract
- * @param[out]  pointer_to_addr     pointer to address will be stored here
- *
- * @return                          length of destination address
- */
-int _get_dest_address(gnrc_pktsnip_t * pkt, uint8_t * pointer_to_addr[]);
-
-/* @brief Find the first pktsnip of @p type
- *
- * Will search linearly through the packet buffer @p pkt and yield
- * gnrc_pktsnip_t::data of the first pktsnip match the type @p type.
- *
- * @param[in]   pkt     pktsnip that will be searched
- * @param[in]   type    type to search for
- *
- * @return              pointer to data, NULL is not found
- */
-void *_gnrc_pktbuf_find(gnrc_pktsnip_t *pkt, gnrc_nettype_t type);
-
 /* @brief Parse an incoming packet and extract important information
  *
  * Copies addresses into @p info, but header points inside @p pkt.
@@ -111,11 +79,14 @@ void *_gnrc_pktbuf_find(gnrc_pktsnip_t *pkt, gnrc_nettype_t type);
  * @return                      0 if correctly parsed
  * @return                      <0 on error
  */
-//int _parse_packet(gnrc_pktsnip_t* pkt, iqueuemac_packet_info_t* info);
+int _parse_packet(gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *info);
 
 /* RTT phase calculation */
-uint32_t _ticks_to_phase(uint32_t ticks);
-//uint32_t _phase_to_ticks(uint32_t phase);
+static inline uint32_t _ticks_to_phase(uint32_t ticks)
+{
+	return (ticks % RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US));
+}
+
 uint32_t _phase_now(gnrc_netdev_t *gnrc_netdev);
 uint32_t _ticks_until_phase(gnrc_netdev_t *gnrc_netdev, uint32_t phase); //uint32_t _ticks_until_phase(uint32_t phase);
 
@@ -159,7 +130,6 @@ bool iqueuemac_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info
 int gomach_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable);
 int iqueue_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t *info);
 int gomach_send_beacon(gnrc_netdev_t *gnrc_netdev);
-int _parse_packet(gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *info);
 int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t * buffer[], gnrc_pktsnip_t * pkt, iqueuemac_packet_info_t * pa_info);
 void iqueuemac_router_queue_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *pa_info);
 void gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev);

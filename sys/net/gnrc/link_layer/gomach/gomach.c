@@ -142,7 +142,7 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
     uint32_t alarm;
 
     switch (event & 0xffff) {
-        case GOMACH_EVENT_RTT_NEW_CYCLE: {
+        case GNRC_GOMACH_EVENT_RTT_NEW_CYCLE: {
             /* Start duty-cycle scheme. */
             if (gnrc_netdev->gomach.duty_cycle_started == false) {
                 gnrc_netdev->gomach.duty_cycle_started = true;
@@ -160,7 +160,7 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
             /* Set next cycle's starting time. */
             alarm = gnrc_netdev->gomach.last_wakeup +
                     RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-            rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GOMACH_EVENT_RTT_NEW_CYCLE);
+            rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GNRC_GOMACH_EVENT_RTT_NEW_CYCLE);
 
             /* Update neighbors' public channel phases. */
             update_neighbor_pubchan(gnrc_netdev);
@@ -404,7 +404,7 @@ static void gomach_init_end(gnrc_netdev_t *gnrc_netdev)
 
     /* Start duty-cycle scheme. */
     gnrc_netdev->gomach.duty_cycle_started = false;
-    _gomach_rtt_handler(GOMACH_EVENT_RTT_NEW_CYCLE, gnrc_netdev);
+    _gomach_rtt_handler(GNRC_GOMACH_EVENT_RTT_NEW_CYCLE, gnrc_netdev);
     gnrc_netdev->gomach.need_update = true;
 }
 
@@ -1320,7 +1320,7 @@ static void _gomach_phase_backoff(gnrc_netdev_t *gnrc_netdev)
     alarm = gnrc_netdev->gomach.last_wakeup +
             RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US) +
             gnrc_netdev->gomach.backoff_phase_ticks;
-    rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GOMACH_EVENT_RTT_NEW_CYCLE);
+    rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GNRC_GOMACH_EVENT_RTT_NEW_CYCLE);
 
     gnrc_netdev->gomach.phase_changed = true;
     LOG_INFO("INFO: [GOMACH] phase backoffed: %lu us.\n",

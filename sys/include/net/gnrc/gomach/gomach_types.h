@@ -32,27 +32,16 @@
 extern "C" {
 #endif
 
-/******************************************************************************/
+#define GNRC_GOMACH_EVENT_RTT_TYPE          (0x4300)
 
-#define GNRC_GOMACH_EVENT_RTT_TYPE            (0x4300)
+#define GNRC_GOMACH_EVENT_RTT_NEW_CYCLE     (0x4301)
 
-#define IQUEUEMAC_EVENT_RTT_START           (0x4301)
+#define GNRC_GOMACH_EVENT_TIMEOUT_TYPE      (0x4400)
 
-/****************************** node RTT event types **********************************/
-#define IQUEUEMAC_EVENT_RTT_N_ENTER_CP           (0x4302)
-#define IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP           (0x4303)
-#define IQUEUEMAC_EVENT_RTT_N_NEW_CYCLE           (0x4305)
-/****************************** router RTT event types **********************************/
-#define GOMACH_EVENT_RTT_NEW_CYCLE           (0x4304)
+#define GNRC_GOMACH_PHASE_UNINITIALIZED     (0)
 
+#define GNRC_GOMACH_PHASE_MAX               (-1)
 
-#define GNRC_GOMACH_EVENT_TIMEOUT_TYPE        (0x4400)
-
-#define IQUEUEMAC_PHASE_UNINITIALIZED (0)
-
-#define IQUEUEMAC_PHASE_MAX             (-1)
-
-/******************************************************************************/
 typedef enum {
 	GNRC_GOMACH_BCAST_INIT = 0,
 	GNRC_GOMACH_BCAST_SEND,
@@ -84,14 +73,7 @@ typedef enum {
 	GNRC_GOMACH_T2U_END
 } gnrc_gomach_t2u_state_t;
 
-/******************************router state machinies**********************************/
 typedef enum {
-/*    UNDEF = -1,
-    STOPPED,
-    START,
-    STOP,
-    RESET,  */
-    /*Basic mode of simple mode*/
     GNRC_GOMACH_INIT = 0,
     GNRC_GOMACH_LISTEN,
     GNRC_GOMACH_TRANSMIT
@@ -105,7 +87,6 @@ typedef enum {
 } gnrc_gomach_init_state_t;
 
 typedef enum {
-    /*Listening states of simple mode*/
 	GNRC_GOMACH_LISTEN_CP_INIT = 0,
 	GNRC_GOMACH_LISTEN_CP_LISTEN,
 	GNRC_GOMACH_LISTEN_CP_END,
@@ -125,7 +106,6 @@ typedef enum {
     GNRC_GOMACH_BROADCAST
 } gnrc_gomach_transmit_state_t;
 
-/******************************************************************************/
 typedef struct {
     uint8_t addr[IQUEUEMAC_MAX_L2_ADDR_LEN];
 } l2_id_t;
@@ -150,8 +130,15 @@ typedef struct {
 typedef struct {
     last_seq_info_t last_nodes[IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE];
     uint8_t queue_head;
-
 }check_dup_pkt_t;
+
+/* @brief   Type to pass information about parsing */
+typedef struct {
+    iqueuemac_hdr_t *header;    /**< iqueuemac header of packet */
+    l2_addr_t src_addr;         /**< copied source address of packet  */
+    l2_addr_t dst_addr;         /**< copied destination address of packet */
+    uint8_t seq;                /**< seq of the received packet */
+} iqueuemac_packet_info_t;
 
 typedef struct {
     uint16_t sub_channel_seq;
@@ -162,7 +149,6 @@ typedef struct {
 
 typedef enum {
     TIMEOUT_DISABLED = 0,
-
     TIMEOUT_BROADCAST_FINISH,
     TIMEOUT_BROADCAST_INTERVAL,
     TIMEOUT_PREAMBLE,
@@ -178,7 +164,6 @@ typedef enum {
     TIMEOUT_WAIT_RX_END,
     TIMEOUT_VTDMA,
     /*****************simple-node******************/
-    TIMEOUT_N_CP_DURATION,
     TIMEOUT_BEACON_END
 
 } gomach_timeout_type_t;
@@ -191,7 +176,6 @@ typedef struct {
     gomach_timeout_type_t type;
 } gomach_timeout_t;
 
-/******************************************************************************/
 typedef struct gomach {
     /* Internal state of MAC layer */
     gnrc_gomach_basic_state_t basic_state;

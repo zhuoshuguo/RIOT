@@ -32,52 +32,8 @@
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
-
-/******************************************************************************/
-
-int _get_dest_address(gnrc_pktsnip_t *pkt, uint8_t *pointer_to_addr[])
-{
-    int res;
-    gnrc_netif_hdr_t *netif_hdr;
-
-    if (!pkt) {
-        return -ENODEV;
-    }
-
-    netif_hdr = (gnrc_netif_hdr_t *) pkt->data;
-    if ((res = netif_hdr->dst_l2addr_len) <= 0) {
-        return -ENOENT;
-    }
-
-    *pointer_to_addr = gnrc_netif_hdr_get_dst_addr(netif_hdr);
-    return res;
-}
-
-/******************************************************************************/
-
-/* Find a payload based on it's protocol type */
-void *_gnrc_pktbuf_find(gnrc_pktsnip_t *pkt, gnrc_nettype_t type)
-{
-    while (pkt != NULL) {
-        if (pkt->type == type) {
-            return pkt->data;
-        }
-        pkt = pkt->next;
-    }
-    return NULL;
-}
-
-/******************************************************************************/
-
-uint32_t _ticks_to_phase(uint32_t ticks)
-{
-    return (ticks % RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US));
-}
-
-
 uint32_t _phase_now(gnrc_netdev_t *gnrc_netdev)
 {
-
     uint32_t phase_now;
 
     phase_now = rtt_get_counter();
@@ -85,7 +41,7 @@ uint32_t _phase_now(gnrc_netdev_t *gnrc_netdev)
     /* in case that rtt overflows */
     if (phase_now < gnrc_netdev->gomach.last_wakeup) {
         uint32_t gap_to_full;
-        gap_to_full = IQUEUEMAC_PHASE_MAX - gnrc_netdev->gomach.last_wakeup;
+        gap_to_full = GNRC_GOMACH_PHASE_MAX - gnrc_netdev->gomach.last_wakeup;
         phase_now += gap_to_full;
     }
     else {
@@ -264,7 +220,7 @@ int iqueue_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t
 
     /* We wouldn't get here if add the NETIF header had failed, so no
         sanity checks needed */
-    nethdr_preamble_ack = (gnrc_netif_hdr_t *) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+    nethdr_preamble_ack = (gnrc_netif_hdr_t *) (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
 
     /* Construct NETIF header and insert address for WA packet */
     gnrc_netif_hdr_init(nethdr_preamble_ack, 0, 0);
@@ -418,7 +374,7 @@ int gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
 
     /* We wouldn't get here if add the NETIF header had failed, so no
        sanity checks needed */
-    nethdr_beacon = (gnrc_netif_hdr_t *) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+    nethdr_beacon = (gnrc_netif_hdr_t *) (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
 
     /* Construct NETIF header and insert address for WA packet */
     gnrc_netif_hdr_init(nethdr_beacon, 0, 0);
@@ -462,7 +418,7 @@ int _parse_packet(gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *info)
     assert(info != NULL);
     assert(pkt != NULL);
 
-    netif_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+    netif_hdr = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF)->data;
     if (netif_hdr == NULL) {
         return -1;
     }
@@ -590,7 +546,7 @@ void iqueuemac_router_queue_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pk
 
     iqueuemac_frame_data_t *iqueuemac_data_hdr;
 
-    iqueuemac_data_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_GOMACH);
+    iqueuemac_data_hdr = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH)->data;
 
     if (iqueuemac_data_hdr == NULL) {
         puts("iqueuemac_data_hdr is null");
@@ -903,7 +859,7 @@ void iqueuemac_update_subchannel_occu_flags(gnrc_netdev_t *gnrc_netdev, gnrc_pkt
     switch (pa_info->header->type) {
         case FRAMETYPE_BEACON: {
             iqueuemac_frame_beacon_t *iqueuemac_beacon_hdr;
-            iqueuemac_beacon_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_GOMACH);
+            iqueuemac_beacon_hdr = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH))->data;
             if (iqueuemac_beacon_hdr == NULL) {
                 puts("iqueuemac_beacon_hdr is null");
                 return;
@@ -914,7 +870,7 @@ void iqueuemac_update_subchannel_occu_flags(gnrc_netdev_t *gnrc_netdev, gnrc_pkt
         } break;
         case FRAMETYPE_ANNOUNCE: {
             iqueuemac_frame_announce_t *iqueuemac_announce_hdr;
-            iqueuemac_announce_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_GOMACH);
+            iqueuemac_announce_hdr = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH))->data;
             if (iqueuemac_announce_hdr == NULL) {
                 puts("iqueuemac_announce_hdr is null");
                 return;
@@ -1067,7 +1023,7 @@ int gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma)
 
     /* We wouldn't get here if add the NETIF header had failed, so no
         sanity checks needed */
-    nethdr_preamble = (gnrc_netif_hdr_t *) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+    nethdr_preamble = (gnrc_netif_hdr_t *) (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
 
     /* Construct NETIF header and initiate address fields */
     gnrc_netif_hdr_init(nethdr_preamble, 0, 0);
@@ -1101,7 +1057,8 @@ void gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_c
     iqueuemac_announce_hdr.header.type = FRAMETYPE_ANNOUNCE;
     iqueuemac_announce_hdr.subchannel_seq = gnrc_netdev->gomach.sub_channel_num;
 
-    pkt = gnrc_pktbuf_add(NULL, &iqueuemac_announce_hdr, sizeof(iqueuemac_announce_hdr), GNRC_NETTYPE_GOMACH);
+    pkt = gnrc_pktbuf_add(NULL, &iqueuemac_announce_hdr, sizeof(iqueuemac_announce_hdr),
+                          GNRC_NETTYPE_GOMACH);
     if (pkt == NULL) {
         puts("gomach: pktbuf add failed in iqueuemac_send_announce().");
     }
@@ -1112,7 +1069,8 @@ void gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_c
     }
     /* We wouldn't get here if add the NETIF header had failed, so no
         sanity checks needed */
-    nethdr_announce = (gnrc_netif_hdr_t *) _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_NETIF);
+    nethdr_announce = (gnrc_netif_hdr_t *)
+                      (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
 
     /* Construct NETIF header and initiate address fields */
     gnrc_netif_hdr_init(nethdr_announce, 0, 0);
@@ -1130,7 +1088,7 @@ void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pkts
 
     iqueuemac_frame_preamble_ack_t *iqueuemac_preamble_ack_hdr;
 
-    iqueuemac_preamble_ack_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_GOMACH);
+    iqueuemac_preamble_ack_hdr = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH))->data;
 
     if (iqueuemac_preamble_ack_hdr == NULL) {
         puts("iqueuemac_preamble_ack_hdr is null");
@@ -1347,7 +1305,7 @@ int gomach_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_ena
 
     /* Insert iqueue-mac header above NETIF header */
     iqueuemac_frame_data_t *iqueuemac_data_hdr_pointer;
-    iqueuemac_data_hdr_pointer = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_GOMACH);
+    iqueuemac_data_hdr_pointer = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH))->data;
 
     if (iqueuemac_data_hdr_pointer == NULL) {
 
@@ -1392,7 +1350,7 @@ bool gomach_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev)
     int next = -1;
 
     //uint32_t phase_check;
-    //uint32_t phase_nearest = IQUEUEMAC_PHASE_MAX;
+    //uint32_t phase_nearest = GNRC_GOMACH_PHASE_MAX;
 
     /*** If current_neighbour is not NULL, means last t-2-r or t-2-u failed, will continue try t-2-r/t-2-u
      * again for the same neighbor, which has not been released in last t-2-r/t-2-u. ***/
@@ -1486,7 +1444,7 @@ void iqueuemac_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
     uint8_t id_position;
     uint8_t slots_position;
 
-    iqueuemac_beacon_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_GOMACH);
+    iqueuemac_beacon_hdr = (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH))->data;
 
     if (iqueuemac_beacon_hdr == NULL) {
         puts("iqueuemac_beacon_hdr is null");
