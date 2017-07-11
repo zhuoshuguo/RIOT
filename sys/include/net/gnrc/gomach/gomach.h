@@ -40,7 +40,7 @@ typedef enum {
 #endif
 
 #ifndef IQUEUEMAC_SUPERFRAME_DURATION_US
-#define IQUEUEMAC_SUPERFRAME_DURATION_US        (200U * 1000)
+#define IQUEUEMAC_SUPERFRAME_DURATION_US        (1500U * 1000)
 #endif
 
 #ifndef IQUEUEMAC_CP_DURATION_US
@@ -130,11 +130,6 @@ typedef enum {
 
 #ifndef IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE
 #define IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE            (30U)
-#endif
-
-/******* it seems that this should not be larger than 3 *******/
-#ifndef IQUEUEMAC_DISPATCH_BUFFER_SIZE
-#define IQUEUEMAC_DISPATCH_BUFFER_SIZE      (8U)
 #endif
 
 #ifndef IQUEUEMAC_MAX_L2_ADDR_LEN

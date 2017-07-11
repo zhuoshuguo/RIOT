@@ -30,68 +30,97 @@ extern "C" {
 #endif
 
 /**
- * @brief   Flag to track if transmission has finished.
+ * @brief Flag to track if the transmission has finished.
  */
 #define GNRC_NETDEV_GOMACH_INFO_TX_FINISHED         (0x0008U)
 
 /**
- * @brief   Flag to track if a packet has been successfully received.
+ * @brief Flag to track if a packet has been successfully received.
  */
 #define GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED        (0x0010U)
 
-static inline void gnrc_netdev_gomach_set_tx_finish(gnrc_netdev_t *dev, bool tx_finish)
+/**
+ * @brief Set the TX-finish flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in] tx_finish    value for GoMacH TX-finish flag.
+ *
+ */
+static inline void gnrc_gomach_set_tx_finish(gnrc_netdev_t *gnrc_netdev, bool tx_finish)
 {
     if (tx_finish) {
-        dev->mac_info |= GNRC_NETDEV_GOMACH_INFO_TX_FINISHED;
+    	gnrc_netdev->mac_info |= GNRC_NETDEV_GOMACH_INFO_TX_FINISHED;
     }
     else {
-        dev->mac_info &= ~GNRC_NETDEV_GOMACH_INFO_TX_FINISHED;
+    	gnrc_netdev->mac_info &= ~GNRC_NETDEV_GOMACH_INFO_TX_FINISHED;
     }
 }
 
-static inline bool gnrc_netdev_gomach_get_tx_finish(gnrc_netdev_t *dev)
+/**
+ * @brief Get the TX-finish flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if TX has finished.
+ * @return                 false if TX hasn't finished yet.
+ */
+static inline bool gnrc_gomach_get_tx_finish(gnrc_netdev_t *gnrc_netdev)
 {
-    return (dev->mac_info & GNRC_NETDEV_GOMACH_INFO_TX_FINISHED);
+    return (gnrc_netdev->mac_info & GNRC_NETDEV_GOMACH_INFO_TX_FINISHED);
 }
 
-static inline void gnrc_netdev_gomach_set_pkt_received(gnrc_netdev_t *dev, bool received)
+/**
+ * @brief Set the packet-received flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in] received     value for GoMacH packet-received flag.
+ *
+ */
+static inline void gnrc_gomach_set_pkt_received(gnrc_netdev_t *gnrc_netdev, bool received)
 {
     if (received) {
-        dev->mac_info |= GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED;
+    	gnrc_netdev->mac_info |= GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED;
     }
     else {
-        dev->mac_info &= ~GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED;
+    	gnrc_netdev->mac_info &= ~GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED;
     }
 }
 
-static inline bool gnrc_netdev_gomach_get_pkt_received(gnrc_netdev_t *dev)
-{
-    return (dev->mac_info & GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED);
-}
-
-/* @brief Parse an incoming packet and extract important information
+/**
+ * @brief Get the packet-received flag of the device.
  *
- * Copies addresses into @p info, but header points inside @p pkt.
+ * @param[in] gnrc_netdev  ptr to netdev device.
  *
- * @param[in]   pkt             packet that will be parsed
- * @param[out]  info            structure that will hold parsed information
- *
- * @return                      0 if correctly parsed
- * @return                      <0 on error
+ * @return                 true if radio has successfully received a packet.
+ * @return                 false if radio hasn't received a packet yet.
  */
-int _parse_packet(gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *info);
-
-/* RTT phase calculation */
-static inline uint32_t _ticks_to_phase(uint32_t ticks)
+static inline bool gnrc_gomach_get_pkt_received(gnrc_netdev_t *gnrc_netdev)
 {
-	return (ticks % RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US));
+    return (gnrc_netdev->mac_info & GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED);
 }
 
-uint32_t _phase_now(gnrc_netdev_t *gnrc_netdev);
+/**
+ * @brief Get device's current phase.
+ *
+ * @param[in] gnrc_netdev   ptr to netdev device.
+ *
+ * @return                  device's current phase.
+ */
+uint32_t gnrc_gomach_phase_now(gnrc_netdev_t *gnrc_netdev);
 
-static inline uint32_t _ticks_until_phase(gnrc_netdev_t *gnrc_netdev, uint32_t phase)
+/**
+ * @brief Calculate how many ticks remaining to the targeted phase in the future.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in] phase        device phase.
+ *
+ * @return                 RTT ticks remaining to the targeted phase.
+ */
+static inline uint32_t gnrc_gomach_ticks_until_phase(gnrc_netdev_t *gnrc_netdev, uint32_t phase)
 {
-    long int tmp = phase - _phase_now(gnrc_netdev);
+    assert(gnrc_netdev != NULL);
+
+    long int tmp = phase - gnrc_gomach_phase_now(gnrc_netdev);
 
     if (tmp < 0) {
         tmp += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
@@ -100,26 +129,190 @@ static inline uint32_t _ticks_until_phase(gnrc_netdev_t *gnrc_netdev, uint32_t p
     return (uint32_t)tmp;
 }
 
-uint32_t _next_inphase_event(uint32_t last, uint32_t interval);
+/**
+ * @brief Turn on (wake up) the radio of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device.
+ *
+ */
+static inline void gnrc_gomach_turn_on_radio(gnrc_netdev_t *gnrc_netdev)
+{
+    assert(gnrc_netdev != NULL);
 
-void gomach_turn_on_radio(gnrc_netdev_t *gnrc_netdev);
-void gomach_turn_off_radio(gnrc_netdev_t *gnrc_netdev);
-void gomach_set_autoack(gnrc_netdev_t *gnrc_netdev, netopt_enable_t autoack);
-void gomach_set_ack_req(gnrc_netdev_t *gnrc_netdev, netopt_enable_t ack_req);
-netopt_state_t _get_netdev_state(gnrc_netdev_t *gnrc_netdev);
-//void iqueuemac_set_promiscuousmode(iqueuemac_t* iqueuemac, netopt_enable_t enable);
-void gomach_turn_channel(gnrc_netdev_t *gnrc_netdev, uint16_t channel_num);
-
-static inline void gomach_set_raddio_to_listen_mode(gnrc_netdev_t *gnrc_netdev){
-    gomach_turn_on_radio(gnrc_netdev);
+    netopt_state_t devstate = NETOPT_STATE_IDLE;
+    gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
+                                  NETOPT_STATE,
+                                  &devstate,
+                                  sizeof(devstate));
 }
 
-bool iqueuemac_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t *pa_info);
-int gomach_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable);
-int iqueue_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t *info);
-int gomach_send_beacon(gnrc_netdev_t *gnrc_netdev);
-int iqueue_push_packet_to_dispatch_queue(gnrc_pktsnip_t * buffer[], gnrc_pktsnip_t * pkt, iqueuemac_packet_info_t * pa_info);
-void iqueuemac_router_queue_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *pa_info);
+/**
+ * @brief Turn off the radio of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device.
+ *
+ */
+static inline void gnrc_gomach_turn_off_radio(gnrc_netdev_t *gnrc_netdev)
+{
+    assert(gnrc_netdev != NULL);
+
+    netopt_state_t devstate = NETOPT_STATE_SLEEP;
+    gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
+                                  NETOPT_STATE,
+                                  &devstate,
+                                  sizeof(devstate));
+}
+
+/**
+ * @brief Set the auto-ACK parameter of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in] autoack      value for the auto-ACK parameter.
+ *
+ */
+static inline void gnrc_gomach_set_autoack(gnrc_netdev_t *gnrc_netdev, netopt_enable_t autoack)
+{
+    assert(gnrc_netdev != NULL);
+
+    gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
+                                  NETOPT_AUTOACK,
+                                  &autoack,
+                                  sizeof(autoack));
+}
+
+/**
+ * @brief Set the ACK-require parameter of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to gnrc_netdev device.
+ * @param[in] ack_req      value for the ACK-require parameter.
+ *
+ */
+static inline void gnrc_gomach_set_ack_req(gnrc_netdev_t *gnrc_netdev, netopt_enable_t ack_req)
+{
+    assert(gnrc_netdev != NULL);
+
+    gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
+                                  NETOPT_ACK_REQ,
+                                  &ack_req,
+                                  sizeof(ack_req));
+}
+
+/**
+ * @brief Shortcut to get the state of netdev.
+ *
+ * @param[in] gnrc_netdev  gnrc_netdev structure.
+ *
+ * @return                 state of netdev upon success.
+ * @return                 -1, upon failure.
+ */
+static inline netopt_state_t gnrc_gomach_get_netdev_state(gnrc_netdev_t *gnrc_netdev)
+{
+    assert(gnrc_netdev != NULL);
+
+    netopt_state_t state;
+
+    if (0 < gnrc_netdev->dev->driver->get(gnrc_netdev->dev,
+                                          NETOPT_STATE,
+                                          &state,
+                                          sizeof(state))) {
+        return state;
+    }
+    return -1;
+}
+
+/**
+ * @brief Turn the radio to a specific channel.
+ *
+ * @param[in] gnrc_netdev  ptr to gnrc_netdev device.
+ * @param[in] channel_num  targeted channel number to turn to.
+ *
+ */
+static inline void gnrc_gomach_turn_channel(gnrc_netdev_t *gnrc_netdev, uint16_t channel_num)
+{
+    assert(gnrc_netdev != NULL);
+
+    gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
+                                  NETOPT_CHANNEL,
+                                  &channel_num,
+                                  sizeof(channel_num));
+}
+
+/**
+ * @brief Turn the radio to the listen state.
+ *
+ * @param[in] gnrc_netdev  ptr to gnrc_netdev device.
+ *
+ */
+static inline void gnrc_gomach_turn_to_listen_mode(gnrc_netdev_t *gnrc_netdev){
+    gnrc_gomach_turn_on_radio(gnrc_netdev);
+}
+
+/**
+ * @brief Check if the received packet is a duplicate packet.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in] pa_info      ptr to received packet's parsed information.
+ *
+ * @return                 true if the received packet is a duplicate packet.
+ * @return                 false if the received packet is not a duplicate packet.
+ */
+bool gnrc_gomach_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t *pa_info);
+
+/**
+ * @brief Send a pktsnip using GoMacH.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in] pkt          ptr to the packet for sending.
+ * @param[in] csma_enable  value of csma-enable parameter.
+ *
+ * @return                 >0 upon sending success.
+ * @return                 0< upon sending failure.
+ */
+int gnrc_gomach_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable);
+
+/**
+ * @brief Reply a preamble-ACK packet using GoMacH.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in] info         ptr to the info of the preamble packet.
+ *
+ * @return                 >0 upon sending success.
+ * @return                 0< upon sending failure.
+ */
+int gnrc_gomach_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t *info);
+
+/**
+ * @brief Broadcast a beacon packet in GoMacH.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device.
+ *
+ * @return                 >0 upon sending success.
+ * @return                 0< upon sending failure.
+ */
+int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev);
+
+/**
+ * @brief Store the received packet to the dispatch buffer.
+ *
+ * @param[in,out]   buffer      RX dispatch packet buffer
+ * @param[in]       pkt         received packet
+ *
+ * @return                      0 if correctly stored
+ * @return                      <0 on error
+ */
+int gnrc_gomach_dispatch_defer(gnrc_pktsnip_t * buffer[], gnrc_pktsnip_t * pkt);
+
+/**
+ * @brief Update the queue-length indicator of the packet sender.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in] pkt          received packet
+ * @param[in] info         ptr to the info of the received packet.
+ *
+ */
+void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt,
+                                  iqueuemac_packet_info_t *pa_info);
+
 void gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_packet_process_in_init(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev);
@@ -129,7 +322,6 @@ void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pkts
 void iqueuemac_packet_process_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev);
 int gomach_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable);
 bool gomach_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev);
-//bool iqueuemac_check_has_pending_packet(packet_queue_t* q);
 void iqueuemac_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt);
 void gomach_wait_beacon_packet_process(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_router_vtdma_receive_packet_process(gnrc_netdev_t *gnrc_netdev);
