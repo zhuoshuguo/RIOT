@@ -477,107 +477,50 @@ bool gnrc_gomach_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_in
     return false;
 }
 
-void gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
+void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
 {
-    gnrc_pktsnip_t *pkt;
+    assert(gnrc_netdev != NULL);
 
+    gnrc_pktsnip_t *pkt;
     iqueuemac_packet_info_t receive_packet_info;
 
     while ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL) {
-
-        /* parse the packet */
+        /* Parse the received packet. */
         int res = _parse_packet(pkt, &receive_packet_info);
         if (res != 0) {
-            //LOG_DEBUG("Packet could not be parsed: %i\n", ret);
+        	LOG_WARNING("WARNING: [GOMACH] CP: Packet could not be parsed: %i\n", res);
             gnrc_pktbuf_release(pkt);
             continue;
         }
 
         switch (receive_packet_info.header->type) {
-            case FRAMETYPE_BEACON: {
-
-                gnrc_pktbuf_release(pkt);
-#if 0
-                uint32_t own_phase;
-                uint32_t sender_phase;
-
-                own_phase = gnrc_gomach_phase_now(gomach);
-
-                iqueuemac_frame_beacon_t *iqueuemac_beacon_hdr;
-                iqueuemac_beacon_hdr = _gnrc_pktbuf_find(pkt, GNRC_NETTYPE_GOMACH);
-
-                /* this means that the beacon sender will change its phase, so meaningless to deal with this received beacon */
-                if (iqueuemac_beacon_hdr->current_phase == 0) {
-                    gnrc_pktbuf_release(pkt);
-                    continue;
-                }
-
-                sender_phase = iqueuemac_beacon_hdr->current_phase + RTT_US_TO_TICKS(IQUEUEMAC_RECEPTION_MAGIN_US);
-
-                /* in case the sender's phase is larger */
-                if (sender_phase >= own_phase) {
-
-                    uint32_t phase_gap_ticks;
-
-                    /* calculate the gap in ticks */
-                    phase_gap_ticks = sender_phase - own_phase;
-
-                    if (phase_gap_ticks < RTT_US_TO_TICKS(IQUEUEMAC_CP_MIN_GAP_US)) {
-                        uint32_t backoff_ticks;
-                        uint32_t random_backoff;
-
-                        gomach->phase_backoff = true;
-                        backoff_ticks = RTT_US_TO_TICKS(IQUEUEMAC_CP_MIN_GAP_US + IQUEUEMAC_RECEPTION_MAGIN_US) - phase_gap_ticks;
-
-                        random_backoff = RTT_US_TO_TICKS((IQUEUEMAC_SUPERFRAME_DURATION_US / 2));
-                        random_backoff = random_uint32_range(0, random_backoff);
-                        gomach->backoff_phase_ticks =  backoff_ticks + random_backoff;
-                    }
-                }
-                else {
-                    ; /* currently, we don't deal with the case the sender's phase is smaller */
-                }
-
-                gnrc_pktbuf_release(pkt);
-                /* in the future, take CP overlape collision measurements after receive ohter's beacon!! */
-#endif
-
-            } break;
-
             case FRAMETYPE_PREAMBLE: {
-                if (memcmp(&gnrc_netdev->l2_addr, &receive_packet_info.dst_addr.addr, gnrc_netdev->l2_addr_len) == 0) {
+                if (memcmp(&gnrc_netdev->l2_addr, &receive_packet_info.dst_addr.addr,
+                           gnrc_netdev->l2_addr_len) == 0) {
+                    /* Get preamble packet for the device itself. */
                     gnrc_netdev->gomach.got_preamble = true;
-                    /** if reception is not going on, reply preamble-ack,
-                     * also, don't send preamble-ACK if CP ends. **/
+
+                    /* If reception is not going on, reply preamble-ack. */
                     if (gnrc_gomach_get_netdev_state(gnrc_netdev) == NETOPT_STATE_IDLE) {
-                        /***  disable auto-ack ***/
+                        /* Disable auto-ack. */
                         gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
 
-                        int res;
-                        res = gnrc_gomach_send_preamble_ack(gnrc_netdev, &receive_packet_info);
+                        int res = gnrc_gomach_send_preamble_ack(gnrc_netdev, &receive_packet_info);
                         if (res < 0) {
-                            printf("preamble-ack: res %d\n", res);
+                            LOG_ERROR("ERROR: [GOMACH]: send preamble-ACK failed - %d.\n", res);
                         }
 
-                        /* Enable Auto ACK again for data reception */
+                        /* Enable Auto ACK again for data reception. */
                         gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
                     }
                 }
                 else {
-                    //gomach->quit_current_cycle = true;
-                    /* if receives unintended preamble, don't send beacon and quit the following vTDMA period. */
+                    /* Receives unintended preamble that is not for the device. */
                     gnrc_netdev->gomach.get_other_preamble = true;
                 }
                 gnrc_pktbuf_release(pkt);
             } break;
 
-            case FRAMETYPE_PREAMBLE_ACK: {
-                gnrc_pktbuf_release(pkt);
-
-            } break;
-
-
-            // gomach.rx.last_seq_info.seq = netif_hdr->seq;
             case FRAMETYPE_IQUEUE_DATA: {
 
                 if (memcmp(&gnrc_netdev->l2_addr, &receive_packet_info.dst_addr.addr, gnrc_netdev->l2_addr_len) == 0) {
@@ -609,7 +552,8 @@ void gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
             } break;
 
             default: {
-                gnrc_pktbuf_release(pkt); break;
+                gnrc_pktbuf_release(pkt);
+                break;
             }
         }
 

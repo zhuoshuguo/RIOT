@@ -313,7 +313,15 @@ int gnrc_gomach_dispatch_defer(gnrc_pktsnip_t * buffer[], gnrc_pktsnip_t * pkt);
 void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt,
                                   iqueuemac_packet_info_t *pa_info);
 
-void gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev);
+/**
+ * @brief Process packets received during the CP (wake-up) period of GoMacH.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device.
+ *
+ */
+void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev);
+
+
 void iqueuemac_packet_process_in_init(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev);
 void gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma);
