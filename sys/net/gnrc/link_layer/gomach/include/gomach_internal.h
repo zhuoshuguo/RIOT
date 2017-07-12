@@ -42,7 +42,7 @@ extern "C" {
 /**
  * @brief Set the TX-finish flag of the device.
  *
- * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
  * @param[in] tx_finish    value for GoMacH TX-finish flag.
  *
  */
@@ -72,7 +72,7 @@ static inline bool gnrc_gomach_get_tx_finish(gnrc_netdev_t *gnrc_netdev)
 /**
  * @brief Set the packet-received flag of the device.
  *
- * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
  * @param[in] received     value for GoMacH packet-received flag.
  *
  */
@@ -132,7 +132,7 @@ static inline uint32_t gnrc_gomach_ticks_until_phase(gnrc_netdev_t *gnrc_netdev,
 /**
  * @brief Turn on (wake up) the radio of the device.
  *
- * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
  *
  */
 static inline void gnrc_gomach_turn_on_radio(gnrc_netdev_t *gnrc_netdev)
@@ -149,7 +149,7 @@ static inline void gnrc_gomach_turn_on_radio(gnrc_netdev_t *gnrc_netdev)
 /**
  * @brief Turn off the radio of the device.
  *
- * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
  *
  */
 static inline void gnrc_gomach_turn_off_radio(gnrc_netdev_t *gnrc_netdev)
@@ -166,7 +166,7 @@ static inline void gnrc_gomach_turn_off_radio(gnrc_netdev_t *gnrc_netdev)
 /**
  * @brief Set the auto-ACK parameter of the device.
  *
- * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
  * @param[in] autoack      value for the auto-ACK parameter.
  *
  */
@@ -183,7 +183,7 @@ static inline void gnrc_gomach_set_autoack(gnrc_netdev_t *gnrc_netdev, netopt_en
 /**
  * @brief Set the ACK-require parameter of the device.
  *
- * @param[in] gnrc_netdev  ptr to gnrc_netdev device.
+ * @param[in,out] gnrc_netdev  ptr to gnrc_netdev device.
  * @param[in] ack_req      value for the ACK-require parameter.
  *
  */
@@ -223,7 +223,7 @@ static inline netopt_state_t gnrc_gomach_get_netdev_state(gnrc_netdev_t *gnrc_ne
 /**
  * @brief Turn the radio to a specific channel.
  *
- * @param[in] gnrc_netdev  ptr to gnrc_netdev device.
+ * @param[in,out] gnrc_netdev  ptr to gnrc_netdev device.
  * @param[in] channel_num  targeted channel number to turn to.
  *
  */
@@ -240,7 +240,7 @@ static inline void gnrc_gomach_turn_channel(gnrc_netdev_t *gnrc_netdev, uint16_t
 /**
  * @brief Turn the radio to the listen state.
  *
- * @param[in] gnrc_netdev  ptr to gnrc_netdev device.
+ * @param[in,out] gnrc_netdev  ptr to gnrc_netdev device.
  *
  */
 static inline void gnrc_gomach_turn_to_listen_mode(gnrc_netdev_t *gnrc_netdev){
@@ -305,7 +305,7 @@ int gnrc_gomach_dispatch_defer(gnrc_pktsnip_t * buffer[], gnrc_pktsnip_t * pkt);
 /**
  * @brief Update the queue-length indicator of the packet sender.
  *
- * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
  * @param[in] pkt          received packet
  * @param[in] info         ptr to the info of the received packet.
  *
@@ -316,18 +316,51 @@ void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pk
 /**
  * @brief Process packets received during the CP (wake-up) period of GoMacH.
  *
- * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
  *
  */
 void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev);
 
+/**
+ * @brief Choose a sub-channel for a device running GoMacH.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ *
+ */
+void gnrc_gomach_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev);
 
-void iqueuemac_packet_process_in_init(gnrc_netdev_t *gnrc_netdev);
-void iqueuemac_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev);
-void gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma);
-int gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma);
-void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *pa_info);
+/**
+ * @brief Broadcast the chosen sub-channel sequence to the device's neighbors.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device.
+ *
+ * @return                 >0 upon sending success.
+ * @return                 0< upon sending failure.
+ */
+int gnrc_gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma);
+
+/**
+ * @brief Send a preamble packet to the targeted neighbor.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device.
+ * @param[in] csma_enable  value of csma-enable parameter.
+ *
+ * @return                 >0 upon sending success.
+ * @return                 0< upon sending failure.
+ */
+int gnrc_gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable);
+
+/**
+ * @brief Process the received preamble-ACK packet to get phase-locked with the sender.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in,out] pkt          ptr to the received preamble-ACK.
+ *
+ */
+void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt);
+
 void iqueuemac_packet_process_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev);
+
 int gomach_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable);
 bool gomach_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev);
 void iqueuemac_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt);

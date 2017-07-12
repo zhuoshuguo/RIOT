@@ -378,8 +378,11 @@ static void gomach_init_prepare(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_init_announce_subchannel(gnrc_netdev_t *gnrc_netdev)
 {
+    /* Choose a sub-channel for the device. */
+	gnrc_gomach_init_choose_subchannel(gnrc_netdev);
+
     /* Announce the device's chosen sub-channel sequence to its neighbors. */
-	gomach_bcast_subchann_seq(gnrc_netdev, NETOPT_ENABLE);
+	gnrc_gomach_bcast_subchann_seq(gnrc_netdev, NETOPT_ENABLE);
 
     gnrc_netdev->gomach.init_state = GNRC_GOMACH_INIT_WAIT_FEEDBACK;
     gnrc_netdev->gomach.need_update = false;
@@ -1041,12 +1044,12 @@ static void gomach_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     int res;
     /* The first preamble is sent with csma for collision avoidance. */
     if (gnrc_netdev->tx.preamble_sent == 0) {
-        res = gomach_send_preamble(gnrc_netdev, NETOPT_ENABLE);
+        res = gnrc_gomach_send_preamble(gnrc_netdev, NETOPT_ENABLE);
         gomach_set_timeout(gnrc_netdev, TIMEOUT_PREAMBLE_DURATION,
                               IQUEUEMAC_PREAMBLE_DURATION_US);
     }
     else {
-        res = gomach_send_preamble(gnrc_netdev, NETOPT_DISABLE);
+        res = gnrc_gomach_send_preamble(gnrc_netdev, NETOPT_DISABLE);
     }
 
     if (res < 0) {

@@ -485,7 +485,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
     iqueuemac_packet_info_t receive_packet_info;
 
     while ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL) {
-        /* Parse the received packet. */
+        /* Parse the received packet, fetch key MAC informations. */
         int res = _parse_packet(pkt, &receive_packet_info);
         if (res != 0) {
         	LOG_WARNING("WARNING: [GOMACH] CP: Packet could not be parsed: %i\n", res);
@@ -497,7 +497,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
             case FRAMETYPE_PREAMBLE: {
                 if (memcmp(&gnrc_netdev->l2_addr, &receive_packet_info.dst_addr.addr,
                            gnrc_netdev->l2_addr_len) == 0) {
-                    /* Get preamble packet for the device itself. */
+                    /* Get a preamble packet that is for the device itself. */
                     gnrc_netdev->gomach.got_preamble = true;
 
                     /* If reception is not going on, reply preamble-ack. */
@@ -507,7 +507,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
 
                         int res = gnrc_gomach_send_preamble_ack(gnrc_netdev, &receive_packet_info);
                         if (res < 0) {
-                            LOG_ERROR("ERROR: [GOMACH]: send preamble-ACK failed - %d.\n", res);
+                            LOG_ERROR("ERROR: [GOMACH]: send preamble-ACK failed: %d.\n", res);
                         }
 
                         /* Enable Auto ACK again for data reception. */
@@ -519,130 +519,69 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
                     gnrc_netdev->gomach.get_other_preamble = true;
                 }
                 gnrc_pktbuf_release(pkt);
-            } break;
+                break;
+            }
 
             case FRAMETYPE_IQUEUE_DATA: {
-
-                if (memcmp(&gnrc_netdev->l2_addr, &receive_packet_info.dst_addr.addr, gnrc_netdev->l2_addr_len) == 0) {
+                if (memcmp(&gnrc_netdev->l2_addr, &receive_packet_info.dst_addr.addr,
+                           gnrc_netdev->l2_addr_len) == 0) {
+                    /* The data is for itself, now update the sender's queue-length indicator. */
                     gnrc_gomach_indicator_update(gnrc_netdev, pkt, &receive_packet_info);
 
+                    /* Check that whether this is a duplicate packet. */
                     if ((gnrc_gomach_check_duplicate(gnrc_netdev, &receive_packet_info))) {
                         gnrc_pktbuf_release(pkt);
-                        puts("dup pkt.");
+                        LOG_WARNING("WARNING: [GOMACH] receive a duplicate packet.\n");
                         return;
                     }
 
                     gnrc_gomach_dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
                     _dispatch(gnrc_netdev->rx.dispatch_buffer);
                 }
-                else { /* if the data is not for the node, release it.  */
-                      /* it is very unlikely that we will receive not-intended data here, since CP will not overlape! */
+                else {
+                    /* If the data is not for the device, release it. */
                     gnrc_pktbuf_release(pkt);
                 }
-                //gnrc_pktbuf_release(pkt);
-                //printf("%lu. \n", RTT_TICKS_TO_US(gnrc_gomach_phase_now(gomach)));
-                //puts("gomach: router receives a data !!");
-            } break;
-
+                break;
+            }
             case FRAMETYPE_BROADCAST: {
+            	/* Receive a broadcast packet, quit the listening period to avoid receive duplicate
+            	 * broadcast packet. */
                 gnrc_netdev->gomach.quit_current_cycle = true;
                 gnrc_gomach_dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
                 _dispatch(gnrc_netdev->rx.dispatch_buffer);
-                //puts("gomach: router receives a broadcast data !!");
-            } break;
-
+                break;
+            }
             default: {
                 gnrc_pktbuf_release(pkt);
                 break;
             }
         }
-
-    } /* end of while loop */
+    }
 }
 
-void iqueuemac_packet_process_in_init(gnrc_netdev_t *gnrc_netdev)
+void gnrc_gomach_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev)
 {
-    gnrc_pktsnip_t *pkt;
-
-    iqueuemac_packet_info_t receive_packet_info;
-
-    while ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL) {
-
-        /* parse the packet */
-        int res = _parse_packet(pkt, &receive_packet_info);
-        if (res != 0) {
-            //LOG_DEBUG("Packet could not be parsed: %i\n", ret);
-            gnrc_pktbuf_release(pkt);
-            continue;
-        }
-
-        switch (receive_packet_info.header->type) {
-            case FRAMETYPE_BEACON: {
-                gnrc_pktbuf_release(pkt);
-            } break;
-
-            case FRAMETYPE_PREAMBLE: {
-                gnrc_netdev->gomach.quit_current_cycle = true;
-                gnrc_pktbuf_release(pkt);
-            } break;
-
-            case FRAMETYPE_PREAMBLE_ACK: {
-                gnrc_pktbuf_release(pkt);
-            } break;
-
-            case FRAMETYPE_IQUEUE_DATA: {
-                gnrc_pktbuf_release(pkt);
-            } break;
-
-            case FRAMETYPE_BROADCAST: {
-                gnrc_netdev->gomach.quit_current_cycle = true;
-                gnrc_gomach_dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
-                _dispatch(gnrc_netdev->rx.dispatch_buffer);
-                //puts("gomach: router receives a broadcast data !!");
-            } break;
-
-            case FRAMETYPE_ANNOUNCE: {
-                /*** it seems that this "init_retry" procedure is unnecessary here!! maybe delete it in the future ***/
-                //gomach->router_states.init_retry = true;
-                gnrc_pktbuf_release(pkt);
-            } break;
-
-
-            default: gnrc_pktbuf_release(pkt); break;
-        }
-
-    } /* end of while loop */
-}
-
-void iqueuemac_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev)
-{
+    assert(gnrc_netdev != NULL);
 
     uint16_t subchannel_seq, check_seq, own_id;
 
-/*
-    memcpy(&own_id,
-           gnrc_netdev->l2_addr,
-           2);
-*/
 	own_id = 0;
 	own_id = gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len-2];
 	own_id = own_id << 8;
 	own_id |= gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len-1];
 
-    /* range from 12 to 25 */
-    //own_id = 12;
+    /* First randomly set a sub-channel sequence, which ranges from 12 to 25. */
     subchannel_seq = 12 + (own_id % 14);
-    //printf("gomach: the random selected subchannel is %d .\n", subchannel_seq);
-    //printf("gomach: subchannel flag is %d .\n", gomach->subchannel_occu_flags);
 
+    /* Find a free sub-channel sequence. */
     int i = 0;
     for (i = 0; i < 14; i++) {
-        /* range from 1 to 14, lead to 2nd to 15th bit */
         check_seq = subchannel_seq - 11;
         check_seq = (1 << check_seq);
 
         if (check_seq & gnrc_netdev->gomach.subchannel_occu_flags) {
-            //puts("gomach: subchannel exist, find next subchannel.");
+        	LOG_INFO("INFO: [GOMACH]: sub-channel already occupied, find a new one.\n");
             own_id += 1;
             subchannel_seq = 12 + (own_id % 14);
         }
@@ -652,17 +591,17 @@ void iqueuemac_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev)
     }
 
     gnrc_netdev->gomach.sub_channel_num = subchannel_seq;
-    //printf("gomach: the final selected subchannel is %d .\n", subchannel_seq);
 }
 
-int gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma)
+int gnrc_gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable)
 {
-    /****** assemble and send the beacon ******/
+    assert(gnrc_netdev != NULL);
+
     gnrc_pktsnip_t *pkt;
     gnrc_netif_hdr_t *nethdr_preamble;
     gnrc_pktsnip_t *pkt_iqmac;
 
-    /* Assemble preamble packet */
+    /* Assemble the preamble packet. */
     iqueuemac_frame_preamble_t iqueuemac_preamble_hdr;
 
     iqueuemac_preamble_hdr.header.type = FRAMETYPE_PREAMBLE;
@@ -671,52 +610,42 @@ int gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma)
            gnrc_netdev->tx.current_neighbor->l2_addr_len);
     iqueuemac_preamble_hdr.dst_addr.len = gnrc_netdev->tx.current_neighbor->l2_addr_len;
 
-    pkt = gnrc_pktbuf_add(NULL, &iqueuemac_preamble_hdr, sizeof(iqueuemac_preamble_hdr), GNRC_NETTYPE_GOMACH);
+    pkt = gnrc_pktbuf_add(NULL, &iqueuemac_preamble_hdr, sizeof(iqueuemac_preamble_hdr),
+                          GNRC_NETTYPE_GOMACH);
     if (pkt == NULL) {
-        puts("gomach: preamble_hdr buf add failed in iqueue_mac_send_preamble().");
+        LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_preamble().\n");
         return -ENOBUFS;
     }
     pkt_iqmac = pkt;
 
     pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
     if (pkt == NULL) {
-        puts("gomach: preamble_hdr netif add failed in iqueue_mac_send_preamble().");
+        LOG_ERROR("ERROR: [GOMACH]: netif add failed in gnrc_gomach_send_preamble().\n");
         gnrc_pktbuf_release(pkt_iqmac);
         return -ENOBUFS;
     }
     pkt_iqmac = pkt;
 
-    /* We wouldn't get here if add the NETIF header had failed, so no
-        sanity checks needed */
     nethdr_preamble = (gnrc_netif_hdr_t *) (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
 
-    /* Construct NETIF header and initiate address fields */
+    /* Construct NETIF header and initiate address fields. */
     gnrc_netif_hdr_init(nethdr_preamble, 0, 0);
-    //gnrc_netif_hdr_set_dst_addr(nethdr_wa, lwmac->rx.l2_addr.addr, lwmac->rx.l2_addr.len);
 
-    /* Send WA as broadcast*/
+    /* Send preamble packet as broadcast. */
     nethdr_preamble->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
 
-    netopt_enable_t csma_enable;
-    csma_enable = use_csma;
-    int res;
-
-    res = gnrc_gomach_send(gnrc_netdev, pkt, csma_enable);
-    if (res < 0) {
-        puts("gomach: send preamble failed in iqueue_mac_send_preamble().");
-        gnrc_pktbuf_release(pkt_iqmac);
-    }
-    return res;
+    return gnrc_gomach_send(gnrc_netdev, pkt, csma_enable);
 }
 
 
-void gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma)
+int gnrc_gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma)
 {
-    /****** assemble and send the beacon ******/
+    assert(gnrc_netdev != NULL);
+
     gnrc_pktsnip_t *pkt;
     gnrc_netif_hdr_t *nethdr_announce;
 
-    /* Assemble announce packet */
+    /* Assemble the sub-channel sequence announce packet. */
     iqueuemac_frame_announce_t iqueuemac_announce_hdr;
 
     iqueuemac_announce_hdr.header.type = FRAMETYPE_ANNOUNCE;
@@ -725,67 +654,63 @@ void gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_c
     pkt = gnrc_pktbuf_add(NULL, &iqueuemac_announce_hdr, sizeof(iqueuemac_announce_hdr),
                           GNRC_NETTYPE_GOMACH);
     if (pkt == NULL) {
-        puts("gomach: pktbuf add failed in iqueuemac_send_announce().");
+        LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_bcast_subchann_seq().\n");
     }
 
     pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
     if (pkt == NULL) {
-        puts("gomach: pktbuf add failed in iqueuemac_send_announce().");
+        LOG_ERROR("ERROR: [GOMACH]: netif add failed in gnrc_gomach_bcast_subchann_seq().\n");
     }
-    /* We wouldn't get here if add the NETIF header had failed, so no
-        sanity checks needed */
+
     nethdr_announce = (gnrc_netif_hdr_t *)
                       (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
 
-    /* Construct NETIF header and initiate address fields */
+    /* Construct NETIF header and initiate address fields. */
     gnrc_netif_hdr_init(nethdr_announce, 0, 0);
 
-    /* Send WA as broadcast*/
+    /* Send the packet as broadcast. */
     nethdr_announce->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
 
-    netopt_enable_t csma_enable;
-    csma_enable = use_csma;
-    gnrc_gomach_send(gnrc_netdev, pkt, csma_enable);
+    return gnrc_gomach_send(gnrc_netdev, pkt, use_csma);
 }
 
-void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *pa_info)
+void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
 {
+    assert(gnrc_netdev != NULL);
+    assert(pkt != NULL);
 
     iqueuemac_frame_preamble_ack_t *iqueuemac_preamble_ack_hdr;
 
     iqueuemac_preamble_ack_hdr = (iqueuemac_frame_preamble_ack_t *) gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
-
     if (iqueuemac_preamble_ack_hdr == NULL) {
-        puts("iqueuemac_preamble_ack_hdr is null");
+        LOG_ERROR("ERROR: [GOMACH]: preamble_ack_hdr is null.\n");
         return;
     }
-
     iqueuemac_preamble_ack_hdr = ((gnrc_pktsnip_t *)iqueuemac_preamble_ack_hdr)->data;
 
-    /***** update all the necessary information to marked as a known neighbor ****/
+    /* Mark the neighbor as phase-known */
     gnrc_netdev->tx.current_neighbor->mac_type = KNOWN;
 
-    /*** remember to reduce a bit the phase for locking, since there is a hand-shake procedure before ***/
-    //uint32_t  phase_ticks;
-    /*** adjust the phase of the receiver ***/
-
+    /* Fetch and deduce the exact phase of the neighbor. */
     long int phase_ticks;
 
     if ((gnrc_netdev->gomach.phase_changed == true) && (gnrc_netdev->rx.enter_new_cycle == true)) {
-        /* this means that the node is already in a new cycle when doing phase changed.
-         * So, give some compensation for later phase adjust */
-        phase_ticks = gnrc_gomach_phase_now(gnrc_netdev) + gnrc_netdev->gomach.backoff_phase_ticks - iqueuemac_preamble_ack_hdr->phase_in_ticks;
-        //phase_ticks += (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US) / 4);
+        /* This means that this device is already in a new cycle after reset a new phase
+         * (phase-backoff). So, give some compensation for later phase adjust. */
+        phase_ticks = gnrc_gomach_phase_now(gnrc_netdev) +
+                      gnrc_netdev->gomach.backoff_phase_ticks -
+                      iqueuemac_preamble_ack_hdr->phase_in_ticks;
     }
     else {
-        phase_ticks = gnrc_gomach_phase_now(gnrc_netdev) - iqueuemac_preamble_ack_hdr->phase_in_ticks;
+        phase_ticks = gnrc_gomach_phase_now(gnrc_netdev) -
+                      iqueuemac_preamble_ack_hdr->phase_in_ticks;
     }
 
     if (phase_ticks < 0) {
         phase_ticks += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
     }
 
-    /* check if phase is too close */
+    /* Check if the sender's phase is too close to the receiver. */
     long int future_neighbor_phase;
     if (gnrc_netdev->gomach.phase_changed == true) {
         future_neighbor_phase = phase_ticks - gnrc_netdev->gomach.backoff_phase_ticks;
@@ -801,77 +726,18 @@ void iqueuemac_device_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pkts
     uint32_t neighbor_phase;
     neighbor_phase = (uint32_t)future_neighbor_phase;
 
-    /* if the sender's phase is too close to the receiver */
     if ((RTT_TICKS_TO_US(neighbor_phase) > (IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_CP_MIN_GAP_US)) ||
         (RTT_TICKS_TO_US(neighbor_phase) < IQUEUEMAC_CP_MIN_GAP_US)) {
-        puts("p close");
+        LOG_WARNING("WARNING: [GOMACH] t2u: phase is close to the neighbor's.\n");
         gnrc_netdev->gomach.phase_backoff = true;
+        /* Set a random phase-backoff value. */
         gnrc_netdev->gomach.backoff_phase_ticks =
-            random_uint32_range(RTT_US_TO_TICKS(IQUEUEMAC_CP_MIN_GAP_US), RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_CP_MIN_GAP_US));
+            random_uint32_range(RTT_US_TO_TICKS(IQUEUEMAC_CP_MIN_GAP_US),
+                                RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US -
+                                                IQUEUEMAC_CP_MIN_GAP_US));
     }
 
-    /*** move 1/3 CP duration to give some time redundancy for sender the has forward timer-drift!!! ***/
-    //phase_ticks = (phase_ticks + (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)/3)) % RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-
-    gnrc_netdev->tx.current_neighbor->cp_phase = (uint32_t)phase_ticks; //gnrc_gomach_phase_now(gomach); //- RTT_US_TO_TICKS(IQUEUEMAC_WAIT_CP_SECUR_GAP_US); rtt_get_counter();
-
-
-#if 0
-    if ((gomach->father_router_addr.len != 0) && (_addr_match(&gomach->father_router_addr, &iqueuemac_preamble_ack_hdr->father_router))) {
-        //gomach->tx.current_neighbour->in_same_cluster = true;
-        //gomach->tx.current_neighbour->cp_phase = 0;
-
-        gomach->tx.current_neighbour->in_same_cluster = false;
-        gomach->tx.current_neighbour->cp_phase = rtt_get_counter();
-
-        puts("gomach: node got phase-locked with father.");
-
-        /***  add the node type into the in-cluster list if the receiver and the sender share the same father ***/
-        if (iqueuemac_preamble_ack_hdr->device_type == NODE) {
-            iqueuemac_add_in_cluster_neighbor(gomach, &pa_info->src_addr);
-        }
-        //puts("gomach: get phased-locked, in the same cluster.");
-    }
-    else { //for router type, it will automatically enter here, since father-router are different
-        gomach->tx.current_neighbour->in_same_cluster = false;
-        gomach->tx.current_neighbour->cp_phase = rtt_get_counter();
-
-        if (iqueuemac_preamble_ack_hdr->device_type == NODE) {
-            iqueuemac_remove_in_cluster_neighbor(gomach, &pa_info->src_addr);
-        }
-        //puts("gomach: get phased-locked, not in the same cluster.");
-    }
-
-
-    /* if this is the father router, get phase-locked!!!!  */
-    if ((_addr_match(&gomach->father_router_addr, &pa_info->src_addr)) && (gomach->mac_type == NODE)) {
-        rtt_clear_alarm();
-
-        uint32_t phase_ticks;
-        uint32_t alarm;
-        //uint32_t  current_timing_us;
-
-        /**set the rtt counter to be the same as father router*/
-        phase_ticks = iqueuemac_preamble_ack_hdr->phase_in_ticks;
-        rtt_set_counter(phase_ticks);
-
-        /** set set next rtt alarm*/
-        if (phase_ticks >= RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US)) {
-            alarm = RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
-            iqueuemac_set_rtt_alarm(alarm, (void *) IQUEUEMAC_EVENT_RTT_N_ENTER_CP);
-            gomach->node_states.in_cp_period = false;
-            //puts("gomach: node got phase-locked with father in sleep.");
-        }
-        else {
-            alarm = RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US);
-            iqueuemac_set_rtt_alarm(alarm, (void *) IQUEUEMAC_EVENT_RTT_N_ENTER_SLEEP);
-            gomach->node_states.in_cp_period = true;
-            puts("gomach: node got phase-locked with father in CP.");
-        }
-
-    }
-#endif
-
+    gnrc_netdev->tx.current_neighbor->cp_phase = (uint32_t) phase_ticks;
 }
 
 void iqueuemac_packet_process_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
@@ -912,7 +778,7 @@ void iqueuemac_packet_process_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
                             gnrc_netdev->tx.current_neighbor->l2_addr_len) == 0)) {
                     gnrc_netdev->tx.got_preamble_ack = true;
 
-                    iqueuemac_device_process_preamble_ack(gnrc_netdev, pkt, &receive_packet_info);
+                    gnrc_gomach_process_preamble_ack(gnrc_netdev, pkt);
 
                     /**got preamble-ack, flush the rx queue***/
                     gnrc_pktbuf_release(pkt);
