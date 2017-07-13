@@ -163,7 +163,7 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
             rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GNRC_GOMACH_EVENT_RTT_NEW_CYCLE);
 
             /* Update neighbors' public channel phases. */
-            update_neighbor_pubchan(gnrc_netdev);
+            gnrc_gomach_update_neighbor_pubchan(gnrc_netdev);
             gnrc_netdev->gomach.need_update = true;
         } break;
         default: {
@@ -503,11 +503,13 @@ static void gomach_t2k_trans_in_cp(gnrc_netdev_t *gnrc_netdev)
     }
 
     /* Send the data packet here. */
-    int res = gomach_send_data_packet(gnrc_netdev, NETOPT_ENABLE);
+    int res = gnrc_gomach_send_data(gnrc_netdev, NETOPT_ENABLE);
     if (res < 0) {
         LOG_ERROR("ERROR: [GOMACH] t2k transmission fail: %d, drop packet.\n", res);
-
         gnrc_netdev->tx.no_ack_counter = 0;
+
+        /* If res is < 0, the data packet will not be released in send().
+         * so need to release the data here. */
         if (gnrc_netdev->tx.packet != NULL) {
             gnrc_pktbuf_release(gnrc_netdev->tx.packet);
             gnrc_netdev->tx.packet = NULL;
@@ -634,7 +636,7 @@ static void gomach_t2k_wait_beacon(gnrc_netdev_t *gnrc_netdev)
     /* Process the beacon if we receive it. */
     if (gnrc_gomach_get_pkt_received(gnrc_netdev)) {
         gnrc_gomach_set_pkt_received(gnrc_netdev, false);
-        gomach_wait_beacon_packet_process(gnrc_netdev);
+        gnrc_gomach_packet_process_in_wait_beacon(gnrc_netdev);
     }
 
     /* If we need to quit t2k, don't release the current neighbor pointer. In the
@@ -728,9 +730,12 @@ static void gomach_t2k_trans_in_slots(gnrc_netdev_t *gnrc_netdev)
     }
 
     /* Send data packet in its allocated slots (scheduled slots period). */
-    int res = gomach_send_data_packet(gnrc_netdev, NETOPT_DISABLE);
+    int res = gnrc_gomach_send_data(gnrc_netdev, NETOPT_DISABLE);
     if (res < 0) {
         LOG_ERROR("ERROR: [GOMACH] t2k vTDMA transmission fail: %d, drop packet.\n", res);
+
+        /* If res is < 0, the data packet will not be released in send().
+         * so need to release the data here. */
         if (gnrc_netdev->tx.packet != NULL) {
             gnrc_pktbuf_release(gnrc_netdev->tx.packet);
             gnrc_netdev->tx.packet = NULL;
@@ -841,7 +846,8 @@ static void gomach_t2k_end(gnrc_netdev_t *gnrc_netdev)
 
     /* If the sender's phase has been changed, figure out the related phase of tx-neighbors. */
     if (gnrc_netdev->gomach.phase_changed == true) {
-        gomach_figure_neighbors_new_phase(gnrc_netdev);
+    	gnrc_netdev->gomach.phase_changed = false;
+        gnrc_gomach_update_neighbor_phase(gnrc_netdev);
     }
 
     /* Enable Auto ACK again for data reception */
@@ -1010,7 +1016,7 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
 
     if (gnrc_gomach_get_pkt_received(gnrc_netdev)) {
         gnrc_gomach_set_pkt_received(gnrc_netdev, false);
-        iqueuemac_packet_process_in_wait_preamble_ack(gnrc_netdev);
+        gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netdev);
     }
 
     /* Quit t2u if we have to, e.g., the device found ongoing bcast of other devices. */
@@ -1162,9 +1168,16 @@ static void gomach_t2u_send_data(gnrc_netdev_t *gnrc_netdev)
 
     /* Here, we send the data to the receiver. */
     int res;
-    res = gomach_send_data_packet(gnrc_netdev, NETOPT_ENABLE);
+    res = gnrc_gomach_send_data(gnrc_netdev, NETOPT_ENABLE);
     if (res < 0) {
         LOG_ERROR("ERROR: [GOMACH] t2u data sending error: %d.\n", res);
+
+        /* If res is < 0, the data packet will not be released in send().
+         * so need to release the data here. */
+        if (gnrc_netdev->tx.packet != NULL) {
+            gnrc_pktbuf_release(gnrc_netdev->tx.packet);
+            gnrc_netdev->tx.packet = NULL;
+        }
 
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
         gnrc_netdev->gomach.need_update = true;
@@ -1264,7 +1277,8 @@ static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
 
     /* If the node's phase has been changed, figure out the related phase of all neighbors. */
     if (gnrc_netdev->gomach.phase_changed == true) {
-        gomach_figure_neighbors_new_phase(gnrc_netdev);
+    	gnrc_netdev->gomach.phase_changed = false;
+        gnrc_gomach_update_neighbor_phase(gnrc_netdev);
     }
 
     /* Resume to listen state and go to sleep. */
@@ -1446,7 +1460,7 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
 static void gomach_listen_cp_end(gnrc_netdev_t *gnrc_netdev)
 {
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
-    _dispatch(gnrc_netdev->rx.dispatch_buffer);
+    gnrc_mac_dispatch(&gnrc_netdev->rx);
 
     /* If we need to quit communications in this cycle, go to sleep. */
     if (gnrc_netdev->gomach.quit_current_cycle == true) {
@@ -1499,7 +1513,7 @@ static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
         else {
             /* If the device hasn't allocated transmission slots, check whether it has packets
              * to transmit to neighbor. */
-            if (gomach_find_next_tx_neighbor(gnrc_netdev)) {
+            if (gnrc_gomach_find_next_tx_neighbor(gnrc_netdev)) {
                 /* Now, we have packet to send. */
 
                 if (gnrc_netdev->tx.current_neighbor == &gnrc_netdev->tx.neighbors[0]) {
@@ -1517,7 +1531,8 @@ static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
                     /* If the device's wakeup-phase has been changed,
                      * figure out the new phases of all neighbors. */
                     if (gnrc_netdev->gomach.phase_changed == true) {
-                        gomach_figure_neighbors_new_phase(gnrc_netdev);
+                    	gnrc_netdev->gomach.phase_changed = false;
+                        gnrc_gomach_update_neighbor_phase(gnrc_netdev);
                     }
                 }
                 else {
@@ -1588,7 +1603,7 @@ static void gomach_vtdma(gnrc_netdev_t *gnrc_netdev)
     /* Process received packet here. */
     if (gnrc_gomach_get_pkt_received(gnrc_netdev)) {
         gnrc_gomach_set_pkt_received(gnrc_netdev, false);
-        iqueuemac_router_vtdma_receive_packet_process(gnrc_netdev);
+        gnrc_gomach_packet_process_in_vtdma(gnrc_netdev);
     }
 
     if (gomach_timeout_is_expired(gnrc_netdev, TIMEOUT_VTDMA)) {
@@ -1614,13 +1629,13 @@ static void gomach_vtdma(gnrc_netdev_t *gnrc_netdev)
 static void gomach_vtdma_end(gnrc_netdev_t *gnrc_netdev)
 {
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
-    _dispatch(gnrc_netdev->rx.dispatch_buffer);
+    gnrc_mac_dispatch(&gnrc_netdev->rx);
 
     /* Switch the radio to the public-channel. */
     gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
 
     /* Check if there is packet to send. */
-    if (gomach_find_next_tx_neighbor(gnrc_netdev)) {
+    if (gnrc_gomach_find_next_tx_neighbor(gnrc_netdev)) {
         if (gnrc_netdev->tx.current_neighbor == &gnrc_netdev->tx.neighbors[0]) {
         	/* The packet is for broadcasting. */
             if (gnrc_netdev->gomach.get_other_preamble == false) {
@@ -1634,7 +1649,8 @@ static void gomach_vtdma_end(gnrc_netdev_t *gnrc_netdev)
             /* If the device's wakeup-phase has been changed,
              * figure out the new phases of all neighbors. */
             if (gnrc_netdev->gomach.phase_changed == true) {
-                gomach_figure_neighbors_new_phase(gnrc_netdev);
+            	gnrc_netdev->gomach.phase_changed = false;
+                gnrc_gomach_update_neighbor_phase(gnrc_netdev);
             }
         }
         else {
@@ -1679,7 +1695,8 @@ static void gomach_sleep_init(gnrc_netdev_t *gnrc_netdev)
     /* If the device's wakeup-phase has been changed,
      * figure out the new phases of all neighbors. */
     if (gnrc_netdev->gomach.phase_changed == true) {
-        gomach_figure_neighbors_new_phase(gnrc_netdev);
+    	gnrc_netdev->gomach.phase_changed = false;
+        gnrc_gomach_update_neighbor_phase(gnrc_netdev);
     }
 
     /* Turn off the radio during sleep period to conserve power. */

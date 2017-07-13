@@ -354,22 +354,82 @@ int gnrc_gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_e
  * @brief Process the received preamble-ACK packet to get phase-locked with the sender.
  *
  * @param[in,out] gnrc_netdev  ptr to netdev device.
- * @param[in,out] pkt          ptr to the received preamble-ACK.
+ * @param[in] pkt          ptr to the received preamble-ACK.
  *
  */
 void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt);
 
-void iqueuemac_packet_process_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev);
+/**
+ * @brief Process the received packets to when waiting for the preamble-ACK packet.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ *
+ */
+void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev);
 
-int gomach_send_data_packet(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable);
-bool gomach_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev);
-void iqueuemac_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt);
-void gomach_wait_beacon_packet_process(gnrc_netdev_t *gnrc_netdev);
-void iqueuemac_router_vtdma_receive_packet_process(gnrc_netdev_t *gnrc_netdev);
-void gomach_figure_neighbors_new_phase(gnrc_netdev_t *gnrc_netdev);
-void _dispatch(gnrc_pktsnip_t **buffer);
-void update_neighbor_pubchan(gnrc_netdev_t *gnrc_netdev);
-void iqueuemac_broadcast_receive_packet_process(gnrc_netdev_t *gnrc_netdev);
+/**
+ * @brief Send a data packet to the targeted neighbor.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] csma_enable  value of csma-enable parameter.
+ *
+ * @return                 >0 upon sending success.
+ * @return                 0< upon sending failure.
+ */
+int gnrc_gomach_send_data(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable);
+
+/**
+ * @brief Find a neighbor that is next to send packet to.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ *
+ * @return                 true, if found next TX neighbor.
+ * @return                 false, if not found next TX neighbor.
+ *
+ */
+bool gnrc_gomach_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev);
+
+/**
+ * @brief Process the received beacon packet.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in]     pkt          ptr to the received beacon.
+ *
+ */
+void gnrc_gomach_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt);
+
+/**
+ * @brief Process the received packets when waiting for the beacon during t2k procedure in
+ *        GoMacH.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ *
+ */
+void gnrc_gomach_packet_process_in_wait_beacon(gnrc_netdev_t *gnrc_netdev);
+
+/**
+ * @brief Process the received packets in the vTDMA period in GoMacH.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ *
+ */
+void gnrc_gomach_packet_process_in_vtdma(gnrc_netdev_t *gnrc_netdev);
+
+/**
+ * @brief Update the TX neighbors' phases in GoMacH.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ *
+ */
+void gnrc_gomach_update_neighbor_phase(gnrc_netdev_t *gnrc_netdev);
+
+/**
+ * @brief Update the TX neighbors' public channel phase in GoMacH.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ *
+ */
+void gnrc_gomach_update_neighbor_pubchan(gnrc_netdev_t *gnrc_netdev);
 
 #ifdef __cplusplus
 }
