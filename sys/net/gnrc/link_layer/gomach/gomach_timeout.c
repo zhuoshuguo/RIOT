@@ -30,7 +30,7 @@ static inline void _iqueuemac_clear_timeout(gnrc_gomach_timeout_t *timeout)
     assert(timeout);
 
     xtimer_remove(&(timeout->timer));
-    timeout->type = TIMEOUT_DISABLED;
+    timeout->type = GNRC_GOMACH_TIMEOUT_DISABLED;
 }
 
 /******************************************************************************/
@@ -83,7 +83,7 @@ gnrc_gomach_timeout_t *_iqueuemac_acquire_timeout(gnrc_netdev_t *netdev, gnrc_go
     }
 
     for (unsigned i = 0; i < GNRC_GOMACH_TIMEOUT_COUNT; i++) {
-        if (netdev->gomach.timeouts[i].type == TIMEOUT_DISABLED) {
+        if (netdev->gomach.timeouts[i].type == GNRC_GOMACH_TIMEOUT_DISABLED) {
         	netdev->gomach.timeouts[i].type = type;
             return &netdev->gomach.timeouts[i];
         }
@@ -143,7 +143,7 @@ void gomach_reset_timeouts(gnrc_netdev_t *netdev)
     assert(netdev);
 
     for (unsigned i = 0; i < GNRC_GOMACH_TIMEOUT_COUNT; i++) {
-        if (netdev->gomach.timeouts[i].type != TIMEOUT_DISABLED) {
+        if (netdev->gomach.timeouts[i].type != GNRC_GOMACH_TIMEOUT_DISABLED) {
             _iqueuemac_clear_timeout(&netdev->gomach.timeouts[i]);
         }
     }
