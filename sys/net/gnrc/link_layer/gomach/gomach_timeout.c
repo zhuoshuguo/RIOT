@@ -25,7 +25,7 @@
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
-static inline void _iqueuemac_clear_timeout(gomach_timeout_t *timeout)
+static inline void _iqueuemac_clear_timeout(gnrc_gomach_timeout_t *timeout)
 {
     assert(timeout);
 
@@ -36,11 +36,11 @@ static inline void _iqueuemac_clear_timeout(gomach_timeout_t *timeout)
 /******************************************************************************/
 
 /* Return index >= 0 if found, -ENONENT if not found */
-static int _iqueuemac_find_timeout(gomach_t *gomach, gomach_timeout_type_t type)
+static int _iqueuemac_find_timeout(gnrc_gomach_t *gomach, gnrc_gomach_timeout_type_t type)
 {
     assert(gomach);
 
-    for (unsigned i = 0; i < IQUEUEMAC_TIMEOUT_COUNT; i++) {
+    for (unsigned i = 0; i < GNRC_GOMACH_TIMEOUT_COUNT; i++) {
         if (gomach->timeouts[i].type == type) {
             return i;
         }
@@ -50,7 +50,7 @@ static int _iqueuemac_find_timeout(gomach_t *gomach, gomach_timeout_type_t type)
 
 /******************************************************************************/
 
-inline bool gomach_timeout_is_running(gnrc_netdev_t *netdev, gomach_timeout_type_t type)
+inline bool gomach_timeout_is_running(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type)
 {
     assert(netdev);
     return (_iqueuemac_find_timeout(&netdev->gomach, type) >= 0);
@@ -58,7 +58,7 @@ inline bool gomach_timeout_is_running(gnrc_netdev_t *netdev, gomach_timeout_type
 
 /******************************************************************************/
 
-bool gomach_timeout_is_expired(gnrc_netdev_t *netdev, gomach_timeout_type_t type)
+bool gomach_timeout_is_expired(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type)
 {
     assert(netdev);
 
@@ -74,7 +74,7 @@ bool gomach_timeout_is_expired(gnrc_netdev_t *netdev, gomach_timeout_type_t type
 
 /******************************************************************************/
 
-gomach_timeout_t *_iqueuemac_acquire_timeout(gnrc_netdev_t *netdev, gomach_timeout_type_t type)
+gnrc_gomach_timeout_t *_iqueuemac_acquire_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type)
 {
     assert(netdev);
 
@@ -82,7 +82,7 @@ gomach_timeout_t *_iqueuemac_acquire_timeout(gnrc_netdev_t *netdev, gomach_timeo
         return NULL;
     }
 
-    for (unsigned i = 0; i < IQUEUEMAC_TIMEOUT_COUNT; i++) {
+    for (unsigned i = 0; i < GNRC_GOMACH_TIMEOUT_COUNT; i++) {
         if (netdev->gomach.timeouts[i].type == TIMEOUT_DISABLED) {
         	netdev->gomach.timeouts[i].type = type;
             return &netdev->gomach.timeouts[i];
@@ -93,7 +93,7 @@ gomach_timeout_t *_iqueuemac_acquire_timeout(gnrc_netdev_t *netdev, gomach_timeo
 
 /******************************************************************************/
 
-void gomach_timeout_make_expire(gomach_timeout_t *timeout)
+void gomach_timeout_make_expire(gnrc_gomach_timeout_t *timeout)
 {
     assert(timeout);
 
@@ -103,7 +103,7 @@ void gomach_timeout_make_expire(gomach_timeout_t *timeout)
 
 /******************************************************************************/
 
-void gomach_clear_timeout(gnrc_netdev_t *netdev, gomach_timeout_type_t type)
+void gomach_clear_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type)
 {
     assert(netdev);
 
@@ -115,11 +115,11 @@ void gomach_clear_timeout(gnrc_netdev_t *netdev, gomach_timeout_type_t type)
 
 /******************************************************************************/
 
-void gomach_set_timeout(gnrc_netdev_t *netdev, gomach_timeout_type_t type, uint32_t offset)
+void gomach_set_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type, uint32_t offset)
 {
     assert(netdev);
 
-    gomach_timeout_t *timeout;
+    gnrc_gomach_timeout_t *timeout;
     if ((timeout = _iqueuemac_acquire_timeout(netdev, type))) {
         DEBUG("[gomach] Set timeout %s in %" PRIu32 " us\n",
               iqueuemac_timeout_names[type], offset);
@@ -142,7 +142,7 @@ void gomach_reset_timeouts(gnrc_netdev_t *netdev)
 {
     assert(netdev);
 
-    for (unsigned i = 0; i < IQUEUEMAC_TIMEOUT_COUNT; i++) {
+    for (unsigned i = 0; i < GNRC_GOMACH_TIMEOUT_COUNT; i++) {
         if (netdev->gomach.timeouts[i].type != TIMEOUT_DISABLED) {
             _iqueuemac_clear_timeout(&netdev->gomach.timeouts[i]);
         }

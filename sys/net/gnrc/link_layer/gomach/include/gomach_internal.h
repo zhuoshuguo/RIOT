@@ -256,7 +256,7 @@ static inline void gnrc_gomach_turn_to_listen_mode(gnrc_netdev_t *gnrc_netdev){
  * @return                 true if the received packet is a duplicate packet.
  * @return                 false if the received packet is not a duplicate packet.
  */
-bool gnrc_gomach_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t *pa_info);
+bool gnrc_gomach_check_duplicate(gnrc_netdev_t *gnrc_netdev, gnrc_gomach_packet_info_t *pa_info);
 
 /**
  * @brief Send a pktsnip using GoMacH.
@@ -279,7 +279,7 @@ int gnrc_gomach_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_ena
  * @return                 >0 upon sending success.
  * @return                 0< upon sending failure.
  */
-int gnrc_gomach_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t *info);
+int gnrc_gomach_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_gomach_packet_info_t *info);
 
 /**
  * @brief Broadcast a beacon packet in GoMacH.
@@ -311,7 +311,7 @@ int gnrc_gomach_dispatch_defer(gnrc_pktsnip_t * buffer[], gnrc_pktsnip_t * pkt);
  *
  */
 void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt,
-                                  iqueuemac_packet_info_t *pa_info);
+                                  gnrc_gomach_packet_info_t *pa_info);
 
 /**
  * @brief Process packets received during the CP (wake-up) period of GoMacH.

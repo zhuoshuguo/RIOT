@@ -33,17 +33,17 @@ extern "C" {
 
 #define IQUEUEMAC_TIMEOUT_INIT  { {}, {}, false, TIMEOUT_DISABLED }
 
-void gomach_set_timeout(gnrc_netdev_t *netdev, gomach_timeout_type_t type, uint32_t offset);
+void gomach_set_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type, uint32_t offset);
 
-void gomach_clear_timeout(gnrc_netdev_t *netdev, gomach_timeout_type_t type);
+void gomach_clear_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type);
 
-bool gomach_timeout_is_running(gnrc_netdev_t *netdev, gomach_timeout_type_t type);
+bool gomach_timeout_is_running(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type);
 
-bool gomach_timeout_is_expired(gnrc_netdev_t *netdev, gomach_timeout_type_t type);
+bool gomach_timeout_is_expired(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type);
 
 void gomach_reset_timeouts(gnrc_netdev_t *netdev);
 
-void gomach_timeout_make_expire(gomach_timeout_t *timeout);
+void gomach_timeout_make_expire(gnrc_gomach_timeout_t *timeout);
 
 #ifdef __cplusplus
 }

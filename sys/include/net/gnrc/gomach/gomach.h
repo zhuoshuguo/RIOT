@@ -23,17 +23,12 @@
 #define NET_GNRC_GOMACH_GOMACH_H
 
 #include "kernel_types.h"
+#include "net/gnrc/netdev.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct gnrc_netdev gnrc_netdev_t;
-
-typedef enum {
-    UNKNOWN = 0,
-	KNOWN,
-} iqueuemac_type_t;
 
 #ifndef IQUEUEMAC_WAIT_RTT_STABLE_US
 #define IQUEUEMAC_WAIT_RTT_STABLE_US        (3000U * 1000)
@@ -112,10 +107,6 @@ typedef enum {
 #define IQUEUEMAC_QUIT_CP_MARGIN_US        (IQUEUEMAC_CP_DURATION_US / 2)
 #endif
 
-#ifndef IQUEUEMAC_TIMEOUT_COUNT
-#define IQUEUEMAC_TIMEOUT_COUNT             (5U)
-#endif
-
 #ifndef IQUEUEMAC_MAX_TX_BUSY_COUNTER
 #define IQUEUEMAC_MAX_TX_BUSY_COUNTER      (5U)
 #endif
@@ -124,21 +115,9 @@ typedef enum {
 #define IQUEUEMAC_MAX_CP_BACKOFF_COUNTER      (5U)
 #endif
 
-#ifndef IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE
-#define IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE             (8U)
-#endif
 
 #ifndef IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE
 #define IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE            (30U)
-#endif
-
-#ifndef IQUEUEMAC_MAX_L2_ADDR_LEN
-#define IQUEUEMAC_MAX_L2_ADDR_LEN           (8U)
-#endif
-
-
-#ifndef IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT
-#define IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT           (11U)
 #endif
 
 #ifndef IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM

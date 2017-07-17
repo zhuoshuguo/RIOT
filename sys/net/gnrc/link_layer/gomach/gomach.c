@@ -96,7 +96,7 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     /* Initialize GoMacH's other key parameters. */
     gnrc_netdev->tx.no_ack_counter = 0;
     gnrc_netdev->rx.enter_new_cycle = false;
-    gnrc_netdev->rx.router_vtdma_mana.sub_channel_seq = 26;
+    gnrc_netdev->rx.vtdma_manag.sub_channel_seq = 26;
     gnrc_netdev->gomach.subchannel_occu_flags = 0;
     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
     gnrc_netdev->gomach.need_update = false;
@@ -112,7 +112,7 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     device_state->seq = gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len - 1];
 
     /* Initialize GoMacH's duplicate-check scheme. */
-    for (int i = 0; i < IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE; i++) {
+    for (int i = 0; i < GNRC_GOMACH_CHECK_DUPPKT_BUFFER_SIZE; i++) {
         gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
     }
 
@@ -1348,7 +1348,7 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
 {
     /* Reset last_seq_info, for avoiding receiving duplicate packets.
      * To-do: remove this in the future? */
-    for (int i = 0; i < IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE; i++) {
+    for (int i = 0; i < GNRC_GOMACH_CHECK_DUPPKT_BUFFER_SIZE; i++) {
         if (gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len != 0) {
             gnrc_netdev->rx.check_dup_pkt.last_nodes[i].life_cycle++;
             if (gnrc_netdev->rx.check_dup_pkt.last_nodes[i].life_cycle >=
@@ -1486,7 +1486,7 @@ static void gomach_listen_send_beacon(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->gomach.need_update = true;
     }
     else {
-        if (gnrc_netdev->rx.router_vtdma_mana.total_slots_num == 0) {
+        if (gnrc_netdev->rx.vtdma_manag.total_slots_num == 0) {
             gnrc_netdev->gomach.send_beacon_fail = true;
             gnrc_netdev->gomach.need_update = true;
         }
@@ -1503,7 +1503,7 @@ static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
     if (gnrc_gomach_get_tx_finish(gnrc_netdev) ||
         (gnrc_netdev->gomach.send_beacon_fail == true)) {
 
-        if ((gnrc_netdev->rx.router_vtdma_mana.total_slots_num > 0) &&
+        if ((gnrc_netdev->rx.vtdma_manag.total_slots_num > 0) &&
             (gnrc_netdev->gomach.send_beacon_fail == false)) {
             /* If the device has allocated transmission slots to other nodes,
              *  switch to vTDMA period to receive packets. */
@@ -1588,7 +1588,7 @@ static void gomach_vtdma_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
 
     /* Set the vTDMA period timeout. */
-    uint32_t vtdma_duration = gnrc_netdev->rx.router_vtdma_mana.total_slots_num *
+    uint32_t vtdma_duration = gnrc_netdev->rx.vtdma_manag.total_slots_num *
                               IQUEUEMAC_VTDMA_SLOT_SIZE_US;
     gomach_set_timeout(gnrc_netdev, TIMEOUT_VTDMA, vtdma_duration);
 
@@ -2022,7 +2022,7 @@ static void *_gnrc_gomach_thread(void *args)
             }
             case GNRC_GOMACH_EVENT_TIMEOUT_TYPE: {
                 /* GoMacH timeout expires. */
-                gomach_timeout_make_expire((gomach_timeout_t *) msg.content.ptr);
+                gomach_timeout_make_expire((gnrc_gomach_timeout_t *) msg.content.ptr);
                 gnrc_netdev->gomach.need_update = true;
                 break;
             }

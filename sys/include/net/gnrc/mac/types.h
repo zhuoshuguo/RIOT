@@ -79,9 +79,9 @@ typedef struct {
 #ifdef MODULE_GNRC_GOMACH
     gnrc_gomach_listen_state_t listen_state;
     bool enter_new_cycle;
-    rx_slots_schedule_unit rx_register_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
-    rx_vtdma_mana_t router_vtdma_mana;
-    check_dup_pkt_t check_dup_pkt;
+    gnrc_gomach_slots_sched_unit_t rx_register_list[GNRC_GOMACH_SLOTS_SCHEDULE_UNIT];
+    gnrc_gomach_vtdma_manag_t vtdma_manag;
+    gnrc_gomach_dupchk_t check_dup_pkt;
 #endif
 } gnrc_mac_rx_t;
 
@@ -122,7 +122,7 @@ typedef struct {
 #ifdef MODULE_GNRC_GOMACH
     uint16_t pub_chanseq;                            /**< Neighbor's current public channel sequence */
     uint32_t cp_phase;                               /**< Neighbor's wakeup phase */
-    iqueuemac_type_t mac_type;                       /**< UNKONW when this neighbor is not phase-locked yet*/
+    gnrc_gomach_type_t mac_type;                       /**< UNKONW when this neighbor is not phase-locked yet*/
 #endif
 } gnrc_mac_tx_neighbor_t;
 
@@ -199,7 +199,7 @@ typedef struct {
     bool got_preamble_ack;
     uint32_t broadcast_seq;
     uint8_t tx_seq;
-    vtdma_para_t vtdma_para;
+    gnrc_gomach_vtdma_t vtdma_para;
     uint8_t no_ack_counter;
     uint8_t t2u_retry_counter;
     bool t2u_on_public_1;

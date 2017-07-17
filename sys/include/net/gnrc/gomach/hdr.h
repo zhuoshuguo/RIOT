@@ -22,13 +22,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "gomach.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/******************************************************************************/
+#ifndef IQUEUEMAC_MAX_L2_ADDR_LEN
+#define IQUEUEMAC_MAX_L2_ADDR_LEN           (8U)
+#endif
 
 typedef struct {
     uint8_t addr[IQUEUEMAC_MAX_L2_ADDR_LEN];

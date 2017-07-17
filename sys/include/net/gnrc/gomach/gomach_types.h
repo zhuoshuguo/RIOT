@@ -26,7 +26,6 @@
 #include "xtimer.h"
 #include "net/gnrc.h"
 #include "net/gnrc/gomach/hdr.h"
-#include "net/gnrc/gomach/gomach.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +40,23 @@ extern "C" {
 #define GNRC_GOMACH_PHASE_UNINITIALIZED     (0)
 
 #define GNRC_GOMACH_PHASE_MAX               (-1)
+
+#ifndef GNRC_GOMACH_CHECK_DUPPKT_BUFFER_SIZE
+#define GNRC_GOMACH_CHECK_DUPPKT_BUFFER_SIZE             (8U)
+#endif
+
+#ifndef GNRC_GOMACH_TIMEOUT_COUNT
+#define GNRC_GOMACH_TIMEOUT_COUNT             (5U)
+#endif
+
+#ifndef GNRC_GOMACH_SLOTS_SCHEDULE_UNIT
+#define GNRC_GOMACH_SLOTS_SCHEDULE_UNIT           (11U)
+#endif
+
+typedef enum {
+    UNKNOWN = 0,
+	KNOWN,
+} gnrc_gomach_type_t;
 
 typedef enum {
 	GNRC_GOMACH_BCAST_INIT = 0,
@@ -108,29 +124,29 @@ typedef enum {
 
 typedef struct {
     uint8_t addr[IQUEUEMAC_MAX_L2_ADDR_LEN];
-} l2_id_t;
+} gnrc_gomach_l2_id_t;
 
 typedef struct {
     l2_addr_t node_addr;
     uint8_t queue_indicator;
-    iqueuemac_type_t mac_type;
-}rx_slots_schedule_unit;
+    gnrc_gomach_type_t mac_type;
+} gnrc_gomach_slots_sched_unit_t;
 
 typedef struct {
     uint8_t total_slots_num;
     uint8_t sub_channel_seq;
-}rx_vtdma_mana_t;
+} gnrc_gomach_vtdma_manag_t;
 
 typedef struct {
     l2_addr_t node_addr;
     uint8_t seq;
     uint8_t life_cycle;
-}last_seq_info_t;
+} gnrc_gomach_dupchk_unit_t;
 
 typedef struct {
-    last_seq_info_t last_nodes[IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE];
+    gnrc_gomach_dupchk_unit_t last_nodes[GNRC_GOMACH_CHECK_DUPPKT_BUFFER_SIZE];
     uint8_t queue_head;
-}check_dup_pkt_t;
+} gnrc_gomach_dupchk_t;
 
 /* @brief   Type to pass information about parsing */
 typedef struct {
@@ -138,14 +154,14 @@ typedef struct {
     l2_addr_t src_addr;         /**< copied source address of packet  */
     l2_addr_t dst_addr;         /**< copied destination address of packet */
     uint8_t seq;                /**< seq of the received packet */
-} iqueuemac_packet_info_t;
+} gnrc_gomach_packet_info_t;
 
 typedef struct {
     uint16_t sub_channel_seq;
     uint8_t slots_position;
     uint8_t slots_num;
     bool get_beacon;
-}vtdma_para_t;
+} gnrc_gomach_vtdma_t;
 
 typedef enum {
     TIMEOUT_DISABLED = 0,
@@ -165,23 +181,22 @@ typedef enum {
     TIMEOUT_VTDMA,
     /*****************simple-node******************/
     TIMEOUT_BEACON_END
-
-} gomach_timeout_type_t;
+} gnrc_gomach_timeout_type_t;
 
 typedef struct {
     xtimer_t timer;
     msg_t msg;
     /* If type != DISABLED, this indicates if timeout has expired */
     bool expired;
-    gomach_timeout_type_t type;
-} gomach_timeout_t;
+    gnrc_gomach_timeout_type_t type;
+} gnrc_gomach_timeout_t;
 
 typedef struct gomach {
     /* Internal state of MAC layer */
     gnrc_gomach_basic_state_t basic_state;
     gnrc_gomach_init_state_t init_state;
 
-    gomach_timeout_t timeouts[IQUEUEMAC_TIMEOUT_COUNT];
+    gnrc_gomach_timeout_t timeouts[GNRC_GOMACH_TIMEOUT_COUNT];
 
     uint16_t subchannel_occu_flags;
     uint16_t sub_channel_num;
@@ -209,7 +224,7 @@ typedef struct gomach {
     bool send_beacon_fail;
     bool rx_memory_full;
 
-} gomach_t;
+} gnrc_gomach_t;
 
 #ifdef __cplusplus
 }

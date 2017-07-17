@@ -42,7 +42,7 @@
 
 #include "log.h"
 
-int _parse_packet(gnrc_pktsnip_t *pkt, iqueuemac_packet_info_t *info)
+int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
 {
     assert(info != NULL);
     assert(pkt != NULL);
@@ -181,7 +181,7 @@ int gnrc_gomach_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_ena
 }
 
 
-int gnrc_gomach_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t *info)
+int gnrc_gomach_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_gomach_packet_info_t *info)
 {
     assert(gnrc_netdev != NULL);
     assert(info != NULL);
@@ -243,9 +243,9 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
     uint8_t total_tdma_slot_num = 0;
 
     /* First check how many slots needed to be allocated. */
-    gnrc_netdev->rx.router_vtdma_mana.total_slots_num = 0;
+    gnrc_netdev->rx.vtdma_manag.total_slots_num = 0;
 
-    for (i = 0; i < IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT; i++) {
+    for (i = 0; i < GNRC_GOMACH_SLOTS_SCHEDULE_UNIT; i++) {
         if (gnrc_netdev->rx.rx_register_list[i].queue_indicator > 0) {
             total_tdma_slot_num = gnrc_netdev->rx.rx_register_list[i].queue_indicator;
             break;
@@ -269,12 +269,12 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
 
     /* Start generating the slots list and the related ID list for guiding
      * the following vTMDA procedure (slotted transmission). */
-    gnrc_netdev->rx.router_vtdma_mana.total_slots_num = 0;
+    gnrc_netdev->rx.vtdma_manag.total_slots_num = 0;
 
-    l2_id_t id_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
-    uint8_t slots_list[IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT];
+    gnrc_gomach_l2_id_t id_list[GNRC_GOMACH_SLOTS_SCHEDULE_UNIT];
+    uint8_t slots_list[GNRC_GOMACH_SLOTS_SCHEDULE_UNIT];
 
-    for (i = 0; i < IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT; i++) {
+    for (i = 0; i < GNRC_GOMACH_SLOTS_SCHEDULE_UNIT; i++) {
         if (gnrc_netdev->rx.rx_register_list[i].queue_indicator > 0) {
             /* Record the device's (that will be allocated slots) address to the ID list. */
             memcpy(id_list[j].addr,
@@ -304,7 +304,7 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
     if (total_tdma_node_num > 0) {
     	/* If there are slots to allocate, add the slots list and the ID list to
     	 * the beacon! */
-        gnrc_netdev->rx.router_vtdma_mana.total_slots_num = total_tdma_slot_num;
+        gnrc_netdev->rx.vtdma_manag.total_slots_num = total_tdma_slot_num;
 
         /* Add the slots list to the beacon. */
         pkt = gnrc_pktbuf_add(NULL, slots_list, total_tdma_node_num * sizeof(uint8_t),
@@ -316,7 +316,7 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
         pkt_iqmac = pkt;
 
         /* Add the ID list to the beacon. */
-        pkt = gnrc_pktbuf_add(pkt, id_list, total_tdma_node_num * sizeof(l2_id_t),
+        pkt = gnrc_pktbuf_add(pkt, id_list, total_tdma_node_num * sizeof(gnrc_gomach_l2_id_t),
                               GNRC_NETTYPE_GOMACH);
         if (pkt == NULL) {
             LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_beacon().\n");
@@ -395,7 +395,7 @@ int gnrc_gomach_dispatch_defer(gnrc_pktsnip_t *buffer[], gnrc_pktsnip_t *pkt)
 }
 
 void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt,
-                                  iqueuemac_packet_info_t *pa_info)
+                                  gnrc_gomach_packet_info_t *pa_info)
 {
     assert(gnrc_netdev != NULL);
     assert(pkt != NULL);
@@ -413,7 +413,7 @@ void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pk
 
     int i;
     /* Check whether the device has been registered or not. */
-    for (i = 0; i < IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT; i++) {
+    for (i = 0; i < GNRC_GOMACH_SLOTS_SCHEDULE_UNIT; i++) {
         if (memcmp(&gnrc_netdev->rx.rx_register_list[i].node_addr.addr,
                    &pa_info->src_addr.addr,
                    pa_info->src_addr.len) == 0) {
@@ -424,7 +424,7 @@ void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pk
     }
 
     /* The sender has not registered yet. */
-    for (i = 0; i < IQUEUEMAC_MAX_RX_SLOTS_SCHEDULE_UNIT; i++) {
+    for (i = 0; i < GNRC_GOMACH_SLOTS_SCHEDULE_UNIT; i++) {
         if ((gnrc_netdev->rx.rx_register_list[i].node_addr.len == 0) ||
             (gnrc_netdev->rx.rx_register_list[i].queue_indicator == 0)) {
             gnrc_netdev->rx.rx_register_list[i].node_addr.len = pa_info->src_addr.len;
@@ -439,14 +439,14 @@ void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pk
     }
 }
 
-bool gnrc_gomach_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_info_t *pa_info)
+bool gnrc_gomach_check_duplicate(gnrc_netdev_t *gnrc_netdev, gnrc_gomach_packet_info_t *pa_info)
 {
     assert(gnrc_netdev != NULL);
     assert(pa_info != NULL);
 
     int i;
     /* First check if we can found the same source sender ID in the recorded info units. */
-    for (i = 0; i < IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE; i++) {
+    for (i = 0; i < GNRC_GOMACH_CHECK_DUPPKT_BUFFER_SIZE; i++) {
         if (memcmp(&gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.addr,
                    &pa_info->src_addr.addr,
                    pa_info->src_addr.len) == 0) {
@@ -463,7 +463,7 @@ bool gnrc_gomach_check_duplicate(gnrc_netdev_t *gnrc_netdev, iqueuemac_packet_in
     }
 
     /* Look for a free info unit */
-    for (i = 0; i < IQUEUEMAC_RX_CHECK_DUPPKT_BUFFER_SIZE; i++) {
+    for (i = 0; i < GNRC_GOMACH_CHECK_DUPPKT_BUFFER_SIZE; i++) {
         if (gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len == 0) {
             gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len = pa_info->src_addr.len;
             memcpy(gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.addr,
@@ -483,7 +483,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
     assert(gnrc_netdev != NULL);
 
     gnrc_pktsnip_t *pkt;
-    iqueuemac_packet_info_t receive_packet_info;
+    gnrc_gomach_packet_info_t receive_packet_info;
 
     while ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL) {
         /* Parse the received packet, fetch key MAC informations. */
@@ -746,7 +746,7 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
     assert(gnrc_netdev != NULL);
 
     gnrc_pktsnip_t *pkt;
-    iqueuemac_packet_info_t receive_packet_info;
+    gnrc_gomach_packet_info_t receive_packet_info;
 
     while ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL) {
         /* Parse the received packet. */
@@ -940,7 +940,7 @@ void gnrc_gomach_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
     iqueuemac_frame_beacon_t *iqueuemac_beacon_hdr;
     gnrc_pktsnip_t *iqueuemac_snip;
 
-    l2_id_t *id_list;
+    gnrc_gomach_l2_id_t *id_list;
     uint8_t *slots_list;
     uint8_t schedulelist_size = 0;
     bool got_allocated_slots;
@@ -969,7 +969,7 @@ void gnrc_gomach_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
     }
 
     /* Take the ID-list out. */
-    iqueuemac_snip = gnrc_pktbuf_mark(pkt, schedulelist_size * sizeof(l2_id_t),
+    iqueuemac_snip = gnrc_pktbuf_mark(pkt, schedulelist_size * sizeof(gnrc_gomach_l2_id_t),
                                       GNRC_NETTYPE_GOMACH);
     id_list = iqueuemac_snip->data;
 
@@ -1011,7 +1011,7 @@ void gnrc_gomach_packet_process_in_wait_beacon(gnrc_netdev_t *gnrc_netdev)
     assert(gnrc_netdev != NULL);
 
     gnrc_pktsnip_t *pkt;
-    iqueuemac_packet_info_t receive_packet_info;
+    gnrc_gomach_packet_info_t receive_packet_info;
 
     while ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL) {
         /* Parse the received packet. */
@@ -1079,7 +1079,7 @@ void gnrc_gomach_packet_process_in_vtdma(gnrc_netdev_t *gnrc_netdev)
     assert(gnrc_netdev != NULL);
 
     gnrc_pktsnip_t *pkt;
-    iqueuemac_packet_info_t receive_packet_info;
+    gnrc_gomach_packet_info_t receive_packet_info;
 
     while ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL) {
         /* Parse the received packet. */
