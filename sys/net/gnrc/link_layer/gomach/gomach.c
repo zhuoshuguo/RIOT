@@ -159,7 +159,7 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
 
             /* Set next cycle's starting time. */
             alarm = gnrc_netdev->gomach.last_wakeup +
-                    RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+                    RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
             rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GNRC_GOMACH_EVENT_RTT_NEW_CYCLE);
 
             /* Update neighbors' public channel phases. */
@@ -188,11 +188,11 @@ static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_pktsnip_t *pkt = gnrc_netdev->tx.packet;
     gnrc_pktsnip_t *payload = gnrc_netdev->tx.packet->next;
 
-    gnrc_gomach_frame_broadcast_t iqueuemac_broadcast_hdr;
-    iqueuemac_broadcast_hdr.header.type = GNRC_GOMACH_FRAME_BROADCAST;
-    iqueuemac_broadcast_hdr.seq_nr = gnrc_netdev->tx.broadcast_seq;
-    pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_broadcast_hdr,
-                                sizeof(iqueuemac_broadcast_hdr),
+    gnrc_gomach_frame_broadcast_t gomach_broadcast_hdr;
+    gomach_broadcast_hdr.header.type = GNRC_GOMACH_FRAME_BROADCAST;
+    gomach_broadcast_hdr.seq_nr = gnrc_netdev->tx.broadcast_seq;
+    pkt->next = gnrc_pktbuf_add(pkt->next, &gomach_broadcast_hdr,
+                                sizeof(gomach_broadcast_hdr),
                                 GNRC_NETTYPE_GOMACH);
     if (pkt->next == NULL) {
         /* Make append payload after netif header again */
@@ -207,7 +207,7 @@ static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
     }
 
     gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_BCAST_FINISH,
-                          IQUEUEMAC_SUPERFRAME_DURATION_US);
+                          GNRC_GOMACH_SUPERFRAME_DURATION_US);
 
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
     gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_SEND;
@@ -262,7 +262,7 @@ static void gomach_send_bcast_packet(gnrc_netdev_t *gnrc_netdev)
 static void gomach_wait_bcast_tx_finish(gnrc_netdev_t *gnrc_netdev){
     if (gnrc_gomach_get_tx_finish(gnrc_netdev)) {
 	    gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_BCAST_INTERVAL,
-	                          IQUEUEMAC_BROADCAST_INTERVAL_US);
+	                          GNRC_GOMACH_BCAST_INTERVAL_US);
         gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_WAIT_NEXT_TX;
         gnrc_netdev->gomach.need_update = false;
     }
@@ -362,7 +362,7 @@ static void gomach_init_prepare(gnrc_netdev_t *gnrc_netdev)
     rtt_clear_alarm();
 
     /* Random delay for avoiding the same wake-up phase among devices. */
-    uint32_t random_backoff = random_uint32_range(0, IQUEUEMAC_SUPERFRAME_DURATION_US);
+    uint32_t random_backoff = random_uint32_range(0, GNRC_GOMACH_SUPERFRAME_DURATION_US);
     xtimer_usleep(random_backoff);
 
     gnrc_netdev->gomach.quit_current_cycle = false;
@@ -433,21 +433,21 @@ static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
      * phase-lock failure due to timer drift.
      * Firstly, put the calculated phase ahead, check whether the neighbor's phase has gone ahead
      * of the recorded one */
-    if(gnrc_netdev->tx.no_ack_counter == (IQUEUEMAC_REPHASELOCK_THRESHOLD -2)) {
-    	if (wait_phase_duration < IQUEUEMAC_CP_DURATION_US) {
-    		wait_phase_duration = (wait_phase_duration + IQUEUEMAC_SUPERFRAME_DURATION_US) -
-    	                          IQUEUEMAC_CP_DURATION_US;
+    if(gnrc_netdev->tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD -2)) {
+    	if (wait_phase_duration < GNRC_GOMACH_CP_DURATION_US) {
+    		wait_phase_duration = (wait_phase_duration + GNRC_GOMACH_SUPERFRAME_DURATION_US) -
+    	                          GNRC_GOMACH_CP_DURATION_US;
     	} else {
-    		wait_phase_duration = wait_phase_duration - IQUEUEMAC_CP_DURATION_US;
+    		wait_phase_duration = wait_phase_duration - GNRC_GOMACH_CP_DURATION_US;
     	}
     }
     /* If this is the last t2k trial, the phase-lock auto-adjust scheme delays the estimated phase
      *  a little bit, to see if the real phase is behind the original calculated one. */
-    if(gnrc_netdev->tx.no_ack_counter == (IQUEUEMAC_REPHASELOCK_THRESHOLD -1)) {
-        wait_phase_duration = wait_phase_duration + IQUEUEMAC_CP_DURATION_US +
-                              IQUEUEMAC_REPHASE_ADJUST_US;
-    	if (wait_phase_duration > IQUEUEMAC_SUPERFRAME_DURATION_US) {
-    		wait_phase_duration = wait_phase_duration - IQUEUEMAC_SUPERFRAME_DURATION_US;
+    if(gnrc_netdev->tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD -1)) {
+        wait_phase_duration = wait_phase_duration + GNRC_GOMACH_CP_DURATION_US +
+                              GNRC_GOMACH_REPHASE_ADJUST_US;
+    	if (wait_phase_duration > GNRC_GOMACH_SUPERFRAME_DURATION_US) {
+    		wait_phase_duration = wait_phase_duration - GNRC_GOMACH_SUPERFRAME_DURATION_US;
         }
     }
 
@@ -538,30 +538,30 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                 /* Here is the phase-lock auto-adjust scheme. Use the new adjusted
                  * phase upon success. Here the new phase will be put ahead to the
                  * original phase. */
-                if(gnrc_netdev->tx.no_ack_counter == (IQUEUEMAC_REPHASELOCK_THRESHOLD -2)) {
+                if(gnrc_netdev->tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD -2)) {
                     if(gnrc_netdev->tx.current_neighbor->cp_phase >=
-                       RTT_US_TO_TICKS((IQUEUEMAC_CP_DURATION_US + IQUEUEMAC_REPHASE_ADJUST_US))) {
+                       RTT_US_TO_TICKS((GNRC_GOMACH_CP_DURATION_US + GNRC_GOMACH_REPHASE_ADJUST_US))) {
                     	gnrc_netdev->tx.current_neighbor->cp_phase -=
-                    	    RTT_US_TO_TICKS((IQUEUEMAC_CP_DURATION_US+IQUEUEMAC_REPHASE_ADJUST_US));
+                    	    RTT_US_TO_TICKS((GNRC_GOMACH_CP_DURATION_US+GNRC_GOMACH_REPHASE_ADJUST_US));
                     } else {
                     	gnrc_netdev->tx.current_neighbor->cp_phase +=
-                    	    RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+                    	    RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
                     	gnrc_netdev->tx.current_neighbor->cp_phase -=
-                    	    RTT_US_TO_TICKS((IQUEUEMAC_CP_DURATION_US+IQUEUEMAC_REPHASE_ADJUST_US));
+                    	    RTT_US_TO_TICKS((GNRC_GOMACH_CP_DURATION_US+GNRC_GOMACH_REPHASE_ADJUST_US));
                     }
                 }
                 /* Here is the phase-lock auto-adjust scheme. Use the new adjusted
                  * phase upon success. Here the new phase will be put behind the original
                  * phase. */
-                if(gnrc_netdev->tx.no_ack_counter == (IQUEUEMAC_REPHASELOCK_THRESHOLD -1)) {
+                if(gnrc_netdev->tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD -1)) {
                 	gnrc_netdev->tx.current_neighbor->cp_phase +=
-                        (RTT_US_TO_TICKS(IQUEUEMAC_CP_DURATION_US) +
-                         RTT_US_TO_TICKS(4*IQUEUEMAC_REPHASE_ADJUST_US));
+                        (RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US) +
+                         RTT_US_TO_TICKS(4*GNRC_GOMACH_REPHASE_ADJUST_US));
 
                 	if(gnrc_netdev->tx.current_neighbor->cp_phase >=
-                	   RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US)) {
+                	   RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US)) {
                 		gnrc_netdev->tx.current_neighbor->cp_phase -=
-                		    RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+                		    RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
                 	}
                 }
 
@@ -571,7 +571,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                 if (gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue) > 0) {
                     gnrc_netdev->tx.vtdma_para.slots_num = 0;
                     gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_BEACON,
-                                          IQUEUEMAC_WAIT_BEACON_TIME_US);
+                                          GNRC_GOMACH_WAIT_BEACON_TIME_US);
                     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
                     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_WAIT_BEACON;
                 }
@@ -584,7 +584,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
             case TX_FEEDBACK_BUSY:
                 /* If the channel busy counter is below threshold, retry CSMA immediately,
                  * by knowing that the CP will be automatically extended. */
-            	if(gnrc_netdev->tx.tx_busy_count < IQUEUEMAC_MAX_TX_BUSY_COUNTER) {
+            	if(gnrc_netdev->tx.tx_busy_count < GNRC_GOMACH_TX_BUSY_THRESHOLD) {
             		gnrc_netdev->tx.tx_busy_count ++;
 
             		/* Store the TX sequence number for this packet. Always use the same
@@ -612,7 +612,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                 /* If no_ack_counter reaches the threshold, regarded as phase-lock failed. So
                  * retry to send the packet in t2u, i.e., try to phase-lock with the receiver
                  * again. */
-                if (gnrc_netdev->tx.no_ack_counter >= IQUEUEMAC_REPHASELOCK_THRESHOLD) {
+                if (gnrc_netdev->tx.no_ack_counter >= GNRC_GOMACH_REPHASELOCK_THRESHOLD) {
                 	LOG_WARNING("WARNING: [GOMACH] t2k failed, go to t2u.\n");
                 	/* Here, we don't queue the packet again, but keep it in tx.packet. */
                     gnrc_netdev->tx.current_neighbor->mac_type = GNRC_GOMACH_TYPE_UNKNOWN;
@@ -663,7 +663,7 @@ static void gomach_t2k_wait_beacon(gnrc_netdev_t *gnrc_netdev)
                 gnrc_gomach_turn_off_radio(gnrc_netdev);
 
                 uint32_t wait_slots_duration = gnrc_netdev->tx.vtdma_para.slots_position *
-                                               IQUEUEMAC_VTDMA_SLOT_SIZE_US;
+                                               GNRC_GOMACH_VTDMA_SLOT_SIZE_US;
                 gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_SLOTS,
                                       wait_slots_duration);
 
@@ -949,7 +949,7 @@ static void gomach_t2u_send_preamble_prepare(gnrc_netdev_t *gnrc_netdev)
             gnrc_netdev->tx.t2u_on_public_1 = true;
         }
         gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL,
-                              IQUEUEMAC_MAX_PREAM_INTERVAL_US);
+                              GNRC_GOMACH_MAX_PREAM_INTERVAL_US);
     }
     else {
         /* Here, for the first preamble, we set the pream_max_interval timeout to
@@ -957,7 +957,7 @@ static void gomach_t2u_send_preamble_prepare(gnrc_netdev_t *gnrc_netdev)
          * using csma for sending, and csma costs some time before actually sending
          * the packet. */
         gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL,
-                              (5 * IQUEUEMAC_MAX_PREAM_INTERVAL_US));
+                              (5 * GNRC_GOMACH_MAX_PREAM_INTERVAL_US));
     }
 
     gnrc_netdev->tx.reach_max_preamble_interval = false;
@@ -1009,7 +1009,7 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
         gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
         if (gnrc_netdev->gomach.quit_current_cycle == false) {
             gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END,
-                               IQUEUEMAC_WAIT_RX_END_US);
+                               GNRC_GOMACH_WAIT_RX_END_US);
             return false;
         }
     }
@@ -1055,7 +1055,7 @@ static void gomach_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     if (gnrc_netdev->tx.preamble_sent == 0) {
         res = gnrc_gomach_send_preamble(gnrc_netdev, NETOPT_ENABLE);
         gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAM_DURATION,
-                              IQUEUEMAC_PREAMBLE_DURATION_US);
+                              GNRC_GOMACH_PREAMBLE_DURATION_US);
     }
     else {
         res = gnrc_gomach_send_preamble(gnrc_netdev, NETOPT_DISABLE);
@@ -1086,7 +1086,7 @@ static void gomach_t2u_wait_preamble_tx(gnrc_netdev_t *gnrc_netdev)
         /* Set preamble interval timeout. This is a very short timeout (1ms),
          * just to catch the rx-start event of receiving possible preamble-ACK. */
         gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE,
-                              IQUEUEMAC_PREAMBLE_INTERVAL_US);
+                              GNRC_GOMACH_PREAMBLE_INTERVAL_US);
 
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_WAIT_PREAMBLE_ACK;
         gnrc_netdev->gomach.need_update = false;
@@ -1134,7 +1134,7 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->tx.t2u_retry_counter++;
 
         /* If we reach the maximum t2u retry limit, release the data packet. */
-        if (gnrc_netdev->tx.t2u_retry_counter >= IQUEUEMAC_T2U_RETYR_THRESHOLD) {
+        if (gnrc_netdev->tx.t2u_retry_counter >= GNRC_GOMACH_T2U_RETYR_THRESHOLD) {
             LOG_WARNING("WARNING: [GOMACH] t2u failed: no preamble-ACK.\n");
             gnrc_netdev->tx.t2u_retry_counter = 0;
             gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
@@ -1213,7 +1213,7 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
                 /* Switch to t2k procedure and wait for the beacon of the receiver. */
                 gnrc_netdev->tx.vtdma_para.slots_num = 0;
                 gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_BEACON,
-                                      IQUEUEMAC_WAIT_BEACON_TIME_US);
+                                      GNRC_GOMACH_WAIT_BEACON_TIME_US);
                 gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
 
                 gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_WAIT_BEACON;
@@ -1226,7 +1226,7 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
         else {
             gnrc_netdev->tx.t2u_retry_counter++;
             /* If we meet t2u retry limit, release the packet. */
-            if (gnrc_netdev->tx.t2u_retry_counter >= IQUEUEMAC_T2U_RETYR_THRESHOLD) {
+            if (gnrc_netdev->tx.t2u_retry_counter >= GNRC_GOMACH_T2U_RETYR_THRESHOLD) {
                 LOG_WARNING("WARNING: [GOMACH] t2u send data failed on channel %d,"
                             " drop packet.\n", gnrc_netdev->tx.current_neighbor->pub_chanseq);
                 gnrc_pktbuf_release(gnrc_netdev->tx.packet);
@@ -1238,7 +1238,7 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
             }
             else {
                 /* Record the MAC sequence of the data, retry t2u in next cycle. */
-                gnrc_netdev->tx.no_ack_counter = IQUEUEMAC_REPHASELOCK_THRESHOLD;
+                gnrc_netdev->tx.no_ack_counter = GNRC_GOMACH_REPHASELOCK_THRESHOLD;
                 netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
                 gnrc_netdev->tx.tx_seq = device_state->seq - 1;
 
@@ -1338,7 +1338,7 @@ static void _gomach_phase_backoff(gnrc_netdev_t *gnrc_netdev)
     /* Execute phase backoff for avoiding CP (wake-up period) overlap. */
     rtt_clear_alarm();
     alarm = gnrc_netdev->gomach.last_wakeup +
-            RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US) +
+            RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US) +
             gnrc_netdev->gomach.backoff_phase_ticks;
     rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GNRC_GOMACH_EVENT_RTT_NEW_CYCLE);
 
@@ -1355,7 +1355,7 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
         if (gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len != 0) {
             gnrc_netdev->rx.check_dup_pkt.last_nodes[i].life_cycle++;
             if (gnrc_netdev->rx.check_dup_pkt.last_nodes[i].life_cycle >=
-                IQUEUEMAC_RX_CHECK_DUPPKT_UNIT_MAX_LIFE) {
+                GNRC_GOMACH_RX_DUPCHK_UNIT_LIFE) {
                 gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
                 gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.addr[0] = 0;
                 gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.addr[1] = 0;
@@ -1368,10 +1368,10 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->rx.enter_new_cycle = false;
 
     /* Set listen period timeout. */
-    uint32_t listen_period = random_uint32_range(0, IQUEUEMAC_CP_RANDOM_END_US) +
-                             IQUEUEMAC_CP_DURATION_US;
+    uint32_t listen_period = random_uint32_range(0, GNRC_GOMACH_CP_RANDOM_END_US) +
+                             GNRC_GOMACH_CP_DURATION_US;
     gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END, listen_period);
-    gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX, IQUEUEMAC_CP_DURATION_MAX_US);
+    gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX, GNRC_GOMACH_CP_DURATION_MAX_US);
 
     /* Enable Auto-ACK for data packet reception. */
     gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
@@ -1414,14 +1414,14 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
             gnrc_netdev->gomach.got_preamble = false;
             gnrc_netdev->gomach.cp_end = false;
             gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
-            gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
+            gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END, GNRC_GOMACH_CP_DURATION_US);
         }
         else if ((gnrc_netdev->gomach.get_other_preamble == false) &&
                 (gnrc_netdev->gomach.quit_current_cycle == false)) {
             gnrc_netdev->gomach.got_preamble = false;
             gnrc_netdev->gomach.cp_end = false;
             gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
-            gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END, IQUEUEMAC_CP_DURATION_US);
+            gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END, GNRC_GOMACH_CP_DURATION_US);
         }
     }
 
@@ -1444,11 +1444,11 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
     if ((gnrc_netdev->gomach.cp_end == true) || (gnrc_netdev->gomach.quit_current_cycle == true)) {
         /* If we found ongoing reception, wait for reception complete. */
         if ((gnrc_gomach_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) &&
-            (gnrc_netdev->gomach.cp_backoff_counter < IQUEUEMAC_MAX_CP_BACKOFF_COUNTER)) {
+            (gnrc_netdev->gomach.cp_backoff_counter < GNRC_GOMACH_CP_EXTEND_THRESHOLD)) {
             gnrc_netdev->gomach.cp_backoff_counter++;
             gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
             gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END,
-                                  IQUEUEMAC_WAIT_RX_END_US);
+                                  GNRC_GOMACH_WAIT_RX_END_US);
         }
         else {
             gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
@@ -1592,7 +1592,7 @@ static void gomach_vtdma_init(gnrc_netdev_t *gnrc_netdev)
 
     /* Set the vTDMA period timeout. */
     uint32_t vtdma_duration = gnrc_netdev->rx.vtdma_manag.total_slots_num *
-                              IQUEUEMAC_VTDMA_SLOT_SIZE_US;
+                              GNRC_GOMACH_VTDMA_SLOT_SIZE_US;
     gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_VTDMA, vtdma_duration);
 
     gnrc_netdev->gomach.vtdma_end = false;
@@ -1619,7 +1619,7 @@ static void gomach_vtdma(gnrc_netdev_t *gnrc_netdev)
         if (gnrc_gomach_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) {
             gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
             gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END,
-                                  IQUEUEMAC_WAIT_RX_END_US);
+                                  GNRC_GOMACH_WAIT_RX_END_US);
             return;
         }
 

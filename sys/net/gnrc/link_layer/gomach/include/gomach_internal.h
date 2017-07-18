@@ -123,7 +123,7 @@ static inline uint32_t gnrc_gomach_ticks_until_phase(gnrc_netdev_t *gnrc_netdev,
     long int tmp = phase - gnrc_gomach_phase_now(gnrc_netdev);
 
     if (tmp < 0) {
-        tmp += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+        tmp += RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
     }
 
     return (uint32_t)tmp;

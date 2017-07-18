@@ -289,9 +289,9 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
             total_tdma_slot_num += slots_list[j];
 
             /* If there is no room for allocating more slots, stop. */
-            if (total_tdma_slot_num >= IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM) {
+            if (total_tdma_slot_num >= GNRC_GOMACH_MAX_ALLOC_SLOTS_NUM) {
                 uint8_t redueced_slots_num;
-                redueced_slots_num = total_tdma_slot_num - IQUEUEMAC_MAX_SCHEDULE_SLOTS_NUM;
+                redueced_slots_num = total_tdma_slot_num - GNRC_GOMACH_MAX_ALLOC_SLOTS_NUM;
                 slots_list[j] -= redueced_slots_num;
                 total_tdma_slot_num -= redueced_slots_num;
                 break;
@@ -709,7 +709,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
     }
 
     if (phase_ticks < 0) {
-        phase_ticks += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+        phase_ticks += RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
     }
 
     /* Check if the sender's phase is too close to the receiver. */
@@ -718,7 +718,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
         future_neighbor_phase = phase_ticks - gnrc_netdev->gomach.backoff_phase_ticks;
 
         if (future_neighbor_phase < 0) {
-            future_neighbor_phase += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+            future_neighbor_phase += RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
         }
     }
     else {
@@ -728,15 +728,15 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
     uint32_t neighbor_phase;
     neighbor_phase = (uint32_t)future_neighbor_phase;
 
-    if ((RTT_TICKS_TO_US(neighbor_phase) > (IQUEUEMAC_SUPERFRAME_DURATION_US - IQUEUEMAC_CP_MIN_GAP_US)) ||
-        (RTT_TICKS_TO_US(neighbor_phase) < IQUEUEMAC_CP_MIN_GAP_US)) {
+    if ((RTT_TICKS_TO_US(neighbor_phase) > (GNRC_GOMACH_SUPERFRAME_DURATION_US - GNRC_GOMACH_CP_MIN_GAP_US)) ||
+        (RTT_TICKS_TO_US(neighbor_phase) < GNRC_GOMACH_CP_MIN_GAP_US)) {
         LOG_WARNING("WARNING: [GOMACH] t2u: own phase is close to the neighbor's.\n");
         gnrc_netdev->gomach.phase_backoff = true;
         /* Set a random phase-backoff value. */
         gnrc_netdev->gomach.backoff_phase_ticks =
-            random_uint32_range(RTT_US_TO_TICKS(IQUEUEMAC_CP_MIN_GAP_US),
-                                RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US -
-                                                IQUEUEMAC_CP_MIN_GAP_US));
+            random_uint32_range(RTT_US_TO_TICKS(GNRC_GOMACH_CP_MIN_GAP_US),
+                                RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US -
+                                                GNRC_GOMACH_CP_MIN_GAP_US));
     }
 
     gnrc_netdev->tx.current_neighbor->cp_phase = (uint32_t) phase_ticks;
@@ -1122,7 +1122,7 @@ void gnrc_gomach_update_neighbor_phase(gnrc_netdev_t *gnrc_netdev)
             long int tmp = gnrc_netdev->tx.neighbors[i].cp_phase -
                            gnrc_netdev->gomach.backoff_phase_ticks;
             if (tmp < 0) {
-                tmp += RTT_US_TO_TICKS(IQUEUEMAC_SUPERFRAME_DURATION_US);
+                tmp += RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
 
                 /* Toggle the neighbor's public channel phase if tmp < 0. */
                 if (gnrc_netdev->tx.neighbors[i].pub_chanseq ==
