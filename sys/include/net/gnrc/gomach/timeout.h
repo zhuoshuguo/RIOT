@@ -45,6 +45,14 @@ void gomach_reset_timeouts(gnrc_netdev_t *netdev);
 
 void gomach_timeout_make_expire(gnrc_gomach_timeout_t *timeout);
 
+static inline void _gomach_clear_timeout(gnrc_gomach_timeout_t *timeout)
+{
+    assert(timeout);
+
+    xtimer_remove(&(timeout->timer));
+    timeout->type = GNRC_GOMACH_TIMEOUT_DISABLED;
+}
+
 #ifdef __cplusplus
 }
 #endif

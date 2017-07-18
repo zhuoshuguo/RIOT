@@ -150,7 +150,7 @@ typedef struct {
 
 /* @brief   Type to pass information about parsing */
 typedef struct {
-    gnrc_gomach_hdr_t *header;    /**< iqueuemac header of packet */
+    gnrc_gomach_hdr_t *header;    /**< GoMacH header of packet */
     gnrc_gomach_l2_addr_t src_addr;         /**< copied source address of packet  */
     gnrc_gomach_l2_addr_t dst_addr;         /**< copied destination address of packet */
     uint8_t seq;                /**< seq of the received packet */
