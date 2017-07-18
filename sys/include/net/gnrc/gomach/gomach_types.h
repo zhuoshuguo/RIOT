@@ -54,8 +54,8 @@ extern "C" {
 #endif
 
 typedef enum {
-    UNKNOWN = 0,
-	KNOWN,
+	GNRC_GOMACH_TYPE_UNKNOWN = 0,
+	GNRC_GOMACH_TYPE_KNOWN,
 } gnrc_gomach_type_t;
 
 typedef enum {
@@ -123,11 +123,11 @@ typedef enum {
 } gnrc_gomach_transmit_state_t;
 
 typedef struct {
-    uint8_t addr[IQUEUEMAC_MAX_L2_ADDR_LEN];
+    uint8_t addr[GNRC_GOMACH_MAX_L2_ADDR_LEN];
 } gnrc_gomach_l2_id_t;
 
 typedef struct {
-    l2_addr_t node_addr;
+    gnrc_gomach_l2_addr_t node_addr;
     uint8_t queue_indicator;
     gnrc_gomach_type_t mac_type;
 } gnrc_gomach_slots_sched_unit_t;
@@ -138,7 +138,7 @@ typedef struct {
 } gnrc_gomach_vtdma_manag_t;
 
 typedef struct {
-    l2_addr_t node_addr;
+    gnrc_gomach_l2_addr_t node_addr;
     uint8_t seq;
     uint8_t life_cycle;
 } gnrc_gomach_dupchk_unit_t;
@@ -150,9 +150,9 @@ typedef struct {
 
 /* @brief   Type to pass information about parsing */
 typedef struct {
-    iqueuemac_hdr_t *header;    /**< iqueuemac header of packet */
-    l2_addr_t src_addr;         /**< copied source address of packet  */
-    l2_addr_t dst_addr;         /**< copied destination address of packet */
+    gnrc_gomach_hdr_t *header;    /**< iqueuemac header of packet */
+    gnrc_gomach_l2_addr_t src_addr;         /**< copied source address of packet  */
+    gnrc_gomach_l2_addr_t dst_addr;         /**< copied destination address of packet */
     uint8_t seq;                /**< seq of the received packet */
 } gnrc_gomach_packet_info_t;
 
@@ -160,7 +160,6 @@ typedef struct {
     uint16_t sub_channel_seq;
     uint8_t slots_position;
     uint8_t slots_num;
-    bool get_beacon;
 } gnrc_gomach_vtdma_t;
 
 typedef enum {

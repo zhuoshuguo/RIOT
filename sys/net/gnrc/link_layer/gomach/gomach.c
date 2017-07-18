@@ -188,8 +188,8 @@ static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_pktsnip_t *pkt = gnrc_netdev->tx.packet;
     gnrc_pktsnip_t *payload = gnrc_netdev->tx.packet->next;
 
-    iqueuemac_frame_broadcast_t iqueuemac_broadcast_hdr;
-    iqueuemac_broadcast_hdr.header.type = FRAMETYPE_BROADCAST;
+    gnrc_gomach_frame_broadcast_t iqueuemac_broadcast_hdr;
+    iqueuemac_broadcast_hdr.header.type = GNRC_GOMACH_FRAME_BROADCAST;
     iqueuemac_broadcast_hdr.seq_nr = gnrc_netdev->tx.broadcast_seq;
     pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_broadcast_hdr,
                                 sizeof(iqueuemac_broadcast_hdr),
@@ -569,7 +569,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
 
                 /* If has pending packets, join the vTDMA period, first wait for receiver's beacon. */
                 if (gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue) > 0) {
-                    gnrc_netdev->tx.vtdma_para.get_beacon = false;
+                    gnrc_netdev->tx.vtdma_para.slots_num = 0;
                     gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_BEACON,
                                           IQUEUEMAC_WAIT_BEACON_TIME_US);
                     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
@@ -615,7 +615,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                 if (gnrc_netdev->tx.no_ack_counter >= IQUEUEMAC_REPHASELOCK_THRESHOLD) {
                 	LOG_WARNING("WARNING: [GOMACH] t2k failed, go to t2u.\n");
                 	/* Here, we don't queue the packet again, but keep it in tx.packet. */
-                    gnrc_netdev->tx.current_neighbor->mac_type = UNKNOWN;
+                    gnrc_netdev->tx.current_neighbor->mac_type = GNRC_GOMACH_TYPE_UNKNOWN;
                     gnrc_netdev->tx.t2u_retry_counter = 0;
                 }
                 else {
@@ -648,7 +648,7 @@ static void gomach_t2k_wait_beacon(gnrc_netdev_t *gnrc_netdev)
         return;
     }
 
-    if (gnrc_netdev->tx.vtdma_para.get_beacon == true) {
+    if (gnrc_netdev->tx.vtdma_para.slots_num > 0) {
         gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_BEACON);
 
         /* If the sender gets allocated slots, go to attend the receiver's vTDMA for
@@ -693,8 +693,11 @@ static void gomach_t2k_wait_beacon(gnrc_netdev_t *gnrc_netdev)
         return;
     }
 
-    /* If no beacon during waiting period, go to t2k end. */
-    if (gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_BEACON)) {
+    /* If no beacon during waiting period, go to t2k end.
+     * Or, if we have received beacon, but find no allocated slots,
+     * go to t2k as well. */
+    if (gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_BEACON) ||
+        !gomach_timeout_is_running(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_BEACON)) {
         gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
         LOG_WARNING("WARNING: [GOMACH] t2k: no beacon.\n");
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
@@ -1208,7 +1211,7 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
                 gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
 
                 /* Switch to t2k procedure and wait for the beacon of the receiver. */
-                gnrc_netdev->tx.vtdma_para.get_beacon = false;
+                gnrc_netdev->tx.vtdma_para.slots_num = 0;
                 gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_BEACON,
                                       IQUEUEMAC_WAIT_BEACON_TIME_US);
                 gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
@@ -1538,7 +1541,7 @@ static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
                 else {
                     /* The packet waiting to be sent is for unicast. */
                     switch (gnrc_netdev->tx.current_neighbor->mac_type) {
-                        case UNKNOWN: {
+                        case GNRC_GOMACH_TYPE_UNKNOWN: {
                             /* The neighbor's phase is unknown yet, try to run t2u (transmission
                              * to unknown device) procedure to phase-lock the neighbor. */
 
@@ -1552,7 +1555,7 @@ static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
                             }
                             break;
                         }
-                        case KNOWN: {
+                        case GNRC_GOMACH_TYPE_KNOWN: {
                             /* If the neighbor's phase is known, go to t2k (transmission
                              * to known device) procedure. Here, we don't worry that the t2k
                              * unicast transmission will interrupt with possible ongoing
@@ -1656,7 +1659,7 @@ static void gomach_vtdma_end(gnrc_netdev_t *gnrc_netdev)
         else {
             switch (gnrc_netdev->tx.current_neighbor->mac_type) {
                 /* The packet waiting to be sent is for unicast. */
-                case UNKNOWN: {
+                case GNRC_GOMACH_TYPE_UNKNOWN: {
                     /* The neighbor's phase is unknown yet, try to run t2u (transmission
                      * to unknown device) procedure to phase-lock the neighbor. */
                     if (gnrc_netdev->gomach.get_other_preamble == false) {
@@ -1667,7 +1670,7 @@ static void gomach_vtdma_end(gnrc_netdev_t *gnrc_netdev)
                         gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
                     }
                 } break;
-                case KNOWN: {
+                case GNRC_GOMACH_TYPE_KNOWN: {
                     /* If the neighbor's phase is known, go to t2k (transmission
                      * to known device) procedure. Here, we don't worry that the t2k
                      * unicast transmission will interrupt with possible ongoing
@@ -1956,7 +1959,7 @@ static void *_gnrc_gomach_thread(void *args)
     gomach_pid = gnrc_netdev->pid;
 
     /* Set MAC address length. */
-    uint16_t src_len = IQUEUEMAC_MAX_L2_ADDR_LEN;
+    uint16_t src_len = GNRC_GOMACH_MAX_L2_ADDR_LEN;
     dev->driver->set(dev, NETOPT_SRC_LEN, &src_len, sizeof(src_len));
 
     /* Initialize GoMacH's parameters. */
