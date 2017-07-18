@@ -49,8 +49,8 @@ int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
     assert(pkt != NULL);
 
     gnrc_netif_hdr_t *netif_hdr;
-    gnrc_pktsnip_t *iqueuemac_snip;
-    gnrc_gomach_hdr_t *iqueuemac_hdr;
+    gnrc_pktsnip_t *gomach_snip;
+    gnrc_gomach_hdr_t *gomach_hdr;
 
     netif_hdr = (gnrc_netif_hdr_t *) gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
     if (netif_hdr == NULL) {
@@ -67,36 +67,36 @@ int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
     }
 
     /* Dissect GoMacH header, Every frame has header as first member */
-    iqueuemac_hdr = (gnrc_gomach_hdr_t *) pkt->data;
+    gomach_hdr = (gnrc_gomach_hdr_t *) pkt->data;
 
-    switch (iqueuemac_hdr->type) {
+    switch (gomach_hdr->type) {
         case GNRC_GOMACH_FRAME_BEACON: {
-            iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_beacon_t),
+            gomach_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_beacon_t),
                                               GNRC_NETTYPE_GOMACH);
             break;
         }
         case GNRC_GOMACH_FRAME_PREAMBLE: {
-            iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_preamble_t),
+            gomach_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_preamble_t),
                                               GNRC_NETTYPE_GOMACH);
             break;
         }
         case GNRC_GOMACH_FRAME_PREAMBLE_ACK: {
-            iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_preamble_ack_t),
+            gomach_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_preamble_ack_t),
                                               GNRC_NETTYPE_GOMACH);
             break;
         }
         case GNRC_GOMACH_FRAME_DATA: {
-            iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_data_t),
+            gomach_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_data_t),
                                               GNRC_NETTYPE_GOMACH);
             break;
         }
         case GNRC_GOMACH_FRAME_ANNOUNCE: {
-            iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_announce_t),
+            gomach_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_announce_t),
                                               GNRC_NETTYPE_GOMACH);
             break;
         }
         case GNRC_GOMACH_FRAME_BROADCAST: {
-            iqueuemac_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_broadcast_t),
+            gomach_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_broadcast_t),
                                               GNRC_NETTYPE_GOMACH);
             break;
         }
@@ -107,16 +107,16 @@ int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
     }
 
     /* Memory location may have changed while marking. */
-    iqueuemac_hdr = iqueuemac_snip->data;
+    gomach_hdr = gomach_snip->data;
 
     /* Get the destination address. */
-    switch (iqueuemac_hdr->type) {
+    switch (gomach_hdr->type) {
         case GNRC_GOMACH_FRAME_PREAMBLE: {
-            info->dst_addr = ((gnrc_gomach_frame_preamble_t *)iqueuemac_hdr)->dst_addr;
+            info->dst_addr = ((gnrc_gomach_frame_preamble_t *)gomach_hdr)->dst_addr;
             break;
         }
         case GNRC_GOMACH_FRAME_PREAMBLE_ACK: {
-            info->dst_addr = ((gnrc_gomach_frame_preamble_ack_t *)iqueuemac_hdr)->dst_addr;
+            info->dst_addr = ((gnrc_gomach_frame_preamble_ack_t *)gomach_hdr)->dst_addr;
             break;
         }
         case GNRC_GOMACH_FRAME_DATA: {
@@ -141,7 +141,7 @@ int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
                netif_hdr->src_l2addr_len);
     }
 
-    info->header = iqueuemac_hdr;
+    info->header = gomach_hdr;
     info->seq = netif_hdr->seq;
     return 0;
 }
@@ -187,34 +187,34 @@ int gnrc_gomach_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_gomach_packet
     assert(gnrc_netdev != NULL);
     assert(info != NULL);
 
-    gnrc_pktsnip_t *pkt_iqmac;
+    gnrc_pktsnip_t *gomach_pkt;
     gnrc_pktsnip_t *pkt;
     gnrc_netif_hdr_t *nethdr_preamble_ack;
 
     /* Start assemble the preamble-ACK packet according to preamble packet info. */
-    gnrc_gomach_frame_preamble_ack_t iqueuemac_preamble_ack_hdr;
+    gnrc_gomach_frame_preamble_ack_t gomach_preamble_ack_hdr;
 
-    iqueuemac_preamble_ack_hdr.header.type = GNRC_GOMACH_FRAME_PREAMBLE_ACK;
-    iqueuemac_preamble_ack_hdr.dst_addr = info->src_addr;
+    gomach_preamble_ack_hdr.header.type = GNRC_GOMACH_FRAME_PREAMBLE_ACK;
+    gomach_preamble_ack_hdr.dst_addr = info->src_addr;
     /* Tell the preamble sender the device's (preamble-ACK sender) current phase.
      * This is to allow the preamble sender to deduce the exact phase of the receiver. */
-    iqueuemac_preamble_ack_hdr.phase_in_ticks = gnrc_gomach_phase_now(gnrc_netdev);
+    gomach_preamble_ack_hdr.phase_in_ticks = gnrc_gomach_phase_now(gnrc_netdev);
 
-    pkt = gnrc_pktbuf_add(NULL, &iqueuemac_preamble_ack_hdr, sizeof(iqueuemac_preamble_ack_hdr),
+    pkt = gnrc_pktbuf_add(NULL, &gomach_preamble_ack_hdr, sizeof(gomach_preamble_ack_hdr),
                           GNRC_NETTYPE_GOMACH);
     if (pkt == NULL) {
         LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_preamble_ack().\n");
         return -ENOBUFS;
     }
-    pkt_iqmac = pkt;
+    gomach_pkt = pkt;
 
     pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
     if (pkt == NULL) {
         LOG_ERROR("ERROR: [GOMACH]: netif_hdr add failed in gnrc_gomach_send_preamble_ack().\n");
-        gnrc_pktbuf_release(pkt_iqmac);
+        gnrc_pktbuf_release(gomach_pkt);
         return -ENOBUFS;
     }
-    pkt_iqmac = pkt;
+    gomach_pkt = pkt;
 
     /* We wouldn't get here if add the NETIF header had failed, so no sanity checks needed */
     nethdr_preamble_ack = (gnrc_netif_hdr_t *)
@@ -229,7 +229,7 @@ int gnrc_gomach_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_gomach_packet
     int res = gnrc_gomach_send(gnrc_netdev, pkt, NETOPT_DISABLE);
     if (res < 0) {
         LOG_ERROR("ERROR: [GOMACH]: send preamble-ack failed in gnrc_gomach_send_preamble_ack().\n");
-        gnrc_pktbuf_release(pkt_iqmac);
+        gnrc_pktbuf_release(gomach_pkt);
     }
     return res;
 }
@@ -260,13 +260,13 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
     total_tdma_slot_num = 0;
 
     gnrc_pktsnip_t *pkt;
-    gnrc_pktsnip_t *pkt_iqmac;
+    gnrc_pktsnip_t *gomach_pkt;
     gnrc_netif_hdr_t *nethdr_beacon;
 
     /* Start assemble the beacon packet */
-    gnrc_gomach_frame_beacon_t iqueuemac_hdr;
-    iqueuemac_hdr.header.type = GNRC_GOMACH_FRAME_BEACON;
-    iqueuemac_hdr.sub_channel_seq = gnrc_netdev->gomach.sub_channel_num;
+    gnrc_gomach_frame_beacon_t gomach_beaocn_hdr;
+    gomach_beaocn_hdr.header.type = GNRC_GOMACH_FRAME_BEACON;
+    gomach_beaocn_hdr.sub_channel_seq = gnrc_netdev->gomach.sub_channel_num;
 
     /* Start generating the slots list and the related ID list for guiding
      * the following vTMDA procedure (slotted transmission). */
@@ -300,7 +300,7 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
         }
     }
 
-    iqueuemac_hdr.schedulelist_size = total_tdma_node_num;
+    gomach_beaocn_hdr.schedulelist_size = total_tdma_node_num;
 
     if (total_tdma_node_num > 0) {
     	/* If there are slots to allocate, add the slots list and the ID list to
@@ -314,26 +314,26 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
             LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_beacon().\n");
             return -ENOBUFS;
         }
-        pkt_iqmac = pkt;
+        gomach_pkt = pkt;
 
         /* Add the ID list to the beacon. */
         pkt = gnrc_pktbuf_add(pkt, id_list, total_tdma_node_num * sizeof(gnrc_gomach_l2_id_t),
                               GNRC_NETTYPE_GOMACH);
         if (pkt == NULL) {
             LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_beacon().\n");
-            gnrc_pktbuf_release(pkt_iqmac);
+            gnrc_pktbuf_release(gomach_pkt);
             return -ENOBUFS;
         }
-        pkt_iqmac = pkt;
+        gomach_pkt = pkt;
 
         /* Add the GoMacH header to the beacon. */
-        pkt = gnrc_pktbuf_add(pkt, &iqueuemac_hdr, sizeof(iqueuemac_hdr), GNRC_NETTYPE_GOMACH);
+        pkt = gnrc_pktbuf_add(pkt, &gomach_beaocn_hdr, sizeof(gomach_beaocn_hdr), GNRC_NETTYPE_GOMACH);
         if (pkt == NULL) {
             LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_beacon().\n");
-            gnrc_pktbuf_release(pkt_iqmac);
+            gnrc_pktbuf_release(gomach_pkt);
             return -ENOBUFS;
         }
-        pkt_iqmac = pkt;
+        gomach_pkt = pkt;
     }
     else {
         /* If there is no slots to allocate, quit sending beacon! */
@@ -344,10 +344,10 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
     pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
     if (pkt == NULL) {
         LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_beacon().\n");
-        gnrc_pktbuf_release(pkt_iqmac);
+        gnrc_pktbuf_release(gomach_pkt);
         return -ENOBUFS;
     }
-    pkt_iqmac = pkt;
+    gomach_pkt = pkt;
 
     /* We wouldn't get here if add the NETIF header had failed,
      * so no sanity checks needed. */
@@ -402,15 +402,15 @@ void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pk
     assert(pkt != NULL);
     assert(pa_info != NULL);
 
-    gnrc_gomach_frame_data_t *iqueuemac_data_hdr;
-    iqueuemac_data_hdr = (gnrc_gomach_frame_data_t *)
+    gnrc_gomach_frame_data_t *gomach_data_hdr;
+    gomach_data_hdr = (gnrc_gomach_frame_data_t *)
                          gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
 
-    if (iqueuemac_data_hdr == NULL) {
+    if (gomach_data_hdr == NULL) {
         LOG_ERROR("ERROR: [GOMACH]: GoMacH's data header is null.\n");
         return;
     }
-    iqueuemac_data_hdr = ((gnrc_pktsnip_t *) iqueuemac_data_hdr)->data;
+    gomach_data_hdr = ((gnrc_pktsnip_t *) gomach_data_hdr)->data;
 
     int i;
     /* Check whether the device has been registered or not. */
@@ -419,7 +419,7 @@ void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pk
                    &pa_info->src_addr.addr,
                    pa_info->src_addr.len) == 0) {
             /* Update the sender's queue-length indicator. */
-            gnrc_netdev->rx.rx_register_list[i].queue_indicator = iqueuemac_data_hdr->queue_indicator;
+            gnrc_netdev->rx.rx_register_list[i].queue_indicator = gomach_data_hdr->queue_indicator;
             return;
         }
     }
@@ -434,7 +434,7 @@ void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pk
                    pa_info->src_addr.len);
 
             /* Update the sender's queue-length indicator. */
-            gnrc_netdev->rx.rx_register_list[i].queue_indicator = iqueuemac_data_hdr->queue_indicator;
+            gnrc_netdev->rx.rx_register_list[i].queue_indicator = gomach_data_hdr->queue_indicator;
             return;
         }
     }
@@ -601,32 +601,32 @@ int gnrc_gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_e
 
     gnrc_pktsnip_t *pkt;
     gnrc_netif_hdr_t *nethdr_preamble;
-    gnrc_pktsnip_t *pkt_iqmac;
+    gnrc_pktsnip_t *gomach_pkt;
 
     /* Assemble the preamble packet. */
-    gnrc_gomach_frame_preamble_t iqueuemac_preamble_hdr;
+    gnrc_gomach_frame_preamble_t gomach_preamble_hdr;
 
-    iqueuemac_preamble_hdr.header.type = GNRC_GOMACH_FRAME_PREAMBLE;
-    memcpy(iqueuemac_preamble_hdr.dst_addr.addr,
+    gomach_preamble_hdr.header.type = GNRC_GOMACH_FRAME_PREAMBLE;
+    memcpy(gomach_preamble_hdr.dst_addr.addr,
            gnrc_netdev->tx.current_neighbor->l2_addr,
            gnrc_netdev->tx.current_neighbor->l2_addr_len);
-    iqueuemac_preamble_hdr.dst_addr.len = gnrc_netdev->tx.current_neighbor->l2_addr_len;
+    gomach_preamble_hdr.dst_addr.len = gnrc_netdev->tx.current_neighbor->l2_addr_len;
 
-    pkt = gnrc_pktbuf_add(NULL, &iqueuemac_preamble_hdr, sizeof(iqueuemac_preamble_hdr),
+    pkt = gnrc_pktbuf_add(NULL, &gomach_preamble_hdr, sizeof(gomach_preamble_hdr),
                           GNRC_NETTYPE_GOMACH);
     if (pkt == NULL) {
         LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_preamble().\n");
         return -ENOBUFS;
     }
-    pkt_iqmac = pkt;
+    gomach_pkt = pkt;
 
     pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
     if (pkt == NULL) {
         LOG_ERROR("ERROR: [GOMACH]: netif add failed in gnrc_gomach_send_preamble().\n");
-        gnrc_pktbuf_release(pkt_iqmac);
+        gnrc_pktbuf_release(gomach_pkt);
         return -ENOBUFS;
     }
-    pkt_iqmac = pkt;
+    gomach_pkt = pkt;
 
     nethdr_preamble = (gnrc_netif_hdr_t *) (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
 
@@ -639,29 +639,33 @@ int gnrc_gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_e
     return gnrc_gomach_send(gnrc_netdev, pkt, csma_enable);
 }
 
-
 int gnrc_gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t use_csma)
 {
     assert(gnrc_netdev != NULL);
 
     gnrc_pktsnip_t *pkt;
+    gnrc_pktsnip_t *gomach_pkt;
     gnrc_netif_hdr_t *nethdr_announce;
 
     /* Assemble the sub-channel sequence announce packet. */
-    gnrc_gomach_frame_announce_t iqueuemac_announce_hdr;
+    gnrc_gomach_frame_announce_t gomach_announce_hdr;
 
-    iqueuemac_announce_hdr.header.type = GNRC_GOMACH_FRAME_ANNOUNCE;
-    iqueuemac_announce_hdr.subchannel_seq = gnrc_netdev->gomach.sub_channel_num;
+    gomach_announce_hdr.header.type = GNRC_GOMACH_FRAME_ANNOUNCE;
+    gomach_announce_hdr.subchannel_seq = gnrc_netdev->gomach.sub_channel_num;
 
-    pkt = gnrc_pktbuf_add(NULL, &iqueuemac_announce_hdr, sizeof(iqueuemac_announce_hdr),
+    pkt = gnrc_pktbuf_add(NULL, &gomach_announce_hdr, sizeof(gomach_announce_hdr),
                           GNRC_NETTYPE_GOMACH);
     if (pkt == NULL) {
         LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_bcast_subchann_seq().\n");
+        return  -ENOBUFS;
     }
+    gomach_pkt = pkt;
 
     pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
     if (pkt == NULL) {
+        gnrc_pktbuf_release(gomach_pkt);
         LOG_ERROR("ERROR: [GOMACH]: netif add failed in gnrc_gomach_bcast_subchann_seq().\n");
+        return  -ENOBUFS;
     }
 
     nethdr_announce = (gnrc_netif_hdr_t *)
@@ -681,14 +685,14 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
     assert(gnrc_netdev != NULL);
     assert(pkt != NULL);
 
-    gnrc_gomach_frame_preamble_ack_t *iqueuemac_preamble_ack_hdr;
+    gnrc_gomach_frame_preamble_ack_t *gomach_preamble_ack_hdr;
 
-    iqueuemac_preamble_ack_hdr = (gnrc_gomach_frame_preamble_ack_t *) gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
-    if (iqueuemac_preamble_ack_hdr == NULL) {
+    gomach_preamble_ack_hdr = (gnrc_gomach_frame_preamble_ack_t *) gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
+    if (gomach_preamble_ack_hdr == NULL) {
         LOG_ERROR("ERROR: [GOMACH]: preamble_ack_hdr is null.\n");
         return;
     }
-    iqueuemac_preamble_ack_hdr = ((gnrc_pktsnip_t *)iqueuemac_preamble_ack_hdr)->data;
+    gomach_preamble_ack_hdr = ((gnrc_pktsnip_t *)gomach_preamble_ack_hdr)->data;
 
     /* Mark the neighbor as phase-known */
     gnrc_netdev->tx.current_neighbor->mac_type = GNRC_GOMACH_TYPE_KNOWN;
@@ -701,11 +705,11 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
          * (phase-backoff). So, give some compensation for later phase adjust. */
         phase_ticks = gnrc_gomach_phase_now(gnrc_netdev) +
                       gnrc_netdev->gomach.backoff_phase_ticks -
-                      iqueuemac_preamble_ack_hdr->phase_in_ticks;
+                      gomach_preamble_ack_hdr->phase_in_ticks;
     }
     else {
         phase_ticks = gnrc_gomach_phase_now(gnrc_netdev) -
-                      iqueuemac_preamble_ack_hdr->phase_in_ticks;
+                      gomach_preamble_ack_hdr->phase_in_ticks;
     }
 
     if (phase_ticks < 0) {
@@ -835,23 +839,23 @@ int gnrc_gomach_send_data(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enabl
     assert(pkt != NULL);
 
     /* Insert GoMacH header above NETIF header. */
-    gnrc_gomach_frame_data_t *iqueuemac_data_hdr_pointer;
+    gnrc_gomach_frame_data_t *gomach_data_hdr_pointer;
 
-    iqueuemac_data_hdr_pointer = (gnrc_gomach_frame_data_t *)
-                                 gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
+    gomach_data_hdr_pointer = (gnrc_gomach_frame_data_t *)
+                              gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
 
-    if (iqueuemac_data_hdr_pointer == NULL) {
+    if (gomach_data_hdr_pointer == NULL) {
         /* No GoMacH header yet, build one. */
-        gnrc_gomach_frame_data_t iqueuemac_data_hdr;
-        iqueuemac_data_hdr.header.type = GNRC_GOMACH_FRAME_DATA;
+        gnrc_gomach_frame_data_t gomach_data_hdr;
+        gomach_data_hdr.header.type = GNRC_GOMACH_FRAME_DATA;
 
         /* Set the queue-length indicator according to its current queue situation. */
-        iqueuemac_data_hdr.queue_indicator = gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue);
+        gomach_data_hdr.queue_indicator = gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue);
 
         /* Save the payload pointer. */
         gnrc_pktsnip_t *payload = gnrc_netdev->tx.packet->next;
 
-        pkt->next = gnrc_pktbuf_add(pkt->next, &iqueuemac_data_hdr, sizeof(iqueuemac_data_hdr),
+        pkt->next = gnrc_pktbuf_add(pkt->next, &gomach_data_hdr, sizeof(gomach_data_hdr),
                                     GNRC_NETTYPE_GOMACH);
         if (pkt->next == NULL) {
             LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_data().\n");
@@ -863,7 +867,7 @@ int gnrc_gomach_send_data(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enabl
     }
     else {
         /* GoMacH header exists, update the queue-indicator. */
-        iqueuemac_data_hdr_pointer->queue_indicator = gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue);
+        gomach_data_hdr_pointer->queue_indicator = gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue);
     }
 
     gnrc_pktbuf_hold(gnrc_netdev->tx.packet, 1);
@@ -938,8 +942,8 @@ void gnrc_gomach_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
     assert(gnrc_netdev != NULL);
     assert(pkt != NULL);
 
-    gnrc_gomach_frame_beacon_t *iqueuemac_beacon_hdr;
-    gnrc_pktsnip_t *iqueuemac_snip;
+    gnrc_gomach_frame_beacon_t *gomach_beacon_hdr;
+    gnrc_pktsnip_t *gomach_snip;
 
     gnrc_gomach_l2_id_t *id_list;
     uint8_t *slots_list;
@@ -949,18 +953,18 @@ void gnrc_gomach_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
     uint8_t slots_position;
 
     /* Fetch the beacon packet's MAC header. */
-    iqueuemac_beacon_hdr = (gnrc_gomach_frame_beacon_t *)
+    gomach_beacon_hdr = (gnrc_gomach_frame_beacon_t *)
                            gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
 
-    if (iqueuemac_beacon_hdr == NULL) {
+    if (gomach_beacon_hdr == NULL) {
         LOG_ERROR("ERROR: [GOMACH]: GoMacH's beacon header is null.\n");
         return;
     }
 
-    iqueuemac_beacon_hdr = ((gnrc_pktsnip_t *) iqueuemac_beacon_hdr)->data;
+    gomach_beacon_hdr = ((gnrc_pktsnip_t *) gomach_beacon_hdr)->data;
 
-    schedulelist_size = iqueuemac_beacon_hdr->schedulelist_size;
-    gnrc_netdev->tx.vtdma_para.sub_channel_seq = iqueuemac_beacon_hdr->sub_channel_seq;
+    schedulelist_size = gomach_beacon_hdr->schedulelist_size;
+    gnrc_netdev->tx.vtdma_para.sub_channel_seq = gomach_beacon_hdr->sub_channel_seq;
 
     if (schedulelist_size == 0) {
         /* No allocated slots. */
@@ -970,9 +974,9 @@ void gnrc_gomach_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
     }
 
     /* Take the ID-list out. */
-    iqueuemac_snip = gnrc_pktbuf_mark(pkt, schedulelist_size * sizeof(gnrc_gomach_l2_id_t),
+    gomach_snip = gnrc_pktbuf_mark(pkt, schedulelist_size * sizeof(gnrc_gomach_l2_id_t),
                                       GNRC_NETTYPE_GOMACH);
-    id_list = iqueuemac_snip->data;
+    id_list = gomach_snip->data;
 
     /* Take the slots-list out. */
     slots_list = pkt->data;
