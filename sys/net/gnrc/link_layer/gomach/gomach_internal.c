@@ -27,9 +27,9 @@
 #include "net/gnrc/mac/internal.h"
 #include "net/gnrc/gomach/hdr.h"
 #include "net/gnrc/gomach/gomach.h"
-#include "net/gnrc/gomach/gomach_types.h"
+#include "net/gnrc/gomach/timeout.h"
+#include "net/gnrc/gomach/types.h"
 #include "include/gomach_internal.h"
-#include "net/gnrc/gomach/gomach_timeout.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"

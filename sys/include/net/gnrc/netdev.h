@@ -35,7 +35,7 @@
 #include "kernel_types.h"
 #include "net/netdev.h"
 
-#include "gomach/gomach_types.h"
+#include "gomach/types.h"
 #include "net/gnrc.h"
 #include "net/gnrc/mac/types.h"
 #include "net/ieee802154.h"

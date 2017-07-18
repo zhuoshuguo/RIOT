@@ -30,7 +30,9 @@
 #include "net/ieee802154.h"
 #include "net/gnrc/mac/mac.h"
 #include "net/gnrc/lwmac/types.h"
-#include "net/gnrc/gomach/gomach_types.h"
+#ifdef MODULE_GNRC_GOMACH
+#include "net/gnrc/gomach/types.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {

@@ -25,7 +25,7 @@
 #include "msg.h"
 #include "xtimer.h"
 #include "net/gnrc/netdev.h"
-#include "net/gnrc/gomach/gomach_types.h"
+#include "types.h"
 
 #ifdef __cplusplus
 extern "C" {
