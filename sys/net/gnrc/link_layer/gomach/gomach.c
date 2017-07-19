@@ -1959,7 +1959,7 @@ static void *_gnrc_gomach_thread(void *args)
     gomach_pid = gnrc_netdev->pid;
 
     /* Set MAC address length. */
-    uint16_t src_len = GNRC_GOMACH_MAX_L2_ADDR_LEN;
+    uint16_t src_len = IEEE802154_LONG_ADDRESS_LEN;
     dev->driver->set(dev, NETOPT_SRC_LEN, &src_len, sizeof(src_len));
 
     /* Initialize GoMacH's parameters. */

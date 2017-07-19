@@ -123,7 +123,7 @@ typedef enum {
 } gnrc_gomach_transmit_state_t;
 
 typedef struct {
-    uint8_t addr[GNRC_GOMACH_MAX_L2_ADDR_LEN];
+    uint8_t addr[IEEE802154_LONG_ADDRESS_LEN];
 } gnrc_gomach_l2_id_t;
 
 typedef struct {

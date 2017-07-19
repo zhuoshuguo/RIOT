@@ -22,83 +22,117 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "net/ieee802154.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifndef GNRC_GOMACH_MAX_L2_ADDR_LEN
-#define GNRC_GOMACH_MAX_L2_ADDR_LEN           (8U)
-#endif
-
-typedef struct {
-    uint8_t addr[GNRC_GOMACH_MAX_L2_ADDR_LEN];
-    uint8_t len;
-} gnrc_gomach_l2_addr_t;
-
-#define GNRC_GOMACH_L2_ADDR_INIT      { { 0 }, 0 }
-
-typedef enum {
-    GNRC_GOMACH_FRAME_BEACON = 1,
-    GNRC_GOMACH_FRAME_DATA,
-    GNRC_GOMACH_FRAME_PREAMBLE,
-    GNRC_GOMACH_FRAME_PREAMBLE_ACK,
-    GNRC_GOMACH_FRAME_BROADCAST,
-    GNRC_GOMACH_FRAME_ANNOUNCE
-} gnrc_gomach_frame_type_t;
-
 /**
- * @brief   GoMacH header
+ * @brief   GoMacH internal L2 address structure.
  */
 typedef struct {
-    gnrc_gomach_frame_type_t type; /**< type of frame */
+    uint8_t addr[IEEE802154_LONG_ADDRESS_LEN];  /**< Address of node. */
+    uint8_t len;                                /**< Address length. */
+} gnrc_gomach_l2_addr_t;
+
+/**
+ * @brief Static initializer for gnrc_gomach_l2_addr_t.
+ */
+#define GNRC_GOMACH_L2_ADDR_INIT      { { 0 }, 0 }
+
+/**
+ * @brief   GoMacH beacon frame type.
+ */
+#define GNRC_GOMACH_FRAME_BEACON             (0x01U)
+
+/**
+ * @brief   GoMacH data frame type.
+ */
+#define GNRC_GOMACH_FRAME_DATA               (0x02U)
+
+/**
+ * @brief   GoMacH preamble frame type.
+ */
+#define GNRC_GOMACH_FRAME_PREAMBLE           (0x03U)
+
+/**
+ * @brief   GoMacH preamble-ACK frame type.
+ */
+#define GNRC_GOMACH_FRAME_PREAMBLE_ACK       (0x04U)
+
+/**
+ * @brief   GoMacH broadcast frame type.
+ */
+#define GNRC_GOMACH_FRAME_BROADCAST          (0x05U)
+
+/**
+ * @brief   GoMacH announce frame type.
+ *
+ * This frame type is specifically used to announce the chosen sub-channel
+ * sequence of the node to its one-hop neighbors.
+ */
+#define GNRC_GOMACH_FRAME_ANNOUNCE           (0x06U)
+
+/**
+ * @brief   GoMacH frame header.
+ */
+typedef struct {
+    uint8_t type;  /**< Type of GoMacH frame. */
 } gnrc_gomach_hdr_t;
 
 /**
  * @brief   GoMacH Beacon frame
  */
 typedef struct __attribute__((packed)) {
-    gnrc_gomach_hdr_t header;
-    uint8_t sub_channel_seq;
-    uint8_t schedulelist_size;
+    gnrc_gomach_hdr_t header;       /**< Beacon frame header type. */
+    uint8_t sub_channel_seq;        /**< Sub-channel sequence of this node. */
+    uint8_t schedulelist_size;      /**< vTDMA schedule list size. */
 } gnrc_gomach_frame_beacon_t;
 
 /**
  * @brief   GoMacH data frame
  */
 typedef struct __attribute__((packed)) {
-    gnrc_gomach_hdr_t header;
-    uint8_t queue_indicator;
+    gnrc_gomach_hdr_t header;       /**< Data frame header type. */
+    uint8_t queue_indicator;        /**< Queue-length indicator of this node. */
 } gnrc_gomach_frame_data_t;
 
+/**
+ * @brief   GoMacH announce frame.
+ *
+ * This frame type is specifically used to announce the chosen sub-channel
+ * sequence of the node to its one-hop neighbors.
+ */
 typedef struct __attribute__((packed)) {
-    gnrc_gomach_hdr_t header;
-    uint8_t subchannel_seq;
+    gnrc_gomach_hdr_t header;       /**< Announce frame header type. */
+    uint8_t subchannel_seq;         /**< Sub-channel sequence of this node. */
 } gnrc_gomach_frame_announce_t;
 
 /**
- * @brief   GoMacH broadcast preamble frame
+ * @brief   GoMacH preamble frame.
  */
 typedef struct __attribute__((packed)) {
-    gnrc_gomach_hdr_t header;
-    gnrc_gomach_l2_addr_t dst_addr;
+    gnrc_gomach_hdr_t header;           /**< Preamble frame header type. */
+    gnrc_gomach_l2_addr_t dst_addr;     /**< Address of this node. */
 } gnrc_gomach_frame_preamble_t;
 
 
 /**
- * @brief   GoMacH broadcast preamble_ack frame
+ * @brief   GoMacH preamble_ack frame.
  */
 typedef struct __attribute__((packed)) {
-    gnrc_gomach_hdr_t header;
-    gnrc_gomach_l2_addr_t dst_addr;
-    uint32_t phase_in_ticks;    /* phase of this device*/
+    gnrc_gomach_hdr_t header;           /**< Preamble-ACK frame header type. */
+    gnrc_gomach_l2_addr_t dst_addr;     /**< Address of this node. */
+    uint32_t phase_in_ticks;            /**< Current phase of this node. */
 } gnrc_gomach_frame_preamble_ack_t;
 
 /**
- * @brief   GoMacH broadcast data frame
+ * @brief   GoMacH broadcast frame.
  */
 typedef struct __attribute__((packed)) {
-    gnrc_gomach_hdr_t header;
-    uint8_t seq_nr;
+    gnrc_gomach_hdr_t header;           /**< Broadcast frame header type. */
+    uint8_t seq_nr;                     /**< Broadcast sequence of this node. */
 } gnrc_gomach_frame_broadcast_t;
 
 #ifdef __cplusplus
