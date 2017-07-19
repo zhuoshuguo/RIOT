@@ -74,7 +74,7 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_INIT;
 
     /* Initialize GoMacH's channels. */
-    gnrc_netdev->gomach.sub_channel_num = 13;
+    gnrc_netdev->gomach.sub_channel_seq = 13;
     gnrc_netdev->gomach.pub_channel_1 = 26;
     gnrc_netdev->gomach.pub_channel_2 = 11;
     gnrc_netdev->gomach.cur_pub_channel = gnrc_netdev->gomach.pub_channel_1;
@@ -112,7 +112,7 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     device_state->seq = gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len - 1];
 
     /* Initialize GoMacH's duplicate-check scheme. */
-    for (int i = 0; i < GNRC_GOMACH_CHECK_DUPPKT_BUFFER_SIZE; i++) {
+    for (int i = 0; i < GNRC_GOMACH_DUPCHK_BUFFER_SIZE; i++) {
         gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
     }
 
@@ -1351,7 +1351,7 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
 {
     /* Reset last_seq_info, for avoiding receiving duplicate packets.
      * To-do: remove this in the future? */
-    for (int i = 0; i < GNRC_GOMACH_CHECK_DUPPKT_BUFFER_SIZE; i++) {
+    for (int i = 0; i < GNRC_GOMACH_DUPCHK_BUFFER_SIZE; i++) {
         if (gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len != 0) {
             gnrc_netdev->rx.check_dup_pkt.last_nodes[i].life_cycle++;
             if (gnrc_netdev->rx.check_dup_pkt.last_nodes[i].life_cycle >=
@@ -1381,7 +1381,7 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
 
     gnrc_netdev_set_rx_started(gnrc_netdev, false);
     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
-    gnrc_netdev->gomach.cp_backoff_counter = 0;
+    gnrc_netdev->gomach.cp_extend_count = 0;
     gnrc_netdev->gomach.quit_current_cycle = false;
     gnrc_netdev->gomach.get_other_preamble = false;
     gnrc_netdev->gomach.send_beacon_fail = false;
@@ -1444,8 +1444,8 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
     if ((gnrc_netdev->gomach.cp_end == true) || (gnrc_netdev->gomach.quit_current_cycle == true)) {
         /* If we found ongoing reception, wait for reception complete. */
         if ((gnrc_gomach_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) &&
-            (gnrc_netdev->gomach.cp_backoff_counter < GNRC_GOMACH_CP_EXTEND_THRESHOLD)) {
-            gnrc_netdev->gomach.cp_backoff_counter++;
+            (gnrc_netdev->gomach.cp_extend_count < GNRC_GOMACH_CP_EXTEND_THRESHOLD)) {
+            gnrc_netdev->gomach.cp_extend_count++;
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
             gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END,
                                   GNRC_GOMACH_WAIT_RX_END_US);
@@ -1585,7 +1585,7 @@ static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
 static void gomach_vtdma_init(gnrc_netdev_t *gnrc_netdev)
 {
     /* Switch the radio to the device's sub-channel. */
-    gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.sub_channel_num);
+    gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.sub_channel_seq);
 
     /* Enable Auto ACK again for data reception */
     gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);

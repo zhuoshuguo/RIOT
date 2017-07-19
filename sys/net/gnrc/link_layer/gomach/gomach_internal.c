@@ -266,7 +266,7 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
     /* Start assemble the beacon packet */
     gnrc_gomach_frame_beacon_t gomach_beaocn_hdr;
     gomach_beaocn_hdr.header.type = GNRC_GOMACH_FRAME_BEACON;
-    gomach_beaocn_hdr.sub_channel_seq = gnrc_netdev->gomach.sub_channel_num;
+    gomach_beaocn_hdr.sub_channel_seq = gnrc_netdev->gomach.sub_channel_seq;
 
     /* Start generating the slots list and the related ID list for guiding
      * the following vTMDA procedure (slotted transmission). */
@@ -447,7 +447,7 @@ bool gnrc_gomach_check_duplicate(gnrc_netdev_t *gnrc_netdev, gnrc_gomach_packet_
 
     int i;
     /* First check if we can found the same source sender ID in the recorded info units. */
-    for (i = 0; i < GNRC_GOMACH_CHECK_DUPPKT_BUFFER_SIZE; i++) {
+    for (i = 0; i < GNRC_GOMACH_DUPCHK_BUFFER_SIZE; i++) {
         if (memcmp(&gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.addr,
                    &pa_info->src_addr.addr,
                    pa_info->src_addr.len) == 0) {
@@ -464,7 +464,7 @@ bool gnrc_gomach_check_duplicate(gnrc_netdev_t *gnrc_netdev, gnrc_gomach_packet_
     }
 
     /* Look for a free info unit */
-    for (i = 0; i < GNRC_GOMACH_CHECK_DUPPKT_BUFFER_SIZE; i++) {
+    for (i = 0; i < GNRC_GOMACH_DUPCHK_BUFFER_SIZE; i++) {
         if (gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len == 0) {
             gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.len = pa_info->src_addr.len;
             memcpy(gnrc_netdev->rx.check_dup_pkt.last_nodes[i].node_addr.addr,
@@ -592,7 +592,7 @@ void gnrc_gomach_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev)
         }
     }
 
-    gnrc_netdev->gomach.sub_channel_num = subchannel_seq;
+    gnrc_netdev->gomach.sub_channel_seq = subchannel_seq;
 }
 
 int gnrc_gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable)
@@ -651,7 +651,7 @@ int gnrc_gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t u
     gnrc_gomach_frame_announce_t gomach_announce_hdr;
 
     gomach_announce_hdr.header.type = GNRC_GOMACH_FRAME_ANNOUNCE;
-    gomach_announce_hdr.subchannel_seq = gnrc_netdev->gomach.sub_channel_num;
+    gomach_announce_hdr.subchannel_seq = gnrc_netdev->gomach.sub_channel_seq;
 
     pkt = gnrc_pktbuf_add(NULL, &gomach_announce_hdr, sizeof(gomach_announce_hdr),
                           GNRC_NETTYPE_GOMACH);

@@ -124,7 +124,7 @@ typedef struct {
 #ifdef MODULE_GNRC_GOMACH
     uint16_t pub_chanseq;                            /**< Neighbor's current public channel sequence */
     uint32_t cp_phase;                               /**< Neighbor's wakeup phase */
-    gnrc_gomach_type_t mac_type;                       /**< UNKONW when this neighbor is not phase-locked yet*/
+    uint8_t mac_type;                       /**< UNKONW when this neighbor is not phase-locked yet*/
 #endif
 } gnrc_mac_tx_neighbor_t;
 
