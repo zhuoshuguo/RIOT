@@ -246,9 +246,9 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
     /* First check how many slots needed to be allocated. */
     gnrc_netdev->rx.vtdma_manag.total_slots_num = 0;
 
-    for (i = 0; i < GNRC_GOMACH_SLOTS_SCHEDULE_UNIT; i++) {
-        if (gnrc_netdev->rx.rx_register_list[i].queue_indicator > 0) {
-            total_tdma_slot_num = gnrc_netdev->rx.rx_register_list[i].queue_indicator;
+    for (i = 0; i < GNRC_GOMACH_SLOSCH_UNIT_COUNT; i++) {
+        if (gnrc_netdev->rx.slosch_list[i].queue_indicator > 0) {
+            total_tdma_slot_num = gnrc_netdev->rx.slosch_list[i].queue_indicator;
             break;
         }
     }
@@ -272,18 +272,18 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
      * the following vTMDA procedure (slotted transmission). */
     gnrc_netdev->rx.vtdma_manag.total_slots_num = 0;
 
-    gnrc_gomach_l2_id_t id_list[GNRC_GOMACH_SLOTS_SCHEDULE_UNIT];
-    uint8_t slots_list[GNRC_GOMACH_SLOTS_SCHEDULE_UNIT];
+    gnrc_gomach_l2_id_t id_list[GNRC_GOMACH_SLOSCH_UNIT_COUNT];
+    uint8_t slots_list[GNRC_GOMACH_SLOSCH_UNIT_COUNT];
 
-    for (i = 0; i < GNRC_GOMACH_SLOTS_SCHEDULE_UNIT; i++) {
-        if (gnrc_netdev->rx.rx_register_list[i].queue_indicator > 0) {
+    for (i = 0; i < GNRC_GOMACH_SLOSCH_UNIT_COUNT; i++) {
+        if (gnrc_netdev->rx.slosch_list[i].queue_indicator > 0) {
             /* Record the device's (that will be allocated slots) address to the ID list. */
             memcpy(id_list[j].addr,
-                   gnrc_netdev->rx.rx_register_list[i].node_addr.addr,
-                   gnrc_netdev->rx.rx_register_list[i].node_addr.len);
+                   gnrc_netdev->rx.slosch_list[i].node_addr.addr,
+                   gnrc_netdev->rx.slosch_list[i].node_addr.len);
 
             /* Record the number of allocated slots to the slots list. */
-            slots_list[j] = gnrc_netdev->rx.rx_register_list[i].queue_indicator;
+            slots_list[j] = gnrc_netdev->rx.slosch_list[i].queue_indicator;
 
             total_tdma_node_num++;
             total_tdma_slot_num += slots_list[j];
@@ -414,27 +414,27 @@ void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pk
 
     int i;
     /* Check whether the device has been registered or not. */
-    for (i = 0; i < GNRC_GOMACH_SLOTS_SCHEDULE_UNIT; i++) {
-        if (memcmp(&gnrc_netdev->rx.rx_register_list[i].node_addr.addr,
+    for (i = 0; i < GNRC_GOMACH_SLOSCH_UNIT_COUNT; i++) {
+        if (memcmp(&gnrc_netdev->rx.slosch_list[i].node_addr.addr,
                    &pa_info->src_addr.addr,
                    pa_info->src_addr.len) == 0) {
             /* Update the sender's queue-length indicator. */
-            gnrc_netdev->rx.rx_register_list[i].queue_indicator = gomach_data_hdr->queue_indicator;
+            gnrc_netdev->rx.slosch_list[i].queue_indicator = gomach_data_hdr->queue_indicator;
             return;
         }
     }
 
     /* The sender has not registered yet. */
-    for (i = 0; i < GNRC_GOMACH_SLOTS_SCHEDULE_UNIT; i++) {
-        if ((gnrc_netdev->rx.rx_register_list[i].node_addr.len == 0) ||
-            (gnrc_netdev->rx.rx_register_list[i].queue_indicator == 0)) {
-            gnrc_netdev->rx.rx_register_list[i].node_addr.len = pa_info->src_addr.len;
-            memcpy(gnrc_netdev->rx.rx_register_list[i].node_addr.addr,
+    for (i = 0; i < GNRC_GOMACH_SLOSCH_UNIT_COUNT; i++) {
+        if ((gnrc_netdev->rx.slosch_list[i].node_addr.len == 0) ||
+            (gnrc_netdev->rx.slosch_list[i].queue_indicator == 0)) {
+            gnrc_netdev->rx.slosch_list[i].node_addr.len = pa_info->src_addr.len;
+            memcpy(gnrc_netdev->rx.slosch_list[i].node_addr.addr,
                    pa_info->src_addr.addr,
                    pa_info->src_addr.len);
 
             /* Update the sender's queue-length indicator. */
-            gnrc_netdev->rx.rx_register_list[i].queue_indicator = gomach_data_hdr->queue_indicator;
+            gnrc_netdev->rx.slosch_list[i].queue_indicator = gomach_data_hdr->queue_indicator;
             return;
         }
     }

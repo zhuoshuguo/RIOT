@@ -67,9 +67,9 @@ extern "C" {
 #define GNRC_GOMACH_TIMEOUT_COUNT             (5U)
 
 /**
- * @brief The default number of slot-schedule-unit @ref gnrc_gomach_slots_sched_unit_t in GoMacH.
+ * @brief The default number of slot-schedule-unit @ref gnrc_gomach_slosch_unit_t in GoMacH.
  */
-#define GNRC_GOMACH_SLOTS_SCHEDULE_UNIT           (11U)
+#define GNRC_GOMACH_SLOSCH_UNIT_COUNT           (11U)
 
 /**
  * @brief MAC type of unknown in GoMacH for indicating that the node's phase is unknown.
@@ -201,7 +201,7 @@ typedef struct {
 typedef struct {
     gnrc_gomach_l2_addr_t node_addr;    /**< Node's address. */
     uint8_t queue_indicator;            /**< Node's queue-length indicator. */
-} gnrc_gomach_slots_sched_unit_t;
+} gnrc_gomach_slosch_unit_t;
 
 /**
  * @brief   GoMacH's vTDMA (dynamic slots allocation) management unit.
