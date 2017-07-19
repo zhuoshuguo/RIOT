@@ -31,26 +31,63 @@
 extern "C" {
 #endif
 
-#define IQUEUEMAC_TIMEOUT_INIT  { {}, {}, false, TIMEOUT_DISABLED }
+/**
+ * @brief   Set GoMacH timeout of type @p type of offset @p offset.
+ *
+ * @param[in,out] netdev       gnrc_netdev structure.
+ * @param[in]     type         GoMacH timeout type.
+ * @param[in]     offset       timeout offset.
+ */
+void gnrc_gomach_set_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type, uint32_t offset);
 
-void gomach_set_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type, uint32_t offset);
+/**
+ * @brief   Clear GoMacH timeout of type @p type.
+ *
+ * @param[in,out] netdev       gnrc_netdev structure.
+ * @param[in]     type         GoMacH timeout type.
+ */
+void gnrc_gomach_clear_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type);
 
-void gomach_clear_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type);
+/**
+ * @brief   Check whether GoMacH timeout of type @p type is running.
+ *
+ * @param[in]     netdev       gnrc_netdev structure.
+ * @param[in]     type         GoMacH timeout type.
+ *
+ * @return        true, if timeout of type @p type is running.
+ * @return        false, if timeout of type @p type is not running.
+ */
+bool gnrc_gomach_timeout_is_running(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type);
 
-bool gomach_timeout_is_running(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type);
+/**
+ * @brief   Check whether GoMacH timeout of type @p type is expired. It will clear
+ *          the timeout once it is found expired.
+ *
+ * @param[in,out] netdev       gnrc_netdev structure.
+ * @param[in]     type         GoMacH timeout type.
+ *
+ * @return        true, if timeout of type @p type is expired.
+ * @return        false, if timeout of type @p type is not expired, or not exist.
+ */
+bool gnrc_gomach_timeout_is_expired(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type);
 
-bool gomach_timeout_is_expired(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type);
+/**
+ * @brief   Reset all GoMacH timeouts.
+ *
+ * @param[in,out] netdev  gnrc_netdev structure
+ */
+void gnrc_gomach_reset_timeouts(gnrc_netdev_t *netdev);
 
-void gomach_reset_timeouts(gnrc_netdev_t *netdev);
-
-void gomach_timeout_make_expire(gnrc_gomach_timeout_t *timeout);
-
-static inline void _gomach_clear_timeout(gnrc_gomach_timeout_t *timeout)
+/**
+ * @brief   Make a specific GoMacH timeout expired.
+ *
+ * @param[in,out] timeout   GoMacH timeout
+ */
+static inline void gnrc_gomach_timeout_make_expire(gnrc_gomach_timeout_t *timeout)
 {
     assert(timeout);
 
-    xtimer_remove(&(timeout->timer));
-    timeout->type = GNRC_GOMACH_TIMEOUT_DISABLED;
+    timeout->expired = true;
 }
 
 #ifdef __cplusplus

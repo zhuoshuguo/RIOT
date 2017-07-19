@@ -38,20 +38,21 @@ static int _gomach_find_timeout(gnrc_gomach_t *gomach, gnrc_gomach_timeout_type_
     return -ENOENT;
 }
 
-inline bool gomach_timeout_is_running(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type)
+inline bool gnrc_gomach_timeout_is_running(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type)
 {
     assert(netdev);
     return (_gomach_find_timeout(&netdev->gomach, type) >= 0);
 }
 
-bool gomach_timeout_is_expired(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type)
+bool gnrc_gomach_timeout_is_expired(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type)
 {
     assert(netdev);
 
     int index = _gomach_find_timeout(&netdev->gomach, type);
     if (index >= 0) {
         if (netdev->gomach.timeouts[index].expired) {
-            _gomach_clear_timeout(&netdev->gomach.timeouts[index]);
+            xtimer_remove(&(netdev->gomach.timeouts[index].timer));
+            netdev->gomach.timeouts[index].type = GNRC_GOMACH_TIMEOUT_DISABLED;
         }
         return netdev->gomach.timeouts[index].expired;
     }
@@ -62,7 +63,7 @@ gnrc_gomach_timeout_t *_gomach_acquire_timeout(gnrc_netdev_t *netdev, gnrc_gomac
 {
     assert(netdev);
 
-    if (gomach_timeout_is_running(netdev, type)) {
+    if (gnrc_gomach_timeout_is_running(netdev, type)) {
         return NULL;
     }
 
@@ -75,24 +76,18 @@ gnrc_gomach_timeout_t *_gomach_acquire_timeout(gnrc_netdev_t *netdev, gnrc_gomac
     return NULL;
 }
 
-void gomach_timeout_make_expire(gnrc_gomach_timeout_t *timeout)
-{
-    assert(timeout);
-
-    timeout->expired = true;
-}
-
-void gomach_clear_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type)
+void gnrc_gomach_clear_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type)
 {
     assert(netdev);
 
     int index = _gomach_find_timeout(&netdev->gomach, type);
     if (index >= 0) {
-        _gomach_clear_timeout(&netdev->gomach.timeouts[index]);
+        xtimer_remove(&(netdev->gomach.timeouts[index].timer));
+        netdev->gomach.timeouts[index].type = GNRC_GOMACH_TIMEOUT_DISABLED;
     }
 }
 
-void gomach_set_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type, uint32_t offset)
+void gnrc_gomach_set_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type, uint32_t offset)
 {
     assert(netdev);
 
@@ -109,13 +104,14 @@ void gomach_set_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type, 
     }
 }
 
-void gomach_reset_timeouts(gnrc_netdev_t *netdev)
+void gnrc_gomach_reset_timeouts(gnrc_netdev_t *netdev)
 {
     assert(netdev);
 
     for (unsigned i = 0; i < GNRC_GOMACH_TIMEOUT_COUNT; i++) {
         if (netdev->gomach.timeouts[i].type != GNRC_GOMACH_TIMEOUT_DISABLED) {
-            _gomach_clear_timeout(&netdev->gomach.timeouts[i]);
+            xtimer_remove(&(netdev->gomach.timeouts[i].timer));
+            netdev->gomach.timeouts[i].type = GNRC_GOMACH_TIMEOUT_DISABLED;
         }
     }
 }

@@ -1032,7 +1032,7 @@ void gnrc_gomach_packet_process_in_wait_beacon(gnrc_netdev_t *gnrc_netdev)
                 if (memcmp(&gnrc_netdev->tx.current_neighbor->l2_addr,
                            &receive_packet_info.src_addr.addr,
                            gnrc_netdev->tx.current_neighbor->l2_addr_len) == 0) {
-                    gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_BEACON);
+                    gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_BEACON);
                     gnrc_gomach_beacon_process(gnrc_netdev, pkt);
                 }
                 gnrc_pktbuf_release(pkt);

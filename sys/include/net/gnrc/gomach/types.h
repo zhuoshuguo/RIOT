@@ -186,6 +186,8 @@ typedef struct {
     gnrc_gomach_timeout_type_t type;
 } gnrc_gomach_timeout_t;
 
+#define GNRC_GOMACH_TIMEOUT_INIT  { {}, {}, false, GNRC_GOMACH_TIMEOUT_DISABLED }
+
 typedef struct gomach {
     /* Internal state of MAC layer */
     gnrc_gomach_basic_state_t basic_state;
