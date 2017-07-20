@@ -25,7 +25,7 @@
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
-/* Return index >= 0 if found, -ENONENT if not found */
+/* Return index >= 0 if found, -ENONENT if not found. */
 static int _gomach_find_timeout(gnrc_gomach_t *gomach, gnrc_gomach_timeout_type_t type)
 {
     assert(gomach);
@@ -69,7 +69,7 @@ gnrc_gomach_timeout_t *_gomach_acquire_timeout(gnrc_netdev_t *netdev, gnrc_gomac
 
     for (unsigned i = 0; i < GNRC_GOMACH_TIMEOUT_COUNT; i++) {
         if (netdev->gomach.timeouts[i].type == GNRC_GOMACH_TIMEOUT_DISABLED) {
-        	netdev->gomach.timeouts[i].type = type;
+            netdev->gomach.timeouts[i].type = type;
             return &netdev->gomach.timeouts[i];
         }
     }
@@ -100,7 +100,7 @@ void gnrc_gomach_set_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t t
                        &(timeout->msg), netdev->pid);
     }
     else {
-        DEBUG("[gomach] Cannot set timeout, too many concurrent timeouts\n");
+        DEBUG("[GoMacH]: Cannot set timeout, too many concurrent timeouts\n");
     }
 }
 

@@ -43,7 +43,7 @@
 
 #include "log.h"
 
-int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
+static int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
 {
     assert(info != NULL);
     assert(pkt != NULL);
@@ -180,7 +180,6 @@ int gnrc_gomach_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_ena
     gnrc_netdev_set_tx_feedback(gnrc_netdev, TX_FEEDBACK_UNDEF);
     return gnrc_netdev->send(gnrc_netdev, pkt);
 }
-
 
 int gnrc_gomach_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_gomach_packet_info_t *info)
 {
@@ -875,7 +874,6 @@ int gnrc_gomach_send_data(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enabl
     /* Send the data packet here. */
     return gnrc_gomach_send(gnrc_netdev, gnrc_netdev->tx.packet, csma_enable);
 }
-
 
 bool gnrc_gomach_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev)
 {

@@ -275,6 +275,7 @@ static void gomach_wait_bcast_tx_finish(gnrc_netdev_t *gnrc_netdev){
         gnrc_netdev->gomach.need_update = true;
     }
 }
+
 static void gomach_wait_bcast_wait_next_tx(gnrc_netdev_t *gnrc_netdev)
 {
     /* Quit sending broadcast packet if we found ongoing transmissions, for collision avoidance. */
@@ -411,7 +412,6 @@ static void gomach_init_end(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.need_update = true;
 }
 
-/* GoMacH: transmit packet to phase-known device*/
 static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
 {
     /* Turn off radio to conserve power */
@@ -906,8 +906,6 @@ static void gomach_t2k_update(gnrc_netdev_t *gnrc_netdev)
     }
 }
 
-
-/****************** device state machines - Transmit to Unknown *****/
 static void gomach_t2u_init(gnrc_netdev_t *gnrc_netdev)
 {
     /* since t2u is right following CP period (wake-up period), the radio is still on,
