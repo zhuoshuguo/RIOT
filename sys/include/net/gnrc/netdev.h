@@ -34,8 +34,6 @@
 
 #include "kernel_types.h"
 #include "net/netdev.h"
-
-#include "gomach/types.h"
 #include "net/gnrc.h"
 #include "net/gnrc/mac/types.h"
 #include "net/ieee802154.h"
@@ -43,7 +41,6 @@
 #ifdef MODULE_GNRC_MAC
 #include "net/csma_sender.h"
 #endif
-
 
 #ifdef __cplusplus
 extern "C" {
