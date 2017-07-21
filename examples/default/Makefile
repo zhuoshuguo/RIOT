@@ -34,7 +34,6 @@ USEMODULE += ps
 # include and auto-initialize all available sensors
 USEMODULE += saul_default
 
-
 BOARD_PROVIDES_NETIF := airfy-beacon cc2538dk fox iotlab-m3 iotlab-a8-m3 mulle \
         microbit native nrf51dongle nrf52dk nrf6310 openmote-cc2538 pba-d-01-kw2x \
         pca10000 pca10005 remote-pa remote-reva saml21-xpro samr21-xpro \
@@ -53,10 +52,9 @@ ifneq (,$(filter $(BOARD),$(BOARD_PROVIDES_NETIF)))
   # the application dumps received packets to stdout
   USEMODULE += gnrc_pktdump
 
-  USEMODULE += gnrc_gomach
   # We use only the lower layers of the GNRC network stack, hence, we can
   # reduce the size of the packet buffer a bit
-  CFLAGS += -DGNRC_PKTBUF_SIZE=8192
+  CFLAGS += -DGNRC_PKTBUF_SIZE=512
 endif
 
 FEATURES_OPTIONAL += config
