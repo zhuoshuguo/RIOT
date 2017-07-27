@@ -114,7 +114,7 @@ void *sender_thread(void *arg)
 
     /* configure a global IPv6 address for the root node */
     char *ifconfig = "ifconfig";
-    char *ipadd = "2001:db8::2";
+    char *ipadd = "2001:db8::6";
     kernel_pid_t dev = 7;
     _netif_add(ifconfig, dev, 1, &ipadd);
 
@@ -144,7 +144,7 @@ void *sender_thread(void *arg)
 	xtimer_sleep(random_period);
 
    puts("start push data");
-   data_rate = 2000;
+   data_rate = 1000;
 
    while (1) {
    	xtimer_usleep((uint32_t) data_rate * 1000);
