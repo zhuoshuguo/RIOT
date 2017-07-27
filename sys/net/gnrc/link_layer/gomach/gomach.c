@@ -1946,14 +1946,6 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                 gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
-#ifdef MODULE_NETSTATS_L2
-            case NETDEV_EVENT_TX_MEDIUM_BUSY:
-                dev->stats.tx_failed++;
-                break;
-            case NETDEV_EVENT_TX_COMPLETE:
-                dev->stats.tx_success++;
-                break;
-#endif
             default: {
             	DEBUG("gnrc_netdev: warning: unhandled event %u.\n", event);
             }
