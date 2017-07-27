@@ -35,6 +35,11 @@ USEMODULE += netstats_l2
 USEMODULE += netstats_ipv6
 USEMODULE += netstats_rpl
 
+USEMODULE += gnrc_gomach
+
+# We use only the lower layers of the GNRC network stack, hence, we can
+# reduce the size of the packet buffer a bit
+CFLAGS += -DGNRC_PKTBUF_SIZE=5120
 # Comment this out to disable code in RIOT that does safety checking
 # which is not needed in a production environment but helps in the
 # development process:
