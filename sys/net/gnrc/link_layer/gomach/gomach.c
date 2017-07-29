@@ -444,8 +444,7 @@ static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
     /* If this is the last t2k trial, the phase-lock auto-adjust scheme delays the estimated phase
      *  a little bit, to see if the real phase is behind the original calculated one. */
     if(gnrc_netdev->tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD -1)) {
-        wait_phase_duration = wait_phase_duration + GNRC_GOMACH_CP_DURATION_US +
-                              GNRC_GOMACH_REPHASE_ADJUST_US;
+        wait_phase_duration = wait_phase_duration + GNRC_GOMACH_CP_DURATION_US;
     	if (wait_phase_duration > GNRC_GOMACH_SUPERFRAME_DURATION_US) {
     		wait_phase_duration = wait_phase_duration - GNRC_GOMACH_SUPERFRAME_DURATION_US;
         }
@@ -539,15 +538,15 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                  * phase upon success. Here the new phase will be put ahead to the
                  * original phase. */
                 if(gnrc_netdev->tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD -2)) {
-                    if(gnrc_netdev->tx.current_neighbor->cp_phase >=
-                       RTT_US_TO_TICKS((GNRC_GOMACH_CP_DURATION_US + GNRC_GOMACH_REPHASE_ADJUST_US))) {
+                    if (gnrc_netdev->tx.current_neighbor->cp_phase >=
+                        RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US)) {
                     	gnrc_netdev->tx.current_neighbor->cp_phase -=
-                    	    RTT_US_TO_TICKS((GNRC_GOMACH_CP_DURATION_US+GNRC_GOMACH_REPHASE_ADJUST_US));
+                    	    RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US);
                     } else {
                     	gnrc_netdev->tx.current_neighbor->cp_phase +=
                     	    RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
                     	gnrc_netdev->tx.current_neighbor->cp_phase -=
-                    	    RTT_US_TO_TICKS((GNRC_GOMACH_CP_DURATION_US+GNRC_GOMACH_REPHASE_ADJUST_US));
+                    	    RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US);
                     }
                 }
                 /* Here is the phase-lock auto-adjust scheme. Use the new adjusted
@@ -555,8 +554,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                  * phase. */
                 if(gnrc_netdev->tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD -1)) {
                 	gnrc_netdev->tx.current_neighbor->cp_phase +=
-                        (RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US) +
-                         RTT_US_TO_TICKS(4*GNRC_GOMACH_REPHASE_ADJUST_US));
+                        (RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US + 20 * US_PER_MS));
 
                 	if(gnrc_netdev->tx.current_neighbor->cp_phase >=
                 	   RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US)) {
