@@ -189,31 +189,73 @@ extern "C" {
 #endif
 
 /**
- * @brief Maximum times of TX trial under TX-busy indication in GoMacH.
+ * @brief Maximum times of CSMA TX attempts under busy-indication in WP period of GoMacH.
  *
- * GoMacH adopts CSMA scheme to send data packet in the WP period of the receiver.
- *
+ * Senders in GoMacH adopt CSMA scheme to send data packet in the WP period of the receiver.
+ * In case of having medium-busy feedback in WP and the failure count (due to busy) is below
+ * @ref GNRC_GOMACH_TX_BUSY_THRESHOLD, the sender will not quit its transmission attempt
+ * in the receiver's WP, with the consideration/assumption that there are multi-senders
+ * simultaneously competing in WP and WP will get continuously extended.
  */
 #ifndef GNRC_GOMACH_TX_BUSY_THRESHOLD
 #define GNRC_GOMACH_TX_BUSY_THRESHOLD      (5U)
 #endif
 
+/**
+ * @brief Maximum WP period extension time in GoMacH.
+ *
+ * In GoMacH, the WP period of a receiver will get extended upon each successful packet
+ * reception (except receiving broadcast or preamble packet) to receive more potential
+ * incoming packets. This macro defines the maximum WP period extension time in GoMacH.
+ */
 #ifndef GNRC_GOMACH_CP_EXTEND_THRESHOLD
 #define GNRC_GOMACH_CP_EXTEND_THRESHOLD      (5U)
 #endif
 
+/**
+ * @brief GoMacH's check-duplicate-packet unit life time in cycle count.
+ *
+ * In GoMacH, to avoid receiving duplicate-packet, we currently introduce a data type of
+ * @ref gnrc_gomach_dupchk_unit_t to record the receiver's recent senders' information
+ * (especially MAC TX sequence). This macro defines the check-duplicate-packet data unit's
+ * life time in cycle count. Once expired, the related data unit will be reset.
+ */
 #ifndef GNRC_GOMACH_RX_DUPCHK_UNIT_LIFE
 #define GNRC_GOMACH_RX_DUPCHK_UNIT_LIFE            (30U)
 #endif
 
+/**
+ * @brief Maximum number of slots allowed to be allocated in one GoMacH cycle.
+ *
+ * GoMacH dynamically allocate transmission slots to senders that have pending packet in
+ * the vTDMA period. This macro defines the maximum number of slots allowed to be allocated
+ * in one GoMacH cycle.
+ */
 #ifndef GNRC_GOMACH_MAX_ALLOC_SLOTS_NUM
 #define GNRC_GOMACH_MAX_ALLOC_SLOTS_NUM           (25U)
 #endif
 
+/**
+ * @brief Maximum t2k attempts before going to t2u in GoMacH.
+ *
+ * After phase-locked with the receiver, a sender run a t2k (transmit-to-known) procedure
+ * to transmit packet to the phase-known device. However, due to factors like timer drift
+ * or busy-channel, a transmission attempt may fail in t2k. If the t2k attempt count has
+ * reach this @ref GNRC_GOMACH_REPHASELOCK_THRESHOLD, the sender regards pahse-locked failed
+ * due to timer drifer. In this case, it will adopt t2u (transmit-to-unknown) procedure to
+ * get re-phase-locked with the receiver.
+ */
 #ifndef GNRC_GOMACH_REPHASELOCK_THRESHOLD
 #define GNRC_GOMACH_REPHASELOCK_THRESHOLD      (4U)
 #endif
 
+/**
+ * @brief Maximum t2u attempts before dropping data packet in GoMacH.
+ *
+ * In case the receiver's phase is unknown to the sender, the sender adopts the t2u
+ * (transmit-to-unknown) procedure to get phase-locked with the receiver. This macro
+ * defines the maximum t2u attempts before dropping the data packet in GoMacH.
+ */
 #ifndef GNRC_GOMACH_T2U_RETYR_THRESHOLD
 #define GNRC_GOMACH_T2U_RETYR_THRESHOLD      (2U)
 #endif
