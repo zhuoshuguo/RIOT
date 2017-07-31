@@ -277,7 +277,6 @@ typedef struct gomach {
     uint32_t backoff_phase_ticks;                               /**< Node's phase backoff time. */
     uint16_t gomach_info;                                       /**< GoMacH's internal information. */
 
-    bool got_preamble;                                          /**< Get preamble indicator. */
     bool cp_end;                                                /**< CP end indicator. */
     bool vtdma_end;                                             /**< vTDMA end indicator. */
     bool get_other_preamble;                                    /**< Get unintended preamble indicator. */

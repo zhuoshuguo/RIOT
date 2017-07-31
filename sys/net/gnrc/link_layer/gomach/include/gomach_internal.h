@@ -44,6 +44,11 @@ extern "C" {
 #define GNRC_NETDEV_GOMACH_INTERNAL_INFO_QUIT_CYCLE        (0x0001U)
 
 /**
+ * @brief Flag to track if need to quit the current cycle in GoMacH.
+ */
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLE        (0x0002U)
+
+/**
  * @brief Set the TX-finish flag of the device.
  *
  * @param[in,out] gnrc_netdev  ptr to netdev device.
@@ -121,16 +126,46 @@ static inline void gnrc_gomach_set_quit_cycle(gnrc_netdev_t *gnrc_netdev, bool q
 }
 
 /**
- * @brief Get the TX-finish flag of the device.
+ * @brief Get the quit-cycle flag of the device.
  *
  * @param[in] gnrc_netdev  ptr to netdev device
  *
- * @return                 true if TX has finished.
- * @return                 false if TX hasn't finished yet.
+ * @return                 true if need to quit cycle.
+ * @return                 false if no need to quit cycle.
  */
 static inline bool gnrc_gomach_get_quit_cycle(gnrc_netdev_t *gnrc_netdev)
 {
     return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_QUIT_CYCLE);
+}
+
+/**
+ * @brief Set the got-preamble flag of the device.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] got_preamble     value for GoMacH's got-preamble flag.
+ *
+ */
+static inline void gnrc_gomach_set_got_preamble(gnrc_netdev_t *gnrc_netdev, bool got_preamble)
+{
+    if (got_preamble) {
+    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLE;
+    }
+    else {
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLE;
+    }
+}
+
+/**
+ * @brief Get the got-preamble flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if get preamble packet.
+ * @return                 false if not get preamble packet yet.
+ */
+static inline bool gnrc_gomach_get_got_preamble(gnrc_netdev_t *gnrc_netdev)
+{
+    return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLE);
 }
 
 /**

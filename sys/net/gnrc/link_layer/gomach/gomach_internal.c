@@ -499,7 +499,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
                 if (memcmp(&gnrc_netdev->l2_addr, &receive_packet_info.dst_addr.addr,
                            gnrc_netdev->l2_addr_len) == 0) {
                     /* Get a preamble packet that is for the device itself. */
-                    gnrc_netdev->gomach.got_preamble = true;
+                    gnrc_gomach_set_got_preamble(gnrc_netdev, true);
 
                     /* If reception is not going on, reply preamble-ack. */
                     if (gnrc_gomach_get_netdev_state(gnrc_netdev) == NETOPT_STATE_IDLE) {

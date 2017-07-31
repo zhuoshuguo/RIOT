@@ -1383,7 +1383,7 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.get_other_preamble = false;
     gnrc_netdev->gomach.send_beacon_fail = false;
     gnrc_netdev->gomach.cp_end = false;
-    gnrc_netdev->gomach.got_preamble = false;
+    gnrc_gomach_set_got_preamble(gnrc_netdev, false);
     gnrc_netdev->gomach.phase_changed = false;
 
     /* Flush RX queue and turn on radio. */
@@ -1407,15 +1407,15 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
 
         /* If the device has replied a preamble-ACK, it must waits for the data.
          * Here, we extend the CP. */
-        if (gnrc_netdev->gomach.got_preamble == true) {
-            gnrc_netdev->gomach.got_preamble = false;
+        if (gnrc_gomach_get_got_preamble(gnrc_netdev)) {
+            gnrc_gomach_set_got_preamble(gnrc_netdev, false);
             gnrc_netdev->gomach.cp_end = false;
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
             gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END, GNRC_GOMACH_CP_DURATION_US);
         }
         else if ((gnrc_netdev->gomach.get_other_preamble == false) &&
                 (!gnrc_gomach_get_quit_cycle(gnrc_netdev))) {
-            gnrc_netdev->gomach.got_preamble = false;
+            gnrc_gomach_set_got_preamble(gnrc_netdev, false);
             gnrc_netdev->gomach.cp_end = false;
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
             gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END, GNRC_GOMACH_CP_DURATION_US);
