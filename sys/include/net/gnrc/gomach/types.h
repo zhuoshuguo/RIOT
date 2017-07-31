@@ -275,7 +275,8 @@ typedef struct gomach {
     uint8_t cp_extend_count;                                    /**< Node's CP extend count. */
     uint32_t last_wakeup;                                       /**< Node's last wake-up timing. */
     uint32_t backoff_phase_ticks;                               /**< Node's phase backoff time. */
-    bool quit_current_cycle;                                    /**< Quit current cycle indicator. */
+    uint16_t gomach_info;                                       /**< GoMacH's internal information. */
+
     bool got_preamble;                                          /**< Get preamble indicator. */
     bool cp_end;                                                /**< CP end indicator. */
     bool vtdma_end;                                             /**< vTDMA end indicator. */

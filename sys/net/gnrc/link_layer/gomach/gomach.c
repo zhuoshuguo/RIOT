@@ -101,7 +101,8 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
     gnrc_netdev->gomach.need_update = false;
     gnrc_netdev->gomach.duty_cycle_started = false;
-    gnrc_netdev->gomach.quit_current_cycle = false;
+    gnrc_gomach_set_quit_cycle(gnrc_netdev, false);
+
     gnrc_netdev->gomach.send_beacon_fail = false;
     gnrc_netdev->gomach.rx_memory_full = false;
     gnrc_netdev->gomach.phase_backoff = false;
@@ -366,7 +367,7 @@ static void gomach_init_prepare(gnrc_netdev_t *gnrc_netdev)
     uint32_t random_backoff = random_uint32_range(0, GNRC_GOMACH_SUPERFRAME_DURATION_US);
     xtimer_usleep(random_backoff);
 
-    gnrc_netdev->gomach.quit_current_cycle = false;
+    gnrc_gomach_set_quit_cycle(gnrc_netdev, false);
     gnrc_netdev->gomach.subchannel_occu_flags = 0;
 
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
@@ -420,7 +421,7 @@ static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
     /* Turn radio onto the neighbor's public channel, which will not change in this cycle. */
     gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->tx.current_neighbor->pub_chanseq);
 
-    gnrc_netdev->gomach.quit_current_cycle = false;
+    gnrc_gomach_set_quit_cycle(gnrc_netdev, false);
 
     /* Set waiting timer for the targeted device! */
     uint32_t wait_phase_duration;
@@ -639,7 +640,7 @@ static void gomach_t2k_wait_beacon(gnrc_netdev_t *gnrc_netdev)
 
     /* If we need to quit t2k, don't release the current neighbor pointer. In the
      * next cycle, we will try to send to the same receiver. */
-    if (gnrc_netdev->gomach.quit_current_cycle == true) {
+    if (gnrc_gomach_get_quit_cycle(gnrc_netdev)) {
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_BEACON);
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
         gnrc_netdev->gomach.need_update = true;
@@ -912,7 +913,7 @@ static void gomach_t2u_init(gnrc_netdev_t *gnrc_netdev)
 	LOG_DEBUG("[GOMACH] t2u initialization.\n");
 
     gnrc_netdev_set_rx_started(gnrc_netdev, false);
-    gnrc_netdev->gomach.quit_current_cycle = false;
+    gnrc_gomach_set_quit_cycle(gnrc_netdev, false);
     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
     gnrc_netdev->tx.preamble_sent = 0;
     gnrc_netdev->tx.got_preamble_ack = false;
@@ -1003,7 +1004,7 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
         (gnrc_netdev->tx.reach_max_preamble_interval == false)) {
         /* Set a timeout to wait for the complete of reception. */
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
-        if (gnrc_netdev->gomach.quit_current_cycle == false) {
+        if (!gnrc_gomach_get_quit_cycle(gnrc_netdev)) {
             gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END,
                                GNRC_GOMACH_WAIT_RX_END_US);
             return false;
@@ -1019,7 +1020,7 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     }
 
     /* Quit t2u if we have to, e.g., the device found ongoing bcast of other devices. */
-    if (gnrc_netdev->gomach.quit_current_cycle == true) {
+    if (gnrc_gomach_get_quit_cycle(gnrc_netdev)) {
         LOG_WARNING("WARNING: [GOMACH] quit t2u.\n");
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAM_DURATION);
@@ -1139,9 +1140,9 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
         }
         else {
-            /* If we haven't reach the maximum t2u limit, try again. Set quit_current_cycle
+            /* If we haven't reach the maximum t2u limit, try again. Set quit_current_cycle flag
              * to true such that we will release the current neighbor pointer.  */
-            gnrc_netdev->gomach.quit_current_cycle = true;
+            gnrc_gomach_set_quit_cycle(gnrc_netdev, true);
             gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
         }
 
@@ -1242,7 +1243,7 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
                             gnrc_netdev->tx.current_neighbor->pub_chanseq);
                 /* Set quit_current_cycle to true, thus not to release current_neighbour pointer
                  * in t2u-end */
-                gnrc_netdev->gomach.quit_current_cycle = true;
+                gnrc_gomach_set_quit_cycle(gnrc_netdev, true);
                 gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
             }
         }
@@ -1260,7 +1261,7 @@ static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
 
     /* In case quit_current_cycle is true, don't release neighbor pointer,
      * will retry t2u immediately in next cycle.*/
-    if (gnrc_netdev->gomach.quit_current_cycle == false) {
+    if (!gnrc_gomach_get_quit_cycle(gnrc_netdev)) {
         if (gnrc_netdev->tx.packet != NULL) {
             gnrc_pktbuf_release(gnrc_netdev->tx.packet);
             gnrc_netdev->tx.packet = NULL;
@@ -1378,7 +1379,7 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev_set_rx_started(gnrc_netdev, false);
     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
     gnrc_netdev->gomach.cp_extend_count = 0;
-    gnrc_netdev->gomach.quit_current_cycle = false;
+    gnrc_gomach_set_quit_cycle(gnrc_netdev, false);
     gnrc_netdev->gomach.get_other_preamble = false;
     gnrc_netdev->gomach.send_beacon_fail = false;
     gnrc_netdev->gomach.cp_end = false;
@@ -1413,7 +1414,7 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
             gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END, GNRC_GOMACH_CP_DURATION_US);
         }
         else if ((gnrc_netdev->gomach.get_other_preamble == false) &&
-                (gnrc_netdev->gomach.quit_current_cycle == false)) {
+                (!gnrc_gomach_get_quit_cycle(gnrc_netdev))) {
             gnrc_netdev->gomach.got_preamble = false;
             gnrc_netdev->gomach.cp_end = false;
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
@@ -1437,7 +1438,7 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
     }
 
     /* If CP duration timeouted or we must quit CP, go to CP end. */
-    if ((gnrc_netdev->gomach.cp_end == true) || (gnrc_netdev->gomach.quit_current_cycle == true)) {
+    if ((gnrc_netdev->gomach.cp_end == true) || (gnrc_gomach_get_quit_cycle(gnrc_netdev))) {
         /* If we found ongoing reception, wait for reception complete. */
         if ((gnrc_gomach_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) &&
             (gnrc_netdev->gomach.cp_extend_count < GNRC_GOMACH_CP_EXTEND_THRESHOLD)) {
@@ -1462,7 +1463,7 @@ static void gomach_listen_cp_end(gnrc_netdev_t *gnrc_netdev)
     gnrc_mac_dispatch(&gnrc_netdev->rx);
 
     /* If we need to quit communications in this cycle, go to sleep. */
-    if (gnrc_netdev->gomach.quit_current_cycle == true) {
+    if (gnrc_gomach_get_quit_cycle(gnrc_netdev)) {
         gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
     }
     else {

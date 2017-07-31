@@ -39,6 +39,11 @@ extern "C" {
 #define GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED        (0x0010U)
 
 /**
+ * @brief Flag to track if need to quit the current cycle in GoMacH.
+ */
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_QUIT_CYCLE        (0x0001U)
+
+/**
  * @brief Set the TX-finish flag of the device.
  *
  * @param[in,out] gnrc_netdev  ptr to netdev device.
@@ -96,6 +101,36 @@ static inline void gnrc_gomach_set_pkt_received(gnrc_netdev_t *gnrc_netdev, bool
 static inline bool gnrc_gomach_get_pkt_received(gnrc_netdev_t *gnrc_netdev)
 {
     return (gnrc_netdev->mac_info & GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED);
+}
+
+/**
+ * @brief Set the quit-cycle flag of the device.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] quit             value for GoMacH's quit-cycle flag.
+ *
+ */
+static inline void gnrc_gomach_set_quit_cycle(gnrc_netdev_t *gnrc_netdev, bool quit)
+{
+    if (quit) {
+    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_QUIT_CYCLE;
+    }
+    else {
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_QUIT_CYCLE;
+    }
+}
+
+/**
+ * @brief Get the TX-finish flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if TX has finished.
+ * @return                 false if TX hasn't finished yet.
+ */
+static inline bool gnrc_gomach_get_quit_cycle(gnrc_netdev_t *gnrc_netdev)
+{
+    return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_QUIT_CYCLE);
 }
 
 /**

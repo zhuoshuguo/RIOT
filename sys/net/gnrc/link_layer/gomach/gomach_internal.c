@@ -548,7 +548,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
             case GNRC_GOMACH_FRAME_BROADCAST: {
             	/* Receive a broadcast packet, quit the listening period to avoid receive duplicate
             	 * broadcast packet. */
-                gnrc_netdev->gomach.quit_current_cycle = true;
+                gnrc_gomach_set_quit_cycle(gnrc_netdev, true);
                 gnrc_gomach_dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
                 gnrc_mac_dispatch(&gnrc_netdev->rx);
                 break;
@@ -767,7 +767,7 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
                  * collision avoidance. */
                 gnrc_pktbuf_release(pkt);
             	LOG_WARNING("WARNING: [GOMACH] t2u: found other preamble, quit t2u.\n");
-                gnrc_netdev->gomach.quit_current_cycle = true;
+                gnrc_gomach_set_quit_cycle(gnrc_netdev, true);
                 break;
             }
             case GNRC_GOMACH_FRAME_PREAMBLE_ACK: {
@@ -816,7 +816,7 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
             case GNRC_GOMACH_FRAME_BROADCAST: {
                 /* Release the received broadcast pkt. Only receive broadcast packets in CP,
                  * thus to reduce complexity. */
-                gnrc_netdev->gomach.quit_current_cycle = true;
+                gnrc_gomach_set_quit_cycle(gnrc_netdev, true);
                 gnrc_pktbuf_release(pkt);
                 LOG_WARNING("WARNING: [GOMACH] t2u: receive a broadcast packet, quit t2u.\n");
                 break;
@@ -1039,7 +1039,7 @@ void gnrc_gomach_packet_process_in_wait_beacon(gnrc_netdev_t *gnrc_netdev)
             case GNRC_GOMACH_FRAME_PREAMBLE: {
                 /* Release preamble packet no matter the preamble is for it or not,
                  * and quit the t2k procedure. */
-                gnrc_netdev->gomach.quit_current_cycle = true;
+                gnrc_gomach_set_quit_cycle(gnrc_netdev, true);
                 gnrc_pktbuf_release(pkt);
                 break;
             }
@@ -1065,7 +1065,7 @@ void gnrc_gomach_packet_process_in_wait_beacon(gnrc_netdev_t *gnrc_netdev)
                 break;
             }
             case GNRC_GOMACH_FRAME_BROADCAST: {
-                gnrc_netdev->gomach.quit_current_cycle = true;
+                gnrc_gomach_set_quit_cycle(gnrc_netdev, true);
                 gnrc_pktbuf_release(pkt);
                 break;
             }
