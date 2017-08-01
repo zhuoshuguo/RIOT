@@ -39,14 +39,34 @@ extern "C" {
 #define GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED        (0x0010U)
 
 /**
- * @brief Flag to track if need to quit the current cycle in GoMacH.
+ * @brief Flag to track if need to update GoMacH.
  */
-#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_QUIT_CYCLE        (0x0001U)
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_ND_UPDATE        (0x0001U)
 
 /**
  * @brief Flag to track if need to quit the current cycle in GoMacH.
  */
-#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLE        (0x0002U)
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_QUIT_CYCLE        (0x0002U)
+
+/**
+ * @brief Flag to track if CP period has ended in GoMacH.
+ */
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_CP_END        (0x0004U)
+
+/**
+ * @brief Flag to track if vTDMA has ended in GoMacH.
+ */
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_VTDMA_END        (0x0008U)
+
+/**
+ * @brief Flag to track if the node has received unintended preamble.
+ */
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE        (0x0010U)
+
+/**
+ * @brief Flag to track if need to quit the current cycle in GoMacH.
+ */
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLE        (0x0020U)
 
 /**
  * @brief Set the TX-finish flag of the device.
@@ -166,6 +186,126 @@ static inline void gnrc_gomach_set_got_preamble(gnrc_netdev_t *gnrc_netdev, bool
 static inline bool gnrc_gomach_get_got_preamble(gnrc_netdev_t *gnrc_netdev)
 {
     return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLE);
+}
+
+/**
+ * @brief Set the cp-end flag of the device.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] cp_end     value for GoMacH's cp-end flag.
+ *
+ */
+static inline void gnrc_gomach_set_cp_end(gnrc_netdev_t *gnrc_netdev, bool cp_end)
+{
+    if (cp_end) {
+    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_CP_END;
+    }
+    else {
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_CP_END;
+    }
+}
+
+/**
+ * @brief Get the cp-end flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if cp has ended.
+ * @return                 false if cp hasn't ended yet.
+ */
+static inline bool gnrc_gomach_get_cp_end(gnrc_netdev_t *gnrc_netdev)
+{
+    return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_CP_END);
+}
+
+/**
+ * @brief Set the vTDMA-end flag of the device.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] vtdma_end     value for GoMacH's vTDMA-end flag.
+ *
+ */
+static inline void gnrc_gomach_set_vTDMA_end(gnrc_netdev_t *gnrc_netdev, bool vtdma_end)
+{
+    if (vtdma_end) {
+    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_VTDMA_END;
+    }
+    else {
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_VTDMA_END;
+    }
+}
+
+/**
+ * @brief Get the vTDMA-end flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if vTDMA has ended.
+ * @return                 false if vTDMA hasn't ended yet.
+ */
+static inline bool gnrc_gomach_get_vTDMA_end(gnrc_netdev_t *gnrc_netdev)
+{
+    return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_VTDMA_END);
+}
+
+/**
+ * @brief Set the unintended-preamble flag of the device.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] uintd_preamble   value for GoMacH's unintended-preamble flag.
+ *
+ */
+static inline void gnrc_gomach_set_unintd_preamble(gnrc_netdev_t *gnrc_netdev, bool uintd_preamble)
+{
+    if (uintd_preamble) {
+    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE;
+    }
+    else {
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE;
+    }
+}
+
+/**
+ * @brief Get the unintended-preamble flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if has received unintended-preamble.
+ * @return                 false if hasn't received unintended-preamble yet.
+ */
+static inline bool gnrc_gomach_get_unintd_preamble(gnrc_netdev_t *gnrc_netdev)
+{
+    return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE);
+}
+
+/**
+ * @brief Set the need-update flag of the device.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] update   value for GoMacH's need-update flag.
+ *
+ */
+static inline void gnrc_gomach_set_update(gnrc_netdev_t *gnrc_netdev, bool update)
+{
+    if (update) {
+    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_ND_UPDATE;
+    }
+    else {
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_ND_UPDATE;
+    }
+}
+
+/**
+ * @brief Get the need-update flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if need update GoMacH.
+ * @return                 false if no need to update GoMacH.
+ */
+static inline bool gnrc_gomach_get_update(gnrc_netdev_t *gnrc_netdev)
+{
+    return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_ND_UPDATE);
 }
 
 /**

@@ -99,7 +99,7 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->rx.vtdma_manag.sub_channel_seq = 26;
     gnrc_netdev->gomach.subchannel_occu_flags = 0;
     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
-    gnrc_netdev->gomach.need_update = false;
+    gnrc_gomach_set_update(gnrc_netdev, false);
     gnrc_netdev->gomach.duty_cycle_started = false;
     gnrc_gomach_set_quit_cycle(gnrc_netdev, false);
 
@@ -165,7 +165,7 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
 
             /* Update neighbors' public channel phases. */
             gnrc_gomach_update_neighbor_pubchan(gnrc_netdev);
-            gnrc_netdev->gomach.need_update = true;
+            gnrc_gomach_set_update(gnrc_netdev, true);
         } break;
         default: {
             LOG_ERROR("ERROR: [GOMACH] error RTT message type\n");
@@ -203,7 +203,7 @@ static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
         LOG_ERROR("ERROR: [GOMACH] bcast: no memory to assemble bcast packet, drop packet.\n");
         LOG_ERROR("ERROR: [GOMACH] bcast failed, go to listen mode.\n");
         gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_END;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
         return;
     }
 
@@ -212,7 +212,7 @@ static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
 
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
     gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_SEND;
-    gnrc_netdev->gomach.need_update = true;
+    gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
 static bool _gomach_send_bcast_busy_handle(gnrc_netdev_t *gnrc_netdev)
@@ -238,7 +238,7 @@ static bool _gomach_send_bcast_busy_handle(gnrc_netdev_t *gnrc_netdev)
     	gnrc_netdev->tx.packet = NULL;
 
     	gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_END;
-    	gnrc_netdev->gomach.need_update = true;
+    	gnrc_gomach_set_update(gnrc_netdev, true);
     	return false;
     }
     return true;
@@ -257,7 +257,7 @@ static void gomach_send_bcast_packet(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_send(gnrc_netdev, gnrc_netdev->tx.packet, NETOPT_DISABLE);
 
     gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_WAIT_TX_FINISH;
-    gnrc_netdev->gomach.need_update = false;
+    gnrc_gomach_set_update(gnrc_netdev, false);
 }
 
 static void gomach_wait_bcast_tx_finish(gnrc_netdev_t *gnrc_netdev){
@@ -265,7 +265,7 @@ static void gomach_wait_bcast_tx_finish(gnrc_netdev_t *gnrc_netdev){
 	    gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_BCAST_INTERVAL,
 	                          GNRC_GOMACH_BCAST_INTERVAL_US);
         gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_WAIT_NEXT_TX;
-        gnrc_netdev->gomach.need_update = false;
+        gnrc_gomach_set_update(gnrc_netdev, false);
     }
 
     /* This is to handle no-TX-complete issue. In case there is no no-TX-complete event,
@@ -273,7 +273,7 @@ static void gomach_wait_bcast_tx_finish(gnrc_netdev_t *gnrc_netdev){
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_BCAST_FINISH)) {
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_BCAST_INTERVAL);
         gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_END;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
     }
 }
 
@@ -290,7 +290,7 @@ static void gomach_wait_bcast_wait_next_tx(gnrc_netdev_t *gnrc_netdev)
         gnrc_pktbuf_release(gnrc_netdev->tx.packet);
         gnrc_netdev->tx.packet = NULL;
         gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_END;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
         return;
     }
 
@@ -305,7 +305,7 @@ static void gomach_wait_bcast_wait_next_tx(gnrc_netdev_t *gnrc_netdev)
     	}
 
         gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_SEND;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
     }
 }
 
@@ -328,7 +328,7 @@ static void gomach_bcast_end(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_netdev->rx.enter_new_cycle = false;
-    gnrc_netdev->gomach.need_update = true;
+    gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
 static void gomach_bcast_update(gnrc_netdev_t *gnrc_netdev)
@@ -375,7 +375,7 @@ static void gomach_init_prepare(gnrc_netdev_t *gnrc_netdev)
     /* Since devices don't broadcast beacons on default, so no need to collect beacons.
      * Go to announce its chosen sub-channel sequence. */
     gnrc_netdev->gomach.init_state = GNRC_GOMACH_INIT_ANNC_SUBCHAN;
-    gnrc_netdev->gomach.need_update = true;
+    gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
 static void gomach_init_announce_subchannel(gnrc_netdev_t *gnrc_netdev)
@@ -387,7 +387,7 @@ static void gomach_init_announce_subchannel(gnrc_netdev_t *gnrc_netdev)
 	gnrc_gomach_bcast_subchann_seq(gnrc_netdev, NETOPT_ENABLE);
 
     gnrc_netdev->gomach.init_state = GNRC_GOMACH_INIT_WAIT_FEEDBACK;
-    gnrc_netdev->gomach.need_update = false;
+    gnrc_gomach_set_update(gnrc_netdev, false);
 }
 
 static void gomach_init_wait_announce_feedback(gnrc_netdev_t *gnrc_netdev)
@@ -395,7 +395,7 @@ static void gomach_init_wait_announce_feedback(gnrc_netdev_t *gnrc_netdev)
     if (gnrc_gomach_get_tx_finish(gnrc_netdev)) {
         gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
         gnrc_netdev->gomach.init_state = GNRC_GOMACH_INIT_END;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
     }
 }
 
@@ -410,7 +410,7 @@ static void gomach_init_end(gnrc_netdev_t *gnrc_netdev)
     /* Start duty-cycle scheme. */
     gnrc_netdev->gomach.duty_cycle_started = false;
     _gomach_rtt_handler(GNRC_GOMACH_EVENT_RTT_NEW_CYCLE, gnrc_netdev);
-    gnrc_netdev->gomach.need_update = true;
+    gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
 static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
@@ -459,7 +459,7 @@ static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->tx.tx_busy_count = 0;
 
     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_WAIT_CP;
-    gnrc_netdev->gomach.need_update = false;
+    gnrc_gomach_set_update(gnrc_netdev, false);
 }
 
 static void gomach_t2k_wait_cp(gnrc_netdev_t *gnrc_netdev)
@@ -486,7 +486,7 @@ static void gomach_t2k_wait_cp(gnrc_netdev_t *gnrc_netdev)
 
         gnrc_gomach_turn_on_radio(gnrc_netdev);
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_TRANS_IN_CP;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
     }
 }
 
@@ -517,12 +517,12 @@ static void gomach_t2k_trans_in_cp(gnrc_netdev_t *gnrc_netdev)
 
         gnrc_netdev->tx.current_neighbor = NULL;
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
         return;
     }
 
     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_WAIT_CPTX_FEEDBACK;
-    gnrc_netdev->gomach.need_update = false;
+    gnrc_gomach_set_update(gnrc_netdev, false);
 }
 
 static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
@@ -577,7 +577,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                 else {
                     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
                 }
-                gnrc_netdev->gomach.need_update = true;
+                gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
             case TX_FEEDBACK_BUSY:
@@ -593,7 +593,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
             		gnrc_netdev->tx.tx_seq = device_state->seq - 1;
 
             		gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_TRANS_IN_CP;
-            		gnrc_netdev->gomach.need_update = true;
+            		gnrc_gomach_set_update(gnrc_netdev, true);
             		return;
             	}
             case TX_FEEDBACK_NOACK:
@@ -623,7 +623,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
 
                 }
                 gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
-                gnrc_netdev->gomach.need_update = true;
+                gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
         }
@@ -643,7 +643,7 @@ static void gomach_t2k_wait_beacon(gnrc_netdev_t *gnrc_netdev)
     if (gnrc_gomach_get_quit_cycle(gnrc_netdev)) {
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_BEACON);
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
         return;
     }
 
@@ -667,7 +667,7 @@ static void gomach_t2k_wait_beacon(gnrc_netdev_t *gnrc_netdev)
                                       wait_slots_duration);
 
                 gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_WAIT_SLOTS;
-                gnrc_netdev->gomach.need_update = true;
+                gnrc_gomach_set_update(gnrc_netdev, true);
             }
             else {
                 /* If the allocated slots period is the first one in vTDMA,
@@ -681,13 +681,13 @@ static void gomach_t2k_wait_beacon(gnrc_netdev_t *gnrc_netdev)
                     LOG_ERROR("ERROR: [GOMACH] t2k vTDMA: null packet.\n");
                     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
                 }
-                gnrc_netdev->gomach.need_update = true;
+                gnrc_gomach_set_update(gnrc_netdev, true);
             }
         }
         else {
             /* No slots get allocated, go to t2k end. */
             gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
-            gnrc_netdev->gomach.need_update = true;
+            gnrc_gomach_set_update(gnrc_netdev, true);
         }
         return;
     }
@@ -700,7 +700,7 @@ static void gomach_t2k_wait_beacon(gnrc_netdev_t *gnrc_netdev)
         gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
         LOG_WARNING("WARNING: [GOMACH] t2k: no beacon.\n");
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
     }
 }
 
@@ -719,7 +719,7 @@ static void gomach_t2k_wait_own_slots(gnrc_netdev_t *gnrc_netdev)
         	LOG_ERROR("ERROR: [GOMACH] t2k vTDMA: null packet.\n");
             gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
         }
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
     }
 }
 
@@ -744,13 +744,13 @@ static void gomach_t2k_trans_in_slots(gnrc_netdev_t *gnrc_netdev)
         }
         gnrc_netdev->tx.current_neighbor = NULL;
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
         return;
     }
 
     gnrc_netdev->tx.vtdma_para.slots_num--;
     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_WAIT_VTDMA_FEEDBACK;
-    gnrc_netdev->gomach.need_update = false;
+    gnrc_gomach_set_update(gnrc_netdev, false);
 }
 
 static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev)
@@ -781,7 +781,7 @@ static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev)
                     /* If no scheduled slots or pending packets, go to t2k end. */
                     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
                 }
-                gnrc_netdev->gomach.need_update = true;
+                gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
             case TX_FEEDBACK_BUSY:
@@ -812,7 +812,7 @@ static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev)
 
                     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
                 }
-                gnrc_netdev->gomach.need_update = true;
+                gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
         }
@@ -858,7 +858,7 @@ static void gomach_t2k_end(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_netdev->rx.enter_new_cycle = false;
-    gnrc_netdev->gomach.need_update = true;
+    gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
 static void gomach_t2k_update(gnrc_netdev_t *gnrc_netdev)
@@ -928,7 +928,7 @@ static void gomach_t2u_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
 
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
-    gnrc_netdev->gomach.need_update = true;
+    gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
 static void gomach_t2u_send_preamble_prepare(gnrc_netdev_t *gnrc_netdev)
@@ -959,7 +959,7 @@ static void gomach_t2u_send_preamble_prepare(gnrc_netdev_t *gnrc_netdev)
 
     gnrc_netdev->tx.reach_max_preamble_interval = false;
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_SEND_PREAMBLE;
-    gnrc_netdev->gomach.need_update = true;
+    gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
 static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
@@ -970,7 +970,7 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     if (gnrc_netdev->gomach.rx_memory_full == true) {
         gnrc_netdev->gomach.rx_memory_full = false;
 
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
 
         /* To-do: should we release all the buffered packets in the queue to
          * release memory in such a critical situation? */
@@ -1027,7 +1027,7 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
 
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
         return false;
     }
     return true;
@@ -1042,7 +1042,7 @@ static void gomach_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     /* If we have reached the maximum preamble interval, go to send next preamble. */
     if (gnrc_netdev->tx.reach_max_preamble_interval == true) {
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
         return;
     }
 
@@ -1068,13 +1068,13 @@ static void gomach_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAM_DURATION);
 
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
         return;
     }
 
     gnrc_netdev->tx.preamble_sent++;
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_WAIT_PREAMBLE_TX;
-    gnrc_netdev->gomach.need_update = false;
+    gnrc_gomach_set_update(gnrc_netdev, false);
 }
 
 static void gomach_t2u_wait_preamble_tx(gnrc_netdev_t *gnrc_netdev)
@@ -1086,7 +1086,7 @@ static void gomach_t2u_wait_preamble_tx(gnrc_netdev_t *gnrc_netdev)
                               GNRC_GOMACH_PREAMBLE_INTERVAL_US);
 
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_WAIT_PREAMBLE_ACK;
-        gnrc_netdev->gomach.need_update = false;
+        gnrc_gomach_set_update(gnrc_netdev, false);
         return;
     }
 
@@ -1096,7 +1096,7 @@ static void gomach_t2u_wait_preamble_tx(gnrc_netdev_t *gnrc_netdev)
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL)) {
         gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
         return;
     }
 }
@@ -1123,7 +1123,7 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAM_DURATION);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_SEND_DATA;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
         return;
     }
 
@@ -1146,7 +1146,7 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
             gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
         }
 
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
         return;
     }
 
@@ -1154,7 +1154,7 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
     if ((gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE)) ||
         (gnrc_netdev->tx.reach_max_preamble_interval == true)) {
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
     }
 }
 
@@ -1180,12 +1180,12 @@ static void gomach_t2u_send_data(gnrc_netdev_t *gnrc_netdev)
         }
 
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
         return;
     }
 
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_WAIT_DATA_TX;
-    gnrc_netdev->gomach.need_update = false;
+    gnrc_gomach_set_update(gnrc_netdev, false);
 }
 
 static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
@@ -1247,7 +1247,7 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
                 gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
             }
         }
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
     }
 }
 
@@ -1285,7 +1285,7 @@ static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_netdev->rx.enter_new_cycle = false;
-    gnrc_netdev->gomach.need_update = true;
+    gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
 static void gomach_t2u_update(gnrc_netdev_t *gnrc_netdev)
@@ -1380,9 +1380,9 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
     gnrc_netdev->gomach.cp_extend_count = 0;
     gnrc_gomach_set_quit_cycle(gnrc_netdev, false);
-    gnrc_netdev->gomach.get_other_preamble = false;
+    gnrc_gomach_set_unintd_preamble(gnrc_netdev, false);
     gnrc_netdev->gomach.send_beacon_fail = false;
-    gnrc_netdev->gomach.cp_end = false;
+    gnrc_gomach_set_cp_end(gnrc_netdev, false);
     gnrc_gomach_set_got_preamble(gnrc_netdev, false);
     gnrc_netdev->gomach.phase_changed = false;
 
@@ -1396,7 +1396,7 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
         _gomach_phase_backoff(gnrc_netdev);
     }
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_LISTEN;
-    gnrc_netdev->gomach.need_update = false;
+    gnrc_gomach_set_update(gnrc_netdev, false);
 }
 
 static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
@@ -1409,14 +1409,14 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
          * Here, we extend the CP. */
         if (gnrc_gomach_get_got_preamble(gnrc_netdev)) {
             gnrc_gomach_set_got_preamble(gnrc_netdev, false);
-            gnrc_netdev->gomach.cp_end = false;
+            gnrc_gomach_set_cp_end(gnrc_netdev, false);
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
             gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END, GNRC_GOMACH_CP_DURATION_US);
         }
-        else if ((gnrc_netdev->gomach.get_other_preamble == false) &&
+        else if ((!gnrc_gomach_get_unintd_preamble(gnrc_netdev)) &&
                 (!gnrc_gomach_get_quit_cycle(gnrc_netdev))) {
             gnrc_gomach_set_got_preamble(gnrc_netdev, false);
-            gnrc_netdev->gomach.cp_end = false;
+            gnrc_gomach_set_cp_end(gnrc_netdev, false);
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
             gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END, GNRC_GOMACH_CP_DURATION_US);
         }
@@ -1428,17 +1428,17 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX);
         gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_END;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
         return;
     }
 
     if ((gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END))) {
-        gnrc_netdev->gomach.cp_end = true;
+        gnrc_gomach_set_cp_end(gnrc_netdev, true);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
     }
 
     /* If CP duration timeouted or we must quit CP, go to CP end. */
-    if ((gnrc_netdev->gomach.cp_end == true) || (gnrc_gomach_get_quit_cycle(gnrc_netdev))) {
+    if (gnrc_gomach_get_cp_end(gnrc_netdev) || gnrc_gomach_get_quit_cycle(gnrc_netdev)) {
         /* If we found ongoing reception, wait for reception complete. */
         if ((gnrc_gomach_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) &&
             (gnrc_netdev->gomach.cp_extend_count < GNRC_GOMACH_CP_EXTEND_THRESHOLD)) {
@@ -1452,7 +1452,7 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX);
             gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_END;
-            gnrc_netdev->gomach.need_update = true;
+            gnrc_gomach_set_update(gnrc_netdev, true);
         }
     }
 }
@@ -1469,7 +1469,7 @@ static void gomach_listen_cp_end(gnrc_netdev_t *gnrc_netdev)
     else {
         gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SEND_BEACON;
     }
-    gnrc_netdev->gomach.need_update = true;
+    gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
 static void gomach_listen_send_beacon(gnrc_netdev_t *gnrc_netdev)
@@ -1483,15 +1483,15 @@ static void gomach_listen_send_beacon(gnrc_netdev_t *gnrc_netdev)
     if (res < 0) {
         LOG_ERROR("ERROR: [GOMACH] send beacon error: %d.\n", res);
         gnrc_netdev->gomach.send_beacon_fail = true;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
     }
     else {
         if (gnrc_netdev->rx.vtdma_manag.total_slots_num == 0) {
             gnrc_netdev->gomach.send_beacon_fail = true;
-            gnrc_netdev->gomach.need_update = true;
+            gnrc_gomach_set_update(gnrc_netdev, true);
         }
         else {
-            gnrc_netdev->gomach.need_update = false;
+            gnrc_gomach_set_update(gnrc_netdev, false);
         }
     }
 
@@ -1508,7 +1508,7 @@ static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
             /* If the device has allocated transmission slots to other nodes,
              *  switch to vTDMA period to receive packets. */
             gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_VTDMA_INIT;
-            gnrc_netdev->gomach.need_update = true;
+            gnrc_gomach_set_update(gnrc_netdev, true);
         }
         else {
             /* If the device hasn't allocated transmission slots, check whether it has packets
@@ -1520,7 +1520,7 @@ static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
                     /* The packet is for broadcasting. */
 
                     /* If we didn't find ongoing preamble stream, go to send broadcast packet. */
-                    if (gnrc_netdev->gomach.get_other_preamble == false) {
+                    if (!gnrc_gomach_get_unintd_preamble(gnrc_netdev)) {
                         gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                         gnrc_netdev->tx.transmit_state = GNRC_GOMACH_BROADCAST;
                     }
@@ -1543,7 +1543,7 @@ static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
                              * to unknown device) procedure to phase-lock the neighbor. */
 
                             /* If we didn't find ongoing preamble stream, go to t2u procedure. */
-                            if (gnrc_netdev->gomach.get_other_preamble == false) {
+                            if (!gnrc_gomach_get_unintd_preamble(gnrc_netdev)) {
                                 gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                                 gnrc_netdev->tx.transmit_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
                             }
@@ -1568,12 +1568,12 @@ static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
                         }
                     }
                 }
-                gnrc_netdev->gomach.need_update = true;
+                gnrc_gomach_set_update(gnrc_netdev, true);
             }
             else {
                 /* No packet to send, go to sleep. */
                 gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
-                gnrc_netdev->gomach.need_update = true;
+                gnrc_gomach_set_update(gnrc_netdev, true);
             }
         }
     }
@@ -1592,10 +1592,10 @@ static void gomach_vtdma_init(gnrc_netdev_t *gnrc_netdev)
                               GNRC_GOMACH_VTDMA_SLOT_SIZE_US;
     gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_VTDMA, vtdma_duration);
 
-    gnrc_netdev->gomach.vtdma_end = false;
+    gnrc_gomach_set_vTDMA_end(gnrc_netdev, false);
 
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_VTDMA;
-    gnrc_netdev->gomach.need_update = false;
+    gnrc_gomach_set_update(gnrc_netdev, false);
 }
 
 static void gomach_vtdma(gnrc_netdev_t *gnrc_netdev)
@@ -1607,11 +1607,11 @@ static void gomach_vtdma(gnrc_netdev_t *gnrc_netdev)
     }
 
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_VTDMA)) {
-        gnrc_netdev->gomach.vtdma_end = true;
+        gnrc_gomach_set_vTDMA_end(gnrc_netdev, true);
     }
 
     /* Go to vTDMA end after vTDMA timeout expires. */
-    if (gnrc_netdev->gomach.vtdma_end == true) {
+    if (gnrc_gomach_get_vTDMA_end(gnrc_netdev)) {
         /* Wait for reception complete if found ongoing transmission. */
         if (gnrc_gomach_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) {
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
@@ -1622,7 +1622,7 @@ static void gomach_vtdma(gnrc_netdev_t *gnrc_netdev)
 
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
         gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_VTDMA_END;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
     }
 }
 
@@ -1638,7 +1638,7 @@ static void gomach_vtdma_end(gnrc_netdev_t *gnrc_netdev)
     if (gnrc_gomach_find_next_tx_neighbor(gnrc_netdev)) {
         if (gnrc_netdev->tx.current_neighbor == &gnrc_netdev->tx.neighbors[0]) {
         	/* The packet is for broadcasting. */
-            if (gnrc_netdev->gomach.get_other_preamble == false) {
+            if (!gnrc_gomach_get_unintd_preamble(gnrc_netdev)) {
                 gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                 gnrc_netdev->tx.transmit_state = GNRC_GOMACH_BROADCAST;
             }
@@ -1659,7 +1659,7 @@ static void gomach_vtdma_end(gnrc_netdev_t *gnrc_netdev)
                 case GNRC_GOMACH_TYPE_UNKNOWN: {
                     /* The neighbor's phase is unknown yet, try to run t2u (transmission
                      * to unknown device) procedure to phase-lock the neighbor. */
-                    if (gnrc_netdev->gomach.get_other_preamble == false) {
+                    if (!gnrc_gomach_get_unintd_preamble(gnrc_netdev)) {
                         gnrc_netdev->gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                         gnrc_netdev->tx.transmit_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
                     }
@@ -1687,7 +1687,7 @@ static void gomach_vtdma_end(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
     }
 
-    gnrc_netdev->gomach.need_update = true;
+    gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
 static void gomach_sleep_init(gnrc_netdev_t *gnrc_netdev)
@@ -1702,7 +1702,7 @@ static void gomach_sleep_init(gnrc_netdev_t *gnrc_netdev)
     /* Turn off the radio during sleep period to conserve power. */
     gnrc_gomach_turn_off_radio(gnrc_netdev);
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
-    gnrc_netdev->gomach.need_update = true;
+    gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
 static void gomach_sleep(gnrc_netdev_t *gnrc_netdev)
@@ -1710,7 +1710,7 @@ static void gomach_sleep(gnrc_netdev_t *gnrc_netdev)
     /* If we are entering a new cycle, quit sleeping. */
     if (gnrc_netdev->rx.enter_new_cycle == true) {
         gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_END;
-        gnrc_netdev->gomach.need_update = true;
+        gnrc_gomach_set_update(gnrc_netdev, true);
     }
 }
 
@@ -1718,7 +1718,7 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 {
    /* Go to CP (start of the new cycle), start listening on the public-channel. */
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
-    gnrc_netdev->gomach.need_update = true;
+    gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
 static void gomach_update(gnrc_netdev_t *gnrc_netdev)
@@ -1845,11 +1845,11 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
         switch (event) {
             case NETDEV_EVENT_RX_STARTED: {
                 gnrc_netdev_set_rx_started(gnrc_netdev, true);
-                gnrc_netdev->gomach.need_update = true;
+                gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
             case NETDEV_EVENT_RX_COMPLETE: {
-                gnrc_netdev->gomach.need_update = true;
+                gnrc_gomach_set_update(gnrc_netdev, true);
 
                 gnrc_pktsnip_t *pkt = gnrc_netdev->recv(gnrc_netdev);
                 if (pkt == NULL) {
@@ -1885,21 +1885,21 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                 gnrc_netdev_set_tx_feedback(gnrc_netdev, TX_FEEDBACK_SUCCESS);
                 gnrc_gomach_set_tx_finish(gnrc_netdev, true);
                 gnrc_gomach_turn_to_listen_mode(gnrc_netdev);
-                gnrc_netdev->gomach.need_update = true;
+                gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
             case NETDEV_EVENT_TX_NOACK: {
                 gnrc_netdev_set_tx_feedback(gnrc_netdev, TX_FEEDBACK_NOACK);
                 gnrc_gomach_set_tx_finish(gnrc_netdev, true);
                 gnrc_gomach_turn_to_listen_mode(gnrc_netdev);
-                gnrc_netdev->gomach.need_update = true;
+                gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
             case NETDEV_EVENT_TX_MEDIUM_BUSY: {
                 gnrc_netdev_set_tx_feedback(gnrc_netdev, TX_FEEDBACK_BUSY);
                 gnrc_gomach_set_tx_finish(gnrc_netdev, true);
                 gnrc_gomach_turn_to_listen_mode(gnrc_netdev);
-                gnrc_netdev->gomach.need_update = true;
+                gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
 #ifdef MODULE_NETSTATS_L2
@@ -1962,7 +1962,7 @@ static void *_gnrc_gomach_thread(void *args)
     /* Initialize GoMacH's parameters. */
     gomach_init(gnrc_netdev);
 
-    gnrc_netdev->gomach.need_update = true;
+    gnrc_gomach_set_update(gnrc_netdev, true);
 
     /* Start the event loop */
     while (1) {
@@ -2013,7 +2013,7 @@ static void *_gnrc_gomach_thread(void *args)
                     LOG_WARNING("WARNING: [GOMACH] TX queue full, drop packet.\n");
                     gnrc_pktbuf_release(pkt);
                 }
-                gnrc_netdev->gomach.need_update = true;
+                gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
             case GNRC_GOMACH_EVENT_RTT_TYPE: {
@@ -2023,7 +2023,7 @@ static void *_gnrc_gomach_thread(void *args)
             case GNRC_GOMACH_EVENT_TIMEOUT_TYPE: {
                 /* GoMacH timeout expires. */
                 gnrc_gomach_timeout_make_expire((gnrc_gomach_timeout_t *) msg.content.ptr);
-                gnrc_netdev->gomach.need_update = true;
+                gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
             default: {
@@ -2032,8 +2032,8 @@ static void *_gnrc_gomach_thread(void *args)
             }
         }
 
-        while (gnrc_netdev->gomach.need_update == true) {
-            gnrc_netdev->gomach.need_update = false;
+        while (gnrc_gomach_get_update(gnrc_netdev)) {
+            gnrc_gomach_set_update(gnrc_netdev, false);
             gomach_update(gnrc_netdev);
         }
     }

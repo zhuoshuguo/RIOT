@@ -359,7 +359,7 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
     nethdr_beacon->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
 
     int res;
-    if (gnrc_netdev->gomach.get_other_preamble == true) {
+    if (gnrc_gomach_get_unintd_preamble(gnrc_netdev)) {
         /* Use csma for collision avoidance if we found ongoing preamble transmission. */
         res = gnrc_gomach_send(gnrc_netdev, pkt, NETOPT_ENABLE);
     }
@@ -517,7 +517,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
                 }
                 else {
                     /* Receives unintended preamble that is not for the device. */
-                    gnrc_netdev->gomach.get_other_preamble = true;
+                    gnrc_gomach_set_unintd_preamble(gnrc_netdev, true);
                 }
                 gnrc_pktbuf_release(pkt);
                 break;

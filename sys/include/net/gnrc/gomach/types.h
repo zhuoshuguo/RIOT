@@ -277,10 +277,6 @@ typedef struct gomach {
     uint32_t backoff_phase_ticks;                               /**< Node's phase backoff time. */
     uint16_t gomach_info;                                       /**< GoMacH's internal information. */
 
-    bool cp_end;                                                /**< CP end indicator. */
-    bool vtdma_end;                                             /**< vTDMA end indicator. */
-    bool get_other_preamble;                                    /**< Get unintended preamble indicator. */
-    bool need_update;                                           /**< GoMacH update indicator. */
     bool duty_cycle_started;                                    /**< Duty-cycle start indicator. */
     bool phase_backoff;                                         /**< Phase backoff indicator. */
     bool phase_changed;                                         /**< Phase changed indicator. */
