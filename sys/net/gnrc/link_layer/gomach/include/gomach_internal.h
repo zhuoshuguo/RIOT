@@ -94,6 +94,26 @@ extern "C" {
 #define GNRC_NETDEV_GOMACH_INTERNAL_INFO_BUFFER_FULL        (0x0400U)
 
 /**
+ * @brief Flag to track if node has entered a new cycle in GoMacH.
+ */
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE        (0x0800U)
+
+/**
+ * @brief Flag to track if node has got preamble-ACK in GoMacH.
+ */
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK        (0x1000U)
+
+/**
+ * @brief Flag to track if node's radio is on public-channel-1.
+ */
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1        (0x2000U)
+
+/**
+ * @brief Flag to track if node has reached maximum preamble interval.
+ */
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV        (0x4000U)
+
+/**
  * @brief Set the TX-finish flag of the device.
  *
  * @param[in,out] gnrc_netdev  ptr to netdev device.
@@ -481,6 +501,126 @@ static inline void gnrc_gomach_set_buffer_full(gnrc_netdev_t *gnrc_netdev, bool 
 static inline bool gnrc_gomach_get_buffer_full(gnrc_netdev_t *gnrc_netdev)
 {
     return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_BUFFER_FULL);
+}
+
+/**
+ * @brief Set the enter-new-cycle flag of the device.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] enter   value for GoMacH's enter-new-cycle flag.
+ *
+ */
+static inline void gnrc_gomach_set_enter_new_cycle(gnrc_netdev_t *gnrc_netdev, bool enter)
+{
+    if (enter) {
+    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE;
+    }
+    else {
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE;
+    }
+}
+
+/**
+ * @brief Get the enter-new-cycle flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if node has entered a new cycle.
+ * @return                 false if node hasn't entered a new cycle yet.
+ */
+static inline bool gnrc_gomach_get_enter_new_cycle(gnrc_netdev_t *gnrc_netdev)
+{
+    return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE);
+}
+
+/**
+ * @brief Set the got-preamble-ACK flag of the device.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] got   value for GoMacH's got-preamble-ACK flag.
+ *
+ */
+static inline void gnrc_gomach_set_got_preamble_ack(gnrc_netdev_t *gnrc_netdev, bool got)
+{
+    if (got) {
+    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK;
+    }
+    else {
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK;
+    }
+}
+
+/**
+ * @brief Get the got-preamble-ACK flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if node has got preamble-ACK.
+ * @return                 false if node hasn't got preamble-ACK yet.
+ */
+static inline bool gnrc_gomach_get_got_preamble_ack(gnrc_netdev_t *gnrc_netdev)
+{
+    return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK);
+}
+
+/**
+ * @brief Set the on-public-channel-1 flag of the device.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] on_pubchan_1   value for GoMacH's on-public-channel-1 flag.
+ *
+ */
+static inline void gnrc_gomach_set_on_pubchan_1(gnrc_netdev_t *gnrc_netdev, bool on_pubchan_1)
+{
+    if (on_pubchan_1) {
+    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1;
+    }
+    else {
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1;
+    }
+}
+
+/**
+ * @brief Get the on-public-channel-1 flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if node is on public channel 1.
+ * @return                 false if node is not on public channel 1.
+ */
+static inline bool gnrc_gomach_get_on_pubchan_1(gnrc_netdev_t *gnrc_netdev)
+{
+    return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1);
+}
+
+/**
+ * @brief Set the max-preamble-interval flag of the device.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] max   value for GoMacH's max-preamble-interval flag.
+ *
+ */
+static inline void gnrc_gomach_set_max_pream_interv(gnrc_netdev_t *gnrc_netdev, bool max)
+{
+    if (max) {
+    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV;
+    }
+    else {
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV;
+    }
+}
+
+/**
+ * @brief Get the max-preamble-interval flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if node has reached maximum preamble interval.
+ * @return                 false if node hasn't reached maximum preamble interval yet.
+ */
+static inline bool gnrc_gomach_get_max_pream_interv(gnrc_netdev_t *gnrc_netdev)
+{
+    return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV);
 }
 
 /**

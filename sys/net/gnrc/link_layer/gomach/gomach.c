@@ -95,7 +95,7 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
 
     /* Initialize GoMacH's other key parameters. */
     gnrc_netdev->tx.no_ack_counter = 0;
-    gnrc_netdev->rx.enter_new_cycle = false;
+    gnrc_gomach_set_enter_new_cycle(gnrc_netdev, false);
     gnrc_netdev->rx.vtdma_manag.sub_channel_seq = 26;
     gnrc_netdev->gomach.subchannel_occu_flags = 0;
     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
@@ -156,7 +156,7 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
                 /* The duty-cycle scheme has already started,
                  * record the new cycle's starting time. */
                 gnrc_netdev->gomach.last_wakeup = rtt_get_alarm();
-                gnrc_netdev->rx.enter_new_cycle = true;
+                gnrc_gomach_set_enter_new_cycle(gnrc_netdev, true);
             }
 
             /* Set next cycle's starting time. */
@@ -182,7 +182,7 @@ static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
 
     /* Firstly turn the radio to public channel 1. */
     gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
-    gnrc_netdev->tx.t2u_on_public_1 = true;
+    gnrc_gomach_set_on_pubchan_1(gnrc_netdev, true);
 
     gnrc_netdev->tx.broadcast_seq ++;
 
@@ -297,12 +297,12 @@ static void gomach_wait_bcast_wait_next_tx(gnrc_netdev_t *gnrc_netdev)
 
     /* Toggle the radio channel and go to send the next broadcast packet. */
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_BCAST_INTERVAL)) {
-    	if(gnrc_netdev->tx.t2u_on_public_1 == true){
+    	if(gnrc_gomach_get_on_pubchan_1(gnrc_netdev)){
     	    gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_2);
-    	    gnrc_netdev->tx.t2u_on_public_1 = false;
+    	    gnrc_gomach_set_on_pubchan_1(gnrc_netdev, false);
     	}else{
     	   	gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
-    	   	gnrc_netdev->tx.t2u_on_public_1 = true;
+    	    gnrc_gomach_set_on_pubchan_1(gnrc_netdev, true);
     	}
 
         gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_SEND;
@@ -328,7 +328,7 @@ static void gomach_bcast_end(gnrc_netdev_t *gnrc_netdev)
     /* Switch to the listen mode. */
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
-    gnrc_netdev->rx.enter_new_cycle = false;
+    gnrc_gomach_set_enter_new_cycle(gnrc_netdev, false);
     gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
@@ -858,7 +858,7 @@ static void gomach_t2k_end(gnrc_netdev_t *gnrc_netdev)
 
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
-    gnrc_netdev->rx.enter_new_cycle = false;
+    gnrc_gomach_set_enter_new_cycle(gnrc_netdev, false);
     gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
@@ -917,14 +917,14 @@ static void gomach_t2u_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_set_quit_cycle(gnrc_netdev, false);
     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
     gnrc_netdev->tx.preamble_sent = 0;
-    gnrc_netdev->tx.got_preamble_ack = false;
+    gnrc_gomach_set_got_preamble_ack(gnrc_netdev, false);
     gnrc_gomach_set_buffer_full(gnrc_netdev, false);
 
     /* Disable auto-ACK here! Don't try to reply ACK to any node. */
     gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
     /* Start sending the preamble firstly on public channel 1. */
     gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
-    gnrc_netdev->tx.t2u_on_public_1 = true;
+    gnrc_gomach_set_on_pubchan_1(gnrc_netdev, true);
 
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
 
@@ -938,13 +938,13 @@ static void gomach_t2u_send_preamble_prepare(gnrc_netdev_t *gnrc_netdev)
 
     if (gnrc_netdev->tx.preamble_sent != 0) {
         /* Toggle the radio channel after each preamble transmission. */
-        if (gnrc_netdev->tx.t2u_on_public_1 == true) {
+        if (gnrc_gomach_get_on_pubchan_1(gnrc_netdev)) {
             gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_2);
-            gnrc_netdev->tx.t2u_on_public_1 = false;
+            gnrc_gomach_set_on_pubchan_1(gnrc_netdev, false);
         }
         else {
             gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
-            gnrc_netdev->tx.t2u_on_public_1 = true;
+            gnrc_gomach_set_on_pubchan_1(gnrc_netdev, true);
         }
         gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL,
                               GNRC_GOMACH_MAX_PREAM_INTERVAL_US);
@@ -958,7 +958,7 @@ static void gomach_t2u_send_preamble_prepare(gnrc_netdev_t *gnrc_netdev)
                               (5 * GNRC_GOMACH_MAX_PREAM_INTERVAL_US));
     }
 
-    gnrc_netdev->tx.reach_max_preamble_interval = false;
+    gnrc_gomach_set_max_pream_interv(gnrc_netdev, false);
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_SEND_PREAMBLE;
     gnrc_gomach_set_update(gnrc_netdev, true);
 }
@@ -997,12 +997,12 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     }
 
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL)) {
-        gnrc_netdev->tx.reach_max_preamble_interval = true;
+        gnrc_gomach_set_max_pream_interv(gnrc_netdev, true);
     }
 
     /* if we are receiving packet, wait until RX is completed. */
     if ((gnrc_gomach_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) &&
-        (gnrc_netdev->tx.reach_max_preamble_interval == false)) {
+        (!gnrc_gomach_get_max_pream_interv(gnrc_netdev))) {
         /* Set a timeout to wait for the complete of reception. */
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
         if (!gnrc_gomach_get_quit_cycle(gnrc_netdev)) {
@@ -1041,7 +1041,7 @@ static void gomach_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     }
 
     /* If we have reached the maximum preamble interval, go to send next preamble. */
-    if (gnrc_netdev->tx.reach_max_preamble_interval == true) {
+    if (gnrc_gomach_get_max_pream_interv(gnrc_netdev)) {
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
         gnrc_gomach_set_update(gnrc_netdev, true);
         return;
@@ -1108,9 +1108,9 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
         return;
     }
 
-    if (gnrc_netdev->tx.got_preamble_ack == true) {
+    if (gnrc_gomach_get_got_preamble_ack(gnrc_netdev)) {
         /* Record the public-channel phase of the receiver. */
-        if (gnrc_netdev->tx.t2u_on_public_1 == true) {
+        if (gnrc_gomach_get_on_pubchan_1(gnrc_netdev)) {
             gnrc_netdev->tx.current_neighbor->pub_chanseq = gnrc_netdev->gomach.pub_channel_1;
         }
         else {
@@ -1153,7 +1153,7 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
 
     /* If we didn't catch the RX-start event, go to send the next preamble. */
     if ((gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE)) ||
-        (gnrc_netdev->tx.reach_max_preamble_interval == true)) {
+        gnrc_gomach_get_max_pream_interv(gnrc_netdev)) {
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
         gnrc_gomach_set_update(gnrc_netdev, true);
     }
@@ -1285,7 +1285,7 @@ static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
     /* Resume to listen state and go to sleep. */
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
-    gnrc_netdev->rx.enter_new_cycle = false;
+    gnrc_gomach_set_enter_new_cycle(gnrc_netdev, false);
     gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
@@ -1363,7 +1363,7 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
         }
     }
 
-    gnrc_netdev->rx.enter_new_cycle = false;
+    gnrc_gomach_set_enter_new_cycle(gnrc_netdev, false);
 
     /* Set listen period timeout. */
     uint32_t listen_period = random_uint32_range(0, GNRC_GOMACH_CP_RANDOM_END_US) +
@@ -1709,7 +1709,7 @@ static void gomach_sleep_init(gnrc_netdev_t *gnrc_netdev)
 static void gomach_sleep(gnrc_netdev_t *gnrc_netdev)
 {
     /* If we are entering a new cycle, quit sleeping. */
-    if (gnrc_netdev->rx.enter_new_cycle == true) {
+    if (gnrc_gomach_get_enter_new_cycle(gnrc_netdev)) {
         gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_END;
         gnrc_gomach_set_update(gnrc_netdev, true);
     }

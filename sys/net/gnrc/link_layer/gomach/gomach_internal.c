@@ -699,7 +699,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
     /* Fetch and deduce the exact phase of the neighbor. */
     long int phase_ticks;
 
-    if (gnrc_gomach_get_phase_changed(gnrc_netdev) && (gnrc_netdev->rx.enter_new_cycle == true)) {
+    if (gnrc_gomach_get_phase_changed(gnrc_netdev) && gnrc_gomach_get_enter_new_cycle(gnrc_netdev)) {
         /* This means that this device is already in a new cycle after reset a new phase
          * (phase-backoff). So, give some compensation for later phase adjust. */
         phase_ticks = gnrc_gomach_phase_now(gnrc_netdev) +
@@ -777,7 +777,7 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
                             &receive_packet_info.src_addr.addr,
                             gnrc_netdev->tx.current_neighbor->l2_addr_len) == 0)) {
                     /* Got preamble-ACK from targeted device. */
-                    gnrc_netdev->tx.got_preamble_ack = true;
+                    gnrc_gomach_set_got_preamble_ack(gnrc_netdev, true);
 
                     /* Analyze the preamble-ACK to get phase-locked with the neighbor device. */
                     gnrc_gomach_process_preamble_ack(gnrc_netdev, pkt);
