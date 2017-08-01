@@ -276,12 +276,6 @@ typedef struct gomach {
     uint32_t last_wakeup;                                       /**< Node's last wake-up timing. */
     uint32_t backoff_phase_ticks;                               /**< Node's phase backoff time. */
     uint16_t gomach_info;                                       /**< GoMacH's internal information. */
-
-    bool duty_cycle_started;                                    /**< Duty-cycle start indicator. */
-    bool phase_backoff;                                         /**< Phase backoff indicator. */
-    bool phase_changed;                                         /**< Phase changed indicator. */
-    bool send_beacon_fail;                                      /**< Beacon TX failure indicator. */
-    bool rx_memory_full;                                        /**< Packet buffer full indicator. */
 } gnrc_gomach_t;
 
 #ifdef __cplusplus

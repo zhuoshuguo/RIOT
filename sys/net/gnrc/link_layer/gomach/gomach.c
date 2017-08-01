@@ -100,12 +100,13 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.subchannel_occu_flags = 0;
     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
     gnrc_gomach_set_update(gnrc_netdev, false);
-    gnrc_netdev->gomach.duty_cycle_started = false;
+    gnrc_gomach_set_duty_cycle_start(gnrc_netdev, false);
     gnrc_gomach_set_quit_cycle(gnrc_netdev, false);
 
-    gnrc_netdev->gomach.send_beacon_fail = false;
-    gnrc_netdev->gomach.rx_memory_full = false;
-    gnrc_netdev->gomach.phase_backoff = false;
+    gnrc_gomach_set_beacon_fail(gnrc_netdev, false);
+    gnrc_gomach_set_buffer_full(gnrc_netdev, false);
+    gnrc_gomach_set_phase_backoff(gnrc_netdev, false);
+    gnrc_gomach_set_phase_changed(gnrc_netdev, false);
     gnrc_netdev->rx.check_dup_pkt.queue_head = 0;
     gnrc_netdev->tx.last_tx_neighbor_id = 0;
 
@@ -145,8 +146,8 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
     switch (event & 0xffff) {
         case GNRC_GOMACH_EVENT_RTT_NEW_CYCLE: {
             /* Start duty-cycle scheme. */
-            if (gnrc_netdev->gomach.duty_cycle_started == false) {
-                gnrc_netdev->gomach.duty_cycle_started = true;
+            if (!gnrc_gomach_get_duty_cycle_start(gnrc_netdev)) {
+                gnrc_gomach_set_duty_cycle_start(gnrc_netdev, true);
                 rtt_clear_alarm();
                 /* Record the new cycle's starting time. */
                 gnrc_netdev->gomach.last_wakeup = rtt_get_counter();
@@ -408,7 +409,7 @@ static void gomach_init_end(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
 
     /* Start duty-cycle scheme. */
-    gnrc_netdev->gomach.duty_cycle_started = false;
+    gnrc_gomach_set_duty_cycle_start(gnrc_netdev, false);
     _gomach_rtt_handler(GNRC_GOMACH_EVENT_RTT_NEW_CYCLE, gnrc_netdev);
     gnrc_gomach_set_update(gnrc_netdev, true);
 }
@@ -847,8 +848,8 @@ static void gomach_t2k_end(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_INIT;
 
     /* If the sender's phase has been changed, figure out the related phase of tx-neighbors. */
-    if (gnrc_netdev->gomach.phase_changed == true) {
-    	gnrc_netdev->gomach.phase_changed = false;
+    if (gnrc_gomach_get_phase_changed(gnrc_netdev)) {
+        gnrc_gomach_set_phase_changed(gnrc_netdev, false);
         gnrc_gomach_update_neighbor_phase(gnrc_netdev);
     }
 
@@ -917,7 +918,7 @@ static void gomach_t2u_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
     gnrc_netdev->tx.preamble_sent = 0;
     gnrc_netdev->tx.got_preamble_ack = false;
-    gnrc_netdev->gomach.rx_memory_full = false;
+    gnrc_gomach_set_buffer_full(gnrc_netdev, false);
 
     /* Disable auto-ACK here! Don't try to reply ACK to any node. */
     gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
@@ -967,8 +968,8 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     /* If packet buffer is full, release one packet to release memory,
      * and reload the next packet.
      * In t2u, we need at least some minimum memory to build the preamble packet. */
-    if (gnrc_netdev->gomach.rx_memory_full == true) {
-        gnrc_netdev->gomach.rx_memory_full = false;
+    if (gnrc_gomach_get_buffer_full(gnrc_netdev)) {
+        gnrc_gomach_set_buffer_full(gnrc_netdev, false);
 
         gnrc_gomach_set_update(gnrc_netdev, true);
 
@@ -1276,8 +1277,8 @@ static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_INIT;
 
     /* If the node's phase has been changed, figure out the related phase of all neighbors. */
-    if (gnrc_netdev->gomach.phase_changed == true) {
-    	gnrc_netdev->gomach.phase_changed = false;
+    if (gnrc_gomach_get_phase_changed(gnrc_netdev)) {
+        gnrc_gomach_set_phase_changed(gnrc_netdev, false);
         gnrc_gomach_update_neighbor_phase(gnrc_netdev);
     }
 
@@ -1339,7 +1340,7 @@ static void _gomach_phase_backoff(gnrc_netdev_t *gnrc_netdev)
             gnrc_netdev->gomach.backoff_phase_ticks;
     rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GNRC_GOMACH_EVENT_RTT_NEW_CYCLE);
 
-    gnrc_netdev->gomach.phase_changed = true;
+    gnrc_gomach_set_phase_changed(gnrc_netdev, true);
     LOG_INFO("INFO: [GOMACH] phase backoffed: %lu us.\n",
              RTT_TICKS_TO_US(gnrc_netdev->gomach.backoff_phase_ticks));
 }
@@ -1381,18 +1382,18 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.cp_extend_count = 0;
     gnrc_gomach_set_quit_cycle(gnrc_netdev, false);
     gnrc_gomach_set_unintd_preamble(gnrc_netdev, false);
-    gnrc_netdev->gomach.send_beacon_fail = false;
+    gnrc_gomach_set_beacon_fail(gnrc_netdev, false);
     gnrc_gomach_set_cp_end(gnrc_netdev, false);
     gnrc_gomach_set_got_preamble(gnrc_netdev, false);
-    gnrc_netdev->gomach.phase_changed = false;
+    gnrc_gomach_set_phase_changed(gnrc_netdev, false);
 
     /* Flush RX queue and turn on radio. */
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
     gnrc_gomach_turn_on_radio(gnrc_netdev);
 
     /* Run phase-backoff if needed, select a new wake-up phase. */
-    if (gnrc_netdev->gomach.phase_backoff == true) {
-        gnrc_netdev->gomach.phase_backoff = false;
+    if (gnrc_gomach_get_phase_backoff(gnrc_netdev)) {
+        gnrc_gomach_set_phase_backoff(gnrc_netdev, false);
         _gomach_phase_backoff(gnrc_netdev);
     }
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_LISTEN;
@@ -1482,12 +1483,12 @@ static void gomach_listen_send_beacon(gnrc_netdev_t *gnrc_netdev)
     res = gnrc_gomach_send_beacon(gnrc_netdev);
     if (res < 0) {
         LOG_ERROR("ERROR: [GOMACH] send beacon error: %d.\n", res);
-        gnrc_netdev->gomach.send_beacon_fail = true;
+        gnrc_gomach_set_beacon_fail(gnrc_netdev, true);
         gnrc_gomach_set_update(gnrc_netdev, true);
     }
     else {
         if (gnrc_netdev->rx.vtdma_manag.total_slots_num == 0) {
-            gnrc_netdev->gomach.send_beacon_fail = true;
+            gnrc_gomach_set_beacon_fail(gnrc_netdev, true);
             gnrc_gomach_set_update(gnrc_netdev, true);
         }
         else {
@@ -1501,10 +1502,10 @@ static void gomach_listen_send_beacon(gnrc_netdev_t *gnrc_netdev)
 static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
 {
     if (gnrc_gomach_get_tx_finish(gnrc_netdev) ||
-        (gnrc_netdev->gomach.send_beacon_fail == true)) {
+        gnrc_gomach_get_beacon_fail(gnrc_netdev)) {
 
         if ((gnrc_netdev->rx.vtdma_manag.total_slots_num > 0) &&
-            (gnrc_netdev->gomach.send_beacon_fail == false)) {
+            (!gnrc_gomach_get_beacon_fail(gnrc_netdev))) {
             /* If the device has allocated transmission slots to other nodes,
              *  switch to vTDMA period to receive packets. */
             gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_VTDMA_INIT;
@@ -1530,8 +1531,8 @@ static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
                     }
                     /* If the device's wakeup-phase has been changed,
                      * figure out the new phases of all neighbors. */
-                    if (gnrc_netdev->gomach.phase_changed == true) {
-                    	gnrc_netdev->gomach.phase_changed = false;
+                    if (gnrc_gomach_get_phase_changed(gnrc_netdev)) {
+                        gnrc_gomach_set_phase_changed(gnrc_netdev, false);
                         gnrc_gomach_update_neighbor_phase(gnrc_netdev);
                     }
                 }
@@ -1648,8 +1649,8 @@ static void gomach_vtdma_end(gnrc_netdev_t *gnrc_netdev)
 
             /* If the device's wakeup-phase has been changed,
              * figure out the new phases of all neighbors. */
-            if (gnrc_netdev->gomach.phase_changed == true) {
-            	gnrc_netdev->gomach.phase_changed = false;
+            if (gnrc_gomach_get_phase_changed(gnrc_netdev)) {
+                gnrc_gomach_set_phase_changed(gnrc_netdev, false);
                 gnrc_gomach_update_neighbor_phase(gnrc_netdev);
             }
         }
@@ -1694,8 +1695,8 @@ static void gomach_sleep_init(gnrc_netdev_t *gnrc_netdev)
 {
     /* If the device's wakeup-phase has been changed,
      * figure out the new phases of all neighbors. */
-    if (gnrc_netdev->gomach.phase_changed == true) {
-    	gnrc_netdev->gomach.phase_changed = false;
+    if (gnrc_gomach_get_phase_changed(gnrc_netdev)) {
+        gnrc_gomach_set_phase_changed(gnrc_netdev, false);
         gnrc_gomach_update_neighbor_phase(gnrc_netdev);
     }
 
@@ -1853,7 +1854,8 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
 
                 gnrc_pktsnip_t *pkt = gnrc_netdev->recv(gnrc_netdev);
                 if (pkt == NULL) {
-                    gnrc_netdev->gomach.rx_memory_full = true;
+                    gnrc_gomach_set_buffer_full(gnrc_netdev, true);
+
                     LOG_WARNING("WARNING: [GOMACH] gnrc_netdev: packet is NULL, memory full?\n");
                     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
                     gnrc_netdev_set_rx_started(gnrc_netdev, false);

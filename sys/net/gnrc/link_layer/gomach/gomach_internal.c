@@ -699,7 +699,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
     /* Fetch and deduce the exact phase of the neighbor. */
     long int phase_ticks;
 
-    if ((gnrc_netdev->gomach.phase_changed == true) && (gnrc_netdev->rx.enter_new_cycle == true)) {
+    if (gnrc_gomach_get_phase_changed(gnrc_netdev) && (gnrc_netdev->rx.enter_new_cycle == true)) {
         /* This means that this device is already in a new cycle after reset a new phase
          * (phase-backoff). So, give some compensation for later phase adjust. */
         phase_ticks = gnrc_gomach_phase_now(gnrc_netdev) +
@@ -717,7 +717,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
 
     /* Check if the sender's phase is too close to the receiver. */
     long int future_neighbor_phase;
-    if (gnrc_netdev->gomach.phase_changed == true) {
+    if (gnrc_gomach_get_phase_changed(gnrc_netdev)) {
         future_neighbor_phase = phase_ticks - gnrc_netdev->gomach.backoff_phase_ticks;
 
         if (future_neighbor_phase < 0) {
@@ -734,7 +734,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
     if ((RTT_TICKS_TO_US(neighbor_phase) > (GNRC_GOMACH_SUPERFRAME_DURATION_US - GNRC_GOMACH_CP_MIN_GAP_US)) ||
         (RTT_TICKS_TO_US(neighbor_phase) < GNRC_GOMACH_CP_MIN_GAP_US)) {
         LOG_WARNING("WARNING: [GOMACH] t2u: own phase is close to the neighbor's.\n");
-        gnrc_netdev->gomach.phase_backoff = true;
+        gnrc_gomach_set_phase_backoff(gnrc_netdev, true);
         /* Set a random phase-backoff value. */
         gnrc_netdev->gomach.backoff_phase_ticks =
             random_uint32_range(RTT_US_TO_TICKS(GNRC_GOMACH_CP_MIN_GAP_US),

@@ -69,6 +69,31 @@ extern "C" {
 #define GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLE        (0x0020U)
 
 /**
+ * @brief Flag to track if node's duty-cycle has started in GoMacH.
+ */
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START        (0x0040U)
+
+/**
+ * @brief Flag to track if node need to backoff its phase in GoMacH.
+ */
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_BACKOFF        (0x0080U)
+
+/**
+ * @brief Flag to track if node's phase has changed in GoMacH.
+ */
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_CHANGED        (0x0100U)
+
+/**
+ * @brief Flag to track if beacon transmission fail in GoMacH.
+ */
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_BEACON_FAIL        (0x0200U)
+
+/**
+ * @brief Flag to track if node's packet buffer is full in GoMacH.
+ */
+#define GNRC_NETDEV_GOMACH_INTERNAL_INFO_BUFFER_FULL        (0x0400U)
+
+/**
  * @brief Set the TX-finish flag of the device.
  *
  * @param[in,out] gnrc_netdev  ptr to netdev device.
@@ -306,6 +331,156 @@ static inline void gnrc_gomach_set_update(gnrc_netdev_t *gnrc_netdev, bool updat
 static inline bool gnrc_gomach_get_update(gnrc_netdev_t *gnrc_netdev)
 {
     return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_ND_UPDATE);
+}
+
+/**
+ * @brief Set the duty-cycle-start flag of the device.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] start   value for GoMacH's duty-cycle-start flag.
+ *
+ */
+static inline void gnrc_gomach_set_duty_cycle_start(gnrc_netdev_t *gnrc_netdev, bool start)
+{
+    if (start) {
+    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START;
+    }
+    else {
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START;
+    }
+}
+
+/**
+ * @brief Get the duty-cycle-start flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if duty-cycle has started.
+ * @return                 false if duty-cycle hasn't started yet.
+ */
+static inline bool gnrc_gomach_get_duty_cycle_start(gnrc_netdev_t *gnrc_netdev)
+{
+    return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START);
+}
+
+/**
+ * @brief Set the phase-backoff flag of the device.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] backoff   value for GoMacH's phase-backoff flag.
+ *
+ */
+static inline void gnrc_gomach_set_phase_backoff(gnrc_netdev_t *gnrc_netdev, bool backoff)
+{
+    if (backoff) {
+    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_BACKOFF;
+    }
+    else {
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_BACKOFF;
+    }
+}
+
+/**
+ * @brief Get the phase-backoff flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if need to run phase backoff.
+ * @return                 false if no need to run phase backoff.
+ */
+static inline bool gnrc_gomach_get_phase_backoff(gnrc_netdev_t *gnrc_netdev)
+{
+    return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_BACKOFF);
+}
+
+/**
+ * @brief Set the phase-changed flag of the device.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] change   value for GoMacH's phase-changed flag.
+ *
+ */
+static inline void gnrc_gomach_set_phase_changed(gnrc_netdev_t *gnrc_netdev, bool change)
+{
+    if (change) {
+    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_CHANGED;
+    }
+    else {
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_CHANGED;
+    }
+}
+
+/**
+ * @brief Get the phase-changed flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if node's phase has changed.
+ * @return                 false if node's phase hasn't changed yet.
+ */
+static inline bool gnrc_gomach_get_phase_changed(gnrc_netdev_t *gnrc_netdev)
+{
+    return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_CHANGED);
+}
+
+/**
+ * @brief Set the beacon-fail flag of the device.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] fail   value for GoMacH's beacon-fail flag.
+ *
+ */
+static inline void gnrc_gomach_set_beacon_fail(gnrc_netdev_t *gnrc_netdev, bool fail)
+{
+    if (fail) {
+    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_BEACON_FAIL;
+    }
+    else {
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_BEACON_FAIL;
+    }
+}
+
+/**
+ * @brief Get the beacon-fail flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if send beacon fail.
+ * @return                 false upon beacon transmission success.
+ */
+static inline bool gnrc_gomach_get_beacon_fail(gnrc_netdev_t *gnrc_netdev)
+{
+    return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_BEACON_FAIL);
+}
+
+/**
+ * @brief Set the buffer-full flag of the device.
+ *
+ * @param[in,out] gnrc_netdev  ptr to netdev device.
+ * @param[in] full   value for GoMacH's buffer-full flag.
+ *
+ */
+static inline void gnrc_gomach_set_buffer_full(gnrc_netdev_t *gnrc_netdev, bool full)
+{
+    if (full) {
+    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_BUFFER_FULL;
+    }
+    else {
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_BUFFER_FULL;
+    }
+}
+
+/**
+ * @brief Get the buffer-full flag of the device.
+ *
+ * @param[in] gnrc_netdev  ptr to netdev device
+ *
+ * @return                 true if node's packet buffer is full.
+ * @return                 false if node's packet buffer is not full.
+ */
+static inline bool gnrc_gomach_get_buffer_full(gnrc_netdev_t *gnrc_netdev)
+{
+    return (gnrc_netdev->gomach.gomach_info & GNRC_NETDEV_GOMACH_INTERNAL_INFO_BUFFER_FULL);
 }
 
 /**
