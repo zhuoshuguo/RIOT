@@ -44,7 +44,7 @@ extern "C" {
  * In GoMacH, by default, we regard the wake-up period (WP) as the beginning of a cycle.
  */
 #ifndef GNRC_GOMACH_SUPERFRAME_DURATION_US
-#define GNRC_GOMACH_SUPERFRAME_DURATION_US        (200U * 1000)
+#define GNRC_GOMACH_SUPERFRAME_DURATION_US        (200LU * US_PER_MS)
 #endif
 
 /**
@@ -57,7 +57,7 @@ extern "C" {
  * receiver will not miss the preamble packet.
  */
 #ifndef GNRC_GOMACH_CP_DURATION_US
-#define GNRC_GOMACH_CP_DURATION_US        (10U * 1000)
+#define GNRC_GOMACH_CP_DURATION_US        (10U * US_PER_MS)
 #endif
 
 /**
@@ -68,7 +68,7 @@ extern "C" {
  * collision between neighbor nodes. This macro maybe removed in the future.
  */
 #ifndef GNRC_GOMACH_CP_RANDOM_END_US
-#define GNRC_GOMACH_CP_RANDOM_END_US        (1U * 1000)
+#define GNRC_GOMACH_CP_RANDOM_END_US        (1U * US_PER_MS)
 #endif
 
 /**
@@ -83,7 +83,7 @@ extern "C" {
  * duration.
  */
 #ifndef GNRC_GOMACH_CP_DURATION_MAX_US
-#define GNRC_GOMACH_CP_DURATION_MAX_US        (5 * GNRC_GOMACH_CP_DURATION_US)
+#define GNRC_GOMACH_CP_DURATION_MAX_US        (5LU * GNRC_GOMACH_CP_DURATION_US)
 #endif
 
 /**
@@ -109,7 +109,7 @@ extern "C" {
  * select a new phase for itself.
  */
 #ifndef GNRC_GOMACH_CP_MIN_GAP_US
-#define GNRC_GOMACH_CP_MIN_GAP_US        (25U * 1000)
+#define GNRC_GOMACH_CP_MIN_GAP_US        (25U * US_PER_MS)
 #endif
 
 /**
@@ -120,7 +120,7 @@ extern "C" {
  * @ref GNRC_GOMACH_WAIT_RX_END_US duration.
  */
 #ifndef GNRC_GOMACH_WAIT_RX_END_US
-#define GNRC_GOMACH_WAIT_RX_END_US        (3U * 1000)
+#define GNRC_GOMACH_WAIT_RX_END_US        (3U * US_PER_MS)
 #endif
 
 /**
@@ -131,7 +131,7 @@ extern "C" {
  * consecutive preamble packets.
  */
 #ifndef GNRC_GOMACH_MAX_PREAM_INTERVAL_US
-#define GNRC_GOMACH_MAX_PREAM_INTERVAL_US        (5U * 1000)
+#define GNRC_GOMACH_MAX_PREAM_INTERVAL_US        (5U * US_PER_MS)
 #endif
 
 /**
@@ -146,7 +146,7 @@ extern "C" {
  * interval is, the shorter the WP period can be, thus leading to lower power consumption.
  */
 #ifndef GNRC_GOMACH_PREAMBLE_INTERVAL_US
-#define GNRC_GOMACH_PREAMBLE_INTERVAL_US        (1U * 1000)
+#define GNRC_GOMACH_PREAMBLE_INTERVAL_US        (1U * US_PER_MS)
 #endif
 
 /**
@@ -158,7 +158,7 @@ extern "C" {
  * between sending two consecutive broadcast copies.
  */
 #ifndef GNRC_GOMACH_BCAST_INTERVAL_US
-#define GNRC_GOMACH_BCAST_INTERVAL_US        (1U * 1000)
+#define GNRC_GOMACH_BCAST_INTERVAL_US        (1U * US_PER_MS)
 #endif
 
 /**
@@ -173,7 +173,7 @@ extern "C" {
  * of @ref GNRC_GOMACH_SUPERFRAME_DURATION_US.
  */
 #ifndef GNRC_GOMACH_PREAMBLE_DURATION_US
-#define GNRC_GOMACH_PREAMBLE_DURATION_US        (21 * GNRC_GOMACH_SUPERFRAME_DURATION_US / 10)
+#define GNRC_GOMACH_PREAMBLE_DURATION_US        (21LU * GNRC_GOMACH_SUPERFRAME_DURATION_US / 10)
 #endif
 
 /**
@@ -182,10 +182,11 @@ extern "C" {
  * GoMacH adopts dynamic slots allocation scheme to allocate transmission
  * slots to senders that have pending packets. Each slot is for one data packet
  * with ACK transmission. @ref GNRC_GOMACH_VTDMA_SLOT_SIZE_US is right sufficient
- * for the transmission of the longest packet in IEEE 802.15.4 with ACK.
+ * for the transmission of the longest packet in IEEE 802.15.4 with ACK. Should
+ * not be changed.
  */
 #ifndef GNRC_GOMACH_VTDMA_SLOT_SIZE_US
-#define GNRC_GOMACH_VTDMA_SLOT_SIZE_US        (5U * 1000)
+#define GNRC_GOMACH_VTDMA_SLOT_SIZE_US        (5U * US_PER_MS)
 #endif
 
 /**

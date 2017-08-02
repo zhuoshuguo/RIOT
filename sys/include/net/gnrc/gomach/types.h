@@ -85,7 +85,7 @@ extern "C" {
  * @brief   State-machine states of Broadcast procedure of GoMacH.
  */
 typedef enum {
-    GNRC_GOMACH_BCAST_INIT = 0,         /**< Initiate broadcast. */
+    GNRC_GOMACH_BCAST_INIT,             /**< Initiate broadcast. */
     GNRC_GOMACH_BCAST_SEND,             /**< Send broadcast packet. */
     GNRC_GOMACH_BCAST_WAIT_TX_FINISH,   /**< Wait for broadcast TX finish. */
     GNRC_GOMACH_BCAST_WAIT_NEXT_TX,     /**< Wait for next broadcast TX timing. */
@@ -96,7 +96,7 @@ typedef enum {
  * @brief   State-machine states of Transmission-to-phase-known (t2k) procedure of GoMacH.
  */
 typedef enum {
-    GNRC_GOMACH_T2K_INIT = 0,               /**< Initiate t2k procedure. */
+    GNRC_GOMACH_T2K_INIT,                   /**< Initiate t2k procedure. */
     GNRC_GOMACH_T2K_WAIT_CP,                /**< Wait for receiver's CP (wake-up) period. */
     GNRC_GOMACH_T2K_TRANS_IN_CP,            /**< Transmit data in receiver's CP period. */
     GNRC_GOMACH_T2K_WAIT_CPTX_FEEDBACK,     /**< Wait for CP transmission finish. */
@@ -111,7 +111,7 @@ typedef enum {
  * @brief   State-machine states of Transmission-to-phase-unknown (t2u) procedure of GoMacH.
  */
 typedef enum {
-    GNRC_GOMACH_T2U_INIT = 0,               /**< Initiate t2u procedure. */
+    GNRC_GOMACH_T2U_INIT,                   /**< Initiate t2u procedure. */
     GNRC_GOMACH_T2U_PREAMBLE_PREPARE,       /**< Prepare settings before sending preamble. */
     GNRC_GOMACH_T2U_SEND_PREAMBLE,          /**< Send preamble in t2u. */
     GNRC_GOMACH_T2U_WAIT_PREAMBLE_TX,       /**< Wait for Send preamble TX finish. */
@@ -125,7 +125,7 @@ typedef enum {
  * @brief   State-machine states of basic management procedure of GoMacH.
  */
 typedef enum {
-    GNRC_GOMACH_INIT = 0,       /**< Initiate GoMacH. */
+    GNRC_GOMACH_INIT,           /**< Initiate GoMacH. */
     GNRC_GOMACH_LISTEN,         /**< GoMacH's duty-cycled listen procedure. */
     GNRC_GOMACH_TRANSMIT        /**< GoMacH's transmission procedure. */
 } gnrc_gomach_basic_state_t;
@@ -134,7 +134,7 @@ typedef enum {
  * @brief   State-machine states of initialization procedure of GoMacH.
  */
 typedef enum {
-    GNRC_GOMACH_INIT_PREPARE = 0,       /**< Prepare the initialization procedure of GoMacH. */
+    GNRC_GOMACH_INIT_PREPARE,           /**< Prepare the initialization procedure of GoMacH. */
     GNRC_GOMACH_INIT_ANNC_SUBCHAN,      /**< Announce the sub-channel sequence of the node. */
     GNRC_GOMACH_INIT_WAIT_FEEDBACK,     /**< Wait for announce TX finish. */
     GNRC_GOMACH_INIT_END                /**< End of the initialization procedure of GoMacH. */
@@ -144,7 +144,7 @@ typedef enum {
  * @brief   State-machine states of duty-cycled listening procedure of GoMacH.
  */
 typedef enum {
-    GNRC_GOMACH_LISTEN_CP_INIT = 0,         /**< Initiate the listen period. */
+    GNRC_GOMACH_LISTEN_CP_INIT,             /**< Initiate the listen period. */
     GNRC_GOMACH_LISTEN_CP_LISTEN,           /**< Listen for incoming packets. */
     GNRC_GOMACH_LISTEN_CP_END,              /**< End of packet listen period. */
     GNRC_GOMACH_LISTEN_SEND_BEACON,         /**< Send beacon packet when needed. */
@@ -170,7 +170,7 @@ typedef enum {
  * @brief   GoMacH timeout types.
  */
 typedef enum {
-    GNRC_GOMACH_TIMEOUT_DISABLED = 0,           /**< Timeout is disabled. */
+    GNRC_GOMACH_TIMEOUT_DISABLED,               /**< Timeout is disabled. */
     GNRC_GOMACH_TIMEOUT_BCAST_FINISH,           /**< Timeout of broadcast procedure end. */
     GNRC_GOMACH_TIMEOUT_BCAST_INTERVAL,         /**< Timeout of next broadcast transmission. */
     GNRC_GOMACH_TIMEOUT_PREAMBLE,               /**< Timeout of next preamble transmission. */
