@@ -195,13 +195,13 @@ typedef struct {
     gnrc_gomach_bcast_state_t bcast_state;        /**< Broadcast state. */
     gnrc_gomach_t2k_state_t t2k_state;            /**< t2k (transmit-to-known) state. */
     gnrc_gomach_t2u_state_t t2u_state;            /**< t2u (transmit-to-unknown) state. */
-    uint32_t preamble_sent;                       /**< Preamble sent count. */
-    uint32_t broadcast_seq;                       /**< Node's broadcast sequence. */
+    uint8_t preamble_sent;                        /**< Preamble sent count. */
+    uint8_t broadcast_seq;                        /**< Node's broadcast sequence. */
     uint8_t tx_seq;                               /**< Node's MAC transmission (TX) sequence. */
     gnrc_gomach_vtdma_t vtdma_para;               /**< Node's vTMDA slots allocation management unit. */
     uint8_t no_ack_counter;                       /**< Counter for recording no-ACK times for data transmission. */
     uint8_t t2u_retry_counter;                    /**< Counter for recording t2u attempt failures. */
-    uint32_t last_tx_neighbor_id;                 /**< Record last TX neighbor's sequence in the neighbor list. */
+    uint8_t last_tx_neighbor_id;                  /**< Record last TX neighbor's sequence in the neighbor list. */
     uint8_t tx_busy_count;                        /**< Counter recording csma busy feedback times. */
 #endif
 } gnrc_mac_tx_t;
