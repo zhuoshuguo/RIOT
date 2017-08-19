@@ -88,6 +88,20 @@ static void generate_and_send_pkt(void){
 
 	    		payload[3] = 0x0000331e;
 
+	    		/*
+		        addr[0] = 0x79;
+		        addr[1] = 0x67;
+
+		        addr[2] = 0x08;
+		        addr[3] = 0x77;
+
+		        addr[4] = 0x01;
+		        addr[5] = 0x9f;
+
+		        addr[6] = 0x33;
+		        addr[7] = 0x1e;
+                */
+
 		        addr[0] = 0x79;
 		        addr[1] = 0x67;
 
@@ -99,6 +113,7 @@ static void generate_and_send_pkt(void){
 
 		        addr[6] = 0x4c;
 		        addr[7] = 0x66;
+
 
 		        payload[0] = send_counter;
 		        //printf("%lx: %lu.\n", payload[3],send_counter);
@@ -263,6 +278,8 @@ static void generate_and_send_pkt(void){
 		    //printf("p: %lu.\n", send_counter);
 		}
 
+		printf("%lx: %lu.\n", own_address2, send_counter);
+
 }
 
 
@@ -271,9 +288,7 @@ void *sender_thread(void *arg)
     (void) arg;
 
     uint32_t data_rate;
-    uint32_t total_gene_num;
     data_rate = 0;
-    total_gene_num = 0;
 
 
     send_counter = 0;
@@ -289,7 +304,7 @@ void *sender_thread(void *arg)
     gnrc_netapi_get(devpid, NETOPT_ADDRESS, 0, &own_addr,
                             sizeof(own_addr));
 
-    xtimer_sleep(1);
+    xtimer_sleep(2);
 
     own_address2 = 0;
     own_address2 = own_addr[0];
@@ -307,12 +322,10 @@ void *sender_thread(void *arg)
    	//xtimer_sleep(1);
    	xtimer_usleep((uint32_t) data_rate * 1000);
 
-
-   	if (send_counter < total_gene_num){
    		for(int i=0; i<1; i++){
    			generate_and_send_pkt();
    		}
-   	}
+
 
    }
 
