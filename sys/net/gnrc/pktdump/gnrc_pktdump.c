@@ -138,51 +138,8 @@ static void _dump(gnrc_pktsnip_t *pkt)
 
 	addr_len = 8;
 
-	if(own_addess == 0x4c66) {// 6f46
-	  	if(payload[3] == 0x0000331e){
+	if(own_addess == 0x79f6) {// 5ad6
 
-	        addr[0] = 0x79;
-	        addr[1] = 0x67;
-
-	        addr[2] = 0x19;
-	        addr[3] = 0x62;
-
-	        addr[4] = 0xf5;
-	        addr[5] = 0x60;
-
-	        addr[6] = 0x38;
-	        addr[7] = 0x3a;
-	   	}
-	}else if(own_addess == 0x383a) {  //1b1a
-
-        addr[0] = 0x79;
-        addr[1] = 0x76;
-
-        addr[2] = 0x43;
-        addr[3] = 0x7f;
-
-        addr[4] = 0x72;
-        addr[5] = 0x2a;
-
-        addr[6] = 0x67;
-        addr[7] = 0x5e;
-
-	}else if(own_addess == 0x675e) {  //447e
-  //79:67:3c:7c:2b:2a:c1:3a
-        addr[0] = 0x79;
-        addr[1] = 0x67;
-
-        addr[2] = 0x3c;
-        addr[3] = 0x7c;
-
-        addr[4] = 0x2b;
-        addr[5] = 0x2a;
-
-        addr[6] = 0xc1;
-        addr[7] = 0x3a;
-
-	}else if(own_addess == 0xc13a) {  //e21a
-		//79:67:08:77:01:9f:33:1e
         addr[0] = 0x79;
         addr[1] = 0x67;
 
@@ -195,16 +152,21 @@ static void _dump(gnrc_pktsnip_t *pkt)
         addr[6] = 0x33;
         addr[7] = 0x1e;
 
-	}else if(own_addess == 0x1b1a) {
-    	if(payload[3] == 0x0000103e){
-    		addr[0] = 0x44;
-    		addr[1] = 0x7e;
-    	}
-    }else if(own_addess == 0x447e) {
-	    	if(payload[3] == 0x0000103e){
-	    		addr[0] = 0xa3;
-	    		addr[1] = 0x12;
-	    	}
+	}else if(own_addess == 0x383a) {  //1b1a
+      //79:67:35:7e:54:3a:79:f6
+
+        addr[0] = 0x79;
+        addr[1] = 0x67;
+
+        addr[2] = 0x35;
+        addr[3] = 0x7e;
+
+        addr[4] = 0x54;
+        addr[5] = 0x3a;
+
+        addr[6] = 0x79;
+        addr[7] = 0xf6;
+
 	}
 
 	/** release old netif header **/
@@ -219,7 +181,7 @@ static void _dump(gnrc_pktsnip_t *pkt)
 	   	return;
 	}
 
-	//printf("%lx: %lu\n",payload[1], payload[0]);
+	printf("%lx: %lu\n",payload[1], payload[0]);
 
 	LL_PREPEND(pkt, hdr);
 
@@ -227,6 +189,7 @@ static void _dump(gnrc_pktsnip_t *pkt)
 	res = gnrc_netapi_send(dev, pkt);
 	if(res < 1) {
 	   	puts("relay: send data msg failed when push pkt.");
+	   	gnrc_pktbuf_release(pkt);
 	}
 
 }

@@ -82,13 +82,14 @@ static void generate_and_send_pkt(void){
 
 	    addr_len = 8;
 
-	    if(own_address2 == 0x79f6) {  //
+        payload[0] = send_counter;
+
+	    if(own_address2 == 0x79f6) {  //  5ad6
 
 	    	//79:67:08:77:01:9f:33:1e
 
 	    		payload[3] = 0x0000331e;
 
-	    		/*
 		        addr[0] = 0x79;
 		        addr[1] = 0x67;
 
@@ -100,25 +101,66 @@ static void generate_and_send_pkt(void){
 
 		        addr[6] = 0x33;
 		        addr[7] = 0x1e;
-                */
 
-		        addr[0] = 0x79;
-		        addr[1] = 0x67;
-
-		        addr[2] = 0x26;
-		        addr[3] = 0x7e;
-
-		        addr[4] = 0x69;
-		        addr[5] = 0x76;
-
-		        addr[6] = 0x4c;
-		        addr[7] = 0x66;
-
-
-		        payload[0] = send_counter;
 		        //printf("%lx: %lu.\n", payload[3],send_counter);
-	    }else if(own_address2 == 0xc13a) {  //e21a
-			//79:67:08:77:01:9f:33:1e
+	    } else if(own_address2 == 0x383a) {  //1b1a
+
+	        addr[0] = 0x79;
+	        addr[1] = 0x67;
+
+	        addr[2] = 0x35;
+	        addr[3] = 0x7e;
+
+	        addr[4] = 0x54;
+	        addr[5] = 0x3a;
+
+	        addr[6] = 0x79;
+	        addr[7] = 0xf6;
+
+		} else if(own_address2 == 0x8032) {  //a312
+			/*/79:67:19:62:f5:60:38:3a
+	        addr[0] = 0x79;
+	        addr[1] = 0x67;
+
+	        addr[2] = 0x19;
+	        addr[3] = 0x62;
+
+	        addr[4] = 0xf5;
+	        addr[5] = 0x60;
+
+	        addr[6] = 0x38;
+	        addr[7] = 0x3a;
+	        */
+
+	        addr[0] = 0x79;
+	        addr[1] = 0x67;
+
+	        addr[2] = 0x35;
+	        addr[3] = 0x7e;
+
+	        addr[4] = 0x54;
+	        addr[5] = 0x3a;
+
+	        addr[6] = 0x79;
+	        addr[7] = 0xf6;
+
+		} else if(own_address2 == 0x2c02) {  //0f22
+
+	        addr[0] = 0x79;
+	        addr[1] = 0x67;
+
+	        addr[2] = 0x35;
+	        addr[3] = 0x7e;
+
+	        addr[4] = 0x54;
+	        addr[5] = 0x3a;
+
+	        addr[6] = 0x79;
+	        addr[7] = 0xf6;
+
+		} else if(own_address2 == 0x4c66) {  //6f46
+
+			/*
 	        addr[0] = 0x79;
 	        addr[1] = 0x67;
 
@@ -130,125 +172,21 @@ static void generate_and_send_pkt(void){
 
 	        addr[6] = 0x33;
 	        addr[7] = 0x1e;
+	        */
+
+	        addr[0] = 0x79;
+	        addr[1] = 0x67;
+
+	        addr[2] = 0x35;
+	        addr[3] = 0x7e;
+
+	        addr[4] = 0x54;
+	        addr[5] = 0x3a;
+
+	        addr[6] = 0x79;
+	        addr[7] = 0xf6;
 
 		}
-
-#if 0
-	    if(own_address2 == 0xbcc6) {
-	    	if((send_counter%2)==0){
-	    		payload[3] = 0x000052d2;
-		        addr[0] = 0x52;
-		        addr[1] = 0xd2;
-		        send_counter1 ++;
-		        payload[0] = send_counter1;
-		        printf("%lx: %lu.\n", payload[3],send_counter1);
-	    	}else{
-	    		payload[3] = 0x0000447e;
-		        addr[0] = 0x10;
-		        addr[1] = 0x3e;
-		        send_counter2 ++;
-		        payload[0] = send_counter2;
-		        printf("%lx: %lu.\n", payload[3],send_counter2);
-	    	}
-	    }else if(own_address2 == 0x1b1a) {
-	    	if((send_counter%2)==0){
-	    		payload[3] = 0x000052d2;
-		        addr[0] = 0x10;
-		        addr[1] = 0x3e;
-		        send_counter1 ++;
-		        payload[0] = send_counter1;
-		        printf("%lx: %lu.\n", payload[3],send_counter1);
-	    	}else{
-	    		payload[3] = 0x0000447e;
-		        addr[0] = 0x44;
-		        addr[1] = 0x7e;
-		        send_counter2 ++;
-		        payload[0] = send_counter2;
-		        printf("%lx: %lu.\n", payload[3],send_counter2);
-	    	}
-	    }else if(own_address2 == 0x5ad6) {
-	    	if((send_counter%2)==0){
-	    		payload[3] = 0x000052d2;
-		        addr[0] = 0x6f;
-		        addr[1] = 0x46;
-		        send_counter1 ++;
-		        payload[0] = send_counter1;
-		        printf("%lx: %lu.\n", payload[3],send_counter1);
-	    	}else{
-	    		payload[3] = 0x0000447e;
-		        addr[0] = 0x6f;
-		        addr[1] = 0x46;
-		        send_counter2 ++;
-		        payload[0] = send_counter2;
-		        printf("%lx: %lu.\n", payload[3],send_counter2);
-	    	}
-	    }else if(own_address2 == 0x103e) {
-	    	if((send_counter%2)==0){
-	    		payload[3] = 0x000052d2;
-		        addr[0] = 0x52;
-		        addr[1] = 0xd2;
-		        send_counter1 ++;
-		        payload[0] = send_counter1;
-		        printf("%lx: %lu.\n", payload[3],send_counter1);
-	    	}else{
-	    		payload[3] = 0x0000447e;
-		        addr[0] = 0xa3;
-		        addr[1] = 0x12;
-		        send_counter2 ++;
-		        payload[0] = send_counter2;
-		        printf("%lx: %lu.\n", payload[3],send_counter2);
-	    	}
-	    }else if(own_address2 == 0xa312) {
-	    	if((send_counter%2)==0){
-	    		payload[3] = 0x000052d2;
-		        addr[0] = 0x10;
-		        addr[1] = 0x3e;
-		        send_counter1 ++;
-		        payload[0] = send_counter1;
-		        printf("%lx: %lu.\n", payload[3],send_counter1);
-	    	}else{
-	    		payload[3] = 0x0000447e;
-		        addr[0] = 0xe2;
-		        addr[1] = 0x1a;
-		        send_counter2 ++;
-		        payload[0] = send_counter2;
-		        printf("%lx: %lu.\n", payload[3],send_counter2);
-	    	}
-	    }else if(own_address2 == 0xe21a) {
-	    	if((send_counter%2)==0){
-	    		payload[3] = 0x000052d2;
-		        addr[0] = 0x52;
-		        addr[1] = 0xd2;
-		        send_counter1 ++;
-		        payload[0] = send_counter1;
-		        printf("%lx: %lu.\n", payload[3],send_counter1);
-	    	}else{
-	    		payload[3] = 0x0000447e;
-		        addr[0] = 0x44;
-		        addr[1] = 0x7e;
-		        send_counter2 ++;
-		        payload[0] = send_counter2;
-		        printf("%lx: %lu.\n", payload[3],send_counter2);
-	    	}
-	    }else if(own_address2 == 0x6f46) {
-	    	if((send_counter%2)==0){
-	    		payload[3] = 0x000052d2;
-		        addr[0] = 0x52;
-		        addr[1] = 0xd2;
-		        send_counter1 ++;
-		        payload[0] = send_counter1;
-		        printf("%lx: %lu.\n", payload[3],send_counter1);
-	    	}else{
-	    		payload[3] = 0x0000447e;
-		        addr[0] = 0x44;
-		        addr[1] = 0x7e;
-		        send_counter2 ++;
-		        payload[0] = send_counter2;
-		        printf("%lx: %lu.\n", payload[3],send_counter2);
-	    	}
-	    }
-#endif
-
 
 	    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
 	    if(hdr == NULL){
@@ -313,20 +251,19 @@ void *sender_thread(void *arg)
 
     printf("own add is %lx.\n", own_address2);
 
-   xtimer_usleep(500000);
+   xtimer_sleep(10);
 
-
-   data_rate = 1000;
+   data_rate = 200;
 
    while (1) {
    	//xtimer_sleep(1);
    	xtimer_usleep((uint32_t) data_rate * 1000);
 
    		for(int i=0; i<1; i++){
-   			generate_and_send_pkt();
+   			//if (own_address2 == 0x79f6) {
+   			    generate_and_send_pkt();
+   			//}
    		}
-
-
    }
 
     return NULL;

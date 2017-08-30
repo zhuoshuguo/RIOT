@@ -54,7 +54,7 @@ ifneq (,$(filter $(BOARD),$(BOARD_PROVIDES_NETIF)))
   USEMODULE += gnrc_gomach
   # We use only the lower layers of the GNRC network stack, hence, we can
   # reduce the size of the packet buffer a bit
-  CFLAGS += -DGNRC_PKTBUF_SIZE=512
+  CFLAGS += -DGNRC_PKTBUF_SIZE=5120
 endif
 
 FEATURES_OPTIONAL += config
