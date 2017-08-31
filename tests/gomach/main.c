@@ -251,7 +251,11 @@ void *sender_thread(void *arg)
 
     printf("own add is %lx.\n", own_address2);
 
-   xtimer_sleep(10);
+   //xtimer_sleep(5);
+
+   //generate_and_send_pkt();
+
+   xtimer_sleep(5);
 
    data_rate = 200;
 
@@ -260,7 +264,7 @@ void *sender_thread(void *arg)
    	xtimer_usleep((uint32_t) data_rate * 1000);
 
    		for(int i=0; i<1; i++){
-   			//if (own_address2 == 0x79f6) {
+   			//if (send_counter < 2) {
    			    generate_and_send_pkt();
    			//}
    		}

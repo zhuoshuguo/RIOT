@@ -64,7 +64,7 @@ extern "C" {
 /**
  * @brief The default largest number of parallel timeouts in GoMacH.
  */
-#define GNRC_GOMACH_TIMEOUT_COUNT             (5U)
+#define GNRC_GOMACH_TIMEOUT_COUNT             (8U)
 
 /**
  * @brief The default number of slot-schedule-unit @ref gnrc_gomach_slosch_unit_t in GoMacH.

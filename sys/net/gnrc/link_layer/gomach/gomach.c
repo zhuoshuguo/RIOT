@@ -56,6 +56,8 @@
 
 static kernel_pid_t gomach_pid;
 
+static uint32_t t2u_time;
+
 static void gomach_init(gnrc_netdev_t *gnrc_netdev)
 {
     /* Get the MAC address of the device. */
@@ -582,24 +584,9 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                 break;
             }
             case TX_FEEDBACK_BUSY:
-                /* If the channel busy counter is below threshold, retry CSMA immediately,
-                 * by knowing that the CP will be automatically extended. */
-            	if(gnrc_netdev->tx.tx_busy_count < GNRC_GOMACH_TX_BUSY_THRESHOLD) {
-            		gnrc_netdev->tx.tx_busy_count ++;
-
-            		/* Store the TX sequence number for this packet. Always use the same
-            		 * sequence number for sending the same packet, to avoid duplicated
-            		 * packet reception at the receiver. */
-            		netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
-            		gnrc_netdev->tx.tx_seq = device_state->seq - 1;
-
-            		gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_TRANS_IN_CP;
-            		gnrc_gomach_set_update(gnrc_netdev, true);
-            		return;
-            	}
             case TX_FEEDBACK_NOACK:
             default: {
-                gnrc_netdev->tx.no_ack_counter++;
+                gnrc_netdev->tx.no_ack_counter = 2;
 
                 LOG_WARNING("WARNING: [GOMACH] t2k %d times No-ACK.\n",
                             gnrc_netdev->tx.no_ack_counter);
@@ -913,6 +900,8 @@ static void gomach_t2u_init(gnrc_netdev_t *gnrc_netdev)
 
 	LOG_DEBUG("[GOMACH] t2u initialization.\n");
 
+	puts("T2U-S");
+
     gnrc_netdev_set_rx_started(gnrc_netdev, false);
     gnrc_gomach_set_quit_cycle(gnrc_netdev, false);
     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
@@ -930,6 +919,8 @@ static void gomach_t2u_init(gnrc_netdev_t *gnrc_netdev)
 
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
     gnrc_gomach_set_update(gnrc_netdev, true);
+
+    t2u_time = xtimer_now_usec();
 }
 
 static void gomach_t2u_send_preamble_prepare(gnrc_netdev_t *gnrc_netdev)
@@ -946,8 +937,17 @@ static void gomach_t2u_send_preamble_prepare(gnrc_netdev_t *gnrc_netdev)
             gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
             gnrc_gomach_set_on_pubchan_1(gnrc_netdev, true);
         }
+
+        printf("%u gap-%lu\n", gnrc_netdev->tx.preamble_sent, xtimer_now_usec() - t2u_time);
+
         gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL,
                               GNRC_GOMACH_MAX_PREAM_INTERVAL_US);
+
+        if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL)) {
+            puts("K");
+        }
+
+        t2u_time = xtimer_now_usec();
     }
     else {
         /* Here, for the first preamble, we set the pream_max_interval timeout to
@@ -957,6 +957,7 @@ static void gomach_t2u_send_preamble_prepare(gnrc_netdev_t *gnrc_netdev)
         gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL,
                               (5 * GNRC_GOMACH_MAX_PREAM_INTERVAL_US));
     }
+
 
     gnrc_gomach_set_max_pream_interv(gnrc_netdev, false);
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_SEND_PREAMBLE;
@@ -997,6 +998,7 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     }
 
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL)) {
+        puts("T");
         gnrc_gomach_set_max_pream_interv(gnrc_netdev, true);
     }
 
@@ -1057,6 +1059,7 @@ static void gomach_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     }
     else {
         res = gnrc_gomach_send_preamble(gnrc_netdev, NETOPT_DISABLE);
+        puts("p");
     }
 
     if (res < 0) {
@@ -1098,13 +1101,18 @@ static void gomach_t2u_wait_preamble_tx(gnrc_netdev_t *gnrc_netdev)
         gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
         gnrc_gomach_set_update(gnrc_netdev, true);
+        puts("V");
         return;
     }
 }
 
 static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
 {
+
+   puts("xx");
+
     if (!_handle_in_t2u_send_preamble(gnrc_netdev)) {
+        puts("x0");
         return;
     }
 
@@ -1125,6 +1133,7 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_SEND_DATA;
         gnrc_gomach_set_update(gnrc_netdev, true);
+        puts("x1");
         return;
     }
 
@@ -1148,15 +1157,29 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
         }
 
         gnrc_gomach_set_update(gnrc_netdev, true);
+        puts("x2");
         return;
     }
 
     /* If we didn't catch the RX-start event, go to send the next preamble. */
-    if ((gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE)) ||
-        gnrc_gomach_get_max_pream_interv(gnrc_netdev)) {
+    if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE)){
+        puts("x5");
+        gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
+        gnrc_gomach_set_update(gnrc_netdev, true);
+
+        //gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE);
+        return;
+    }
+
+    if (gnrc_gomach_get_max_pream_interv(gnrc_netdev)) {
+        puts("x6");
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
         gnrc_gomach_set_update(gnrc_netdev, true);
     }
+
+    gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE);
+
+    puts("x8");
 }
 
 static void gomach_t2u_send_data(gnrc_netdev_t *gnrc_netdev)
@@ -1254,6 +1277,8 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
 {
+
+	puts("T2U-E");
     gnrc_gomach_turn_off_radio(gnrc_netdev);
     gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE);
     gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAM_DURATION);
@@ -1292,6 +1317,9 @@ static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
 static void gomach_t2u_update(gnrc_netdev_t *gnrc_netdev)
 {
     /* State machine of GoMacH's t2u (transmit to phase-unknown device) procedure. */
+
+    printf("%u\n",gnrc_netdev->tx.t2u_state);
+
     switch (gnrc_netdev->tx.t2u_state) {
         case GNRC_GOMACH_T2U_INIT: {
         	gomach_t2u_init(gnrc_netdev);
@@ -1851,6 +1879,8 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
             }
             case NETDEV_EVENT_RX_COMPLETE: {
                 gnrc_gomach_set_update(gnrc_netdev, true);
+
+                LOG_WARNING("ERROR: [GOMACH] received event triggered!\n");
 
                 gnrc_pktsnip_t *pkt = gnrc_netdev->recv(gnrc_netdev);
                 if (pkt == NULL) {
