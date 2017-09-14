@@ -57,9 +57,7 @@ USEMODULE += gnrc_txtsnd
 USEMODULE += gnrc_pktdump
 # Use GoMacH as the MAC protocol
 USEMODULE += gnrc_gomach
-# We use only the lower layers of the GNRC network stack, hence, we can
-# reduce the size of the packet buffer a bit
-CFLAGS += -DGNRC_PKTBUF_SIZE=512
+CFLAGS += -DGNRC_PKTBUF_SIZE=5120
 
 FEATURES_OPTIONAL += config
 

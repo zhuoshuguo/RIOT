@@ -834,14 +834,19 @@ int gnrc_gomach_send_data(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enabl
     assert(gnrc_netdev != NULL);
 
     gnrc_pktsnip_t *pkt = gnrc_netdev->tx.packet;
+    gnrc_pktsnip_t *gomach_snip;
 
     assert(pkt != NULL);
 
     /* Insert GoMacH header above NETIF header. */
     gnrc_gomach_frame_data_t *gomach_data_hdr_pointer;
 
-    gomach_data_hdr_pointer = (gnrc_gomach_frame_data_t *)
-                              gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
+    gomach_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
+    if (gomach_snip != NULL) {
+        gomach_data_hdr_pointer = gomach_snip->data;
+    } else {
+        gomach_data_hdr_pointer = NULL;
+    }
 
     if (gomach_data_hdr_pointer == NULL) {
         /* No GoMacH header yet, build one. */
