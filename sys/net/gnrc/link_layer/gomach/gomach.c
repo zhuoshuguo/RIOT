@@ -962,6 +962,64 @@ static void gomach_t2u_send_preamble_prepare(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_set_update(gnrc_netdev, true);
 }
 
+static void gomach_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
+{
+    /* Now, start sending preamble. */
+    int res;
+    /* The first preamble is sent with csma for collision avoidance. */
+    if (gnrc_netdev->tx.preamble_sent == 0) {
+        res = gnrc_gomach_send_preamble(gnrc_netdev, NETOPT_ENABLE);
+        gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAM_DURATION,
+                              GNRC_GOMACH_PREAMBLE_DURATION_US);
+    }
+    else {
+        res = gnrc_gomach_send_preamble(gnrc_netdev, NETOPT_DISABLE);
+    }
+
+    if (res < 0) {
+        LOG_ERROR("ERROR: [GOMACH] t2u send preamble failed: %d\n", res);
+    }
+
+    /* In case that packet-buffer is full, quit t2u and release packet. */
+    if (res == -ENOBUFS) {
+        LOG_ERROR("ERROR: [GOMACH] t2u: no pkt-buffer for sending preamble.\n");
+        gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAM_DURATION);
+
+        gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
+        gnrc_gomach_set_update(gnrc_netdev, true);
+        return;
+    }
+
+    gnrc_netdev_set_rx_started(gnrc_netdev, false);
+    gnrc_netdev->tx.preamble_sent++;
+    gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_WAIT_PREAMBLE_TX;
+    gnrc_gomach_set_update(gnrc_netdev, false);
+}
+
+static void gomach_t2u_wait_preamble_tx(gnrc_netdev_t *gnrc_netdev)
+{
+    if (gnrc_gomach_get_tx_finish(gnrc_netdev)) {
+        /* Set preamble interval timeout. This is a very short timeout (1ms),
+         * just to catch the rx-start event of receiving possible preamble-ACK. */
+        gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE,
+                              GNRC_GOMACH_PREAMBLE_INTERVAL_US);
+
+        gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_WAIT_PREAMBLE_ACK;
+        gnrc_gomach_set_update(gnrc_netdev, false);
+        return;
+    }
+
+    /* This is mainly to handle no-TX-complete error. Once the max preamble interval
+     * timeout expired here (i.e., no-TX-complete error), we will quit waiting here
+     * and go to send the next preamble, thus the MAC will not get stucked here. */
+    if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL)) {
+        gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
+        gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
+        gnrc_gomach_set_update(gnrc_netdev, true);
+        return;
+    }
+}
+
 static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
 {
     /* If packet buffer is full, release one packet to release memory,
@@ -997,22 +1055,23 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
 
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL)) {
         gnrc_gomach_set_max_pream_interv(gnrc_netdev, true);
+        return true;
     }
 
     /* if we are receiving packet, wait until RX is completed. */
-    if ((gnrc_gomach_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) &&
+    if ((!gnrc_gomach_timeout_is_running(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END)) &&
+        gnrc_netdev_get_rx_started(gnrc_netdev) &&
         (!gnrc_gomach_get_max_pream_interv(gnrc_netdev))) {
+        gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE);
+        gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
+
         /* Set a timeout to wait for the complete of reception. */
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
-        if (!gnrc_gomach_get_quit_cycle(gnrc_netdev)) {
-            gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END,
-                               GNRC_GOMACH_WAIT_RX_END_US);
-            return false;
-        }
-    }
 
-    /* if we are here, we are not receiving packet or reception is over. */
-    gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
+        gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END,
+                                GNRC_GOMACH_WAIT_RX_END_US);
+        return false;
+    }
 
     if (gnrc_gomach_get_pkt_received(gnrc_netdev)) {
         gnrc_gomach_set_pkt_received(gnrc_netdev, false);
@@ -1022,6 +1081,7 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
     /* Quit t2u if we have to, e.g., the device found ongoing bcast of other devices. */
     if (gnrc_gomach_get_quit_cycle(gnrc_netdev)) {
         LOG_DEBUG("[GOMACH] quit t2u.\n");
+        gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAM_DURATION);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
@@ -1030,75 +1090,11 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
         gnrc_gomach_set_update(gnrc_netdev, true);
         return false;
     }
+
+    if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END)) {
+        gnrc_gomach_set_max_pream_interv(gnrc_netdev, true);
+    }
     return true;
-}
-
-static void gomach_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
-{
-    if (!_handle_in_t2u_send_preamble(gnrc_netdev)) {
-        return;
-    }
-
-    /* If we have reached the maximum preamble interval, go to send next preamble. */
-    if (gnrc_gomach_get_max_pream_interv(gnrc_netdev)) {
-        gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
-        gnrc_gomach_set_update(gnrc_netdev, true);
-        return;
-    }
-
-    /* Now, start sending preamble. */
-    int res;
-    /* The first preamble is sent with csma for collision avoidance. */
-    if (gnrc_netdev->tx.preamble_sent == 0) {
-        res = gnrc_gomach_send_preamble(gnrc_netdev, NETOPT_ENABLE);
-        gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAM_DURATION,
-                              GNRC_GOMACH_PREAMBLE_DURATION_US);
-    }
-    else {
-        res = gnrc_gomach_send_preamble(gnrc_netdev, NETOPT_DISABLE);
-    }
-
-    if (res < 0) {
-        LOG_ERROR("ERROR: [GOMACH] t2u send preamble failed: %d\n", res);
-    }
-
-    /* In case that packet-buffer is full, quit t2u and release packet. */
-    if (res == -ENOBUFS) {
-        LOG_ERROR("ERROR: [GOMACH] t2u: no pkt-buffer for sending preamble.\n");
-        gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAM_DURATION);
-
-        gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
-        gnrc_gomach_set_update(gnrc_netdev, true);
-        return;
-    }
-
-    gnrc_netdev->tx.preamble_sent++;
-    gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_WAIT_PREAMBLE_TX;
-    gnrc_gomach_set_update(gnrc_netdev, false);
-}
-
-static void gomach_t2u_wait_preamble_tx(gnrc_netdev_t *gnrc_netdev)
-{
-    if (gnrc_gomach_get_tx_finish(gnrc_netdev)) {
-        /* Set preamble interval timeout. This is a very short timeout (1ms),
-         * just to catch the rx-start event of receiving possible preamble-ACK. */
-        gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE,
-                              GNRC_GOMACH_PREAMBLE_INTERVAL_US);
-
-        gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_WAIT_PREAMBLE_ACK;
-        gnrc_gomach_set_update(gnrc_netdev, false);
-        return;
-    }
-
-    /* This is mainly to handle no-TX-complete error. Once the max preamble interval
-     * timeout expired here (i.e., no-TX-complete error), we will quit waiting here
-     * and go to send the next preamble, thus the MAC will not get stucked here. */
-    if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL)) {
-        gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
-        gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
-        gnrc_gomach_set_update(gnrc_netdev, true);
-        return;
-    }
 }
 
 static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
@@ -1122,6 +1118,7 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAM_DURATION);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
+        gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_SEND_DATA;
         gnrc_gomach_set_update(gnrc_netdev, true);
         return;
@@ -1155,6 +1152,9 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
         gnrc_gomach_get_max_pream_interv(gnrc_netdev)) {
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_PREAMBLE_PREPARE;
         gnrc_gomach_set_update(gnrc_netdev, true);
+        gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE);
+        gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
+        gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
     }
 }
 

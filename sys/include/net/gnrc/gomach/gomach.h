@@ -120,7 +120,7 @@ extern "C" {
  * @ref GNRC_GOMACH_WAIT_RX_END_US duration.
  */
 #ifndef GNRC_GOMACH_WAIT_RX_END_US
-#define GNRC_GOMACH_WAIT_RX_END_US        (3U * US_PER_MS)
+#define GNRC_GOMACH_WAIT_RX_END_US        (6U * US_PER_MS)
 #endif
 
 /**
@@ -142,7 +142,7 @@ extern "C" {
  * consecutive preamble packets.
  */
 #ifndef GNRC_GOMACH_MAX_PREAM_INTERVAL_US
-#define GNRC_GOMACH_MAX_PREAM_INTERVAL_US        (5U * US_PER_MS)
+#define GNRC_GOMACH_MAX_PREAM_INTERVAL_US        (6U * US_PER_MS)
 #endif
 
 /**
@@ -157,7 +157,7 @@ extern "C" {
  * interval is, the shorter the WP period can be, thus leading to lower power consumption.
  */
 #ifndef GNRC_GOMACH_PREAMBLE_INTERVAL_US
-#define GNRC_GOMACH_PREAMBLE_INTERVAL_US        (1U * US_PER_MS)
+#define GNRC_GOMACH_PREAMBLE_INTERVAL_US        (2U * US_PER_MS)
 #endif
 
 /**

@@ -84,6 +84,7 @@ void gnrc_gomach_clear_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t
     if (index >= 0) {
         xtimer_remove(&(netdev->gomach.timeouts[index].timer));
         netdev->gomach.timeouts[index].type = GNRC_GOMACH_TIMEOUT_DISABLED;
+        netdev->gomach.timeouts[index].expired = false;
     }
 }
 
