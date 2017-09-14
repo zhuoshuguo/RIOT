@@ -221,7 +221,7 @@ static bool _gomach_send_bcast_busy_handle(gnrc_netdev_t *gnrc_netdev)
     /* Quit sending broadcast packet if we found ongoing transmissions, for collision avoidance. */
     if((gnrc_gomach_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) ||
        (gnrc_netdev_get_rx_started(gnrc_netdev) == true)) {
-        LOG_WARNING("WARNING: [GOMACH] bcast: found ongoing transmission, quit broadcast.\n");
+        LOG_DEBUG("[GOMACH] bcast: found ongoing transmission, quit broadcast.\n");
     	/* Queue the broadcast packet back to the queue. */
     	gnrc_pktsnip_t* payload = gnrc_netdev->tx.packet->next->next;
 
@@ -233,7 +233,7 @@ static bool _gomach_send_bcast_busy_handle(gnrc_netdev_t *gnrc_netdev)
     	gnrc_netdev->tx.packet->next = payload;
 
     	if(!gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, gnrc_netdev->tx.packet)){
-    	   	LOG_WARNING("WARNING: [GOMACH] bcast: TX queue full, release packet.\n");
+    	   	LOG_DEBUG("[GOMACH] bcast: TX queue full, release packet.\n");
     	   	gnrc_pktbuf_release(gnrc_netdev->tx.packet);
     	}
     	gnrc_netdev->tx.packet = NULL;
@@ -802,13 +802,13 @@ static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev)
 
                 /* Do not release the packet here, continue sending the same packet. ***/
                 if (gnrc_netdev->tx.vtdma_para.slots_num > 0) {
-                    LOG_WARNING("WARNING: [GOMACH] no ACK in vTDMA, retry in next slot.\n");
+                    LOG_DEBUG("[GOMACH] no ACK in vTDMA, retry in next slot.\n");
                     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_VTDMA_TRANS;
                 }
                 else {
                 	/* If no slots for sending, retry in next cycle's t2r, without releasing
                 	 * tx.packet pointer. */
-                    LOG_WARNING("WARNING: [GOMACH] no ACK in vTDMA, retry in next cycle.\n");
+                    LOG_DEBUG("[GOMACH] no ACK in vTDMA, retry in next cycle.\n");
 
                     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
                 }
@@ -974,7 +974,7 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
 
         /* To-do: should we release all the buffered packets in the queue to
          * release memory in such a critical situation? */
-        LOG_WARNING("WARNING: [GOMACH] t2u: pkt-buffer full, release one pkt.\n");
+        LOG_DEBUG("[GOMACH] t2u: pkt-buffer full, release one pkt.\n");
 
         if (gnrc_netdev->tx.packet != NULL) {
             gnrc_pktbuf_release(gnrc_netdev->tx.packet);
@@ -988,7 +988,7 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
             gnrc_netdev->tx.packet = pkt;
         }
         else {
-            LOG_WARNING("WARNING: [GOMACH] t2u: null packet, quit t2u.\n");
+            LOG_DEBUG("[GOMACH] t2u: null packet, quit t2u.\n");
             gnrc_netdev->tx.current_neighbor = NULL;
             gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
             return false;
@@ -1021,7 +1021,7 @@ static bool _handle_in_t2u_send_preamble(gnrc_netdev_t *gnrc_netdev)
 
     /* Quit t2u if we have to, e.g., the device found ongoing bcast of other devices. */
     if (gnrc_gomach_get_quit_cycle(gnrc_netdev)) {
-        LOG_WARNING("WARNING: [GOMACH] quit t2u.\n");
+        LOG_DEBUG("[GOMACH] quit t2u.\n");
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAM_DURATION);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
@@ -1132,7 +1132,7 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
 
         /* If we reach the maximum t2u retry limit, release the data packet. */
         if (gnrc_netdev->tx.t2u_retry_counter >= GNRC_GOMACH_T2U_RETYR_THRESHOLD) {
-            LOG_WARNING("WARNING: [GOMACH] t2u failed: no preamble-ACK.\n");
+            LOG_DEBUG("[GOMACH] t2u failed: no preamble-ACK.\n");
             gnrc_netdev->tx.t2u_retry_counter = 0;
             gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE);
@@ -1224,8 +1224,8 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
             gnrc_netdev->tx.t2u_retry_counter++;
             /* If we meet t2u retry limit, release the packet. */
             if (gnrc_netdev->tx.t2u_retry_counter >= GNRC_GOMACH_T2U_RETYR_THRESHOLD) {
-                LOG_WARNING("WARNING: [GOMACH] t2u send data failed on channel %d,"
-                            " drop packet.\n", gnrc_netdev->tx.current_neighbor->pub_chanseq);
+                LOG_DEBUG("[GOMACH] t2u send data failed on channel %d,"
+                          " drop packet.\n", gnrc_netdev->tx.current_neighbor->pub_chanseq);
                 gnrc_pktbuf_release(gnrc_netdev->tx.packet);
                 gnrc_netdev->tx.packet = NULL;
                 gnrc_netdev->tx.current_neighbor = NULL;
@@ -1239,8 +1239,8 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
                 netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
                 gnrc_netdev->tx.tx_seq = device_state->seq - 1;
 
-                LOG_WARNING("WARNING: [GOMACH] t2u send data failed on channel %d.\n",
-                            gnrc_netdev->tx.current_neighbor->pub_chanseq);
+                LOG_DEBUG("[GOMACH] t2u send data failed on channel %d.\n",
+                           gnrc_netdev->tx.current_neighbor->pub_chanseq);
                 /* Set quit_current_cycle to true, thus not to release current_neighbour pointer
                  * in t2u-end */
                 gnrc_gomach_set_quit_cycle(gnrc_netdev, true);
@@ -1266,7 +1266,6 @@ static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
             gnrc_pktbuf_release(gnrc_netdev->tx.packet);
             gnrc_netdev->tx.packet = NULL;
             gnrc_netdev->tx.no_ack_counter = 0;
-            puts("drop pkt");
             LOG_WARNING("WARNING: [GOMACH] t2u: drop packet.\n");
         }
         gnrc_netdev->tx.current_neighbor = NULL;
@@ -1847,7 +1846,7 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
         msg.content.ptr = (void *) gnrc_netdev;
 
         if (msg_send(&msg, gnrc_netdev->pid) <= 0) {
-            LOG_WARNING("WARNING: [GOMACH] gnrc_netdev: possibly lost interrupt.\n");
+            DEBUG("[GOMACH] gnrc_netdev: possibly lost interrupt.\n");
         }
     }
     else {
@@ -1865,15 +1864,15 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                 if (pkt == NULL) {
                     gnrc_gomach_set_buffer_full(gnrc_netdev, true);
 
-                    LOG_WARNING("WARNING: [GOMACH] gnrc_netdev: packet is NULL, memory full?\n");
+                    LOG_DEBUG("[GOMACH] gnrc_netdev: packet is NULL, memory full?\n");
                     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
                     gnrc_netdev_set_rx_started(gnrc_netdev, false);
                     break;
                 }
 
                 if (!gnrc_netdev_get_rx_started(gnrc_netdev)) {
-                    LOG_WARNING("WARNING: [GOMACH] gnrc_netdev: maybe sending kicked in "
-                                "and frame buffer is now corrupted?\n");
+                    LOG_DEBUG("[GOMACH] gnrc_netdev: maybe sending kicked in "
+                              "and frame buffer is now corrupted?\n");
                     gnrc_pktbuf_release(pkt);
                     gnrc_netdev_set_rx_started(gnrc_netdev, false);
                     break;

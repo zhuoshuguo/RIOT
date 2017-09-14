@@ -493,7 +493,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
         /* Parse the received packet, fetch key MAC informations. */
         int res = _parse_packet(pkt, &receive_packet_info);
         if (res != 0) {
-        	LOG_WARNING("WARNING: [GOMACH] CP: Packet could not be parsed: %i\n", res);
+            LOG_DEBUG("[GOMACH] CP: Packet could not be parsed: %i\n", res);
             gnrc_pktbuf_release(pkt);
             continue;
         }
@@ -737,7 +737,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
 
     if ((RTT_TICKS_TO_US(neighbor_phase) > (GNRC_GOMACH_SUPERFRAME_DURATION_US - GNRC_GOMACH_CP_MIN_GAP_US)) ||
         (RTT_TICKS_TO_US(neighbor_phase) < GNRC_GOMACH_CP_MIN_GAP_US)) {
-        LOG_WARNING("WARNING: [GOMACH] t2u: own phase is close to the neighbor's.\n");
+        LOG_DEBUG("[GOMACH] t2u: own phase is close to the neighbor's.\n");
         gnrc_gomach_set_phase_backoff(gnrc_netdev, true);
         /* Set a random phase-backoff value. */
         gnrc_netdev->gomach.backoff_phase_ticks =
@@ -760,7 +760,7 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
         /* Parse the received packet. */
         int res = _parse_packet(pkt, &receive_packet_info);
         if (res != 0) {
-        	LOG_WARNING("WARNING: [GOMACH] t2u: Packet could not be parsed: %i\n", res);
+        	LOG_DEBUG("[GOMACH] t2u: Packet could not be parsed: %i\n", res);
             gnrc_pktbuf_release(pkt);
             continue;
         }
@@ -770,7 +770,7 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
                 /* Found other ongoing preamble transmission, quit its own t2u for
                  * collision avoidance. */
                 gnrc_pktbuf_release(pkt);
-            	LOG_WARNING("WARNING: [GOMACH] t2u: found other preamble, quit t2u.\n");
+            	LOG_DEBUG("[GOMACH] t2u: found other preamble, quit t2u.\n");
                 gnrc_gomach_set_quit_cycle(gnrc_netdev, true);
                 break;
             }
@@ -822,7 +822,7 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
                  * thus to reduce complexity. */
                 gnrc_gomach_set_quit_cycle(gnrc_netdev, true);
                 gnrc_pktbuf_release(pkt);
-                LOG_WARNING("WARNING: [GOMACH] t2u: receive a broadcast packet, quit t2u.\n");
+                LOG_DEBUG("WARNING: [GOMACH] t2u: receive a broadcast packet, quit t2u.\n");
                 break;
             }
             default: {
@@ -1029,7 +1029,7 @@ void gnrc_gomach_packet_process_in_wait_beacon(gnrc_netdev_t *gnrc_netdev)
         /* Parse the received packet. */
         int res = _parse_packet(pkt, &receive_packet_info);
         if (res != 0) {
-        	LOG_WARNING("WARNING: [GOMACH] t2k: Packet could not be parsed: %i\n", res);
+        	LOG_DEBUG("[GOMACH] t2k: Packet could not be parsed: %i\n", res);
             gnrc_pktbuf_release(pkt);
             continue;
         }
@@ -1097,7 +1097,7 @@ void gnrc_gomach_packet_process_in_vtdma(gnrc_netdev_t *gnrc_netdev)
         /* Parse the received packet. */
         int res = _parse_packet(pkt, &receive_packet_info);
         if (res != 0) {
-        	LOG_WARNING("WARNING: [GOMACH] vtdma: Packet could not be parsed: %i\n", res);
+        	LOG_DEBUG("[GOMACH] vtdma: Packet could not be parsed: %i\n", res);
             gnrc_pktbuf_release(pkt);
             continue;
         }
