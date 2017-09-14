@@ -532,7 +532,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
                     /* Check that whether this is a duplicate packet. */
                     if ((gnrc_gomach_check_duplicate(gnrc_netdev, &receive_packet_info))) {
                         gnrc_pktbuf_release(pkt);
-                        LOG_WARNING("WARNING: [GOMACH]: received a duplicate packet.\n");
+                        LOG_DEBUG("[GOMACH]: received a duplicate packet.\n");
                         return;
                     }
 
@@ -800,7 +800,7 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
                     /* Check that whether this is a duplicate packet. */
                     if ((gnrc_gomach_check_duplicate(gnrc_netdev, &receive_packet_info))) {
                         gnrc_pktbuf_release(pkt);
-                        LOG_WARNING("WARNING: [GOMACH] t2u: receive a duplicate packet.\n");
+                        LOG_DEBUG("[GOMACH] t2u: received a duplicate packet.\n");
                         return;
                     }
 
@@ -1052,7 +1052,7 @@ void gnrc_gomach_packet_process_in_wait_beacon(gnrc_netdev_t *gnrc_netdev)
 
                     if ((gnrc_gomach_check_duplicate(gnrc_netdev, &receive_packet_info))) {
                         gnrc_pktbuf_release(pkt);
-                        LOG_WARNING("WARNING: [GOMACH]: received a duplicate packet.\n");
+                        LOG_DEBUG("[GOMACH]: received a duplicate packet.\n");
                         return;
                     }
 
@@ -1099,7 +1099,7 @@ void gnrc_gomach_packet_process_in_vtdma(gnrc_netdev_t *gnrc_netdev)
 
                 if ((gnrc_gomach_check_duplicate(gnrc_netdev, &receive_packet_info))) {
                     gnrc_pktbuf_release(pkt);
-                    LOG_WARNING("WARNING: [GOMACH] vtdma: received a duplicate packet.\n");
+                    LOG_DEBUG("[GOMACH] vtdma: received a duplicate packet.\n");
                     return;
                 }
 

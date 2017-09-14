@@ -601,8 +601,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
             default: {
                 gnrc_netdev->tx.no_ack_counter++;
 
-                LOG_WARNING("WARNING: [GOMACH] t2k %d times No-ACK.\n",
-                            gnrc_netdev->tx.no_ack_counter);
+                LOG_DEBUG("[GOMACH] t2k %d times No-ACK.\n", gnrc_netdev->tx.no_ack_counter);
 
         		/* This packet will be retried. Store the TX sequence number for this packet.
         		 * Always use the same sequence number for sending the same packet. */
@@ -613,8 +612,8 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                  * retry to send the packet in t2u, i.e., try to phase-lock with the receiver
                  * again. */
                 if (gnrc_netdev->tx.no_ack_counter >= GNRC_GOMACH_REPHASELOCK_THRESHOLD) {
-                	LOG_WARNING("WARNING: [GOMACH] t2k failed, go to t2u.\n");
-                	/* Here, we don't queue the packet again, but keep it in tx.packet. */
+                    LOG_DEBUG("[GOMACH] t2k failed, go to t2u.\n");
+                    /* Here, we don't queue the packet again, but keep it in tx.packet. */
                     gnrc_netdev->tx.current_neighbor->mac_type = GNRC_GOMACH_TYPE_UNKNOWN;
                     gnrc_netdev->tx.t2u_retry_counter = 0;
                 }
@@ -699,7 +698,7 @@ static void gomach_t2k_wait_beacon(gnrc_netdev_t *gnrc_netdev)
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_BEACON) ||
         !gnrc_gomach_timeout_is_running(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_BEACON)) {
         gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
-        LOG_WARNING("WARNING: [GOMACH] t2k: no beacon.\n");
+        LOG_DEBUG("[GOMACH] t2k: no beacon.\n");
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
         gnrc_gomach_set_update(gnrc_netdev, true);
     }
