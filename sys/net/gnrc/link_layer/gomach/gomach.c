@@ -2012,7 +2012,7 @@ static void *_gnrc_gomach_thread(void *args)
 
                 if (!gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, pkt)) {
                     /* TX packet queue full, release the packet. */
-                    LOG_WARNING("WARNING: [GOMACH] TX queue full, drop packet.\n");
+                    DEBUG("[GOMACH] TX queue full, drop packet.\n");
                     gnrc_pktbuf_release(pkt);
                 }
                 gnrc_gomach_set_update(gnrc_netdev, true);
