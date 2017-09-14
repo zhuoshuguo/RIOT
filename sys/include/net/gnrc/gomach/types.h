@@ -64,7 +64,7 @@ extern "C" {
 /**
  * @brief The default largest number of parallel timeouts in GoMacH.
  */
-#define GNRC_GOMACH_TIMEOUT_COUNT             (5U)
+#define GNRC_GOMACH_TIMEOUT_COUNT             (6U)
 
 /**
  * @brief The default number of slot-schedule-unit @ref gnrc_gomach_slosch_unit_t in GoMacH.
@@ -183,6 +183,7 @@ typedef enum {
     GNRC_GOMACH_TIMEOUT_CP_MAX,                 /**< Timeout of maximum CP duration. */
     GNRC_GOMACH_TIMEOUT_WAIT_RX_END,            /**< Timeout of waiting reception complete. */
     GNRC_GOMACH_TIMEOUT_VTDMA,                  /**< Timeout of vTDMA period end. */
+    GNRC_GOMACH_TIMEOUT_NO_TX_ISR,              /**< Timeout of maximum transmission duration. */
 } gnrc_gomach_timeout_type_t;
 
 /**

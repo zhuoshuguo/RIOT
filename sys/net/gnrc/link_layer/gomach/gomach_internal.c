@@ -372,6 +372,10 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
         LOG_ERROR("ERROR: [GOMACH]: send beacon failed, release it.\n");
         gnrc_pktbuf_release(pkt);
     }
+    else {
+        gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR,
+                                GNRC_GOMACH_NO_TX_ISR_US);
+    }
     return res;
 }
 

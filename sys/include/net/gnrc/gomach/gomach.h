@@ -124,6 +124,17 @@ extern "C" {
 #endif
 
 /**
+ * @brief Timeout duration for confirming TX-No-ISR event in GoMacH.
+ *
+ * This timeout is used to confirm/catch a case that a transmission doesn't have its
+ * TX-finish interrupt event, which is considered as a hardware abnormal event. Upon this
+ * timeout expiration, GoMach will accordingly take actions to maintain its state-machine.
+ */
+#ifndef GNRC_GOMACH_NO_TX_ISR_US
+#define GNRC_GOMACH_NO_TX_ISR_US          (15U * US_PER_MS)
+#endif
+
+/**
  * @brief Maximum time interval between two consecutive preamble packets in GoMacH.
  *
  * In GoMacH, a sender first uses preamble stream to track the receiver's wake-up phase (WP),

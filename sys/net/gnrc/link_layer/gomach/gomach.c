@@ -1500,8 +1500,18 @@ static void gomach_listen_send_beacon(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
 {
+    if ((gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR))) {
+        /* No TX-ISR, go to sleep. */
+    	LOG_DEBUG("[GOMACH]: no TX-finish ISR.");
+        gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
+        gnrc_gomach_set_update(gnrc_netdev, true);
+        gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
+        return;
+    }
+
     if (gnrc_gomach_get_tx_finish(gnrc_netdev) ||
         gnrc_gomach_get_beacon_fail(gnrc_netdev)) {
+        gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
 
         if ((gnrc_netdev->rx.vtdma_manag.total_slots_num > 0) &&
             (!gnrc_gomach_get_beacon_fail(gnrc_netdev))) {
