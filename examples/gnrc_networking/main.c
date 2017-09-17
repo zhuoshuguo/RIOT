@@ -67,7 +67,7 @@ static void generate_and_send_pkt(void){
     uint32_t num = 1;
     uint32_t delay = 0;
 
-    char *add = "fe80::7b67:877:19f:331e";
+    char *add = "fe80::7b67:2772:f457:9fe6"; //fe80::7b67:877:19f:331e
     char *port = "8808";
 
 
@@ -135,7 +135,7 @@ void *sender_thread(void *arg)
     _gnrc_rpl_dodag_root(instanceid, ipadd);
     */
 
-	xtimer_sleep(20);
+	xtimer_sleep(40);
 
 	uint32_t random_period;
 
