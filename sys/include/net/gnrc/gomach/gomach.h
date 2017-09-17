@@ -244,7 +244,7 @@ extern "C" {
  * in one GoMacH cycle.
  */
 #ifndef GNRC_GOMACH_MAX_ALLOC_SLOTS_NUM
-#define GNRC_GOMACH_MAX_ALLOC_SLOTS_NUM           (25U)
+#define GNRC_GOMACH_MAX_ALLOC_SLOTS_NUM           (10U)
 #endif
 
 /**

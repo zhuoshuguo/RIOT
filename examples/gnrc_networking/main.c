@@ -144,7 +144,7 @@ void *sender_thread(void *arg)
 	xtimer_sleep(random_period);
 
    puts("start push data");
-   data_rate = 1000;
+   data_rate = 2000;
 
    while (1) {
    	xtimer_usleep((uint32_t) data_rate * 1000);
