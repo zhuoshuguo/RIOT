@@ -48,15 +48,17 @@ static int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
     assert(info != NULL);
     assert(pkt != NULL);
 
-    gnrc_netif_hdr_t *netif_hdr;
-    gnrc_pktsnip_t *gomach_snip;
-    gnrc_gomach_hdr_t *gomach_hdr;
+    gnrc_netif_hdr_t *netif_hdr = NULL;
+    gnrc_pktsnip_t *gomach_snip = NULL;
+    gnrc_gomach_hdr_t *gomach_hdr = NULL;
+    gnrc_pktsnip_t *netif_snip = NULL;
 
-    netif_hdr = (gnrc_netif_hdr_t *) gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
-    if (netif_hdr == NULL) {
+    netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
+    if (netif_snip == NULL) {
         return -1;
+    } else {
+      	netif_hdr = netif_snip->data;
     }
-    netif_hdr = ((gnrc_pktsnip_t *)netif_hdr)->data;
 
     if (netif_hdr->dst_l2addr_len > sizeof(info->dst_addr)) {
         return -3;
@@ -186,9 +188,9 @@ int gnrc_gomach_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_gomach_packet
     assert(gnrc_netdev != NULL);
     assert(info != NULL);
 
-    gnrc_pktsnip_t *gomach_pkt;
-    gnrc_pktsnip_t *pkt;
-    gnrc_netif_hdr_t *nethdr_preamble_ack;
+    gnrc_pktsnip_t *gomach_pkt = NULL;
+    gnrc_pktsnip_t *pkt = NULL;
+    gnrc_netif_hdr_t *nethdr_preamble_ack = NULL;
 
     /* Start assemble the preamble-ACK packet according to preamble packet info. */
     gnrc_gomach_frame_preamble_ack_t gomach_preamble_ack_hdr;
@@ -215,14 +217,20 @@ int gnrc_gomach_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_gomach_packet
     }
     gomach_pkt = pkt;
 
-    /* We wouldn't get here if add the NETIF header had failed, so no sanity checks needed */
-    nethdr_preamble_ack = (gnrc_netif_hdr_t *)
-                          (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
+    gnrc_pktsnip_t *netif_snip = NULL;
+    netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
+    if (netif_snip == NULL) {
+        LOG_ERROR("[GOMACH]: NO netif_hdr found in gnrc_gomach_send_preamble_ack().\n");
+        gnrc_pktbuf_release(gomach_pkt);
+        return -ENOBUFS;
+    } else {
+        nethdr_preamble_ack = netif_snip->data;
+    }
 
-    /* Construct NETIF header and insert address for preamble-ACK packet */
+    /* Construct NETIF header and insert address for preamble-ACK packet. */
     gnrc_netif_hdr_init(nethdr_preamble_ack, 0, 0);
 
-    /* Send preamble-ACK as broadcast*/
+    /* Send preamble-ACK as broadcast. */
     nethdr_preamble_ack->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
 
     int res = gnrc_gomach_send(gnrc_netdev, pkt, NETOPT_DISABLE);
@@ -258,9 +266,9 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
 
     total_tdma_slot_num = 0;
 
-    gnrc_pktsnip_t *pkt;
-    gnrc_pktsnip_t *gomach_pkt;
-    gnrc_netif_hdr_t *nethdr_beacon;
+    gnrc_pktsnip_t *pkt = NULL;
+    gnrc_pktsnip_t *gomach_pkt = NULL;
+    gnrc_netif_hdr_t *nethdr_beacon = NULL;
 
     /* Start assemble the beacon packet */
     gnrc_gomach_frame_beacon_t gomach_beaocn_hdr;
@@ -348,9 +356,16 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
     }
     gomach_pkt = pkt;
 
-    /* We wouldn't get here if add the NETIF header had failed,
-     * so no sanity checks needed. */
-    nethdr_beacon = (gnrc_netif_hdr_t *) (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
+    gnrc_pktsnip_t *beacon_netif_snip = NULL;
+    beacon_netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
+    if (beacon_netif_snip == NULL) {
+        LOG_ERROR("[GOMACH]: NO netif_hdr found in send_beacon().\n");
+        gnrc_pktbuf_release(pkt);
+       	return -ENOBUFS;
+    }
+    else {
+      	nethdr_beacon = beacon_netif_snip->data;
+    }
 
     /* Construct NETIF header. */
     gnrc_netif_hdr_init(nethdr_beacon, 0, 0);
@@ -405,15 +420,21 @@ void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pk
     assert(pkt != NULL);
     assert(pa_info != NULL);
 
-    gnrc_gomach_frame_data_t *gomach_data_hdr;
-    gomach_data_hdr = (gnrc_gomach_frame_data_t *)
-                         gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
+    gnrc_gomach_frame_data_t *gomach_data_hdr = NULL;
+    gnrc_pktsnip_t *gomach_snip = NULL;
+
+    gomach_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
+    if (gomach_snip == NULL) {
+        LOG_ERROR("[GOMACH]: No gomach header found in gnrc_gomach_indicator_update().\n");
+       	return;
+    } else {
+        gomach_data_hdr = gomach_snip->data;
+    }
 
     if (gomach_data_hdr == NULL) {
-        LOG_ERROR("ERROR: [GOMACH]: GoMacH's data header is null.\n");
+        LOG_ERROR("[GOMACH]: GoMacH's data header is null.\n");
         return;
     }
-    gomach_data_hdr = ((gnrc_pktsnip_t *) gomach_data_hdr)->data;
 
     int i;
     /* Check whether the device has been registered or not. */
@@ -631,7 +652,15 @@ int gnrc_gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_e
     }
     gomach_pkt = pkt;
 
-    nethdr_preamble = (gnrc_netif_hdr_t *) (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
+    gnrc_pktsnip_t *netif_snip = NULL;
+    netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
+    if (netif_snip == NULL) {
+        LOG_ERROR("[GOMACH]: No netif_hdr found in gnrc_gomach_send_preamble().\n");
+        gnrc_pktbuf_release(gomach_pkt);
+       	return -ENOBUFS;
+    } else {
+       	nethdr_preamble = netif_snip->data;
+    }
 
     /* Construct NETIF header and initiate address fields. */
     gnrc_netif_hdr_init(nethdr_preamble, 0, 0);
@@ -671,8 +700,15 @@ int gnrc_gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t u
         return  -ENOBUFS;
     }
 
-    nethdr_announce = (gnrc_netif_hdr_t *)
-                      (gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF))->data;
+    gnrc_pktsnip_t *netif_snip = NULL;
+    netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
+    if (netif_snip == NULL) {
+        LOG_ERROR("[GOMACH]: No netif_hdr found in gnrc_gomach_bcast_subchann_seq().\n");
+        gnrc_pktbuf_release(pkt);
+       	return -ENOBUFS;
+    } else {
+      	nethdr_announce = netif_snip->data;
+    }
 
     /* Construct NETIF header and initiate address fields. */
     gnrc_netif_hdr_init(nethdr_announce, 0, 0);
@@ -688,14 +724,22 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
     assert(gnrc_netdev != NULL);
     assert(pkt != NULL);
 
-    gnrc_gomach_frame_preamble_ack_t *gomach_preamble_ack_hdr;
+    gnrc_gomach_frame_preamble_ack_t *gomach_preamble_ack_hdr = NULL;
+    gnrc_pktsnip_t *gomach_snip = NULL;
 
-    gomach_preamble_ack_hdr = (gnrc_gomach_frame_preamble_ack_t *) gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
+    gomach_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
+    if (gomach_snip == NULL) {
+        LOG_ERROR("[GOMACH]: No gomach_snip found in gnrc_gomach_process_preamble_ack().\n");
+       	return;
+    }
+    else {
+       	gomach_preamble_ack_hdr = gomach_snip->data;
+    }
+
     if (gomach_preamble_ack_hdr == NULL) {
-        LOG_ERROR("ERROR: [GOMACH]: preamble_ack_hdr is null.\n");
+        LOG_ERROR("[GOMACH]: preamble_ack_hdr is null.\n");
         return;
     }
-    gomach_preamble_ack_hdr = ((gnrc_pktsnip_t *)gomach_preamble_ack_hdr)->data;
 
     /* Mark the neighbor as phase-known */
     gnrc_netdev->tx.current_neighbor->mac_type = GNRC_GOMACH_TYPE_KNOWN;
@@ -838,7 +882,7 @@ int gnrc_gomach_send_data(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enabl
     assert(gnrc_netdev != NULL);
 
     gnrc_pktsnip_t *pkt = gnrc_netdev->tx.packet;
-    gnrc_pktsnip_t *gomach_snip;
+    gnrc_pktsnip_t *gomach_snip = NULL;
 
     assert(pkt != NULL);
 
@@ -848,7 +892,8 @@ int gnrc_gomach_send_data(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enabl
     gomach_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
     if (gomach_snip != NULL) {
         gomach_data_hdr_pointer = gomach_snip->data;
-    } else {
+    }
+    else {
         gomach_data_hdr_pointer = NULL;
     }
 
@@ -949,8 +994,8 @@ void gnrc_gomach_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
     assert(gnrc_netdev != NULL);
     assert(pkt != NULL);
 
-    gnrc_gomach_frame_beacon_t *gomach_beacon_hdr;
-    gnrc_pktsnip_t *gomach_snip;
+    gnrc_gomach_frame_beacon_t *gomach_beacon_hdr = NULL;
+    gnrc_pktsnip_t *gomach_snip = NULL;
 
     gnrc_gomach_l2_id_t *id_list;
     uint8_t *slots_list;
@@ -959,16 +1004,19 @@ void gnrc_gomach_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
     uint8_t id_position;
     uint8_t slots_position;
 
-    /* Fetch the beacon packet's MAC header. */
-    gomach_beacon_hdr = (gnrc_gomach_frame_beacon_t *)
-                           gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
+    gnrc_pktsnip_t *beacon_snip = NULL;
+    beacon_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
+    if (beacon_snip == NULL) {
+        LOG_ERROR("[GOMACH]: No beacon-snip found in gnrc_gomach_beacon_process().\n");
+       	return;
+    } else {
+       	gomach_beacon_hdr = beacon_snip->data;
+    }
 
     if (gomach_beacon_hdr == NULL) {
         LOG_ERROR("ERROR: [GOMACH]: GoMacH's beacon header is null.\n");
         return;
     }
-
-    gomach_beacon_hdr = ((gnrc_pktsnip_t *) gomach_beacon_hdr)->data;
 
     schedulelist_size = gomach_beacon_hdr->schedulelist_size;
     gnrc_netdev->tx.vtdma_para.sub_channel_seq = gomach_beacon_hdr->sub_channel_seq;
