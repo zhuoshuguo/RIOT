@@ -56,6 +56,29 @@
 
 static kernel_pid_t gomach_pid;
 
+static uint32_t t2u_fail_counts;
+
+static void gomach_radio_init(gnrc_netdev_t *gnrc_netdev)
+{
+    /* Set MAC address length. */
+    uint16_t src_len = IEEE802154_LONG_ADDRESS_LEN;
+    gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_SRC_LEN, &src_len, sizeof(src_len));
+
+   /* Set the MAC address of the device. */
+    gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
+                                  NETOPT_ADDRESS_LONG,
+                                  gnrc_netdev->l2_addr,
+                                  sizeof(gnrc_netdev->l2_addr));
+
+   /* Enable RX-start and TX-started and TX-END interrupts. */
+   netopt_enable_t enable = NETOPT_ENABLE;
+   gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_RX_START_IRQ, &enable, sizeof(enable));
+   gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_RX_END_IRQ, &enable, sizeof(enable));
+   gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_TX_START_IRQ, &enable, sizeof(enable));
+   gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_TX_END_IRQ, &enable, sizeof(enable));
+
+}
+
 static void gomach_init(gnrc_netdev_t *gnrc_netdev)
 {
     /* Get the MAC address of the device. */
@@ -124,6 +147,8 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     seed = seed << 8;
     seed |= gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len-1];
     random_init(seed);
+
+	t2u_fail_counts = 0;
 }
 
 static void _gomach_rtt_cb(void *arg)
@@ -1135,6 +1160,8 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE);
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
+
+            t2u_fail_counts ++;
         }
         else {
             /* If we haven't reach the maximum t2u limit, try again. Set quit_current_cycle flag
@@ -1361,6 +1388,13 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
         }
     }
 
+    if (t2u_fail_counts >= 5) {
+    	t2u_fail_counts = 0;
+    	puts("Re-initialize radio.");
+        /* Initialize low-level driver. */
+    	gnrc_netdev->dev->driver->init(gnrc_netdev->dev);
+    	gomach_radio_init(gnrc_netdev);
+    }
     gnrc_gomach_set_enter_new_cycle(gnrc_netdev, false);
 
     /* Set listen period timeout. */
