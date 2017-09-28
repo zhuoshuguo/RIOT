@@ -56,8 +56,6 @@
 
 static kernel_pid_t gomach_pid;
 
-static uint32_t t2u_fail_counts;
-
 static void gomach_radio_init(gnrc_netdev_t *gnrc_netdev)
 {
     /* Set MAC address length. */
@@ -148,7 +146,7 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     seed |= gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len-1];
     random_init(seed);
 
-	t2u_fail_counts = 0;
+    gnrc_netdev->gomach.t2u_fail_counts = 0;
 }
 
 static void _gomach_rtt_cb(void *arg)
@@ -591,6 +589,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                 }
 
                 gnrc_netdev->tx.no_ack_counter = 0;
+                gnrc_netdev->gomach.t2u_fail_counts = 0;
 
                 /* If has pending packets, join the vTDMA period, first wait for receiver's beacon. */
                 if (gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue) > 0) {
@@ -1145,6 +1144,7 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_SEND_DATA;
+        gnrc_netdev->gomach.t2u_fail_counts = 0;
         gnrc_gomach_set_update(gnrc_netdev, true);
         return;
     }
@@ -1161,7 +1161,7 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
 
-            t2u_fail_counts ++;
+            gnrc_netdev->gomach.t2u_fail_counts ++;
         }
         else {
             /* If we haven't reach the maximum t2u limit, try again. Set quit_current_cycle flag
@@ -1388,8 +1388,8 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
         }
     }
 
-    if (t2u_fail_counts >= 5) {
-    	t2u_fail_counts = 0;
+    if (gnrc_netdev->gomach.t2u_fail_counts >= GNRC_GOMACH_MAX_T2U_RETYR_THRESHOLD) {
+    	gnrc_netdev->gomach.t2u_fail_counts = 0;
     	puts("Re-initialize radio.");
         /* Initialize low-level driver. */
     	gnrc_netdev->dev->driver->init(gnrc_netdev->dev);

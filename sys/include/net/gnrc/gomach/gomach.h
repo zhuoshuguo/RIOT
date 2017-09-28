@@ -273,6 +273,18 @@ extern "C" {
 #endif
 
 /**
+ * @brief Maximum t2u attempts before re-initiate radio in GoMacH.
+ *
+ * A radio may be in wrong condition which needs to be re-calibrated, after a long period of
+ * run time. This is indicated by having a series of continuous t2u trial failure in GoMacH.
+ * In cast we have @ref GNRC_GOMACH_MAX_T2U_RETYR_THRESHOLD number of t2u failure, then we
+ * re-initiate the radio.
+ */
+#ifndef GNRC_GOMACH_MAX_T2U_RETYR_THRESHOLD
+#define GNRC_GOMACH_MAX_T2U_RETYR_THRESHOLD          (10U)
+#endif
+
+/**
  * @brief   Initialize an instance of the GoMacH layer
  *
  * The initialization starts a new thread that connects to the given netdev
