@@ -275,10 +275,11 @@ extern "C" {
 /**
  * @brief Maximum t2u attempts before re-initiate radio in GoMacH.
  *
- * A radio may be in wrong condition which needs to be re-calibrated, after a long period of
- * run time. This is indicated by having a series of continuous t2u trial failure in GoMacH.
- * In cast we have @ref GNRC_GOMACH_MAX_T2U_RETYR_THRESHOLD number of t2u failure, then we
- * re-initiate the radio.
+ * After a long period of run time, a radio may be in wrong condition which needs to be
+ * re-calibrated. This is indicated by having a series of continuous t2u failure (no preamble
+ * ACK) in GoMacH. In cast we have @ref GNRC_GOMACH_MAX_T2U_RETYR_THRESHOLD number of t2u
+ * failure, then we re-initiate the radio, trying to re-calibrate the radio for bringing it
+ * back to normal condition.
  */
 #ifndef GNRC_GOMACH_MAX_T2U_RETYR_THRESHOLD
 #define GNRC_GOMACH_MAX_T2U_RETYR_THRESHOLD          (10U)

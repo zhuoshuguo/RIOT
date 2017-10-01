@@ -56,8 +56,11 @@
 
 static kernel_pid_t gomach_pid;
 
-static void gomach_radio_init(gnrc_netdev_t *gnrc_netdev)
+static void gomach_reinit_radio(gnrc_netdev_t *gnrc_netdev)
 {
+    /* Initialize low-level driver. */
+    gnrc_netdev->dev->driver->init(gnrc_netdev->dev);
+
     /* Set MAC address length. */
     uint16_t src_len = IEEE802154_LONG_ADDRESS_LEN;
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_SRC_LEN, &src_len, sizeof(src_len));
@@ -1390,10 +1393,8 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
 
     if (gnrc_netdev->gomach.t2u_fail_counts >= GNRC_GOMACH_MAX_T2U_RETYR_THRESHOLD) {
     	gnrc_netdev->gomach.t2u_fail_counts = 0;
-    	puts("Re-initialize radio.");
-        /* Initialize low-level driver. */
-    	gnrc_netdev->dev->driver->init(gnrc_netdev->dev);
-    	gomach_radio_init(gnrc_netdev);
+    	LOG_DEBUG("[GOMACH]: Re-initialize radio.");
+    	gomach_reinit_radio(gnrc_netdev);
     }
     gnrc_gomach_set_enter_new_cycle(gnrc_netdev, false);
 
