@@ -277,7 +277,6 @@ typedef struct gomach {
     uint32_t last_wakeup;                                       /**< Node's last wake-up timing. */
     uint32_t backoff_phase_ticks;                               /**< Node's phase backoff time. */
     uint16_t gomach_info;                                       /**< GoMacH's internal information. */
-    uint32_t t2u_fail_counts;                                   /**< Preamble trial failure count. */
 } gnrc_gomach_t;
 
 #ifdef __cplusplus

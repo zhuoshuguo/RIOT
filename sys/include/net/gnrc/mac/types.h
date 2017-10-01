@@ -203,6 +203,7 @@ typedef struct {
     uint8_t t2u_retry_counter;                    /**< Counter for recording t2u attempt failures. */
     uint8_t last_tx_neighbor_id;                  /**< Record last TX neighbor's sequence in the neighbor list. */
     uint8_t tx_busy_count;                        /**< Counter recording csma busy feedback times. */
+    uint8_t t2u_fail_count;                      /**< Preamble trial failure count. */
 #endif
 } gnrc_mac_tx_t;
 
