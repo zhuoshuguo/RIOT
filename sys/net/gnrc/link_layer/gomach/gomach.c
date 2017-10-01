@@ -62,14 +62,22 @@ static void gomach_reinit_radio(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->dev->driver->init(gnrc_netdev->dev);
 
     /* Set MAC address length. */
-    uint16_t src_len = IEEE802154_LONG_ADDRESS_LEN;
+    uint16_t src_len = gnrc_netdev->l2_addr_len;
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_SRC_LEN, &src_len, sizeof(src_len));
 
-   /* Set the MAC address of the device. */
-    gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
-                                  NETOPT_ADDRESS_LONG,
-                                  gnrc_netdev->l2_addr,
-                                  sizeof(gnrc_netdev->l2_addr));
+    /* Set the MAC address of the device. */
+    if (gnrc_netdev->l2_addr_len == IEEE802154_LONG_ADDRESS_LEN) {
+        gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
+                                      NETOPT_ADDRESS_LONG,
+                                      gnrc_netdev->l2_addr,
+                                      sizeof(gnrc_netdev->l2_addr));
+    }
+    else {
+        gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
+                                      NETOPT_ADDR_LEN,
+                                      gnrc_netdev->l2_addr,
+                                      sizeof(gnrc_netdev->l2_addr));
+    }
 
    /* Enable RX-start and TX-started and TX-END interrupts. */
    netopt_enable_t enable = NETOPT_ENABLE;
