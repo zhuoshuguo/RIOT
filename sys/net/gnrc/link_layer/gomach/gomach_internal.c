@@ -55,17 +55,17 @@ static int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
 
     netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
     if (netif_snip == NULL) {
-        return -1;
+        return -ENODATA;
     } else {
       	netif_hdr = netif_snip->data;
     }
 
     if (netif_hdr->dst_l2addr_len > sizeof(info->dst_addr)) {
-        return -3;
+        return -ENODATA;
     }
 
     if (netif_hdr->src_l2addr_len > sizeof(info->src_addr)) {
-        return -4;
+        return -ENODATA;
     }
 
     /* Dissect GoMacH header, Every frame has header as first member */
@@ -104,7 +104,7 @@ static int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
         }
 
         default:{
-            return -2;
+            return -ENODATA;
         }
     }
 
@@ -410,7 +410,7 @@ int gnrc_gomach_dispatch_defer(gnrc_pktsnip_t *buffer[], gnrc_pktsnip_t *pkt)
     gnrc_pktbuf_release(pkt);
     LOG_ERROR("ERROR: [GOMACH]: dispatch buffer full, drop pkt.\n");
 
-    return -1;
+    return -ENOBUFS;
 }
 
 void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt,
@@ -950,8 +950,7 @@ bool gnrc_gomach_find_next_tx_neighbor(gnrc_netdev_t *gnrc_netdev)
 
         /* Don't always start checking with ID 0, take turns to check every neighbor's queue,
          * thus to be more fair. */
-        uint32_t j;
-        j = gnrc_netdev->tx.last_tx_neighbor_id + 1;
+        uint32_t j = gnrc_netdev->tx.last_tx_neighbor_id + 1;
 
         if (j >= GNRC_MAC_NEIGHBOR_COUNT) {
             j = 1;

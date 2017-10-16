@@ -727,7 +727,7 @@ static inline void gnrc_gomach_set_ack_req(gnrc_netdev_t *gnrc_netdev, netopt_en
  * @param[in] gnrc_netdev  gnrc_netdev structure.
  *
  * @return                 state of netdev upon success.
- * @return                 -1, upon failure.
+ * @return                 -ENOSYS, upon failure.
  */
 static inline netopt_state_t gnrc_gomach_get_netdev_state(gnrc_netdev_t *gnrc_netdev)
 {
@@ -741,7 +741,7 @@ static inline netopt_state_t gnrc_gomach_get_netdev_state(gnrc_netdev_t *gnrc_ne
                                           sizeof(state))) {
         return state;
     }
-    return -1;
+    return -ENOSYS;
 }
 
 /**
