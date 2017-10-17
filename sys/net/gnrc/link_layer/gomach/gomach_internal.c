@@ -152,14 +152,11 @@ uint32_t gnrc_gomach_phase_now(gnrc_netdev_t *gnrc_netdev)
 {
     assert(gnrc_netdev != NULL);
 
-    uint32_t phase_now;
-
-    phase_now = rtt_get_counter();
+    uint32_t phase_now = rtt_get_counter();
 
     /* in case that rtt overflows */
     if (phase_now < gnrc_netdev->gomach.last_wakeup) {
-        uint32_t gap_to_full;
-        gap_to_full = GNRC_GOMACH_PHASE_MAX - gnrc_netdev->gomach.last_wakeup;
+        uint32_t gap_to_full = GNRC_GOMACH_PHASE_MAX - gnrc_netdev->gomach.last_wakeup;
         phase_now += gap_to_full;
     }
     else {
@@ -217,8 +214,7 @@ int gnrc_gomach_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_gomach_packet
     }
     gomach_pkt = pkt;
 
-    gnrc_pktsnip_t *netif_snip = NULL;
-    netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
+    gnrc_pktsnip_t *netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
     if (netif_snip == NULL) {
         LOG_ERROR("[GOMACH]: NO netif_hdr found in gnrc_gomach_send_preamble_ack().\n");
         gnrc_pktbuf_release(gomach_pkt);
@@ -356,8 +352,7 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
     }
     gomach_pkt = pkt;
 
-    gnrc_pktsnip_t *beacon_netif_snip = NULL;
-    beacon_netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
+    gnrc_pktsnip_t *beacon_netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
     if (beacon_netif_snip == NULL) {
         LOG_ERROR("[GOMACH]: NO netif_hdr found in send_beacon().\n");
         gnrc_pktbuf_release(pkt);
@@ -421,9 +416,8 @@ void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pk
     assert(pa_info != NULL);
 
     gnrc_gomach_frame_data_t *gomach_data_hdr = NULL;
-    gnrc_pktsnip_t *gomach_snip = NULL;
 
-    gomach_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
+    gnrc_pktsnip_t *gomach_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
     if (gomach_snip == NULL) {
         LOG_ERROR("[GOMACH]: No gomach header found in gnrc_gomach_indicator_update().\n");
        	return;
@@ -652,8 +646,7 @@ int gnrc_gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_e
     }
     gomach_pkt = pkt;
 
-    gnrc_pktsnip_t *netif_snip = NULL;
-    netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
+    gnrc_pktsnip_t *netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
     if (netif_snip == NULL) {
         LOG_ERROR("[GOMACH]: No netif_hdr found in gnrc_gomach_send_preamble().\n");
         gnrc_pktbuf_release(gomach_pkt);
@@ -700,8 +693,7 @@ int gnrc_gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t u
         return  -ENOBUFS;
     }
 
-    gnrc_pktsnip_t *netif_snip = NULL;
-    netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
+    gnrc_pktsnip_t *netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
     if (netif_snip == NULL) {
         LOG_ERROR("[GOMACH]: No netif_hdr found in gnrc_gomach_bcast_subchann_seq().\n");
         gnrc_pktbuf_release(pkt);
@@ -725,9 +717,8 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
     assert(pkt != NULL);
 
     gnrc_gomach_frame_preamble_ack_t *gomach_preamble_ack_hdr = NULL;
-    gnrc_pktsnip_t *gomach_snip = NULL;
 
-    gomach_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
+    gnrc_pktsnip_t *gomach_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
     if (gomach_snip == NULL) {
         LOG_ERROR("[GOMACH]: No gomach_snip found in gnrc_gomach_process_preamble_ack().\n");
        	return;
@@ -776,8 +767,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
         future_neighbor_phase = phase_ticks;
     }
 
-    uint32_t neighbor_phase;
-    neighbor_phase = (uint32_t)future_neighbor_phase;
+    uint32_t neighbor_phase = (uint32_t)future_neighbor_phase;
 
     if ((RTT_TICKS_TO_US(neighbor_phase) > (GNRC_GOMACH_SUPERFRAME_DURATION_US - GNRC_GOMACH_CP_MIN_GAP_US)) ||
         (RTT_TICKS_TO_US(neighbor_phase) < GNRC_GOMACH_CP_MIN_GAP_US)) {
@@ -882,14 +872,13 @@ int gnrc_gomach_send_data(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enabl
     assert(gnrc_netdev != NULL);
 
     gnrc_pktsnip_t *pkt = gnrc_netdev->tx.packet;
-    gnrc_pktsnip_t *gomach_snip = NULL;
 
     assert(pkt != NULL);
 
     /* Insert GoMacH header above NETIF header. */
     gnrc_gomach_frame_data_t *gomach_data_hdr_pointer;
 
-    gomach_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
+    gnrc_pktsnip_t *gomach_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
     if (gomach_snip != NULL) {
         gomach_data_hdr_pointer = gomach_snip->data;
     }
@@ -1003,8 +992,7 @@ void gnrc_gomach_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
     uint8_t id_position;
     uint8_t slots_position;
 
-    gnrc_pktsnip_t *beacon_snip = NULL;
-    beacon_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
+    gnrc_pktsnip_t *beacon_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
     if (beacon_snip == NULL) {
         LOG_ERROR("[GOMACH]: No beacon-snip found in gnrc_gomach_beacon_process().\n");
        	return;

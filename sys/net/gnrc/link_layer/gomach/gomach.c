@@ -175,8 +175,6 @@ static void _gomach_rtt_cb(void *arg)
 
 static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
 {
-    uint32_t alarm;
-
     switch (event & 0xffff) {
         case GNRC_GOMACH_EVENT_RTT_NEW_CYCLE: {
             /* Start duty-cycle scheme. */
@@ -194,8 +192,8 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
             }
 
             /* Set next cycle's starting time. */
-            alarm = gnrc_netdev->gomach.last_wakeup +
-                    RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
+            uint32_t alarm = gnrc_netdev->gomach.last_wakeup +
+                             RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
             rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GNRC_GOMACH_EVENT_RTT_NEW_CYCLE);
 
             /* Update neighbors' public channel phases. */
@@ -506,18 +504,9 @@ static void gomach_t2k_wait_cp(gnrc_netdev_t *gnrc_netdev)
         gnrc_gomach_set_ack_req(gnrc_netdev, NETOPT_ENABLE);
 
         /* Enable csma for sending the packet! */
-        netopt_enable_t csma_enable;
-        csma_enable = NETOPT_ENABLE;
+        netopt_enable_t csma_enable = NETOPT_ENABLE;
         gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA, &csma_enable,
                                       sizeof(netopt_enable_t));
-
-        /* Set csma retry number! */
-        uint8_t csma_retry_num;
-        csma_retry_num = 5;
-        gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_RETRANS, &csma_retry_num,
-                                      sizeof(csma_retry_num));
-        gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA_RETRIES, &csma_retry_num,
-                                      sizeof(csma_retry_num));
 
         gnrc_gomach_turn_on_radio(gnrc_netdev);
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_TRANS_IN_CP;
@@ -1205,8 +1194,7 @@ static void gomach_t2u_send_data(gnrc_netdev_t *gnrc_netdev)
     }
 
     /* Here, we send the data to the receiver. */
-    int res;
-    res = gnrc_gomach_send_data(gnrc_netdev, NETOPT_ENABLE);
+    int res = gnrc_gomach_send_data(gnrc_netdev, NETOPT_ENABLE);
     if (res < 0) {
         LOG_ERROR("ERROR: [GOMACH] t2u data sending error: %d.\n", res);
 
@@ -1367,13 +1355,11 @@ static void gomach_t2u_update(gnrc_netdev_t *gnrc_netdev)
 
 static void _gomach_phase_backoff(gnrc_netdev_t *gnrc_netdev)
 {
-    uint32_t alarm;
-
     /* Execute phase backoff for avoiding CP (wake-up period) overlap. */
     rtt_clear_alarm();
-    alarm = gnrc_netdev->gomach.last_wakeup +
-            RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US) +
-            gnrc_netdev->gomach.backoff_phase_ticks;
+    uint32_t alarm = gnrc_netdev->gomach.last_wakeup +
+                     RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US) +
+                     gnrc_netdev->gomach.backoff_phase_ticks;
     rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GNRC_GOMACH_EVENT_RTT_NEW_CYCLE);
 
     gnrc_gomach_set_phase_changed(gnrc_netdev, true);
@@ -1520,8 +1506,7 @@ static void gomach_listen_send_beacon(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
 
     /* Assemble and send the beacon. */
-    int res;
-    res = gnrc_gomach_send_beacon(gnrc_netdev);
+    int res = gnrc_gomach_send_beacon(gnrc_netdev);
     if (res < 0) {
         LOG_ERROR("ERROR: [GOMACH] send beacon error: %d.\n", res);
         gnrc_gomach_set_beacon_fail(gnrc_netdev, true);
@@ -2097,8 +2082,6 @@ static void *_gnrc_gomach_thread(void *args)
 kernel_pid_t gnrc_gomach_init(char *stack, int stacksize, char priority,
                               const char *name, gnrc_netdev_t *gnrc_netdev)
 {
-    kernel_pid_t res;
-
     /* Check if given netdev device is defined and the driver is set */
     if (gnrc_netdev == NULL || gnrc_netdev->dev == NULL) {
         LOG_ERROR("ERROR: [GoMacH] No netdev supplied or driver not set.\n");
@@ -2106,8 +2089,8 @@ kernel_pid_t gnrc_gomach_init(char *stack, int stacksize, char priority,
     }
 
     /* Create new gnrc_netdev thread */
-    res = thread_create(stack, stacksize, priority, THREAD_CREATE_STACKTEST,
-                        _gnrc_gomach_thread, (void *)gnrc_netdev, name);
+    kernel_pid_t res = thread_create(stack, stacksize, priority, THREAD_CREATE_STACKTEST,
+                                     _gnrc_gomach_thread, (void *)gnrc_netdev, name);
     if (res <= 0) {
         LOG_ERROR("ERROR: [GoMacH] Couldn't create thread.\n");
         return -EINVAL;
