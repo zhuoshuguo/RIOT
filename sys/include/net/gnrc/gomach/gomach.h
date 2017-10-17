@@ -113,7 +113,7 @@ extern "C" {
 #endif
 
 /**
- * @brief Timeout duration for waiting RX complete in GoMacH.
+ * @brief Timeout duration for waiting @ref NETDEV_EVENT_RX_COMPLETE in GoMacH.
  *
  * Sometimes in GoMacH, if a node finds RX ongoing when it is just about to enter the next MAC state,
  * it will set up a timeout for waiting this packet reception complete with a timeout of this
@@ -127,8 +127,9 @@ extern "C" {
  * @brief Timeout duration for confirming TX-No-ISR event in GoMacH.
  *
  * This macro is used to confirm/catch a case that a transmission doesn't have its
- * TX-finish interrupt event, which is considered as a hardware abnormal event. Upon this
- * timeout expiration, GoMach will accordingly take actions to maintain its state-machine.
+ * @ref NETDEV_EVENT_TX_COMPLETE interrupt event, which is considered as a hardware abnormal event.
+ * Upon this timeout expiration, GoMach will accordingly take actions to maintain its
+ * state-machine.
  */
 #ifndef GNRC_GOMACH_NO_TX_ISR_US
 #define GNRC_GOMACH_NO_TX_ISR_US          (15U * US_PER_MS)
@@ -152,8 +153,8 @@ extern "C" {
  * @ref GNRC_GOMACH_PREAMBLE_INTERVAL_US duration for waiting to send the next
  * preamble. Notably, this macro is with a very small value. In GoMacH, for receiving
  * the preamble-ACK packet, the sender doesn't wait for the whole reception of
- * the preamble-ACK. Instead, it only waits for the RX-start event which leads to shorter
- * time interval between two consecutive preamble transmissions.
+ * the preamble-ACK. Instead, it only waits for the @ref NETDEV_EVENT_RX_STARTED
+ * event which leads to shorter time interval between two consecutive preamble transmissions.
  */
 #ifndef GNRC_GOMACH_PREAMBLE_INTERVAL_US
 #define GNRC_GOMACH_PREAMBLE_INTERVAL_US        (2U * US_PER_MS)
