@@ -28,7 +28,7 @@
 #include "periph_conf.h"
 #include "periph/rtt.h"
 
-#define TICKS_TO_WAIT       (10 * RTT_FREQUENCY)
+#define TICKS_TO_WAIT      (1 * RTT_FREQUENCY)
 
 static volatile uint32_t last;
 
@@ -40,7 +40,7 @@ void cb(void *arg)
     last &= RTT_MAX_VALUE;
     rtt_set_alarm(last, cb, 0);
 
-    puts("Hello");
+    printf("Hello,%u\n",RTT_FREQUENCY);
 }
 
 int main(void)

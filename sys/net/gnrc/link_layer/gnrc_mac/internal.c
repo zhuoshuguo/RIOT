@@ -226,6 +226,7 @@ bool gnrc_mac_queue_rx_packet(gnrc_mac_rx_t *rx, uint32_t priority, gnrc_pktsnip
     if (node) {
         gnrc_priority_pktqueue_node_init(node, priority, pkt);
         gnrc_priority_pktqueue_push(&rx->queue, node);
+        puts("push!");
         return true;
     }
 

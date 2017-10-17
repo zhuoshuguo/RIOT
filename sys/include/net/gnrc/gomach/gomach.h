@@ -44,7 +44,7 @@ extern "C" {
  * In GoMacH, by default, we regard the wake-up period (WP) as the beginning of a cycle.
  */
 #ifndef GNRC_GOMACH_SUPERFRAME_DURATION_US
-#define GNRC_GOMACH_SUPERFRAME_DURATION_US        (200LU * US_PER_MS)
+#define GNRC_GOMACH_SUPERFRAME_DURATION_US        (1000LU * US_PER_MS)
 #endif
 
 /**
@@ -57,7 +57,7 @@ extern "C" {
  * receiver will not miss the preamble packet.
  */
 #ifndef GNRC_GOMACH_CP_DURATION_US
-#define GNRC_GOMACH_CP_DURATION_US        (10U * US_PER_MS)
+#define GNRC_GOMACH_CP_DURATION_US        (100U * US_PER_MS)
 #endif
 
 /**
@@ -143,7 +143,7 @@ extern "C" {
  * consecutive preamble packets.
  */
 #ifndef GNRC_GOMACH_MAX_PREAM_INTERVAL_US
-#define GNRC_GOMACH_MAX_PREAM_INTERVAL_US        (6U * US_PER_MS)
+#define GNRC_GOMACH_MAX_PREAM_INTERVAL_US        (9U * US_PER_MS)
 #endif
 
 /**
@@ -157,7 +157,7 @@ extern "C" {
  * event which leads to shorter time interval between two consecutive preamble transmissions.
  */
 #ifndef GNRC_GOMACH_PREAMBLE_INTERVAL_US
-#define GNRC_GOMACH_PREAMBLE_INTERVAL_US        (2U * US_PER_MS)
+#define GNRC_GOMACH_PREAMBLE_INTERVAL_US        (5U * US_PER_MS)
 #endif
 
 /**

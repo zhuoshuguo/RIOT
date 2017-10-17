@@ -95,7 +95,7 @@ extern "C" {
  * In LWMAC, by default, we regard the wake-up period as the beginning of a cycle.
  */
 #ifndef GNRC_LWMAC_WAKEUP_INTERVAL_US
-#define GNRC_LWMAC_WAKEUP_INTERVAL_US        (100LU * US_PER_MS)
+#define GNRC_LWMAC_WAKEUP_INTERVAL_US        (2000LU * US_PER_MS)
 #endif
 
 /**
@@ -145,7 +145,7 @@ extern "C" {
  * possible data broadcasts need to be taken into account.
  */
 #ifndef GNRC_LWMAC_WAKEUP_DURATION_US
-#define GNRC_LWMAC_WAKEUP_DURATION_US        (GNRC_LWMAC_TIME_BETWEEN_WR_US * 2)
+#define GNRC_LWMAC_WAKEUP_DURATION_US        (1000LU * US_PER_MS)
 #endif
 
 /**

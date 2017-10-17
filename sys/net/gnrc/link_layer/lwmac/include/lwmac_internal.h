@@ -318,7 +318,7 @@ static inline uint32_t _gnrc_lwmac_ticks_to_phase(uint32_t ticks)
 {
     assert(GNRC_LWMAC_WAKEUP_INTERVAL_US != 0);
 
-    return (ticks % RTT_US_TO_TICKS(GNRC_LWMAC_WAKEUP_INTERVAL_US));
+    return 0; //(ticks % RTT_US_TO_TICKS(GNRC_LWMAC_WAKEUP_INTERVAL_US));
 }
 
 /**
@@ -344,10 +344,10 @@ static inline uint32_t _gnrc_lwmac_ticks_until_phase(uint32_t phase)
 
     if (tmp < 0) {
         /* Phase in next interval */
-        tmp += RTT_US_TO_TICKS(GNRC_LWMAC_WAKEUP_INTERVAL_US);
+        ;//tmp += RTT_US_TO_TICKS(GNRC_LWMAC_WAKEUP_INTERVAL_US);
     }
 
-    return (uint32_t)tmp;
+    return 0; //(uint32_t)tmp;
 }
 
 /**

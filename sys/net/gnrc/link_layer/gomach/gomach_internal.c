@@ -511,13 +511,14 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
         /* Parse the received packet, fetch key MAC informations. */
         int res = _parse_packet(pkt, &receive_packet_info);
         if (res != 0) {
-            LOG_DEBUG("[GOMACH] CP: Packet could not be parsed: %i\n", res);
+            LOG_ERROR("[GOMACH] CP: Packet could not be parsed: %i\n", res);
             gnrc_pktbuf_release(pkt);
             continue;
         }
 
         switch (receive_packet_info.header->type) {
             case GNRC_GOMACH_FRAME_PREAMBLE: {
+               // puts("g-p");
                 if (memcmp(&gnrc_netdev->l2_addr, &receive_packet_info.dst_addr.addr,
                            gnrc_netdev->l2_addr_len) == 0) {
                     /* Get a preamble packet that is for the device itself. */
@@ -532,7 +533,8 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
                         if (res < 0) {
                             LOG_ERROR("ERROR: [GOMACH]: send preamble-ACK failed: %d.\n", res);
                         }
-
+                        puts("PA");
+                        xtimer_usleep(1000);
                         /* Enable Auto ACK again for data reception. */
                         gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
                     }
@@ -759,6 +761,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
         phase_ticks += RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
     }
 
+#if 0
     /* Check if the sender's phase is too close to the receiver. */
     long int future_neighbor_phase;
     if (gnrc_gomach_get_phase_changed(gnrc_netdev)) {
@@ -784,6 +787,8 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
                                 RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US -
                                                 GNRC_GOMACH_CP_MIN_GAP_US));
     }
+   puts("over");
+#endif
 
     gnrc_netdev->tx.current_neighbor->cp_phase = (uint32_t) phase_ticks;
 }
