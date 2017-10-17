@@ -288,6 +288,16 @@ extern "C" {
 #endif
 
 /**
+ * @brief Default message queue size to use for the GoMacH thread.
+ *
+ * The value of this macro should be enough for supporting the manipulation of
+ * GoMacH.
+ */
+#ifndef GNRC_GOMACH_IPC_MSG_QUEUE_SIZE
+#define GNRC_GOMACH_IPC_MSG_QUEUE_SIZE        (8U)
+#endif
+
+/**
  * @brief   Initialize an instance of the GoMacH layer
  *
  * The initialization starts a new thread that connects to the given netdev

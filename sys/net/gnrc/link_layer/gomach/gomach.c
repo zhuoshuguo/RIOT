@@ -52,8 +52,9 @@
 
 #include "log.h"
 
-#define NETDEV_NETAPI_MSG_QUEUE_SIZE 8
-
+/**
+ * @brief  GoMacH thread's PID
+ */
 static kernel_pid_t gomach_pid;
 
 static void gomach_reinit_radio(gnrc_netdev_t *gnrc_netdev)
@@ -1972,10 +1973,10 @@ static void *_gnrc_gomach_thread(void *args)
 
     gnrc_netapi_opt_t *opt;
     int res;
-    msg_t msg, reply, msg_queue[NETDEV_NETAPI_MSG_QUEUE_SIZE];
+    msg_t msg, reply, msg_queue[GNRC_GOMACH_IPC_MSG_QUEUE_SIZE];
 
     /* Setup the MAC layers message queue. */
-    msg_init_queue(msg_queue, NETDEV_NETAPI_MSG_QUEUE_SIZE);
+    msg_init_queue(msg_queue, GNRC_GOMACH_IPC_MSG_QUEUE_SIZE);
 
     /* Register the event callback with the device driver. */
     dev->event_callback = _event_cb;
