@@ -56,8 +56,9 @@ static int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
     netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
     if (netif_snip == NULL) {
         return -ENODATA;
-    } else {
-      	netif_hdr = netif_snip->data;
+    }
+    else {
+        netif_hdr = netif_snip->data;
     }
 
     if (netif_hdr->dst_l2addr_len > sizeof(info->dst_addr)) {
@@ -74,36 +75,36 @@ static int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
     switch (gomach_hdr->type) {
         case GNRC_GOMACH_FRAME_BEACON: {
             gomach_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_beacon_t),
-                                              GNRC_NETTYPE_GOMACH);
+                                           GNRC_NETTYPE_GOMACH);
             break;
         }
         case GNRC_GOMACH_FRAME_PREAMBLE: {
             gomach_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_preamble_t),
-                                              GNRC_NETTYPE_GOMACH);
+                                           GNRC_NETTYPE_GOMACH);
             break;
         }
         case GNRC_GOMACH_FRAME_PREAMBLE_ACK: {
             gomach_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_preamble_ack_t),
-                                              GNRC_NETTYPE_GOMACH);
+                                           GNRC_NETTYPE_GOMACH);
             break;
         }
         case GNRC_GOMACH_FRAME_DATA: {
             gomach_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_data_t),
-                                              GNRC_NETTYPE_GOMACH);
+                                           GNRC_NETTYPE_GOMACH);
             break;
         }
         case GNRC_GOMACH_FRAME_ANNOUNCE: {
             gomach_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_announce_t),
-                                              GNRC_NETTYPE_GOMACH);
+                                           GNRC_NETTYPE_GOMACH);
             break;
         }
         case GNRC_GOMACH_FRAME_BROADCAST: {
             gomach_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_broadcast_t),
-                                              GNRC_NETTYPE_GOMACH);
+                                           GNRC_NETTYPE_GOMACH);
             break;
         }
 
-        default:{
+        default: {
             return -ENODATA;
         }
     }
@@ -219,7 +220,8 @@ int gnrc_gomach_send_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_gomach_packet
         LOG_ERROR("[GOMACH]: NO netif_hdr found in gnrc_gomach_send_preamble_ack().\n");
         gnrc_pktbuf_release(gomach_pkt);
         return -ENOBUFS;
-    } else {
+    }
+    else {
         nethdr_preamble_ack = netif_snip->data;
     }
 
@@ -306,8 +308,8 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
     gomach_beaocn_hdr.schedulelist_size = total_tdma_node_num;
 
     if (total_tdma_node_num > 0) {
-    	/* If there are slots to allocate, add the slots list and the ID list to
-    	 * the beacon! */
+        /* If there are slots to allocate, add the slots list and the ID list to
+         * the beacon! */
         gnrc_netdev->rx.vtdma_manag.total_slots_num = total_tdma_slot_num;
 
         /* Add the slots list to the beacon. */
@@ -356,10 +358,10 @@ int gnrc_gomach_send_beacon(gnrc_netdev_t *gnrc_netdev)
     if (beacon_netif_snip == NULL) {
         LOG_ERROR("[GOMACH]: NO netif_hdr found in send_beacon().\n");
         gnrc_pktbuf_release(pkt);
-       	return -ENOBUFS;
+        return -ENOBUFS;
     }
     else {
-      	nethdr_beacon = beacon_netif_snip->data;
+        nethdr_beacon = beacon_netif_snip->data;
     }
 
     /* Construct NETIF header. */
@@ -420,8 +422,9 @@ void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pk
     gnrc_pktsnip_t *gomach_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
     if (gomach_snip == NULL) {
         LOG_ERROR("[GOMACH]: No gomach header found in gnrc_gomach_indicator_update().\n");
-       	return;
-    } else {
+        return;
+    }
+    else {
         gomach_data_hdr = gomach_snip->data;
     }
 
@@ -565,8 +568,8 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
                 break;
             }
             case GNRC_GOMACH_FRAME_BROADCAST: {
-            	/* Receive a broadcast packet, quit the listening period to avoid receive duplicate
-            	 * broadcast packet. */
+                /* Receive a broadcast packet, quit the listening period to avoid receive duplicate
+                 * broadcast packet. */
                 gnrc_gomach_set_quit_cycle(gnrc_netdev, true);
                 gnrc_gomach_dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
                 gnrc_mac_dispatch(&gnrc_netdev->rx);
@@ -586,10 +589,10 @@ void gnrc_gomach_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev)
 
     uint16_t subchannel_seq, check_seq, own_id;
 
-	own_id = 0;
-	own_id = gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len-2];
-	own_id = own_id << 8;
-	own_id |= gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len-1];
+    own_id = 0;
+    own_id = gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len - 2];
+    own_id = own_id << 8;
+    own_id |= gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len - 1];
 
     /* First randomly set a sub-channel sequence, which ranges from 12 to 25. */
     subchannel_seq = 12 + (own_id % 14);
@@ -601,7 +604,7 @@ void gnrc_gomach_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev)
         check_seq = (1 << check_seq);
 
         if (check_seq & gnrc_netdev->gomach.subchannel_occu_flags) {
-        	LOG_INFO("INFO: [GOMACH]: sub-channel already occupied, find a new one.\n");
+            LOG_INFO("INFO: [GOMACH]: sub-channel already occupied, find a new one.\n");
             own_id += 1;
             subchannel_seq = 12 + (own_id % 14);
         }
@@ -650,9 +653,10 @@ int gnrc_gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_e
     if (netif_snip == NULL) {
         LOG_ERROR("[GOMACH]: No netif_hdr found in gnrc_gomach_send_preamble().\n");
         gnrc_pktbuf_release(gomach_pkt);
-       	return -ENOBUFS;
-    } else {
-       	nethdr_preamble = netif_snip->data;
+        return -ENOBUFS;
+    }
+    else {
+        nethdr_preamble = netif_snip->data;
     }
 
     /* Construct NETIF header and initiate address fields. */
@@ -682,7 +686,7 @@ int gnrc_gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t u
                           GNRC_NETTYPE_GOMACH);
     if (pkt == NULL) {
         LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_bcast_subchann_seq().\n");
-        return  -ENOBUFS;
+        return -ENOBUFS;
     }
     gomach_pkt = pkt;
 
@@ -690,16 +694,17 @@ int gnrc_gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t u
     if (pkt == NULL) {
         gnrc_pktbuf_release(gomach_pkt);
         LOG_ERROR("ERROR: [GOMACH]: netif add failed in gnrc_gomach_bcast_subchann_seq().\n");
-        return  -ENOBUFS;
+        return -ENOBUFS;
     }
 
     gnrc_pktsnip_t *netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
     if (netif_snip == NULL) {
         LOG_ERROR("[GOMACH]: No netif_hdr found in gnrc_gomach_bcast_subchann_seq().\n");
         gnrc_pktbuf_release(pkt);
-       	return -ENOBUFS;
-    } else {
-      	nethdr_announce = netif_snip->data;
+        return -ENOBUFS;
+    }
+    else {
+        nethdr_announce = netif_snip->data;
     }
 
     /* Construct NETIF header and initiate address fields. */
@@ -721,10 +726,10 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
     gnrc_pktsnip_t *gomach_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
     if (gomach_snip == NULL) {
         LOG_ERROR("[GOMACH]: No gomach_snip found in gnrc_gomach_process_preamble_ack().\n");
-       	return;
+        return;
     }
     else {
-       	gomach_preamble_ack_hdr = gomach_snip->data;
+        gomach_preamble_ack_hdr = gomach_snip->data;
     }
 
     if (gomach_preamble_ack_hdr == NULL) {
@@ -794,7 +799,7 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
         /* Parse the received packet. */
         int res = _parse_packet(pkt, &receive_packet_info);
         if (res != 0) {
-        	LOG_DEBUG("[GOMACH] t2u: Packet could not be parsed: %i\n", res);
+            LOG_DEBUG("[GOMACH] t2u: Packet could not be parsed: %i\n", res);
             gnrc_pktbuf_release(pkt);
             continue;
         }
@@ -804,7 +809,7 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
                 /* Found other ongoing preamble transmission, quit its own t2u for
                  * collision avoidance. */
                 gnrc_pktbuf_release(pkt);
-            	LOG_DEBUG("[GOMACH] t2u: found other preamble, quit t2u.\n");
+                LOG_DEBUG("[GOMACH] t2u: found other preamble, quit t2u.\n");
                 gnrc_gomach_set_quit_cycle(gnrc_netdev, true);
                 break;
             }
@@ -995,9 +1000,10 @@ void gnrc_gomach_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
     gnrc_pktsnip_t *beacon_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_GOMACH);
     if (beacon_snip == NULL) {
         LOG_ERROR("[GOMACH]: No beacon-snip found in gnrc_gomach_beacon_process().\n");
-       	return;
-    } else {
-       	gomach_beacon_hdr = beacon_snip->data;
+        return;
+    }
+    else {
+        gomach_beacon_hdr = beacon_snip->data;
     }
 
     if (gomach_beacon_hdr == NULL) {
@@ -1017,7 +1023,7 @@ void gnrc_gomach_beacon_process(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
 
     /* Take the ID-list out. */
     gomach_snip = gnrc_pktbuf_mark(pkt, schedulelist_size * sizeof(gnrc_gomach_l2_id_t),
-                                      GNRC_NETTYPE_GOMACH);
+                                   GNRC_NETTYPE_GOMACH);
     id_list = gomach_snip->data;
 
     /* Take the slots-list out. */
@@ -1064,7 +1070,7 @@ void gnrc_gomach_packet_process_in_wait_beacon(gnrc_netdev_t *gnrc_netdev)
         /* Parse the received packet. */
         int res = _parse_packet(pkt, &receive_packet_info);
         if (res != 0) {
-        	LOG_DEBUG("[GOMACH] t2k: Packet could not be parsed: %i\n", res);
+            LOG_DEBUG("[GOMACH] t2k: Packet could not be parsed: %i\n", res);
             gnrc_pktbuf_release(pkt);
             continue;
         }
@@ -1132,7 +1138,7 @@ void gnrc_gomach_packet_process_in_vtdma(gnrc_netdev_t *gnrc_netdev)
         /* Parse the received packet. */
         int res = _parse_packet(pkt, &receive_packet_info);
         if (res != 0) {
-        	LOG_DEBUG("[GOMACH] vtdma: Packet could not be parsed: %i\n", res);
+            LOG_DEBUG("[GOMACH] vtdma: Packet could not be parsed: %i\n", res);
             gnrc_pktbuf_release(pkt);
             continue;
         }

@@ -314,7 +314,7 @@ extern "C" {
  * @return                  -ENODEV if *dev* is invalid
  */
 kernel_pid_t gnrc_gomach_init(char *stack, int stacksize, char priority,
-                                 const char *name, gnrc_netdev_t *dev);
+                              const char *name, gnrc_netdev_t *dev);
 
 #ifdef __cplusplus
 }

@@ -123,10 +123,10 @@ extern "C" {
 static inline void gnrc_gomach_set_tx_finish(gnrc_netdev_t *gnrc_netdev, bool tx_finish)
 {
     if (tx_finish) {
-    	gnrc_netdev->mac_info |= GNRC_NETDEV_GOMACH_INFO_TX_FINISHED;
+        gnrc_netdev->mac_info |= GNRC_NETDEV_GOMACH_INFO_TX_FINISHED;
     }
     else {
-    	gnrc_netdev->mac_info &= ~GNRC_NETDEV_GOMACH_INFO_TX_FINISHED;
+        gnrc_netdev->mac_info &= ~GNRC_NETDEV_GOMACH_INFO_TX_FINISHED;
     }
 }
 
@@ -153,10 +153,10 @@ static inline bool gnrc_gomach_get_tx_finish(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_pkt_received(gnrc_netdev_t *gnrc_netdev, bool received)
 {
     if (received) {
-    	gnrc_netdev->mac_info |= GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED;
+        gnrc_netdev->mac_info |= GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED;
     }
     else {
-    	gnrc_netdev->mac_info &= ~GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED;
+        gnrc_netdev->mac_info &= ~GNRC_NETDEV_GOMACH_INFO_PKT_RECEIVED;
     }
 }
 
@@ -183,10 +183,10 @@ static inline bool gnrc_gomach_get_pkt_received(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_quit_cycle(gnrc_netdev_t *gnrc_netdev, bool quit)
 {
     if (quit) {
-    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_QUIT_CYCLE;
+        gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_QUIT_CYCLE;
     }
     else {
-    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_QUIT_CYCLE;
+        gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_QUIT_CYCLE;
     }
 }
 
@@ -213,10 +213,10 @@ static inline bool gnrc_gomach_get_quit_cycle(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_got_preamble(gnrc_netdev_t *gnrc_netdev, bool got_preamble)
 {
     if (got_preamble) {
-    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLE;
+        gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLE;
     }
     else {
-    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLE;
+        gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLE;
     }
 }
 
@@ -243,10 +243,10 @@ static inline bool gnrc_gomach_get_got_preamble(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_cp_end(gnrc_netdev_t *gnrc_netdev, bool cp_end)
 {
     if (cp_end) {
-    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_CP_END;
+        gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_CP_END;
     }
     else {
-    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_CP_END;
+        gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_CP_END;
     }
 }
 
@@ -273,10 +273,10 @@ static inline bool gnrc_gomach_get_cp_end(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_vTDMA_end(gnrc_netdev_t *gnrc_netdev, bool vtdma_end)
 {
     if (vtdma_end) {
-    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_VTDMA_END;
+        gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_VTDMA_END;
     }
     else {
-    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_VTDMA_END;
+        gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_VTDMA_END;
     }
 }
 
@@ -303,10 +303,10 @@ static inline bool gnrc_gomach_get_vTDMA_end(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_unintd_preamble(gnrc_netdev_t *gnrc_netdev, bool uintd_preamble)
 {
     if (uintd_preamble) {
-    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE;
+        gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE;
     }
     else {
-    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE;
+        gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE;
     }
 }
 
@@ -333,10 +333,10 @@ static inline bool gnrc_gomach_get_unintd_preamble(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_update(gnrc_netdev_t *gnrc_netdev, bool update)
 {
     if (update) {
-    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_ND_UPDATE;
+        gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_ND_UPDATE;
     }
     else {
-    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_ND_UPDATE;
+        gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_ND_UPDATE;
     }
 }
 
@@ -363,10 +363,10 @@ static inline bool gnrc_gomach_get_update(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_duty_cycle_start(gnrc_netdev_t *gnrc_netdev, bool start)
 {
     if (start) {
-    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START;
+        gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START;
     }
     else {
-    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START;
+        gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START;
     }
 }
 
@@ -393,10 +393,10 @@ static inline bool gnrc_gomach_get_duty_cycle_start(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_phase_backoff(gnrc_netdev_t *gnrc_netdev, bool backoff)
 {
     if (backoff) {
-    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_BACKOFF;
+        gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_BACKOFF;
     }
     else {
-    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_BACKOFF;
+        gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_BACKOFF;
     }
 }
 
@@ -423,10 +423,10 @@ static inline bool gnrc_gomach_get_phase_backoff(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_phase_changed(gnrc_netdev_t *gnrc_netdev, bool change)
 {
     if (change) {
-    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_CHANGED;
+        gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_CHANGED;
     }
     else {
-    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_CHANGED;
+        gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_PHASE_CHANGED;
     }
 }
 
@@ -453,10 +453,10 @@ static inline bool gnrc_gomach_get_phase_changed(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_beacon_fail(gnrc_netdev_t *gnrc_netdev, bool fail)
 {
     if (fail) {
-    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_BEACON_FAIL;
+        gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_BEACON_FAIL;
     }
     else {
-    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_BEACON_FAIL;
+        gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_BEACON_FAIL;
     }
 }
 
@@ -483,10 +483,10 @@ static inline bool gnrc_gomach_get_beacon_fail(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_buffer_full(gnrc_netdev_t *gnrc_netdev, bool full)
 {
     if (full) {
-    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_BUFFER_FULL;
+        gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_BUFFER_FULL;
     }
     else {
-    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_BUFFER_FULL;
+        gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_BUFFER_FULL;
     }
 }
 
@@ -513,10 +513,10 @@ static inline bool gnrc_gomach_get_buffer_full(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_enter_new_cycle(gnrc_netdev_t *gnrc_netdev, bool enter)
 {
     if (enter) {
-    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE;
+        gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE;
     }
     else {
-    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE;
+        gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE;
     }
 }
 
@@ -543,10 +543,10 @@ static inline bool gnrc_gomach_get_enter_new_cycle(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_got_preamble_ack(gnrc_netdev_t *gnrc_netdev, bool got)
 {
     if (got) {
-    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK;
+        gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK;
     }
     else {
-    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK;
+        gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK;
     }
 }
 
@@ -573,10 +573,10 @@ static inline bool gnrc_gomach_get_got_preamble_ack(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_on_pubchan_1(gnrc_netdev_t *gnrc_netdev, bool on_pubchan_1)
 {
     if (on_pubchan_1) {
-    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1;
+        gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1;
     }
     else {
-    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1;
+        gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1;
     }
 }
 
@@ -603,10 +603,10 @@ static inline bool gnrc_gomach_get_on_pubchan_1(gnrc_netdev_t *gnrc_netdev)
 static inline void gnrc_gomach_set_max_pream_interv(gnrc_netdev_t *gnrc_netdev, bool max)
 {
     if (max) {
-    	gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV;
+        gnrc_netdev->gomach.gomach_info |= GNRC_NETDEV_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV;
     }
     else {
-    	gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV;
+        gnrc_netdev->gomach.gomach_info &= ~GNRC_NETDEV_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV;
     }
 }
 
@@ -767,7 +767,8 @@ static inline void gnrc_gomach_turn_channel(gnrc_netdev_t *gnrc_netdev, uint16_t
  * @param[in,out] gnrc_netdev  ptr to gnrc_netdev device.
  *
  */
-static inline void gnrc_gomach_turn_to_listen_mode(gnrc_netdev_t *gnrc_netdev){
+static inline void gnrc_gomach_turn_to_listen_mode(gnrc_netdev_t *gnrc_netdev)
+{
     gnrc_gomach_turn_on_radio(gnrc_netdev);
 }
 
