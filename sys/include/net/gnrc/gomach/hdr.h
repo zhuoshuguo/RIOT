@@ -99,7 +99,7 @@ typedef struct __attribute__((packed)) {
 } gnrc_gomach_frame_data_t;
 
 /**
- * @brief   GoMacH announce frame.
+ * @brief   GoMacH sub-channel announce frame.
  *
  * This frame type is specifically used to announce the chosen sub-channel
  * sequence of the node to its one-hop neighbors.
