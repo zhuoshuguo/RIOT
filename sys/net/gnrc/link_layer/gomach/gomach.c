@@ -197,6 +197,8 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
                 //printf("rtt:%lu\n",xtimer_now_usec());//puts("rt");
             }
 
+            gnrc_netdev->gomach.last_rtt_phase_ms = xtimer_now_usec();
+
             /* Set next cycle's starting time. */
             uint32_t alarm = gnrc_netdev->gomach.last_wakeup +
                              RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
@@ -475,11 +477,17 @@ static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
 
     gnrc_gomach_set_quit_cycle(gnrc_netdev, false);
 
+
     /* Set waiting timer for the targeted device! */
     uint32_t wait_phase_duration;
+
+#if 0
     wait_phase_duration = gnrc_gomach_ticks_until_phase(gnrc_netdev,
                                                         gnrc_netdev->tx.current_neighbor->cp_phase);
     wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration);
+#endif
+
+    wait_phase_duration = gnrc_netdev->tx.current_neighbor->cp_phase;
 
     /* Upon several times of t2k failure, we now doubt that the phase-lock may fail due to drift.
      * Here is the phase-lock auto-adjust scheme, trying to catch the neighbot's phase in case of
@@ -503,9 +511,12 @@ static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
             wait_phase_duration = wait_phase_duration - GNRC_GOMACH_SUPERFRAME_DURATION_US;
         }
     }
-    printf("wait:%lu\n",wait_phase_duration);
 
-    wait_phase_duration = 300000;
+    if (wait_phase_duration > GNRC_GOMACH_SUPERFRAME_DURATION_US) {
+    	wait_phase_duration = GNRC_GOMACH_SUPERFRAME_DURATION_US;
+    }
+
+    printf("wait:%lu\n",wait_phase_duration);
     gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_CP, wait_phase_duration);
 
     /* Flush the rx-queue. */
@@ -548,10 +559,10 @@ static void gomach_t2k_trans_in_cp(gnrc_netdev_t *gnrc_netdev)
 
     /* If we are retransmitting the packet, use the same sequence number for the
      * packet to avoid duplicate packet reception at the receiver side. */
-    //if ((gnrc_netdev->tx.no_ack_counter > 0) || (gnrc_netdev->tx.tx_busy_count > 0)) {
-    //    netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
-    //    device_state->seq = gnrc_netdev->tx.tx_seq;
-    //}
+    if ((gnrc_netdev->tx.no_ack_counter > 0) || (gnrc_netdev->tx.tx_busy_count > 0)) {
+        netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
+        device_state->seq = gnrc_netdev->tx.tx_seq;
+    }
 
     /* Send the data packet here. */
     int res = gnrc_gomach_send_data(gnrc_netdev, NETOPT_ENABLE);
@@ -591,15 +602,15 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                  * original phase. */
                 if (gnrc_netdev->tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD - 2)) {
                     if (gnrc_netdev->tx.current_neighbor->cp_phase >=
-                        RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US)) {
+                        GNRC_GOMACH_CP_DURATION_US) {
                         gnrc_netdev->tx.current_neighbor->cp_phase -=
-                            RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US);
+                            GNRC_GOMACH_CP_DURATION_US;
                     }
                     else {
                         gnrc_netdev->tx.current_neighbor->cp_phase +=
-                            RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
+                            GNRC_GOMACH_SUPERFRAME_DURATION_US;
                         gnrc_netdev->tx.current_neighbor->cp_phase -=
-                            RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US);
+                            GNRC_GOMACH_CP_DURATION_US;
                     }
                 }
                 /* Here is the phase-lock auto-adjust scheme. Use the new adjusted
@@ -607,12 +618,12 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                  * phase. */
                 if (gnrc_netdev->tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD - 1)) {
                     gnrc_netdev->tx.current_neighbor->cp_phase +=
-                        (RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US + 20 * US_PER_MS));
+                        (GNRC_GOMACH_CP_DURATION_US + 20 * US_PER_MS);
 
                     if (gnrc_netdev->tx.current_neighbor->cp_phase >=
-                        RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US)) {
+                        GNRC_GOMACH_SUPERFRAME_DURATION_US) {
                         gnrc_netdev->tx.current_neighbor->cp_phase -=
-                            RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
+                            GNRC_GOMACH_SUPERFRAME_DURATION_US;
                     }
                 }
 
@@ -642,8 +653,8 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                     /* Store the TX sequence number for this packet. Always use the same
                      * sequence number for sending the same packet, to avoid duplicated
                      * packet reception at the receiver. */
-                   // netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
-                   // gnrc_netdev->tx.tx_seq = device_state->seq - 1;
+                    netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
+                    gnrc_netdev->tx.tx_seq = device_state->seq - 1;
 
                     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_TRANS_IN_CP;
                     gnrc_gomach_set_update(gnrc_netdev, true);

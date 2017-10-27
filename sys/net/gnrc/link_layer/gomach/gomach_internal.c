@@ -742,6 +742,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
     /* Mark the neighbor as phase-known */
     gnrc_netdev->tx.current_neighbor->mac_type = GNRC_GOMACH_TYPE_KNOWN;
 
+#if 0
     /* Fetch and deduce the exact phase of the neighbor. */
     long int phase_ticks;
 
@@ -761,7 +762,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
         phase_ticks += RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
     }
 
-#if 0
+
     /* Check if the sender's phase is too close to the receiver. */
     long int future_neighbor_phase;
     if (gnrc_gomach_get_phase_changed(gnrc_netdev)) {
@@ -790,7 +791,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
    puts("over");
 #endif
 
-    gnrc_netdev->tx.current_neighbor->cp_phase = (uint32_t) phase_ticks;
+    gnrc_netdev->tx.current_neighbor->cp_phase = xtimer_now_usec() - gnrc_netdev->gomach.last_rtt_phase_ms;
 }
 
 void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
