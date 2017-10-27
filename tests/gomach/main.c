@@ -88,6 +88,8 @@ static void generate_and_send_pkt(void){
         payload[0] = send_counter;
 
         //15:11:6b:10:65:fa:54:32
+
+        //15:11:6b:10:65:f6:4c:0a
         addr[0] = 0x15;
         addr[1] = 0x11;
 
@@ -95,10 +97,10 @@ static void generate_and_send_pkt(void){
         addr[3] = 0x10;
 
         addr[4] = 0x65;
-        addr[5] = 0xfa;
+        addr[5] = 0xf6;
 
-        addr[6] = 0x54;
-        addr[7] = 0x32;
+        addr[6] = 0x4c;
+        addr[7] = 0x0a;
 
 #if 0
 	    if(own_address2 == 0x79f6) {  //5ad6
