@@ -11,7 +11,7 @@
  * @{
  *
  * @file
- * @brief       Internal types of GoMacH
+ * @brief       Internal used types of GoMacH
  * @internal
  * @author      Shuguo Zhuo  <shuguo.zhuo@inria.fr>
  */

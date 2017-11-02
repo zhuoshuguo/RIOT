@@ -86,6 +86,13 @@ typedef struct {
      */
     gnrc_lwmac_t lwmac;
 #endif
+
+#ifdef MODULE_GNRC_GOMACH
+    /**
+     * @brief GoMacH specific structure object for storing GoMacH internal states.
+     */
+    gnrc_gomach_t gomach;
+#endif
 } gnrc_netif2_mac_t;
 
 #ifdef __cplusplus
