@@ -25,7 +25,7 @@ ifneq (,$(filter gnrc_mac,$(USEMODULE)))
 endif
 
 ifneq (,$(filter gnrc_gomach,$(USEMODULE)))
-  USEMODULE += gnrc_netdev
+  USEMODULE += gnrc_netif2
   USEMODULE += random
   USEMODULE += xtimer
   USEMODULE += gnrc_mac

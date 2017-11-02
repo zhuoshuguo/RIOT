@@ -23,7 +23,7 @@
 #define NET_GNRC_GOMACH_GOMACH_H
 
 #include "kernel_types.h"
-#include "net/gnrc/netdev.h"
+#include "net/gnrc/netif2.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,7 +44,7 @@ extern "C" {
  * In GoMacH, by default, we regard the wake-up period (WP) as the beginning of a cycle.
  */
 #ifndef GNRC_GOMACH_SUPERFRAME_DURATION_US
-#define GNRC_GOMACH_SUPERFRAME_DURATION_US        (200LU * US_PER_MS)
+#define GNRC_GOMACH_SUPERFRAME_DURATION_US        (200LU *US_PER_MS)
 #endif
 
 /**
@@ -57,7 +57,7 @@ extern "C" {
  * receiver will not miss the preamble packet.
  */
 #ifndef GNRC_GOMACH_CP_DURATION_US
-#define GNRC_GOMACH_CP_DURATION_US        (10U * US_PER_MS)
+#define GNRC_GOMACH_CP_DURATION_US        (10U *US_PER_MS)
 #endif
 
 /**
@@ -68,7 +68,7 @@ extern "C" {
  * collision among neighbor nodes. This macro may be removed in the future.
  */
 #ifndef GNRC_GOMACH_CP_RANDOM_END_US
-#define GNRC_GOMACH_CP_RANDOM_END_US        (1U * US_PER_MS)
+#define GNRC_GOMACH_CP_RANDOM_END_US        (1U *US_PER_MS)
 #endif
 
 /**
@@ -83,7 +83,7 @@ extern "C" {
  * duration.
  */
 #ifndef GNRC_GOMACH_CP_DURATION_MAX_US
-#define GNRC_GOMACH_CP_DURATION_MAX_US        (5LU * GNRC_GOMACH_CP_DURATION_US)
+#define GNRC_GOMACH_CP_DURATION_MAX_US        (5LU *GNRC_GOMACH_CP_DURATION_US)
 #endif
 
 /**
@@ -109,7 +109,7 @@ extern "C" {
  * select a new phase for itself.
  */
 #ifndef GNRC_GOMACH_CP_MIN_GAP_US
-#define GNRC_GOMACH_CP_MIN_GAP_US        (25U * US_PER_MS)
+#define GNRC_GOMACH_CP_MIN_GAP_US        (25U *US_PER_MS)
 #endif
 
 /**
@@ -120,7 +120,7 @@ extern "C" {
  * @ref GNRC_GOMACH_WAIT_RX_END_US duration.
  */
 #ifndef GNRC_GOMACH_WAIT_RX_END_US
-#define GNRC_GOMACH_WAIT_RX_END_US        (6U * US_PER_MS)
+#define GNRC_GOMACH_WAIT_RX_END_US        (6U *US_PER_MS)
 #endif
 
 /**
@@ -132,7 +132,7 @@ extern "C" {
  * state-machine.
  */
 #ifndef GNRC_GOMACH_NO_TX_ISR_US
-#define GNRC_GOMACH_NO_TX_ISR_US          (15U * US_PER_MS)
+#define GNRC_GOMACH_NO_TX_ISR_US          (15U *US_PER_MS)
 #endif
 
 /**
@@ -143,7 +143,7 @@ extern "C" {
  * consecutive preamble packets.
  */
 #ifndef GNRC_GOMACH_MAX_PREAM_INTERVAL_US
-#define GNRC_GOMACH_MAX_PREAM_INTERVAL_US        (6U * US_PER_MS)
+#define GNRC_GOMACH_MAX_PREAM_INTERVAL_US        (6U *US_PER_MS)
 #endif
 
 /**
@@ -157,7 +157,7 @@ extern "C" {
  * event which leads to shorter time interval between two consecutive preamble transmissions.
  */
 #ifndef GNRC_GOMACH_PREAMBLE_INTERVAL_US
-#define GNRC_GOMACH_PREAMBLE_INTERVAL_US        (2U * US_PER_MS)
+#define GNRC_GOMACH_PREAMBLE_INTERVAL_US        (2U *US_PER_MS)
 #endif
 
 /**
@@ -170,7 +170,7 @@ extern "C" {
  * broadcast copies.
  */
 #ifndef GNRC_GOMACH_BCAST_INTERVAL_US
-#define GNRC_GOMACH_BCAST_INTERVAL_US        (1U * US_PER_MS)
+#define GNRC_GOMACH_BCAST_INTERVAL_US        (1U *US_PER_MS)
 #endif
 
 /**
@@ -184,7 +184,7 @@ extern "C" {
  * (preamble duration) slightly longer than twice of @ref GNRC_GOMACH_SUPERFRAME_DURATION_US.
  */
 #ifndef GNRC_GOMACH_PREAMBLE_DURATION_US
-#define GNRC_GOMACH_PREAMBLE_DURATION_US        (21LU * GNRC_GOMACH_SUPERFRAME_DURATION_US / 10)
+#define GNRC_GOMACH_PREAMBLE_DURATION_US        (21LU *GNRC_GOMACH_SUPERFRAME_DURATION_US / 10)
 #endif
 
 /**
@@ -197,7 +197,7 @@ extern "C" {
  * not be changed.
  */
 #ifndef GNRC_GOMACH_VTDMA_SLOT_SIZE_US
-#define GNRC_GOMACH_VTDMA_SLOT_SIZE_US        (5U * US_PER_MS)
+#define GNRC_GOMACH_VTDMA_SLOT_SIZE_US        (5U *US_PER_MS)
 #endif
 
 /**
@@ -298,23 +298,22 @@ extern "C" {
 #endif
 
 /**
- * @brief   Initialize an instance of the GoMacH layer
+ * @brief   Creates an IEEE 802.15.4 GoMacH network interface
  *
- * The initialization starts a new thread that connects to the given netdev
- * device and starts a link layer event loop.
+ * @param[in] stack     The stack for the GoMacH network interface's thread.
+ * @param[in] stacksize Size of @p stack.
+ * @param[in] priority  Priority for the GoMacH network interface's thread.
+ * @param[in] name      Name for the GoMacH network interface. May be NULL.
+ * @param[in] dev       Device for the interface
  *
- * @param[in] stack         stack for the control thread
- * @param[in] stacksize     size of *stack*
- * @param[in] priority      priority for the thread housing the GoMacH instance
- * @param[in] name          name of the thread housing the GoMacH instance
- * @param[in] dev           netdev device, needs to be already initialized
+ * @see @ref gnrc_netif2_create()
  *
- * @return                  PID of GoMacH thread on success
- * @return                  -EINVAL if creation of thread fails
- * @return                  -ENODEV if *dev* is invalid
+ * @return  The network interface on success.
+ * @return  NULL, on error.
  */
-kernel_pid_t gnrc_gomach_init(char *stack, int stacksize, char priority,
-                              const char *name, gnrc_netdev_t *dev);
+gnrc_netif2_t *gnrc_netif2_gomach_create(char *stack, int stacksize,
+                                         char priority, char *name,
+                                         netdev_t *dev);
 
 #ifdef __cplusplus
 }
