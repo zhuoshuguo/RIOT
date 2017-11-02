@@ -38,81 +38,81 @@ static int _gomach_find_timeout(gnrc_gomach_t *gomach, gnrc_gomach_timeout_type_
     return -ENOENT;
 }
 
-inline bool gnrc_gomach_timeout_is_running(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type)
+inline bool gnrc_gomach_timeout_is_running(gnrc_netif2_t *netif, gnrc_gomach_timeout_type_t type)
 {
-    assert(netdev);
-    return (_gomach_find_timeout(&netdev->gomach, type) >= 0);
+    assert(netif);
+    return (_gomach_find_timeout(&netif->mac.gomach, type) >= 0);
 }
 
-bool gnrc_gomach_timeout_is_expired(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type)
+bool gnrc_gomach_timeout_is_expired(gnrc_netif2_t *netif, gnrc_gomach_timeout_type_t type)
 {
-    assert(netdev);
+    assert(netif);
 
-    int index = _gomach_find_timeout(&netdev->gomach, type);
+    int index = _gomach_find_timeout(&netif->mac.gomach, type);
     if (index >= 0) {
-        if (netdev->gomach.timeouts[index].expired) {
-            xtimer_remove(&(netdev->gomach.timeouts[index].timer));
-            netdev->gomach.timeouts[index].type = GNRC_GOMACH_TIMEOUT_DISABLED;
+        if (netif->mac.gomach.timeouts[index].expired) {
+            xtimer_remove(&(netif->mac.gomach.timeouts[index].timer));
+            netif->mac.gomach.timeouts[index].type = GNRC_GOMACH_TIMEOUT_DISABLED;
         }
-        return netdev->gomach.timeouts[index].expired;
+        return netif->mac.gomach.timeouts[index].expired;
     }
     return false;
 }
 
-gnrc_gomach_timeout_t *_gomach_acquire_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type)
+gnrc_gomach_timeout_t *_gomach_acquire_timeout(gnrc_netif2_t *netif, gnrc_gomach_timeout_type_t type)
 {
-    assert(netdev);
+    assert(netif);
 
-    if (gnrc_gomach_timeout_is_running(netdev, type)) {
+    if (gnrc_gomach_timeout_is_running(netif, type)) {
         return NULL;
     }
 
     for (unsigned i = 0; i < GNRC_GOMACH_TIMEOUT_COUNT; i++) {
-        if (netdev->gomach.timeouts[i].type == GNRC_GOMACH_TIMEOUT_DISABLED) {
-            netdev->gomach.timeouts[i].type = type;
-            return &netdev->gomach.timeouts[i];
+        if (netif->mac.gomach.timeouts[i].type == GNRC_GOMACH_TIMEOUT_DISABLED) {
+            netif->mac.gomach.timeouts[i].type = type;
+            return &netif->mac.gomach.timeouts[i];
         }
     }
     return NULL;
 }
 
-void gnrc_gomach_clear_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type)
+void gnrc_gomach_clear_timeout(gnrc_netif2_t *netif, gnrc_gomach_timeout_type_t type)
 {
-    assert(netdev);
+    assert(netif);
 
-    int index = _gomach_find_timeout(&netdev->gomach, type);
+    int index = _gomach_find_timeout(&netif->mac.gomach, type);
     if (index >= 0) {
-        xtimer_remove(&(netdev->gomach.timeouts[index].timer));
-        netdev->gomach.timeouts[index].type = GNRC_GOMACH_TIMEOUT_DISABLED;
-        netdev->gomach.timeouts[index].expired = false;
+        xtimer_remove(&(netif->mac.gomach.timeouts[index].timer));
+        netif->mac.gomach.timeouts[index].type = GNRC_GOMACH_TIMEOUT_DISABLED;
+        netif->mac.gomach.timeouts[index].expired = false;
     }
 }
 
-void gnrc_gomach_set_timeout(gnrc_netdev_t *netdev, gnrc_gomach_timeout_type_t type, uint32_t offset)
+void gnrc_gomach_set_timeout(gnrc_netif2_t *netif, gnrc_gomach_timeout_type_t type, uint32_t offset)
 {
-    assert(netdev);
+    assert(netif);
 
     gnrc_gomach_timeout_t *timeout;
-    if ((timeout = _gomach_acquire_timeout(netdev, type))) {
+    if ((timeout = _gomach_acquire_timeout(netif, type))) {
         timeout->expired = false;
         timeout->msg.type = GNRC_GOMACH_EVENT_TIMEOUT_TYPE;
         timeout->msg.content.ptr = (void *) timeout;
         xtimer_set_msg(&(timeout->timer), offset,
-                       &(timeout->msg), netdev->pid);
+                       &(timeout->msg), netif->pid);
     }
     else {
         DEBUG("[GoMacH]: Cannot set timeout, too many concurrent timeouts\n");
     }
 }
 
-void gnrc_gomach_reset_timeouts(gnrc_netdev_t *netdev)
+void gnrc_gomach_reset_timeouts(gnrc_netif2_t *netif)
 {
-    assert(netdev);
+    assert(netif);
 
     for (unsigned i = 0; i < GNRC_GOMACH_TIMEOUT_COUNT; i++) {
-        if (netdev->gomach.timeouts[i].type != GNRC_GOMACH_TIMEOUT_DISABLED) {
-            xtimer_remove(&(netdev->gomach.timeouts[i].timer));
-            netdev->gomach.timeouts[i].type = GNRC_GOMACH_TIMEOUT_DISABLED;
+        if (netif->mac.gomach.timeouts[i].type != GNRC_GOMACH_TIMEOUT_DISABLED) {
+            xtimer_remove(&(netif->mac.gomach.timeouts[i].timer));
+            netif->mac.gomach.timeouts[i].type = GNRC_GOMACH_TIMEOUT_DISABLED;
         }
     }
 }
