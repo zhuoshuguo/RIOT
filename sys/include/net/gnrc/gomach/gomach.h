@@ -23,7 +23,7 @@
 #define NET_GNRC_GOMACH_GOMACH_H
 
 #include "kernel_types.h"
-#include "net/gnrc/netdev.h"
+#include "net/gnrc/netif2.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -298,23 +298,22 @@ extern "C" {
 #endif
 
 /**
- * @brief   Initialize an instance of the GoMacH layer
+ * @brief   Creates an IEEE 802.15.4 GoMacH network interface
  *
- * The initialization starts a new thread that connects to the given netdev
- * device and starts a link layer event loop.
+ * @param[in] stack     The stack for the LWMAC network interface's thread.
+ * @param[in] stacksize Size of @p stack.
+ * @param[in] priority  Priority for the LWMAC network interface's thread.
+ * @param[in] name      Name for the LWMAC network interface. May be NULL.
+ * @param[in] dev       Device for the interface
  *
- * @param[in] stack         stack for the control thread
- * @param[in] stacksize     size of *stack*
- * @param[in] priority      priority for the thread housing the GoMacH instance
- * @param[in] name          name of the thread housing the GoMacH instance
- * @param[in] dev           netdev device, needs to be already initialized
+ * @see @ref gnrc_netif2_create()
  *
- * @return                  PID of GoMacH thread on success
- * @return                  -EINVAL if creation of thread fails
- * @return                  -ENODEV if *dev* is invalid
+ * @return  The network interface on success.
+ * @return  NULL, on error.
  */
-kernel_pid_t gnrc_gomach_init(char *stack, int stacksize, char priority,
-                              const char *name, gnrc_netdev_t *dev);
+gnrc_netif2_t *gnrc_netif2_gomach_create(char *stack, int stacksize,
+                                         char priority, char *name,
+                                         netdev_t *dev);
 
 #ifdef __cplusplus
 }

@@ -23,21 +23,17 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "kernel_types.h"
-#include "msg.h"
-#include "thread.h"
 #include "random.h"
 #include "timex.h"
 #include "periph/rtt.h"
 #include "net/gnrc/netif2.h"
 #include "net/gnrc/netif2/internal.h"
 #include "net/gnrc/netif2/ieee802154.h"
+#include "net/netdev/ieee802154.h"
 #include "net/gnrc.h"
 #include "net/gnrc/nettype.h"
 #include "net/netdev.h"
-#include "net/gnrc/netdev.h"
 #include "net/gnrc/mac/internal.h"
-#include "net/gnrc/netdev/ieee802154.h"
 #include "net/gnrc/gomach/gomach.h"
 #include "net/gnrc/gomach/types.h"
 #include "net/gnrc/gomach/timeout.h"
@@ -174,6 +170,7 @@ static gnrc_pktsnip_t *_recv(gnrc_netif2_t *netif)
             hdr->lqi = rx_info.lqi;
             hdr->rssi = rx_info.rssi;
             hdr->if_pid = thread_getpid();
+            hdr->seq = (unsigned)ieee802154_get_seq(ieee802154_hdr->data);
             pkt->type = state->proto;
 #if ENABLE_DEBUG
             DEBUG("_recv_ieee802154: received packet from %s of length %u\n",
@@ -320,7 +317,7 @@ static bool _gomach_send_bcast_busy_handle(gnrc_netif2_t *netif)
 {
     /* Quit sending broadcast packet if we found ongoing transmissions, for collision avoidance. */
     if ((gnrc_gomach_get_netdev_state(netif) == NETOPT_STATE_RX) ||
-        (gnrc_netdev_get_rx_started(netif) == true)) {
+        (gnrc_netif2_get_rx_started(netif) == true)) {
         LOG_DEBUG("[GOMACH] bcast: found ongoing transmission, quit broadcast.\n");
         /* Queue the broadcast packet back to the queue. */
         gnrc_pktsnip_t *payload = netif->mac.tx.packet->next->next;
@@ -623,7 +620,7 @@ static void gomach_t2k_trans_in_cp(gnrc_netif2_t *netif)
 static void gomach_t2k_wait_cp_txfeedback(gnrc_netif2_t *netif)
 {
     if (gnrc_gomach_get_tx_finish(netif)) {
-        switch (gnrc_netdev_get_tx_feedback(netif)) {
+        switch (gnrc_netif2_get_tx_feedback(netif)) {
             case TX_FEEDBACK_SUCCESS: {
                 /* Since the packet will not be released by the sending function,
                  * so, here, if TX success, we first release the packet. */
@@ -852,7 +849,7 @@ static void gomach_t2k_trans_in_slots(gnrc_netif2_t *netif)
 static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netif2_t *netif)
 {
     if (gnrc_gomach_get_tx_finish(netif)) {
-        switch (gnrc_netdev_get_tx_feedback(netif)) {
+        switch (gnrc_netif2_get_tx_feedback(netif)) {
             case TX_FEEDBACK_SUCCESS: {
                 /* First release the packet. */
                 gnrc_pktbuf_release(netif->mac.tx.packet);
@@ -917,7 +914,7 @@ static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netif2_t *netif)
 
 static void gomach_t2k_end(gnrc_netif2_t *netif)
 {
-    gnrc_gomach_turn_off_radio(gnrc_netdev);
+    gnrc_gomach_turn_off_radio(netif);
 
     /* In GoMacH, normally, in case of transmission failure, no packet will be released
     * in t2k. Failed packet will only be released in t2u. In case of continuous t2k
@@ -1008,7 +1005,7 @@ static void gomach_t2u_init(gnrc_netif2_t *netif)
 
     LOG_DEBUG("[GOMACH] t2u initialization.\n");
 
-    gnrc_netdev_set_rx_started(netif, false);
+    gnrc_netif2_set_rx_started(netif, false);
     gnrc_gomach_set_quit_cycle(netif, false);
     gnrc_gomach_set_pkt_received(netif, false);
     netif->mac.tx.preamble_sent = 0;
@@ -1087,7 +1084,7 @@ static void gomach_t2u_send_preamble(gnrc_netif2_t *netif)
         return;
     }
 
-    gnrc_netdev_set_rx_started(netif, false);
+    gnrc_netif2_set_rx_started(netif, false);
     netif->mac.tx.preamble_sent++;
     netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_WAIT_PREAMBLE_TX;
     gnrc_gomach_set_update(netif, false);
@@ -1157,7 +1154,7 @@ static bool _handle_in_t2u_send_preamble(gnrc_netif2_t *netif)
 
     /* if we are receiving packet, wait until RX is completed. */
     if ((!gnrc_gomach_timeout_is_running(netif, GNRC_GOMACH_TIMEOUT_WAIT_RX_END)) &&
-        gnrc_netdev_get_rx_started(netif) &&
+        gnrc_netif2_get_rx_started(netif) &&
         (!gnrc_gomach_get_max_pream_interv(netif))) {
         gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_PREAMBLE);
         gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
@@ -1290,7 +1287,7 @@ static void gomach_t2u_send_data(gnrc_netif2_t *netif)
 static void gomach_t2u_wait_tx_feedback(gnrc_netif2_t *netif)
 {
     if (gnrc_gomach_get_tx_finish(netif)) {
-        if (gnrc_netdev_get_tx_feedback(netif) == TX_FEEDBACK_SUCCESS) {
+        if (gnrc_netif2_get_tx_feedback(netif) == TX_FEEDBACK_SUCCESS) {
             /* If transmission succeeded, release the data. */
             gnrc_pktbuf_release(netif->mac.tx.packet);
             netif->mac.tx.packet = NULL;
@@ -1335,7 +1332,7 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netif2_t *netif)
             else {
                 /* Record the MAC sequence of the data, retry t2u in next cycle. */
                 netif->mac.tx.no_ack_counter = GNRC_GOMACH_REPHASELOCK_THRESHOLD;
-                netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
+                netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)netif->dev;
                 netif->mac.tx.tx_seq = device_state->seq - 1;
 
                 LOG_DEBUG("[GOMACH] t2u send data failed on channel %d.\n",
@@ -1477,7 +1474,7 @@ static void gomach_listen_init(gnrc_netif2_t *netif)
     /* Turn to current public channel. */
     gnrc_gomach_turn_channel(netif, netif->mac.gomach.cur_pub_channel);
 
-    gnrc_netdev_set_rx_started(netif, false);
+    gnrc_netif2_set_rx_started(netif, false);
     gnrc_gomach_set_pkt_received(netif, false);
     netif->mac.gomach.cp_extend_count = 0;
     gnrc_gomach_set_quit_cycle(netif, false);
@@ -1950,19 +1947,19 @@ static int _send(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt)
 
 static void _gomach_msg_handler(gnrc_netif2_t *netif, msg_t *msg)
 {
-    switch (msg.type) {
+    switch (msg->type) {
         case GNRC_GOMACH_EVENT_RTT_TYPE: {
-            _gomach_rtt_handler(msg.content.value, netif);
+            _gomach_rtt_handler(msg->content.value, netif);
             break;
         }
         case GNRC_GOMACH_EVENT_TIMEOUT_TYPE: {
             /* GoMacH timeout expires. */
-            gnrc_gomach_timeout_make_expire((gnrc_gomach_timeout_t *) msg.content.ptr);
+            gnrc_gomach_timeout_make_expire((gnrc_gomach_timeout_t *) msg->content.ptr);
             gnrc_gomach_set_update(netif, true);
             break;
         }
         default: {
-            DEBUG("gnrc_netdev: Unknown command %" PRIu16 "\n", msg.type);
+            DEBUG("[GoMacH]: Unknown command %" PRIu16 "\n", msg->type);
             break;
         }
     }
@@ -1996,32 +1993,32 @@ static void _gomach_event_cb(netdev_t *dev, netdev_event_t event)
         DEBUG("gnrc_netdev: event triggered -> %i\n", event);
         switch (event) {
             case NETDEV_EVENT_RX_STARTED: {
-                gnrc_netdev_set_rx_started(netif, true);
+                gnrc_netif2_set_rx_started(netif, true);
                 gnrc_gomach_set_update(netif, true);
                 break;
             }
             case NETDEV_EVENT_RX_COMPLETE: {
                 gnrc_gomach_set_update(netif, true);
 
-                gnrc_pktsnip_t *pkt = netif->recv(netif);
+                gnrc_pktsnip_t *pkt = netif->ops->recv(netif);
                 if (pkt == NULL) {
                     gnrc_gomach_set_buffer_full(netif, true);
 
                     LOG_DEBUG("[GOMACH] gnrc_netdev: packet is NULL, memory full?\n");
                     gnrc_gomach_set_pkt_received(netif, false);
-                    gnrc_netdev_set_rx_started(netif, false);
+                    gnrc_netif2_set_rx_started(netif, false);
                     break;
                 }
 
-                if (!gnrc_netdev_get_rx_started(netif)) {
+                if (!gnrc_netif2_get_rx_started(netif)) {
                     LOG_DEBUG("[GOMACH] gnrc_netdev: maybe sending kicked in "
                               "and frame buffer is now corrupted?\n");
                     gnrc_pktbuf_release(pkt);
-                    gnrc_netdev_set_rx_started(netif, false);
+                    gnrc_netif2_set_rx_started(netif, false);
                     break;
                 }
 
-                gnrc_netdev_set_rx_started(netif, false);
+                gnrc_netif2_set_rx_started(netif, false);
 
                 if (!gnrc_mac_queue_rx_packet(&netif->mac.rx, 0, pkt)) {
                     LOG_ERROR("ERROR: [GOMACH] gnrc_netdev: can't push RX packet, queue full?\n");
@@ -2035,21 +2032,21 @@ static void _gomach_event_cb(netdev_t *dev, netdev_event_t event)
                 break;
             }
             case NETDEV_EVENT_TX_COMPLETE: {
-                gnrc_netdev_set_tx_feedback(netif, TX_FEEDBACK_SUCCESS);
+                gnrc_netif2_set_tx_feedback(netif, TX_FEEDBACK_SUCCESS);
                 gnrc_gomach_set_tx_finish(netif, true);
                 gnrc_gomach_turn_to_listen_mode(netif);
                 gnrc_gomach_set_update(netif, true);
                 break;
             }
             case NETDEV_EVENT_TX_NOACK: {
-                gnrc_netdev_set_tx_feedback(netif, TX_FEEDBACK_NOACK);
+                gnrc_netif2_set_tx_feedback(netif, TX_FEEDBACK_NOACK);
                 gnrc_gomach_set_tx_finish(netif, true);
                 gnrc_gomach_turn_to_listen_mode(netif);
                 gnrc_gomach_set_update(netif, true);
                 break;
             }
             case NETDEV_EVENT_TX_MEDIUM_BUSY: {
-                gnrc_netdev_set_tx_feedback(netif, TX_FEEDBACK_BUSY);
+                gnrc_netif2_set_tx_feedback(netif, TX_FEEDBACK_BUSY);
                 gnrc_gomach_set_tx_finish(netif, true);
                 gnrc_gomach_turn_to_listen_mode(netif);
                 gnrc_gomach_set_update(netif, true);
@@ -2059,6 +2056,11 @@ static void _gomach_event_cb(netdev_t *dev, netdev_event_t event)
                 DEBUG("WARNING [GoMacH]: unhandled event %u.\n", event);
             }
         }
+    }
+
+    while (gnrc_gomach_get_update(netif)) {
+        gnrc_gomach_set_update(netif, false);
+        gomach_update(netif);
     }
 }
 
@@ -2149,8 +2151,13 @@ static void _gomach_init(gnrc_netif2_t *netif)
     netif->mac.tx.t2u_fail_count = 0;
 
     gnrc_gomach_set_update(netif, true);
-}
 
+    while (gnrc_gomach_get_update(netif)) {
+        gnrc_gomach_set_update(netif, false);
+        gomach_update(netif);
+    }
+}
+#if 0
 /**
  * @brief   Startup code and event loop of the GoMacH MAC protocol
  *
@@ -2294,3 +2301,4 @@ kernel_pid_t gnrc_gomach_init(char *stack, int stacksize, char priority,
 
     return res;
 }
+#endif
