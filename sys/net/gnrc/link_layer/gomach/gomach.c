@@ -219,7 +219,6 @@ static void gomach_reinit_radio(gnrc_netif2_t *netif)
     netopt_enable_t enable = NETOPT_ENABLE;
     netif->dev->driver->set(netif->dev, NETOPT_RX_START_IRQ, &enable, sizeof(enable));
     netif->dev->driver->set(netif->dev, NETOPT_RX_END_IRQ, &enable, sizeof(enable));
-    netif->dev->driver->set(netif->dev, NETOPT_TX_START_IRQ, &enable, sizeof(enable));
     netif->dev->driver->set(netif->dev, NETOPT_TX_END_IRQ, &enable, sizeof(enable));
 
 }
@@ -517,9 +516,6 @@ static void gomach_t2k_init(gnrc_netif2_t *netif)
     /* Turn off radio to conserve power */
     gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_SLEEP);
 
-    /* Turn radio onto the neighbor's public channel, which will not change in this cycle. */
-    gnrc_gomach_turn_channel(netif, netif->mac.tx.current_neighbor->pub_chanseq);
-
     gnrc_gomach_set_quit_cycle(netif, false);
 
     /* Set waiting timer for the targeted device! */
@@ -551,6 +547,7 @@ static void gomach_t2k_init(gnrc_netif2_t *netif)
         }
     }
 
+    wait_phase_duration = 300000;
     gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_CP, wait_phase_duration);
 
     /* Flush the rx-queue. */
@@ -565,6 +562,10 @@ static void gomach_t2k_init(gnrc_netif2_t *netif)
 static void gomach_t2k_wait_cp(gnrc_netif2_t *netif)
 {
     if (gnrc_gomach_timeout_is_expired(netif, GNRC_GOMACH_TIMEOUT_WAIT_CP)) {
+        gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
+        /* Turn radio onto the neighbor's public channel, which will not change in this cycle. */
+        gnrc_gomach_turn_channel(netif, netif->mac.tx.current_neighbor->pub_chanseq);
+
         /* Disable auto-ack, don't try to receive packet! */
         gnrc_gomach_set_autoack(netif, NETOPT_DISABLE);
         /* Require ACK for the packet waiting to be sent! */
@@ -575,7 +576,6 @@ static void gomach_t2k_wait_cp(gnrc_netif2_t *netif)
         netif->dev->driver->set(netif->dev, NETOPT_CSMA, &csma_enable,
                                 sizeof(netopt_enable_t));
 
-        gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
         netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_TRANS_IN_CP;
         gnrc_gomach_set_update(netif, true);
     }
@@ -944,9 +944,6 @@ static void gomach_t2k_end(gnrc_netif2_t *netif)
         gnrc_gomach_update_neighbor_phase(netif);
     }
 
-    /* Enable Auto ACK again for data reception */
-    gnrc_gomach_set_autoack(netif, NETOPT_ENABLE);
-
     netif->mac.gomach.basic_state = GNRC_GOMACH_LISTEN;
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_gomach_set_enter_new_cycle(netif, false);
@@ -1020,10 +1017,12 @@ static void gomach_t2u_init(gnrc_netif2_t *netif)
     gnrc_gomach_set_got_preamble_ack(netif, false);
     gnrc_gomach_set_buffer_full(netif, false);
 
-    /* Disable auto-ACK here! Don't try to reply ACK to any node. */
-    gnrc_gomach_set_autoack(netif, NETOPT_DISABLE);
     /* Start sending the preamble firstly on public channel 1. */
     gnrc_gomach_turn_channel(netif, netif->mac.gomach.pub_channel_1);
+
+    /* Disable auto-ACK here! Don't try to reply ACK to any node. */
+    gnrc_gomach_set_autoack(netif, NETOPT_DISABLE);
+
     gnrc_gomach_set_on_pubchan_1(netif, true);
 
     gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
@@ -1472,6 +1471,8 @@ static void gomach_listen_init(gnrc_netif2_t *netif)
         }
     }
 
+    puts("C");
+
     if (netif->mac.tx.t2u_fail_count >= GNRC_GOMACH_MAX_T2U_RETYR_THRESHOLD) {
         netif->mac.tx.t2u_fail_count = 0;
         LOG_DEBUG("[GOMACH]: Re-initialize radio.");
@@ -1484,12 +1485,6 @@ static void gomach_listen_init(gnrc_netif2_t *netif)
                              GNRC_GOMACH_CP_DURATION_US;
     gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_END, listen_period);
     gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_MAX, GNRC_GOMACH_CP_DURATION_MAX_US);
-
-    /* Enable Auto-ACK for data packet reception. */
-    gnrc_gomach_set_autoack(netif, NETOPT_ENABLE);
-
-    /* Turn to current public channel. */
-    gnrc_gomach_turn_channel(netif, netif->mac.gomach.cur_pub_channel);
 
     gnrc_netif2_set_rx_started(netif, false);
     gnrc_gomach_set_pkt_received(netif, false);
@@ -1510,6 +1505,13 @@ static void gomach_listen_init(gnrc_netif2_t *netif)
         gnrc_gomach_set_phase_backoff(netif, false);
         _gomach_phase_backoff(netif);
     }
+
+    /* Turn to current public channel. */
+    gnrc_gomach_turn_channel(netif, netif->mac.gomach.cur_pub_channel);
+
+    /* Enable Auto-ACK for data packet reception. */
+    gnrc_gomach_set_autoack(netif, NETOPT_ENABLE);
+
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_CP_LISTEN;
     gnrc_gomach_set_update(netif, false);
 }
@@ -1519,6 +1521,7 @@ static void gomach_listen_cp_listen(gnrc_netif2_t *netif)
     if (gnrc_gomach_get_pkt_received(netif)) {
         gnrc_gomach_set_pkt_received(netif, false);
         gnrc_gomach_cp_packet_process(netif);
+        puts("CP");
 
         /* If the device has replied a preamble-ACK, it must waits for the data.
          * Here, we extend the CP. */
@@ -1589,9 +1592,6 @@ static void gomach_listen_cp_end(gnrc_netif2_t *netif)
 
 static void gomach_listen_send_beacon(gnrc_netif2_t *netif)
 {
-    /* Disable auto-ACK. Thus not to receive packet (attempt to reply ACK) anymore. */
-    gnrc_gomach_set_autoack(netif, NETOPT_DISABLE);
-
     /* Assemble and send the beacon. */
     int res = gnrc_gomach_send_beacon(netif);
     if (res < 0) {
@@ -2123,7 +2123,6 @@ static void _gomach_init(gnrc_netif2_t *netif)
     /* Enable RX-start and TX-started and TX-END interrupts. */
     netopt_enable_t enable = NETOPT_ENABLE;
     dev->driver->set(dev, NETOPT_RX_START_IRQ, &enable, sizeof(enable));
-    dev->driver->set(dev, NETOPT_TX_START_IRQ, &enable, sizeof(enable));
     dev->driver->set(dev, NETOPT_TX_END_IRQ, &enable, sizeof(enable));
 
     /* Initialize broadcast sequence number. This at least differs from board

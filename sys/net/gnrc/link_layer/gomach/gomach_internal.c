@@ -834,7 +834,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt)
 
     /* Mark the neighbor as phase-known */
     netif->mac.tx.current_neighbor->mac_type = GNRC_GOMACH_TYPE_KNOWN;
-
+#if 0
     /* Fetch and deduce the exact phase of the neighbor. */
     long int phase_ticks;
 
@@ -881,6 +881,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt)
     }
 
     netif->mac.tx.current_neighbor->cp_phase = (uint32_t) phase_ticks;
+#endif
 }
 
 void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netif2_t *netif)
