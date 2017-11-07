@@ -646,6 +646,15 @@ void gnrc_gomach_cp_packet_process(gnrc_netif2_t *netif)
                     }
                     gnrc_gomach_dispatch_defer(netif->mac.rx.dispatch_buffer, pkt);
                     gnrc_mac_dispatch(&netif->mac.rx);
+
+#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
+                    /* Output radio duty-cycle ratio */
+                    uint64_t duty;
+                    duty = (uint64_t) xtimer_now_usec();
+                    duty = ((uint64_t) netif->mac.gomach.awake_duration_sum_ticks) * 100 /
+                           (duty - (uint64_t)netif->mac.gomach.system_start_time_ticks);
+                    printf("[GoMacH]: achieved radio duty-cycle: %lu %% \n", (uint32_t)duty);
+#endif
                 }
                 else {
                     /* If the data is not for the device, release it. */
