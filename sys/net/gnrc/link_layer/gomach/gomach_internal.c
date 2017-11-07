@@ -240,15 +240,15 @@ uint32_t gnrc_gomach_phase_now(gnrc_netif2_t *netif)
 {
     assert(netif != NULL);
 
-    uint32_t phase_now = rtt_get_counter();
+    uint32_t phase_now = xtimer_now_usec();
 
-    /* in case that rtt overflows */
-    if (phase_now < netif->mac.gomach.last_wakeup) {
-        uint32_t gap_to_full = GNRC_GOMACH_PHASE_MAX - netif->mac.gomach.last_wakeup;
+    /* in case timer overflows */
+    if (phase_now < netif->mac.gomach.last_wakeup_phase_ms) {
+        uint32_t gap_to_full = GNRC_GOMACH_PHASE_MAX - netif->mac.gomach.last_wakeup_phase_ms;
         phase_now += gap_to_full;
     }
     else {
-        phase_now = phase_now - netif->mac.gomach.last_wakeup;
+        phase_now = phase_now - netif->mac.gomach.last_wakeup_phase_ms;
     }
 
     return phase_now;
@@ -284,7 +284,7 @@ int gnrc_gomach_send_preamble_ack(gnrc_netif2_t *netif, gnrc_gomach_packet_info_
     gomach_preamble_ack_hdr.dst_addr = info->src_addr;
     /* Tell the preamble sender the device's (preamble-ACK sender) current phase.
      * This is to allow the preamble sender to deduce the exact phase of the receiver. */
-    gomach_preamble_ack_hdr.phase_in_ticks = gnrc_gomach_phase_now(netif);
+    gomach_preamble_ack_hdr.phase_in_ms = gnrc_gomach_phase_now(netif);
 
     pkt = gnrc_pktbuf_add(NULL, &gomach_preamble_ack_hdr, sizeof(gomach_preamble_ack_hdr),
                           GNRC_NETTYPE_GOMACH);
@@ -334,23 +334,6 @@ int gnrc_gomach_send_beacon(gnrc_netif2_t *netif)
     int j = 0;
     uint8_t total_tdma_node_num = 0;
     uint8_t total_tdma_slot_num = 0;
-
-    /* First check how many slots needed to be allocated. */
-    netif->mac.rx.vtdma_manag.total_slots_num = 0;
-
-    for (i = 0; i < GNRC_GOMACH_SLOSCH_UNIT_COUNT; i++) {
-        if (netif->mac.rx.slosch_list[i].queue_indicator > 0) {
-            total_tdma_slot_num = netif->mac.rx.slosch_list[i].queue_indicator;
-            break;
-        }
-    }
-
-    if (total_tdma_slot_num == 0) {
-        return 0;
-    }
-
-    total_tdma_slot_num = 0;
-
     gnrc_pktsnip_t *pkt = NULL;
     gnrc_pktsnip_t *gomach_pkt = NULL;
     gnrc_netif_hdr_t *nethdr_beacon = NULL;
@@ -429,7 +412,7 @@ int gnrc_gomach_send_beacon(gnrc_netif2_t *netif)
     }
     else {
         /* If there is no slots to allocate, quit sending beacon! */
-        return 0;
+        return -ENOBUFS;
     }
 
     /* Add the Netif header. */
@@ -836,51 +819,14 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt)
     netif->mac.tx.current_neighbor->mac_type = GNRC_GOMACH_TYPE_KNOWN;
 
     /* Fetch and deduce the exact phase of the neighbor. */
-    long int phase_ticks;
+    long int phase_ms = gnrc_gomach_phase_now(netif) -
+                           gomach_preamble_ack_hdr->phase_in_ms;
 
-    if (gnrc_gomach_get_phase_changed(netif) && gnrc_gomach_get_enter_new_cycle(netif)) {
-        /* This means that this device is already in a new cycle after reset a new phase
-         * (phase-backoff). So, give some compensation for later phase adjust. */
-        phase_ticks = gnrc_gomach_phase_now(netif) +
-                      netif->mac.gomach.backoff_phase_ticks -
-                      gomach_preamble_ack_hdr->phase_in_ticks;
-    }
-    else {
-        phase_ticks = gnrc_gomach_phase_now(netif) -
-                      gomach_preamble_ack_hdr->phase_in_ticks;
+    if (phase_ms < 0) {
+    	phase_ms += GNRC_GOMACH_SUPERFRAME_DURATION_US;
     }
 
-    if (phase_ticks < 0) {
-        phase_ticks += RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
-    }
-
-    /* Check if the sender's phase is too close to the receiver. */
-    long int future_neighbor_phase;
-    if (gnrc_gomach_get_phase_changed(netif)) {
-        future_neighbor_phase = phase_ticks - netif->mac.gomach.backoff_phase_ticks;
-
-        if (future_neighbor_phase < 0) {
-            future_neighbor_phase += RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
-        }
-    }
-    else {
-        future_neighbor_phase = phase_ticks;
-    }
-
-    uint32_t neighbor_phase = (uint32_t)future_neighbor_phase;
-
-    if ((RTT_TICKS_TO_US(neighbor_phase) > (GNRC_GOMACH_SUPERFRAME_DURATION_US - GNRC_GOMACH_CP_MIN_GAP_US)) ||
-        (RTT_TICKS_TO_US(neighbor_phase) < GNRC_GOMACH_CP_MIN_GAP_US)) {
-        LOG_DEBUG("[GOMACH] t2u: own phase is close to the neighbor's.\n");
-        gnrc_gomach_set_phase_backoff(netif, true);
-        /* Set a random phase-backoff value. */
-        netif->mac.gomach.backoff_phase_ticks =
-            random_uint32_range(RTT_US_TO_TICKS(GNRC_GOMACH_CP_MIN_GAP_US),
-                                RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US -
-                                                GNRC_GOMACH_CP_MIN_GAP_US));
-    }
-
-    netif->mac.tx.current_neighbor->cp_phase = (uint32_t) phase_ticks;
+    netif->mac.tx.current_neighbor->cp_phase = phase_ms;
 }
 
 void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netif2_t *netif)
