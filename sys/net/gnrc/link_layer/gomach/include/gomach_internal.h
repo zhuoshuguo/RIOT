@@ -114,6 +114,11 @@ extern "C" {
 #define GNRC_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV        (0x4000U)
 
 /**
+ * @brief Flag to track if node has turned on its radio.
+ */
+#define GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON        (0x8000U)
+
+/**
  * @brief Set the @ref GNRC_GOMACH_INFO_TX_FINISHED flag of the device.
  *
  * @param[in,out] netif    the network interface.
@@ -654,37 +659,39 @@ static inline uint32_t gnrc_gomach_ticks_until_phase(gnrc_netif2_t *netif, uint3
 }
 
 /**
- * @brief Turn on (wake up) the radio of the device.
+ * @brief Shortcut to set the state of netdev
  *
- * @param[in,out] netif    the network interface.
- *
+ * @param[in]   netif       ptr to the network interface
+ * @param[in]   devstate    new state for netdev
  */
-static inline void gnrc_gomach_turn_on_radio(gnrc_netif2_t *netif)
+static inline void gnrc_gomach_set_netdev_state(gnrc_netif2_t *netif, netopt_state_t devstate)
 {
     assert(netif != NULL);
 
-    netopt_state_t devstate = NETOPT_STATE_IDLE;
     netif->dev->driver->set(netif->dev,
                             NETOPT_STATE,
                             &devstate,
                             sizeof(devstate));
-}
 
-/**
- * @brief Turn off the radio of the device.
- *
- * @param[in,out] netif    the network interface.
- *
- */
-static inline void gnrc_gomach_turn_off_radio(gnrc_netif2_t *netif)
-{
-    assert(netif != NULL);
+#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
+    if (devstate == NETOPT_STATE_IDLE) {
+        if (!(netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON)) {
+            netif->mac.gomach.last_radio_on_time_ticks = xtimer_now_usec();
+            netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
+        }
+        return;
+    }
+    else if ((devstate == NETOPT_STATE_SLEEP) &&
+             (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON)) {
+        netif->mac.gomach.radio_off_time_ticks = xtimer_now_usec();
 
-    netopt_state_t devstate = NETOPT_STATE_SLEEP;
-    netif->dev->driver->set(netif->dev,
-                            NETOPT_STATE,
-                            &devstate,
-                            sizeof(devstate));
+        netif->mac.gomach.awake_duration_sum_ticks +=
+            (netif->mac.gomach.radio_off_time_ticks -
+             netif->mac.gomach.last_radio_on_time_ticks);
+
+        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
+    }
+#endif
 }
 
 /**
@@ -759,19 +766,6 @@ static inline void gnrc_gomach_turn_channel(gnrc_netif2_t *netif, uint16_t chann
                             NETOPT_CHANNEL,
                             &channel_num,
                             sizeof(channel_num));
-}
-
-/**
- * @brief Turn the radio to the listen state.
- *
- * @param[in,out] netif    the network interface.
- *
- */
-static inline void gnrc_gomach_turn_to_listen_mode(gnrc_netif2_t *netif)
-{
-    assert(netif != NULL);
-
-    gnrc_gomach_turn_on_radio(netif);
 }
 
 /**

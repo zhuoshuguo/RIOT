@@ -35,7 +35,6 @@
 #include "net/netdev.h"
 #include "net/gnrc/mac/internal.h"
 #include "net/gnrc/gomach/gomach.h"
-#include "net/gnrc/gomach/types.h"
 #include "net/gnrc/gomach/timeout.h"
 #include "include/gomach_internal.h"
 
@@ -411,7 +410,7 @@ static void gomach_wait_bcast_wait_next_tx(gnrc_netif2_t *netif)
 
 static void gomach_bcast_end(gnrc_netif2_t *netif)
 {
-    gnrc_gomach_turn_off_radio(netif);
+    gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_SLEEP);
     gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_BCAST_INTERVAL);
     gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_BCAST_FINISH);
 
@@ -516,7 +515,7 @@ static void gomach_init_end(gnrc_netif2_t *netif)
 static void gomach_t2k_init(gnrc_netif2_t *netif)
 {
     /* Turn off radio to conserve power */
-    gnrc_gomach_turn_off_radio(netif);
+    gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_SLEEP);
 
     /* Turn radio onto the neighbor's public channel, which will not change in this cycle. */
     gnrc_gomach_turn_channel(netif, netif->mac.tx.current_neighbor->pub_chanseq);
@@ -576,7 +575,7 @@ static void gomach_t2k_wait_cp(gnrc_netif2_t *netif)
         netif->dev->driver->set(netif->dev, NETOPT_CSMA, &csma_enable,
                                 sizeof(netopt_enable_t));
 
-        gnrc_gomach_turn_on_radio(netif);
+        gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
         netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_TRANS_IN_CP;
         gnrc_gomach_set_update(netif, true);
     }
@@ -752,7 +751,7 @@ static void gomach_t2k_wait_beacon(gnrc_netif2_t *netif)
             /* If the allocated slots period is not right behind the beacon, i.e., not the first
              * one, turn off the radio and wait for its own slots period. */
             if (netif->mac.tx.vtdma_para.slots_position > 0) {
-                gnrc_gomach_turn_off_radio(netif);
+                gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_SLEEP);
 
                 uint32_t wait_slots_duration = netif->mac.tx.vtdma_para.slots_position *
                                                GNRC_GOMACH_VTDMA_SLOT_SIZE_US;
@@ -801,7 +800,7 @@ static void gomach_t2k_wait_own_slots(gnrc_netif2_t *netif)
 {
     if (gnrc_gomach_timeout_is_expired(netif, GNRC_GOMACH_TIMEOUT_WAIT_SLOTS)) {
         /* The node is now in its scheduled slots period, start burst sending packets. */
-        gnrc_gomach_turn_on_radio(netif);
+        gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
 
         gnrc_pktsnip_t *pkt = gnrc_priority_pktqueue_pop(&(netif->mac.tx.current_neighbor->queue));
         if (pkt != NULL) {
@@ -914,7 +913,7 @@ static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netif2_t *netif)
 
 static void gomach_t2k_end(gnrc_netif2_t *netif)
 {
-    gnrc_gomach_turn_off_radio(netif);
+    gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_SLEEP);
 
     /* In GoMacH, normally, in case of transmission failure, no packet will be released
     * in t2k. Failed packet will only be released in t2u. In case of continuous t2k
@@ -952,6 +951,15 @@ static void gomach_t2k_end(gnrc_netif2_t *netif)
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_gomach_set_enter_new_cycle(netif, false);
     gnrc_gomach_set_update(netif, true);
+
+#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
+    /* Output duty-cycle ratio */
+    uint64_t duty;
+    duty = (uint64_t) xtimer_now_usec();
+    duty = ((uint64_t) netif->mac.gomach.awake_duration_sum_ticks) * 100 /
+           (duty - (uint64_t)netif->mac.gomach.system_start_time_ticks);
+    printf("[GoMacH]: achieved radio duty-cycle: %lu %% \n", (uint32_t)duty);
+#endif
 }
 
 static void gomach_t2k_update(gnrc_netif2_t *netif)
@@ -1349,7 +1357,7 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netif2_t *netif)
 
 static void gomach_t2u_end(gnrc_netif2_t *netif)
 {
-    gnrc_gomach_turn_off_radio(netif);
+    gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_SLEEP);
     gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_PREAMBLE);
     gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_PREAM_DURATION);
     gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
@@ -1381,6 +1389,15 @@ static void gomach_t2u_end(gnrc_netif2_t *netif)
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_gomach_set_enter_new_cycle(netif, false);
     gnrc_gomach_set_update(netif, true);
+
+#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
+    /* Output duty-cycle ratio */
+    uint64_t duty;
+    duty = (uint64_t) xtimer_now_usec();
+    duty = ((uint64_t) netif->mac.gomach.awake_duration_sum_ticks) * 100 /
+           (duty - (uint64_t)netif->mac.gomach.system_start_time_ticks);
+    printf("[GoMacH]: achieved radio duty-cycle: %lu %% \n", (uint32_t)duty);
+#endif
 }
 
 static void gomach_t2u_update(gnrc_netif2_t *netif)
@@ -1486,7 +1503,7 @@ static void gomach_listen_init(gnrc_netif2_t *netif)
 
     /* Flush RX queue and turn on radio. */
     gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
-    gnrc_gomach_turn_on_radio(netif);
+    gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
 
     /* Run phase-backoff if needed, select a new wake-up phase. */
     if (gnrc_gomach_get_phase_backoff(netif)) {
@@ -1807,7 +1824,7 @@ static void gomach_sleep_init(gnrc_netif2_t *netif)
     }
 
     /* Turn off the radio during sleep period to conserve power. */
-    gnrc_gomach_turn_off_radio(netif);
+    gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_SLEEP);
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_gomach_set_update(netif, true);
 }
@@ -2034,21 +2051,21 @@ static void _gomach_event_cb(netdev_t *dev, netdev_event_t event)
             case NETDEV_EVENT_TX_COMPLETE: {
                 gnrc_netif2_set_tx_feedback(netif, TX_FEEDBACK_SUCCESS);
                 gnrc_gomach_set_tx_finish(netif, true);
-                gnrc_gomach_turn_to_listen_mode(netif);
+                gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
                 gnrc_gomach_set_update(netif, true);
                 break;
             }
             case NETDEV_EVENT_TX_NOACK: {
                 gnrc_netif2_set_tx_feedback(netif, TX_FEEDBACK_NOACK);
                 gnrc_gomach_set_tx_finish(netif, true);
-                gnrc_gomach_turn_to_listen_mode(netif);
+                gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
                 gnrc_gomach_set_update(netif, true);
                 break;
             }
             case NETDEV_EVENT_TX_MEDIUM_BUSY: {
                 gnrc_netif2_set_tx_feedback(netif, TX_FEEDBACK_BUSY);
                 gnrc_gomach_set_tx_finish(netif, true);
-                gnrc_gomach_turn_to_listen_mode(netif);
+                gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
                 gnrc_gomach_set_update(netif, true);
                 break;
             }
@@ -2149,6 +2166,14 @@ static void _gomach_init(gnrc_netif2_t *netif)
     random_init(seed);
 
     netif->mac.tx.t2u_fail_count = 0;
+
+#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
+    /* Start duty cycle recording */
+    netif->mac.gomach.system_start_time_ticks = xtimer_now_usec();
+    netif->mac.gomach.last_radio_on_time_ticks = netif->mac.gomach.system_start_time_ticks;
+    netif->mac.gomach.awake_duration_sum_ticks = 0;
+    netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
+#endif
 
     gnrc_gomach_set_update(netif, true);
 
