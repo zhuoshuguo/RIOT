@@ -254,6 +254,8 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netif2_t *netif)
                 gnrc_gomach_set_enter_new_cycle(netif, true);
             }
 
+            netif->mac.gomach.last_wakeup_phase_ms = xtimer_now_usec();
+
             /* Set next cycle's starting time. */
             uint32_t alarm = netif->mac.gomach.last_wakeup +
                              RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
@@ -519,10 +521,18 @@ static void gomach_t2k_init(gnrc_netif2_t *netif)
     gnrc_gomach_set_quit_cycle(netif, false);
 
     /* Set waiting timer for the targeted device! */
-    uint32_t wait_phase_duration;
+    long int wait_phase_duration;
+#if 0
     wait_phase_duration = gnrc_gomach_ticks_until_phase(netif,
                                                         netif->mac.tx.current_neighbor->cp_phase);
     wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration);
+#endif
+
+    wait_phase_duration = netif->mac.tx.current_neighbor->cp_phase - gnrc_gomach_phase_now(netif);
+
+    if (wait_phase_duration < 0) {
+    	wait_phase_duration += GNRC_GOMACH_SUPERFRAME_DURATION_US;
+    }
 
     /* Upon several times of t2k failure, we now doubt that the phase-lock may fail due to drift.
      * Here is the phase-lock auto-adjust scheme, trying to catch the neighbot's phase in case of
@@ -547,8 +557,10 @@ static void gomach_t2k_init(gnrc_netif2_t *netif)
         }
     }
 
-    wait_phase_duration = 300000;
-    gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_CP, wait_phase_duration);
+    if (wait_phase_duration > GNRC_GOMACH_SUPERFRAME_DURATION_US) {
+        wait_phase_duration = wait_phase_duration % GNRC_GOMACH_SUPERFRAME_DURATION_US;
+    }
+    gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_CP, (uint32_t)wait_phase_duration);
 
     /* Flush the rx-queue. */
     gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
@@ -631,15 +643,15 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netif2_t *netif)
                  * original phase. */
                 if (netif->mac.tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD - 2)) {
                     if (netif->mac.tx.current_neighbor->cp_phase >=
-                        RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US)) {
+                        GNRC_GOMACH_CP_DURATION_US) {
                         netif->mac.tx.current_neighbor->cp_phase -=
-                            RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US);
+                            GNRC_GOMACH_CP_DURATION_US;
                     }
                     else {
                         netif->mac.tx.current_neighbor->cp_phase +=
-                            RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
+                            GNRC_GOMACH_SUPERFRAME_DURATION_US;
                         netif->mac.tx.current_neighbor->cp_phase -=
-                            RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US);
+                            GNRC_GOMACH_CP_DURATION_US;
                     }
                 }
                 /* Here is the phase-lock auto-adjust scheme. Use the new adjusted
@@ -647,12 +659,12 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netif2_t *netif)
                  * phase. */
                 if (netif->mac.tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD - 1)) {
                     netif->mac.tx.current_neighbor->cp_phase +=
-                        (RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US + 20 * US_PER_MS));
+                        (GNRC_GOMACH_CP_DURATION_US + 20 * US_PER_MS);
 
                     if (netif->mac.tx.current_neighbor->cp_phase >=
-                        RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US)) {
+                        GNRC_GOMACH_SUPERFRAME_DURATION_US) {
                         netif->mac.tx.current_neighbor->cp_phase -=
-                            RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
+                            GNRC_GOMACH_SUPERFRAME_DURATION_US;
                     }
                 }
 
@@ -693,7 +705,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netif2_t *netif)
             default: {
                 netif->mac.tx.no_ack_counter++;
 
-                LOG_DEBUG("[GOMACH] t2k %d times No-ACK.\n", netif->mac.tx.no_ack_counter);
+                printf("[GOMACH] t2k %d times No-ACK.\n", netif->mac.tx.no_ack_counter);
 
                 /* This packet will be retried. Store the TX sequence number for this packet.
                  * Always use the same sequence number for sending the same packet. */

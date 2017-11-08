@@ -239,7 +239,7 @@ static int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
 uint32_t gnrc_gomach_phase_now(gnrc_netif2_t *netif)
 {
     assert(netif != NULL);
-
+#if 0
     uint32_t phase_now = rtt_get_counter();
 
     /* in case that rtt overflows */
@@ -252,6 +252,9 @@ uint32_t gnrc_gomach_phase_now(gnrc_netif2_t *netif)
     }
 
     return phase_now;
+#endif
+
+    return (xtimer_now_usec() - netif->mac.gomach.last_wakeup_phase_ms);
 }
 
 int gnrc_gomach_send(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable)
@@ -284,7 +287,7 @@ int gnrc_gomach_send_preamble_ack(gnrc_netif2_t *netif, gnrc_gomach_packet_info_
     gomach_preamble_ack_hdr.dst_addr = info->src_addr;
     /* Tell the preamble sender the device's (preamble-ACK sender) current phase.
      * This is to allow the preamble sender to deduce the exact phase of the receiver. */
-    gomach_preamble_ack_hdr.phase_in_ticks = gnrc_gomach_phase_now(netif);
+    gomach_preamble_ack_hdr.phase_in_ms = gnrc_gomach_phase_now(netif);
 
     pkt = gnrc_pktbuf_add(NULL, &gomach_preamble_ack_hdr, sizeof(gomach_preamble_ack_hdr),
                           GNRC_NETTYPE_GOMACH);
@@ -834,10 +837,10 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt)
 
     /* Mark the neighbor as phase-known */
     netif->mac.tx.current_neighbor->mac_type = GNRC_GOMACH_TYPE_KNOWN;
-#if 0
+
     /* Fetch and deduce the exact phase of the neighbor. */
     long int phase_ticks;
-
+#if 0
     if (gnrc_gomach_get_phase_changed(netif) && gnrc_gomach_get_enter_new_cycle(netif)) {
         /* This means that this device is already in a new cycle after reset a new phase
          * (phase-backoff). So, give some compensation for later phase adjust. */
@@ -882,6 +885,15 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt)
 
     netif->mac.tx.current_neighbor->cp_phase = (uint32_t) phase_ticks;
 #endif
+
+    phase_ticks = gnrc_gomach_phase_now(netif) -
+                  gomach_preamble_ack_hdr->phase_in_ms;
+
+    if (phase_ticks < 0) {
+        phase_ticks += GNRC_GOMACH_SUPERFRAME_DURATION_US;
+    }
+
+    netif->mac.tx.current_neighbor->cp_phase = phase_ticks;
 }
 
 void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netif2_t *netif)
