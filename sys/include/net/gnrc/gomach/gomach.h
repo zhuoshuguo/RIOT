@@ -22,6 +22,7 @@
 #ifndef NET_GNRC_GOMACH_GOMACH_H
 #define NET_GNRC_GOMACH_GOMACH_H
 
+#include "periph/rtt.h"
 #include "kernel_types.h"
 #include "net/gnrc/netif2.h"
 
@@ -44,7 +45,11 @@ extern "C" {
  * In GoMacH, by default, we regard the wake-up period (WP) as the beginning of a cycle.
  */
 #ifndef GNRC_GOMACH_SUPERFRAME_DURATION_US
-#define GNRC_GOMACH_SUPERFRAME_DURATION_US        (1000LU *US_PER_MS)
+#define GNRC_GOMACH_SUPERFRAME_DURATION_US        (300LU *US_PER_MS)
+#if (GNRC_GOMACH_SUPERFRAME_DURATION_US < ((1000LU *US_PER_MS) / RTT_FREQUENCY))
+#undef GNRC_GOMACH_SUPERFRAME_DURATION_US
+#define GNRC_GOMACH_SUPERFRAME_DURATION_US        ((1000LU *US_PER_MS) / RTT_FREQUENCY)
+#endif
 #endif
 
 /**
