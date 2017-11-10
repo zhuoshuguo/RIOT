@@ -31,6 +31,19 @@ extern "C" {
 #endif
 
 /**
+ * @brief The default duration of GoMacH's wake-up period (WP).
+ *
+ * GoMacH adopts the duty-cycle scheme that, by default, a node only wakes up for a short
+ * period of @ref GNRC_GOMACH_CP_DURATION_US in each cycle. In the rest of the cycle (except vTDMA),
+ * the node turns off the radio to conserve power. @ref GNRC_GOMACH_CP_DURATION_US should be at
+ * least longer than @ref GNRC_GOMACH_MAX_PREAM_INTERVAL_US, thus to guarantee that the
+ * receiver will not miss the preamble packet.
+ */
+#ifndef GNRC_GOMACH_CP_DURATION_US
+#define GNRC_GOMACH_CP_DURATION_US        (10U *US_PER_MS)
+#endif
+
+/**
  * @brief GoMacH's superframe duration, i.e., time between two consecutive wake-ups.
  *
  * This macro governs power consumption and GoMacH's reactiveness to traffic loads.
@@ -43,26 +56,22 @@ extern "C" {
  * reactiveness of the MAC protocol for handling packet reception and transmission,
  * but also results in higher power consumption due to more idle listening.
  * In GoMacH, by default, we regard the wake-up period (WP) as the beginning of a cycle.
+ *
+ * Note that, GoMacH's superframe duration @ref GNRC_GOMACH_SUPERFRAME_DURATION_US should
+ * not be shorter than 10 times of @ref GNRC_GOMACH_CP_DURATION_US and be shorter than the
+ * RTT tickle interval.
  */
 #ifndef GNRC_GOMACH_SUPERFRAME_DURATION_US
 #define GNRC_GOMACH_SUPERFRAME_DURATION_US        (300LU *US_PER_MS)
-#if (GNRC_GOMACH_SUPERFRAME_DURATION_US < ((1000LU *US_PER_MS) / RTT_FREQUENCY))
+#if ((GNRC_GOMACH_SUPERFRAME_DURATION_US < ((1000LU *US_PER_MS) / RTT_FREQUENCY)) || \
+     (GNRC_GOMACH_SUPERFRAME_DURATION_US < (10 *GNRC_GOMACH_CP_DURATION_US)))
 #undef GNRC_GOMACH_SUPERFRAME_DURATION_US
+#if ((1000LU *US_PER_MS) / RTT_FREQUENCY) > (10 *GNRC_GOMACH_CP_DURATION_US)
 #define GNRC_GOMACH_SUPERFRAME_DURATION_US        ((1000LU *US_PER_MS) / RTT_FREQUENCY)
+#else
+#define GNRC_GOMACH_SUPERFRAME_DURATION_US        (10 *GNRC_GOMACH_CP_DURATION_US)
 #endif
 #endif
-
-/**
- * @brief The default duration of GoMacH's wake-up period (WP).
- *
- * GoMacH adopts the duty-cycle scheme that, by default, a node only wakes up for a short
- * period of @ref GNRC_GOMACH_CP_DURATION_US in each cycle. In the rest of the cycle (except vTDMA),
- * the node turns off the radio to conserve power. @ref GNRC_GOMACH_CP_DURATION_US should be at
- * least longer than @ref GNRC_GOMACH_MAX_PREAM_INTERVAL_US, thus to guarantee that the
- * receiver will not miss the preamble packet.
- */
-#ifndef GNRC_GOMACH_CP_DURATION_US
-#define GNRC_GOMACH_CP_DURATION_US        (10U *US_PER_MS)
 #endif
 
 /**
