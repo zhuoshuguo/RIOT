@@ -672,6 +672,9 @@ static inline void gnrc_gomach_set_netdev_state(gnrc_netdev_t *gnrc_netdev, neto
                                   NETOPT_STATE,
                                   &devstate,
                                   sizeof(devstate));
+    if (devstate == NETOPT_STATE_IDLE) {
+    	xtimer_usleep(500);
+    }
 
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
     if (devstate == NETOPT_STATE_IDLE) {
