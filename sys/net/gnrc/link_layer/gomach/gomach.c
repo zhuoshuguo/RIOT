@@ -159,6 +159,14 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     random_init(seed);
 
     gnrc_netdev->tx.t2u_fail_count = 0;
+
+#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
+    /* Start duty cycle recording */
+    gnrc_netdev->gomach.system_start_time_ticks = xtimer_now_usec64();
+    gnrc_netdev->gomach.last_radio_on_time_ticks = gnrc_netdev->gomach.system_start_time_ticks;
+    gnrc_netdev->gomach.awake_duration_sum_ticks = 0;
+    gnrc_netdev->gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
+#endif
 }
 
 static void _gomach_rtt_cb(void *arg)
@@ -320,7 +328,7 @@ static void gomach_wait_bcast_tx_finish(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_bcast_end(gnrc_netdev_t *gnrc_netdev)
 {
-    gnrc_gomach_turn_off_radio(gnrc_netdev);
+    gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
     gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_BCAST_INTERVAL);
     gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_BCAST_FINISH);
 
@@ -426,7 +434,7 @@ static void gomach_init_end(gnrc_netdev_t *gnrc_netdev)
 static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
 {
     /* Turn off radio to conserve power */
-    gnrc_gomach_turn_off_radio(gnrc_netdev);
+    gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
 
     /* Turn radio onto the neighbor's public channel, which will not change in this cycle. */
     gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->tx.current_neighbor->pub_chanseq);
@@ -486,7 +494,7 @@ static void gomach_t2k_wait_cp(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA, &csma_enable,
                                       sizeof(netopt_enable_t));
 
-        gnrc_gomach_turn_on_radio(gnrc_netdev);
+        gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_TRANS_IN_CP;
         gnrc_gomach_set_update(gnrc_netdev, true);
     }
@@ -662,7 +670,7 @@ static void gomach_t2k_wait_beacon(gnrc_netdev_t *gnrc_netdev)
             /* If the allocated slots period is not right behind the beacon, i.e., not the first
              * one, turn off the radio and wait for its own slots period. */
             if (gnrc_netdev->tx.vtdma_para.slots_position > 0) {
-                gnrc_gomach_turn_off_radio(gnrc_netdev);
+                gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
 
                 uint32_t wait_slots_duration = gnrc_netdev->tx.vtdma_para.slots_position *
                                                GNRC_GOMACH_VTDMA_SLOT_SIZE_US;
@@ -711,7 +719,7 @@ static void gomach_t2k_wait_own_slots(gnrc_netdev_t *gnrc_netdev)
 {
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_SLOTS)) {
         /* The node is now in its scheduled slots period, start burst sending packets. */
-        gnrc_gomach_turn_on_radio(gnrc_netdev);
+        gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
 
         gnrc_pktsnip_t *pkt = gnrc_priority_pktqueue_pop(&(gnrc_netdev->tx.current_neighbor->queue));
         if (pkt != NULL) {
@@ -824,7 +832,7 @@ static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_t2k_end(gnrc_netdev_t *gnrc_netdev)
 {
-    gnrc_gomach_turn_off_radio(gnrc_netdev);
+    gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
 
     /* In GoMacH, normally, in case of transmission failure, no packet will be released
     * in t2k. Failed packet will only be released in t2u. In case of continuous t2k
@@ -1259,7 +1267,7 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
 {
-    gnrc_gomach_turn_off_radio(gnrc_netdev);
+    gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
     gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAMBLE);
     gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAM_DURATION);
     gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
@@ -1404,7 +1412,7 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
 
     /* Flush RX queue and turn on radio. */
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
-    gnrc_gomach_turn_on_radio(gnrc_netdev);
+    gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
 
 
     gomach_send_RI_beacon(gnrc_netdev);
@@ -1419,6 +1427,15 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
     }
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_LISTEN;
     gnrc_gomach_set_update(gnrc_netdev, false);
+
+#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
+                    /* Output radio duty-cycle ratio */
+                    uint64_t duty;
+                    duty = (uint64_t) xtimer_now_usec64();
+                    duty = ((uint64_t) gnrc_netdev->gomach.awake_duration_sum_ticks) * 100 /
+                           (duty - (uint64_t)gnrc_netdev->gomach.system_start_time_ticks);
+                    printf("[GoMacH]: achieved radio duty-cycle: %lu %% \n", (uint32_t)duty);
+#endif
 }
 
 static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
@@ -1732,7 +1749,7 @@ static void gomach_sleep_init(gnrc_netdev_t *gnrc_netdev)
     }
 
     /* Turn off the radio during sleep period to conserve power. */
-    gnrc_gomach_turn_off_radio(gnrc_netdev);
+    gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_gomach_set_update(gnrc_netdev, true);
 }
@@ -1917,21 +1934,21 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
             case NETDEV_EVENT_TX_COMPLETE: {
                 gnrc_netdev_set_tx_feedback(gnrc_netdev, TX_FEEDBACK_SUCCESS);
                 gnrc_gomach_set_tx_finish(gnrc_netdev, true);
-                gnrc_gomach_turn_to_listen_mode(gnrc_netdev);
+                gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
                 gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
             case NETDEV_EVENT_TX_NOACK: {
                 gnrc_netdev_set_tx_feedback(gnrc_netdev, TX_FEEDBACK_NOACK);
                 gnrc_gomach_set_tx_finish(gnrc_netdev, true);
-                gnrc_gomach_turn_to_listen_mode(gnrc_netdev);
+                gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
                 gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
             case NETDEV_EVENT_TX_MEDIUM_BUSY: {
                 gnrc_netdev_set_tx_feedback(gnrc_netdev, TX_FEEDBACK_BUSY);
                 gnrc_gomach_set_tx_finish(gnrc_netdev, true);
-                gnrc_gomach_turn_to_listen_mode(gnrc_netdev);
+                gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
                 gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }

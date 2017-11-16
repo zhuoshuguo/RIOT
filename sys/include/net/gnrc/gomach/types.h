@@ -82,6 +82,15 @@ extern "C" {
 #define GNRC_GOMACH_TYPE_KNOWN             (1U)
 
 /**
+ * @brief Enable/disable duty-cycle record and print out.
+ *
+ * Set "1" to enable, set "0" to disable.
+ */
+#ifndef GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD
+#define GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD    (1U)
+#endif
+
+/**
  * @brief   State-machine states of Broadcast procedure of GoMacH.
  */
 typedef enum {
@@ -277,6 +286,13 @@ typedef struct gomach {
     uint32_t last_wakeup;                                       /**< Node's last wake-up timing. */
     uint32_t backoff_phase_ticks;                               /**< Node's phase backoff time. */
     uint16_t gomach_info;                                       /**< GoMacH's internal information. */
+#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
+    /* Parameters for recording duty-cycle */
+    uint64_t last_radio_on_time_ticks;                          /**< The last time in ticks when radio is on */
+    uint64_t radio_off_time_ticks;                              /**< The time in ticks when radio is off */
+    uint64_t system_start_time_ticks;                           /**< The time in ticks when chip is started */
+    uint64_t awake_duration_sum_ticks;                          /**< The sum of time in ticks when radio is on */
+#endif
 } gnrc_gomach_t;
 
 #ifdef __cplusplus
