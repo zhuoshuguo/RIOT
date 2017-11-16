@@ -1442,9 +1442,10 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
 
     /* Enable Auto-ACK for data packet reception. */
     gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
-
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_LISTEN;
     gnrc_gomach_set_update(gnrc_netdev, false);
+
+
 
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
                     /* Output radio duty-cycle ratio */
@@ -1826,6 +1827,8 @@ static void gomach_update(gnrc_netdev_t *gnrc_netdev)
         }
         case GNRC_GOMACH_LISTEN: {
             /* State machine of GoMacH's duty-cycled listen procedure. */
+            //printf("C-%u\n",gnrc_netdev->rx.listen_state);
+
             switch (gnrc_netdev->rx.listen_state) {
                 case GNRC_GOMACH_LISTEN_CP_INIT: {
                     gomach_listen_init(gnrc_netdev);
@@ -1980,14 +1983,6 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                 gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
-#ifdef MODULE_NETSTATS_L2
-            case NETDEV_EVENT_TX_MEDIUM_BUSY:
-                dev->stats.tx_failed++;
-                break;
-            case NETDEV_EVENT_TX_COMPLETE:
-                dev->stats.tx_success++;
-                break;
-#endif
             default: {
                 DEBUG("gnrc_netdev: warning: unhandled event %u.\n", event);
             }
@@ -2041,6 +2036,11 @@ static void *_gnrc_gomach_thread(void *args)
     gomach_init(gnrc_netdev);
 
     gnrc_gomach_set_update(gnrc_netdev, true);
+
+    while (gnrc_gomach_get_update(gnrc_netdev)) {
+        gnrc_gomach_set_update(gnrc_netdev, false);
+        gomach_update(gnrc_netdev);
+    }
 
     /* Start the event loop */
     while (1) {

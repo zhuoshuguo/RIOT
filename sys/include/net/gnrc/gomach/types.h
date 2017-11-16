@@ -87,7 +87,7 @@ extern "C" {
  * Set "1" to enable, set "0" to disable.
  */
 #ifndef GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD
-#define GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD    (1U)
+#define GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD    (0U)
 #endif
 
 /**
