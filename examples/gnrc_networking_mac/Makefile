@@ -2,12 +2,12 @@
 APPLICATION = gnrc_networking_mac
 
 # If no BOARD is found in the environment, use this default:
-BOARD ?= samr21-xpro iotlab-m3
+BOARD ?= samr21-xpro 
 
 # Currently, LWMAC is only tested and evaluated through on samr21-xpro.
 # Once LWMAC has also been tested through on other boards, the whitelist should be
 # then accordingly extended.
-BOARD_WHITELIST := samr21-xpro
+BOARD_WHITELIST := samr21-xpro iotlab-m3
 
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/../..
