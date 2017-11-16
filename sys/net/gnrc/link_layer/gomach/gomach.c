@@ -84,7 +84,6 @@ static void gomach_reinit_radio(gnrc_netdev_t *gnrc_netdev)
     netopt_enable_t enable = NETOPT_ENABLE;
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_RX_START_IRQ, &enable, sizeof(enable));
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_RX_END_IRQ, &enable, sizeof(enable));
-    gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_TX_START_IRQ, &enable, sizeof(enable));
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_TX_END_IRQ, &enable, sizeof(enable));
 
 }
@@ -116,7 +115,6 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     /* Enable RX-start and TX-started and TX-END interrupts. */
     netopt_enable_t enable = NETOPT_ENABLE;
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_RX_START_IRQ, &enable, sizeof(enable));
-    gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_TX_START_IRQ, &enable, sizeof(enable));
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_TX_END_IRQ, &enable, sizeof(enable));
 
     /* Initialize broadcast sequence number. This at least differs from board
@@ -199,6 +197,8 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
                 gnrc_netdev->gomach.last_wakeup = rtt_get_alarm();
                 gnrc_gomach_set_enter_new_cycle(gnrc_netdev, true);
             }
+
+            gnrc_netdev->gomach.last_wakeup_phase_ms = xtimer_now_usec64();
 
             /* Set next cycle's starting time. */
             uint32_t alarm = gnrc_netdev->gomach.last_wakeup +
@@ -436,16 +436,15 @@ static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
     /* Turn off radio to conserve power */
     gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
 
-    /* Turn radio onto the neighbor's public channel, which will not change in this cycle. */
-    gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->tx.current_neighbor->pub_chanseq);
-
     gnrc_gomach_set_quit_cycle(gnrc_netdev, false);
 
     /* Set waiting timer for the targeted device! */
-    uint32_t wait_phase_duration;
-    wait_phase_duration = gnrc_gomach_ticks_until_phase(gnrc_netdev,
-                                                        gnrc_netdev->tx.current_neighbor->cp_phase);
-    wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration);
+    long int wait_phase_duration = gnrc_netdev->tx.current_neighbor->cp_phase -
+                                   gnrc_gomach_phase_now(gnrc_netdev);
+
+    if (wait_phase_duration < 0) {
+     	wait_phase_duration += GNRC_GOMACH_SUPERFRAME_DURATION_US;
+    }
 
     /* Upon several times of t2k failure, we now doubt that the phase-lock may fail due to drift.
      * Here is the phase-lock auto-adjust scheme, trying to catch the neighbot's phase in case of
@@ -470,7 +469,10 @@ static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
         }
     }
 
-    gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_CP, wait_phase_duration);
+    if (wait_phase_duration > GNRC_GOMACH_SUPERFRAME_DURATION_US) {
+        wait_phase_duration = wait_phase_duration % GNRC_GOMACH_SUPERFRAME_DURATION_US;
+    }
+    gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_CP, (uint32_t)wait_phase_duration);
 
     /* Flush the rx-queue. */
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
@@ -484,6 +486,10 @@ static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
 static void gomach_t2k_wait_cp(gnrc_netdev_t *gnrc_netdev)
 {
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_CP)) {
+    	gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
+    	/* Turn radio onto the neighbor's public channel, which will not change in this cycle. */
+    	gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->tx.current_neighbor->pub_chanseq);
+
         /* Disable auto-ack, don't try to receive packet! */
         gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
         /* Require ACK for the packet waiting to be sent! */
@@ -494,7 +500,7 @@ static void gomach_t2k_wait_cp(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA, &csma_enable,
                                       sizeof(netopt_enable_t));
 
-        gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
+
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_TRANS_IN_CP;
         gnrc_gomach_set_update(gnrc_netdev, true);
     }
@@ -550,15 +556,15 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                  * original phase. */
                 if (gnrc_netdev->tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD - 2)) {
                     if (gnrc_netdev->tx.current_neighbor->cp_phase >=
-                        RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US)) {
+                        GNRC_GOMACH_CP_DURATION_US) {
                         gnrc_netdev->tx.current_neighbor->cp_phase -=
-                            RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US);
+                            GNRC_GOMACH_CP_DURATION_US;
                     }
                     else {
                         gnrc_netdev->tx.current_neighbor->cp_phase +=
-                            RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
+                            GNRC_GOMACH_SUPERFRAME_DURATION_US;
                         gnrc_netdev->tx.current_neighbor->cp_phase -=
-                            RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US);
+                            GNRC_GOMACH_CP_DURATION_US;
                     }
                 }
                 /* Here is the phase-lock auto-adjust scheme. Use the new adjusted
@@ -566,12 +572,12 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                  * phase. */
                 if (gnrc_netdev->tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD - 1)) {
                     gnrc_netdev->tx.current_neighbor->cp_phase +=
-                        (RTT_US_TO_TICKS(GNRC_GOMACH_CP_DURATION_US + 20 * US_PER_MS));
+                        (GNRC_GOMACH_CP_DURATION_US + 20 * US_PER_MS);
 
                     if (gnrc_netdev->tx.current_neighbor->cp_phase >=
-                        RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US)) {
+                        GNRC_GOMACH_SUPERFRAME_DURATION_US) {
                         gnrc_netdev->tx.current_neighbor->cp_phase -=
-                            RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
+                            GNRC_GOMACH_SUPERFRAME_DURATION_US;
                     }
                 }
 
@@ -863,9 +869,6 @@ static void gomach_t2k_end(gnrc_netdev_t *gnrc_netdev)
         gnrc_gomach_update_neighbor_phase(gnrc_netdev);
     }
 
-    /* Enable Auto ACK again for data reception */
-    gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
-
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_gomach_set_enter_new_cycle(gnrc_netdev, false);
@@ -930,10 +933,12 @@ static void gomach_t2u_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_set_got_preamble_ack(gnrc_netdev, false);
     gnrc_gomach_set_buffer_full(gnrc_netdev, false);
 
-    /* Disable auto-ACK here! Don't try to reply ACK to any node. */
-    gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
     /* Start sending the preamble firstly on public channel 1. */
     gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
+
+    /* Disable auto-ACK here! Don't try to reply ACK to any node. */
+    gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
+
     gnrc_gomach_set_on_pubchan_1(gnrc_netdev, true);
 
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
@@ -1425,6 +1430,13 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
         gnrc_gomach_set_phase_backoff(gnrc_netdev, false);
         _gomach_phase_backoff(gnrc_netdev);
     }
+
+    /* Turn to current public channel. */
+    gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
+
+    /* Enable Auto-ACK for data packet reception. */
+    gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
+
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_LISTEN;
     gnrc_gomach_set_update(gnrc_netdev, false);
 
@@ -1513,24 +1525,35 @@ static void gomach_listen_cp_end(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_listen_send_beacon(gnrc_netdev_t *gnrc_netdev)
 {
-    /* Disable auto-ACK. Thus not to receive packet (attempt to reply ACK) anymore. */
-    gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
-
-    /* Assemble and send the beacon. */
-    int res = gnrc_gomach_send_beacon(gnrc_netdev);
-    if (res < 0) {
-        LOG_ERROR("ERROR: [GOMACH] send beacon error: %d.\n", res);
-        gnrc_gomach_set_beacon_fail(gnrc_netdev, true);
-        gnrc_gomach_set_update(gnrc_netdev, true);
+	/* First check if there are slots needed to be allocated. */
+    uint8_t slot_num = 0;
+    int i;
+    for (i = 0; i < GNRC_GOMACH_SLOSCH_UNIT_COUNT; i++) {
+        if (gnrc_netdev->rx.slosch_list[i].queue_indicator > 0) {
+        	slot_num += gnrc_netdev->rx.slosch_list[i].queue_indicator;
+            break;
+        }
     }
-    else {
-        if (gnrc_netdev->rx.vtdma_manag.total_slots_num == 0) {
+
+    if (slot_num > 0) {
+        /* Disable auto-ACK. Thus not to receive packet (attempt to reply ACK) anymore. */
+        gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
+
+        /* Assemble and send the beacon. */
+        int res = gnrc_gomach_send_beacon(gnrc_netdev);
+        if (res < 0) {
+            LOG_ERROR("ERROR: [GOMACH] send beacon error: %d.\n", res);
             gnrc_gomach_set_beacon_fail(gnrc_netdev, true);
             gnrc_gomach_set_update(gnrc_netdev, true);
         }
         else {
             gnrc_gomach_set_update(gnrc_netdev, false);
         }
+    }
+    else {
+    	/* No need to send beacon, go to next state. */
+        gnrc_gomach_set_beacon_fail(gnrc_netdev, true);
+        gnrc_gomach_set_update(gnrc_netdev, true);
     }
 
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_WAIT_BEACON_TX;

@@ -2,7 +2,7 @@
 APPLICATION = gnrc_networking_mac
 
 # If no BOARD is found in the environment, use this default:
-BOARD ?= samr21-xpro
+BOARD ?= samr21-xpro iotlab-m3
 
 # Currently, LWMAC is only tested and evaluated through on samr21-xpro.
 # Once LWMAC has also been tested through on other boards, the whitelist should be
@@ -35,6 +35,7 @@ USEMODULE += netstats_ipv6
 USEMODULE += netstats_rpl
 # Use LWMAC as the MAC layer protocol
 USEMODULE += gnrc_gomach
+
 
 # Comment this out to disable code in RIOT that does safety checking
 # which is not needed in a production environment but helps in the

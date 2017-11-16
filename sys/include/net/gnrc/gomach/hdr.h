@@ -126,7 +126,7 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
     gnrc_gomach_hdr_t header;           /**< Preamble-ACK frame header type. */
     gnrc_gomach_l2_addr_t dst_addr;     /**< Address of this node. */
-    uint32_t phase_in_ticks;            /**< Current phase of this node. */
+    uint32_t phase_in_ms;            /**< Current phase of this node. */
 } gnrc_gomach_frame_preamble_ack_t;
 
 /**

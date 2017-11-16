@@ -57,7 +57,7 @@ extern "C" {
  * receiver will not miss the preamble packet.
  */
 #ifndef GNRC_GOMACH_CP_DURATION_US
-#define GNRC_GOMACH_CP_DURATION_US        (100U * US_PER_MS)
+#define GNRC_GOMACH_CP_DURATION_US        (13U * US_PER_MS)
 #endif
 
 /**
