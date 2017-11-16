@@ -114,6 +114,11 @@ extern "C" {
 #define GNRC_NETDEV_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV        (0x4000U)
 
 /**
+ * @brief Flag to track if node has turned on its radio.
+ */
+#define GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON        (0x8000U)
+
+/**
  * @brief Set the TX-finish flag of the device.
  *
  * @param[in,out] gnrc_netdev  ptr to netdev device.
@@ -659,32 +664,33 @@ static inline uint32_t gnrc_gomach_ticks_until_phase(gnrc_netdev_t *gnrc_netdev,
  * @param[in,out] gnrc_netdev  ptr to netdev device.
  *
  */
-static inline void gnrc_gomach_turn_on_radio(gnrc_netdev_t *gnrc_netdev)
+static inline void gnrc_gomach_set_netdev_state(gnrc_netdev_t *gnrc_netdev, netopt_state_t devstate)
 {
     assert(gnrc_netdev != NULL);
 
-    netopt_state_t devstate = NETOPT_STATE_IDLE;
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
                                   NETOPT_STATE,
                                   &devstate,
                                   sizeof(devstate));
-}
 
-/**
- * @brief Turn off the radio of the device.
- *
- * @param[in,out] gnrc_netdev  ptr to netdev device.
- *
- */
-static inline void gnrc_gomach_turn_off_radio(gnrc_netdev_t *gnrc_netdev)
-{
-    assert(gnrc_netdev != NULL);
+#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
+    if (devstate == NETOPT_STATE_IDLE) {
+        if (!(gnrc_netdev->gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON)) {
+        	gnrc_netdev->gomach.last_radio_on_time_ticks = xtimer_now_usec64();
+        	gnrc_netdev->gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
+        }
+        return;
+    }
+    else if ((devstate == NETOPT_STATE_SLEEP) &&
+             (gnrc_netdev->gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON)) {
+    	gnrc_netdev->gomach.radio_off_time_ticks = xtimer_now_usec64();
+    	gnrc_netdev->gomach.awake_duration_sum_ticks +=
+                    (gnrc_netdev->gomach.radio_off_time_ticks -
+                     gnrc_netdev->gomach.last_radio_on_time_ticks);
 
-    netopt_state_t devstate = NETOPT_STATE_SLEEP;
-    gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
-                                  NETOPT_STATE,
-                                  &devstate,
-                                  sizeof(devstate));
+    	gnrc_netdev->gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
+    }
+#endif
 }
 
 /**
@@ -759,17 +765,6 @@ static inline void gnrc_gomach_turn_channel(gnrc_netdev_t *gnrc_netdev, uint16_t
                                   NETOPT_CHANNEL,
                                   &channel_num,
                                   sizeof(channel_num));
-}
-
-/**
- * @brief Turn the radio to the listen state.
- *
- * @param[in,out] gnrc_netdev  ptr to gnrc_netdev device.
- *
- */
-static inline void gnrc_gomach_turn_to_listen_mode(gnrc_netdev_t *gnrc_netdev)
-{
-    gnrc_gomach_turn_on_radio(gnrc_netdev);
 }
 
 /**
