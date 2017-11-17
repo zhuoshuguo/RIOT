@@ -58,7 +58,7 @@ extern "C" {
  * In GoMacH, by default, we regard the wake-up period (WP) as the beginning of a cycle.
  *
  * Note that, GoMacH's superframe duration @ref GNRC_GOMACH_SUPERFRAME_DURATION_US should
- * not be shorter than 10 times of @ref GNRC_GOMACH_CP_DURATION_US and be shorter than the
+ * not be shorter than 10 times of @ref GNRC_GOMACH_CP_DURATION_US and not shorter than the
  * RTT tickle interval.
  */
 #ifndef GNRC_GOMACH_SUPERFRAME_DURATION_US
