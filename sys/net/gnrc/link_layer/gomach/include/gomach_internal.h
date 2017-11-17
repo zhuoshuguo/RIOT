@@ -633,30 +633,9 @@ static inline bool gnrc_gomach_get_max_pream_interv(gnrc_netif2_t *netif)
  *
  * @param[in] netif    the network interface.
  *
- * @return                  device's current phase.
+ * @return             device's current phase.
  */
-uint32_t gnrc_gomach_phase_now(gnrc_netif2_t *netif);
-
-/**
- * @brief Calculate how many ticks remaining to the targeted phase in the future.
- *
- * @param[in] netif    the network interface.
- * @param[in] phase        device phase.
- *
- * @return                 RTT ticks remaining to the targeted phase.
- */
-static inline uint32_t gnrc_gomach_ticks_until_phase(gnrc_netif2_t *netif, uint32_t phase)
-{
-    assert(netif != NULL);
-
-    long int tmp = phase - gnrc_gomach_phase_now(netif);
-
-    if (tmp < 0) {
-        tmp += RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
-    }
-
-    return (uint32_t)tmp;
-}
+uint64_t gnrc_gomach_phase_now(gnrc_netif2_t *netif);
 
 /**
  * @brief Shortcut to set the state of netdev
@@ -676,14 +655,14 @@ static inline void gnrc_gomach_set_netdev_state(gnrc_netif2_t *netif, netopt_sta
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
     if (devstate == NETOPT_STATE_IDLE) {
         if (!(netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON)) {
-            netif->mac.gomach.last_radio_on_time_ticks = xtimer_now_usec();
+            netif->mac.gomach.last_radio_on_time_ticks = xtimer_now_usec64();
             netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
         }
         return;
     }
     else if ((devstate == NETOPT_STATE_SLEEP) &&
              (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON)) {
-        netif->mac.gomach.radio_off_time_ticks = xtimer_now_usec();
+        netif->mac.gomach.radio_off_time_ticks = xtimer_now_usec64();
 
         netif->mac.gomach.awake_duration_sum_ticks +=
             (netif->mac.gomach.radio_off_time_ticks -
