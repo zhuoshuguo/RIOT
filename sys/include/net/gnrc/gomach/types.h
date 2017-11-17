@@ -286,14 +286,14 @@ typedef struct gomach {
     uint32_t last_wakeup;                                       /**< Node's last wake-up timing. */
     uint32_t backoff_phase_ticks;                               /**< Node's phase backoff time. */
     uint16_t gomach_info;                                       /**< GoMacH's internal information. */
-    uint32_t last_wakeup_phase_ms;                              /**< GoMacH's last cycle wakeup phase. */
+    uint64_t last_wakeup_phase_ms;                              /**< GoMacH's last cycle wakeup phase. */
 
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
     /* Parameters for recording duty-cycle */
-    uint32_t last_radio_on_time_ticks;                          /**< The last time in ticks when radio is on */
-    uint32_t radio_off_time_ticks;                              /**< The time in ticks when radio is off */
-    uint32_t system_start_time_ticks;                           /**< The time in ticks when chip is started */
-    uint32_t awake_duration_sum_ticks;                          /**< The sum of time in ticks when radio is on */
+    uint64_t last_radio_on_time_ticks;                          /**< The last time in ticks when radio is on */
+    uint64_t radio_off_time_ticks;                              /**< The time in ticks when radio is off */
+    uint64_t system_start_time_ticks;                           /**< The time in ticks when chip is started */
+    uint64_t awake_duration_sum_ticks;                          /**< The sum of time in ticks when radio is on */
 #endif
 } gnrc_gomach_t;
 

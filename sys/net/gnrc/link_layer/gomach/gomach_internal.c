@@ -236,15 +236,15 @@ static int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
     return 0;
 }
 
-uint32_t gnrc_gomach_phase_now(gnrc_netif2_t *netif)
+uint64_t gnrc_gomach_phase_now(gnrc_netif2_t *netif)
 {
     assert(netif != NULL);
 
-    uint32_t phase_now = xtimer_now_usec();
+    uint64_t phase_now = xtimer_now_usec64();
 
     /* in case timer overflows */
     if (phase_now < netif->mac.gomach.last_wakeup_phase_ms) {
-        uint32_t gap_to_full = GNRC_GOMACH_PHASE_MAX - netif->mac.gomach.last_wakeup_phase_ms;
+        uint64_t gap_to_full = GNRC_GOMACH_PHASE_MAX - netif->mac.gomach.last_wakeup_phase_ms;
         phase_now += gap_to_full;
     }
     else {
@@ -633,9 +633,9 @@ void gnrc_gomach_cp_packet_process(gnrc_netif2_t *netif)
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
                     /* Output radio duty-cycle ratio */
                     uint64_t duty;
-                    duty = (uint64_t) xtimer_now_usec();
-                    duty = ((uint64_t) netif->mac.gomach.awake_duration_sum_ticks) * 100 /
-                           (duty - (uint64_t)netif->mac.gomach.system_start_time_ticks);
+                    duty = xtimer_now_usec64();
+                    duty = (netif->mac.gomach.awake_duration_sum_ticks) * 100 /
+                           (duty - netif->mac.gomach.system_start_time_ticks);
                     printf("[GoMacH]: achieved radio duty-cycle: %lu %% \n", (uint32_t)duty);
 #endif
                 }
