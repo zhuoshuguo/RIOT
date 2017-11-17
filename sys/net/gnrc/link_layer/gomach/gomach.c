@@ -254,7 +254,7 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netif2_t *netif)
                 gnrc_gomach_set_enter_new_cycle(netif, true);
             }
 
-            netif->mac.gomach.last_wakeup_phase_ms = xtimer_now_usec();
+            netif->mac.gomach.last_wakeup_phase_ms = xtimer_now_usec64();
 
             /* Set next cycle's starting time. */
             uint32_t alarm = netif->mac.gomach.last_wakeup +
@@ -958,9 +958,9 @@ static void gomach_t2k_end(gnrc_netif2_t *netif)
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
     /* Output duty-cycle ratio */
     uint64_t duty;
-    duty = (uint64_t) xtimer_now_usec();
-    duty = ((uint64_t) netif->mac.gomach.awake_duration_sum_ticks) * 100 /
-           (duty - (uint64_t)netif->mac.gomach.system_start_time_ticks);
+    duty = xtimer_now_usec64();
+    duty = (netif->mac.gomach.awake_duration_sum_ticks) * 100 /
+           (duty - netif->mac.gomach.system_start_time_ticks);
     printf("[GoMacH]: achieved radio duty-cycle: %lu %% \n", (uint32_t)duty);
 #endif
 }
@@ -1398,9 +1398,9 @@ static void gomach_t2u_end(gnrc_netif2_t *netif)
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
     /* Output duty-cycle ratio */
     uint64_t duty;
-    duty = (uint64_t) xtimer_now_usec();
-    duty = ((uint64_t) netif->mac.gomach.awake_duration_sum_ticks) * 100 /
-           (duty - (uint64_t)netif->mac.gomach.system_start_time_ticks);
+    duty = xtimer_now_usec64();
+    duty = (netif->mac.gomach.awake_duration_sum_ticks) * 100 /
+           (duty - netif->mac.gomach.system_start_time_ticks);
     printf("[GoMacH]: achieved radio duty-cycle: %lu %% \n", (uint32_t)duty);
 #endif
 }
@@ -2185,7 +2185,7 @@ static void _gomach_init(gnrc_netif2_t *netif)
 
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
     /* Start duty cycle recording */
-    netif->mac.gomach.system_start_time_ticks = xtimer_now_usec();
+    netif->mac.gomach.system_start_time_ticks = xtimer_now_usec64();
     netif->mac.gomach.last_radio_on_time_ticks = netif->mac.gomach.system_start_time_ticks;
     netif->mac.gomach.awake_duration_sum_ticks = 0;
     netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
