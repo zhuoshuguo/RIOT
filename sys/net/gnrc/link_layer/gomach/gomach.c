@@ -907,6 +907,15 @@ static void gomach_t2k_end(gnrc_netdev_t *gnrc_netdev)
 
 	gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
 
+#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
+                    /* Output radio duty-cycle ratio */
+                    uint64_t duty;
+                    duty = (uint64_t) xtimer_now_usec64();
+                    duty = ((uint64_t) gnrc_netdev->gomach.awake_duration_sum_ticks) * 100 /
+                           (duty - (uint64_t)gnrc_netdev->gomach.system_start_time_ticks);
+                    printf("duty: %lu %% \n", (uint32_t)duty);
+#endif
+
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_gomach_set_enter_new_cycle(gnrc_netdev, false);
@@ -1495,7 +1504,7 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
 
 
 
-#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
+#if 0
                     /* Output radio duty-cycle ratio */
                     uint64_t duty;
                     duty = (uint64_t) xtimer_now_usec64();
