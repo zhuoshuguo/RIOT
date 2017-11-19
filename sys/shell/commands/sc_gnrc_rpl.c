@@ -31,6 +31,8 @@
 
 int _gnrc_rpl_init(char *arg)
 {
+
+    /*
     kernel_pid_t iface_pid = atoi(arg);
     gnrc_ipv6_netif_t *entry = gnrc_ipv6_netif_get(iface_pid);
 
@@ -42,6 +44,21 @@ int _gnrc_rpl_init(char *arg)
     gnrc_rpl_init(iface_pid);
     printf("successfully initialized RPL on interface %d\n", iface_pid);
     return 0;
+    */
+
+   gnrc_ipv6_netif_t *entry = NULL;
+   kernel_pid_t iface_pid = (kernel_pid_t) atoi(arg);
+   iface_pid = 7;
+   entry = gnrc_ipv6_netif_get(iface_pid);
+
+   if (entry == NULL) {
+       puts("unknown interface specified");
+       return 1;
+   }
+
+   gnrc_rpl_init(iface_pid);
+   printf("successfully initialized RPL on interface %d\n", iface_pid);
+   return 0;
 }
 
 int _gnrc_rpl_dodag_root(char *arg1, char *arg2)

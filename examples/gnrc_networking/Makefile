@@ -35,6 +35,10 @@ USEMODULE += netstats_l2
 USEMODULE += netstats_ipv6
 USEMODULE += netstats_rpl
 
+USEMODULE += gnrc_gomach
+
+CFLAGS += -DGNRC_PKTBUF_SIZE=5120
+
 # Comment this out to disable code in RIOT that does safety checking
 # which is not needed in a production environment but helps in the
 # development process:
