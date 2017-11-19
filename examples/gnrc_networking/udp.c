@@ -29,10 +29,10 @@
 #include "xtimer.h"
 
 static gnrc_netreg_entry_t server = GNRC_NETREG_ENTRY_INIT_PID(GNRC_NETREG_DEMUX_CTX_ALL,
-                                                               KERNEL_PID_UNDEF);
+		                                                               KERNEL_PID_UNDEF);
 
 
-static void send(char *addr_str, char *port_str, char *data, unsigned int num,
+void udp_send(char *addr_str, char *port_str, uint32_t *data, size_t datasize, unsigned int num,
                  unsigned int delay)
 {
     uint16_t port;
@@ -44,7 +44,7 @@ static void send(char *addr_str, char *port_str, char *data, unsigned int num,
         return;
     }
     /* parse port */
-    port = atoi(port_str);
+    port = (uint16_t)atoi(port_str);
     if (port == 0) {
         puts("Error: unable to parse destination port");
         return;
@@ -52,15 +52,12 @@ static void send(char *addr_str, char *port_str, char *data, unsigned int num,
 
     for (unsigned int i = 0; i < num; i++) {
         gnrc_pktsnip_t *payload, *udp, *ip;
-        unsigned payload_size;
         /* allocate payload */
-        payload = gnrc_pktbuf_add(NULL, data, strlen(data), GNRC_NETTYPE_UNDEF);
+        payload = gnrc_pktbuf_add(NULL, data, datasize, GNRC_NETTYPE_UNDEF);
         if (payload == NULL) {
             puts("Error: unable to copy data to packet buffer");
             return;
         }
-        /* store size for output */
-        payload_size = (unsigned)payload->size;
         /* allocate UDP header, set source port := destination port */
         udp = gnrc_udp_hdr_build(payload, port, port);
         if (udp == NULL) {
@@ -81,15 +78,13 @@ static void send(char *addr_str, char *port_str, char *data, unsigned int num,
             gnrc_pktbuf_release(ip);
             return;
         }
-        /* access to `payload` was implicitly given up with the send operation above
-         * => use temporary variable for output */
-        printf("Success: sent %u byte(s) to [%s]:%u\n", payload_size, addr_str,
-               port);
+        //printf("Success: send %u byte to [%s]:%u\n", (unsigned)payload->size,
+              // addr_str, port);
         xtimer_usleep(delay);
     }
 }
 
-static void start_server(char *port_str)
+void start_server(char *port_str)
 {
     uint16_t port;
 
@@ -100,7 +95,7 @@ static void start_server(char *port_str)
         return;
     }
     /* parse port */
-    port = atoi(port_str);
+    port = (uint16_t)atoi(port_str);
     if (port == 0) {
         puts("Error: invalid port specified");
         return;
@@ -115,7 +110,7 @@ static void start_server(char *port_str)
 static void stop_server(void)
 {
     /* check if server is running at all */
-    if (server.target.pid == KERNEL_PID_UNDEF) {
+	if (server.target.pid == KERNEL_PID_UNDEF) {
         printf("Error: server was not running\n");
         return;
     }
@@ -133,20 +128,7 @@ int udp_cmd(int argc, char **argv)
     }
 
     if (strcmp(argv[1], "send") == 0) {
-        uint32_t num = 1;
-        uint32_t delay = 1000000;
-        if (argc < 5) {
-            printf("usage: %s send <addr> <port> <data> [<num> [<delay in us>]]\n",
-                   argv[0]);
-            return 1;
-        }
-        if (argc > 5) {
-            num = atoi(argv[5]);
-        }
-        if (argc > 6) {
-            delay = atoi(argv[6]);
-        }
-        send(argv[2], argv[3], argv[4], num, delay);
+    	;
     }
     else if (strcmp(argv[1], "server") == 0) {
         if (argc < 3) {

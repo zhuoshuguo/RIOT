@@ -35,6 +35,8 @@
 #include "net/sixlowpan.h"
 #include "od.h"
 
+uint32_t counter;
+
 /**
  * @brief   PID of the pktdump thread
  */
@@ -45,6 +47,7 @@ kernel_pid_t gnrc_pktdump_pid = KERNEL_PID_UNDEF;
  */
 static char _stack[GNRC_PKTDUMP_STACKSIZE];
 
+#if 0
 static void _dump_snip(gnrc_pktsnip_t *pkt)
 {
     switch (pkt->type) {
@@ -100,9 +103,10 @@ static void _dump_snip(gnrc_pktsnip_t *pkt)
             break;
     }
 }
-
+#endif
 static void _dump(gnrc_pktsnip_t *pkt)
 {
+/*
     int snips = 0;
     int size = 0;
     gnrc_pktsnip_t *snip = pkt;
@@ -117,6 +121,14 @@ static void _dump(gnrc_pktsnip_t *pkt)
     }
 
     printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
+
+
+	counter ++;
+	uint32_t *payload;
+	payload = pkt->data;
+
+	printf("%lx, %lu, %lu \n",payload[0],payload[1],counter);
+ */
     gnrc_pktbuf_release(pkt);
 }
 
@@ -132,12 +144,14 @@ static void *_eventloop(void *arg)
     reply.content.value = (uint32_t)(-ENOTSUP);
     reply.type = GNRC_NETAPI_MSG_TYPE_ACK;
 
+    counter = 0;
+
     while (1) {
         msg_receive(&msg);
 
         switch (msg.type) {
             case GNRC_NETAPI_MSG_TYPE_RCV:
-                puts("PKTDUMP: data received:");
+                //puts("PKTDUMP: data received:");
                 _dump(msg.content.ptr);
                 break;
             case GNRC_NETAPI_MSG_TYPE_SND:
