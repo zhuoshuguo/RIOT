@@ -93,7 +93,7 @@ void *sender_thread(void *arg)
 
     printf("own add is %lx.\n", own_address2);
 
-    xtimer_sleep(30);
+    xtimer_sleep(20);
     /* configure a global IPv6 address for the root node */
     char *ifconfig = "ifconfig";
     char *ipadd = "2001:db8::1";
@@ -109,7 +109,7 @@ void *sender_thread(void *arg)
     char *udpport = "8808";
     start_server(udpport);
 
-    xtimer_sleep(180);
+    xtimer_sleep(300);
     puts("start RPL");
 
     /* Starting RPL */
