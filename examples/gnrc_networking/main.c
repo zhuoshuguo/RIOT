@@ -119,7 +119,7 @@ void *sender_thread(void *arg)
     _netif_add(ifconfig, dev, 1, &ipadd);
     */
 
-    xtimer_sleep(10);
+    xtimer_sleep(30);
 
     /* RPL must be initialized on that particular interface-7 */
     char inface = '7';
@@ -136,7 +136,7 @@ void *sender_thread(void *arg)
     _gnrc_rpl_dodag_root(instanceid, ipadd);
     */
 
-	xtimer_sleep(40);
+	xtimer_sleep(140);
 
 	uint32_t random_period;
 
