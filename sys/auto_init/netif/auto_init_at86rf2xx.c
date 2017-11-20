@@ -52,7 +52,7 @@ void auto_init_at86rf2xx(void)
 
         at86rf2xx_setup(&at86rf2xx_devs[i], &at86rf2xx_params[i]);
 #ifdef MODULE_GNRC_GOMACH
-        gnrc_netif2_gomach_create(_at86rf2xx_stacks[i],
+        gnrc_netif_gomach_create(_at86rf2xx_stacks[i],
                                  AT86RF2XX_MAC_STACKSIZE,
                                  AT86RF2XX_MAC_PRIO, "at86rf2xx-gomach",
                                  (netdev_t *)&at86rf2xx_devs[i]);
@@ -69,6 +69,7 @@ void auto_init_at86rf2xx(void)
                                      (netdev_t *)&at86rf2xx_devs[i]);
 #endif
 #endif
+    }
 }
 #else
 typedef int dont_be_pedantic;

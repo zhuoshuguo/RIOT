@@ -30,7 +30,7 @@
 #include "net/gnrc/gomach/timeout.h"
 #include "net/gnrc/gomach/types.h"
 #include "include/gomach_internal.h"
-#include "net/gnrc/netif2/ieee802154.h"
+#include "net/gnrc/netif/ieee802154.h"
 #include "net/netdev/ieee802154.h"
 
 #define ENABLE_DEBUG    (0)
@@ -45,7 +45,7 @@
 
 #include "log.h"
 
-int _gnrc_gomach_transmit(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt)
+int _gnrc_gomach_transmit(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
 {
     netdev_t *dev = netif->dev;
     netdev_ieee802154_t *state = (netdev_ieee802154_t *)netif->dev;
@@ -112,7 +112,7 @@ int _gnrc_gomach_transmit(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt)
         }
 #endif
 #ifdef MODULE_GNRC_MAC
-        if (netif->mac.mac_info & GNRC_NETIF2_MAC_INFO_CSMA_ENABLED) {
+        if (netif->mac.mac_info & GNRC_NETIF_MAC_INFO_CSMA_ENABLED) {
             res = csma_sender_csma_ca_send(dev, vector, n, &netif->mac.csma_conf);
         }
         else {
@@ -236,7 +236,7 @@ static int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
     return 0;
 }
 
-uint64_t gnrc_gomach_phase_now(gnrc_netif2_t *netif)
+uint64_t gnrc_gomach_phase_now(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
 
@@ -254,7 +254,7 @@ uint64_t gnrc_gomach_phase_now(gnrc_netif2_t *netif)
     return phase_now;
 }
 
-int gnrc_gomach_send(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable)
+int gnrc_gomach_send(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable)
 {
     assert(netif != NULL);
     assert(pkt != NULL);
@@ -264,11 +264,11 @@ int gnrc_gomach_send(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt, netopt_enable_t 
                             sizeof(netopt_enable_t));
 
     gnrc_gomach_set_tx_finish(netif, false);
-    gnrc_netif2_set_tx_feedback(netif, TX_FEEDBACK_UNDEF);
+    gnrc_netif_set_tx_feedback(netif, TX_FEEDBACK_UNDEF);
     return _gnrc_gomach_transmit(netif, pkt);
 }
 
-int gnrc_gomach_send_preamble_ack(gnrc_netif2_t *netif, gnrc_gomach_packet_info_t *info)
+int gnrc_gomach_send_preamble_ack(gnrc_netif_t *netif, gnrc_gomach_packet_info_t *info)
 {
     assert(netif != NULL);
     assert(info != NULL);
@@ -326,7 +326,7 @@ int gnrc_gomach_send_preamble_ack(gnrc_netif2_t *netif, gnrc_gomach_packet_info_
     return res;
 }
 
-int gnrc_gomach_send_beacon(gnrc_netif2_t *netif)
+int gnrc_gomach_send_beacon(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
 
@@ -480,7 +480,7 @@ int gnrc_gomach_dispatch_defer(gnrc_pktsnip_t *buffer[], gnrc_pktsnip_t *pkt)
     return -ENOBUFS;
 }
 
-void gnrc_gomach_indicator_update(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt,
+void gnrc_gomach_indicator_update(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt,
                                   gnrc_gomach_packet_info_t *pa_info)
 {
     assert(netif != NULL);
@@ -531,7 +531,7 @@ void gnrc_gomach_indicator_update(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt,
     }
 }
 
-bool gnrc_gomach_check_duplicate(gnrc_netif2_t *netif, gnrc_gomach_packet_info_t *pa_info)
+bool gnrc_gomach_check_duplicate(gnrc_netif_t *netif, gnrc_gomach_packet_info_t *pa_info)
 {
     assert(netif != NULL);
     assert(pa_info != NULL);
@@ -570,7 +570,7 @@ bool gnrc_gomach_check_duplicate(gnrc_netif2_t *netif, gnrc_gomach_packet_info_t
     return false;
 }
 
-void gnrc_gomach_cp_packet_process(gnrc_netif2_t *netif)
+void gnrc_gomach_cp_packet_process(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
 
@@ -661,7 +661,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netif2_t *netif)
     }
 }
 
-void gnrc_gomach_init_choose_subchannel(gnrc_netif2_t *netif)
+void gnrc_gomach_init_choose_subchannel(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
 
@@ -694,7 +694,7 @@ void gnrc_gomach_init_choose_subchannel(gnrc_netif2_t *netif)
     netif->mac.gomach.sub_channel_seq = subchannel_seq;
 }
 
-int gnrc_gomach_send_preamble(gnrc_netif2_t *netif, netopt_enable_t csma_enable)
+int gnrc_gomach_send_preamble(gnrc_netif_t *netif, netopt_enable_t csma_enable)
 {
     assert(netif != NULL);
 
@@ -746,7 +746,7 @@ int gnrc_gomach_send_preamble(gnrc_netif2_t *netif, netopt_enable_t csma_enable)
     return gnrc_gomach_send(netif, pkt, csma_enable);
 }
 
-int gnrc_gomach_bcast_subchann_seq(gnrc_netif2_t *netif, netopt_enable_t use_csma)
+int gnrc_gomach_bcast_subchann_seq(gnrc_netif_t *netif, netopt_enable_t use_csma)
 {
     assert(netif != NULL);
 
@@ -794,7 +794,7 @@ int gnrc_gomach_bcast_subchann_seq(gnrc_netif2_t *netif, netopt_enable_t use_csm
     return gnrc_gomach_send(netif, pkt, use_csma);
 }
 
-void gnrc_gomach_process_preamble_ack(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt)
+void gnrc_gomach_process_preamble_ack(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
 {
     assert(netif != NULL);
     assert(pkt != NULL);
@@ -829,7 +829,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt)
     netif->mac.tx.current_neighbor->cp_phase = phase_ms;
 }
 
-void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netif2_t *netif)
+void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
 
@@ -913,7 +913,7 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netif2_t *netif)
     }
 }
 
-int gnrc_gomach_send_data(gnrc_netif2_t *netif, netopt_enable_t csma_enable)
+int gnrc_gomach_send_data(gnrc_netif_t *netif, netopt_enable_t csma_enable)
 {
     assert(netif != NULL);
 
@@ -964,7 +964,7 @@ int gnrc_gomach_send_data(gnrc_netif2_t *netif, netopt_enable_t csma_enable)
     return gnrc_gomach_send(netif, netif->mac.tx.packet, csma_enable);
 }
 
-bool gnrc_gomach_find_next_tx_neighbor(gnrc_netif2_t *netif)
+bool gnrc_gomach_find_next_tx_neighbor(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
 
@@ -1023,7 +1023,7 @@ bool gnrc_gomach_find_next_tx_neighbor(gnrc_netif2_t *netif)
     return false;
 }
 
-void gnrc_gomach_beacon_process(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt)
+void gnrc_gomach_beacon_process(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
 {
     assert(netif != NULL);
     assert(pkt != NULL);
@@ -1100,7 +1100,7 @@ void gnrc_gomach_beacon_process(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt)
     }
 }
 
-void gnrc_gomach_packet_process_in_wait_beacon(gnrc_netif2_t *netif)
+void gnrc_gomach_packet_process_in_wait_beacon(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
 
@@ -1168,7 +1168,7 @@ void gnrc_gomach_packet_process_in_wait_beacon(gnrc_netif2_t *netif)
     }
 }
 
-void gnrc_gomach_packet_process_in_vtdma(gnrc_netif2_t *netif)
+void gnrc_gomach_packet_process_in_vtdma(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
 
@@ -1206,7 +1206,7 @@ void gnrc_gomach_packet_process_in_vtdma(gnrc_netif2_t *netif)
     }
 }
 
-void gnrc_gomach_update_neighbor_phase(gnrc_netif2_t *netif)
+void gnrc_gomach_update_neighbor_phase(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
 
@@ -1231,7 +1231,7 @@ void gnrc_gomach_update_neighbor_phase(gnrc_netif2_t *netif)
     }
 }
 
-void gnrc_gomach_update_neighbor_pubchan(gnrc_netif2_t *netif)
+void gnrc_gomach_update_neighbor_pubchan(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
 
