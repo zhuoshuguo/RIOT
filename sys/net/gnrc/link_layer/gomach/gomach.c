@@ -26,9 +26,9 @@
 #include "random.h"
 #include "timex.h"
 #include "periph/rtt.h"
-#include "net/gnrc/netif2.h"
-#include "net/gnrc/netif2/internal.h"
-#include "net/gnrc/netif2/ieee802154.h"
+#include "net/gnrc/netif.h"
+#include "net/gnrc/netif/internal.h"
+#include "net/gnrc/netif/ieee802154.h"
 #include "net/netdev/ieee802154.h"
 #include "net/gnrc.h"
 #include "net/gnrc/nettype.h"
@@ -55,26 +55,26 @@
  */
 static kernel_pid_t gomach_pid;
 
-static void _gomach_init(gnrc_netif2_t *netif);
-static int _send(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt);
-static gnrc_pktsnip_t *_recv(gnrc_netif2_t *netif);
-static void _gomach_msg_handler(gnrc_netif2_t *netif, msg_t *msg);
+static void _gomach_init(gnrc_netif_t *netif);
+static int _send(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt);
+static gnrc_pktsnip_t *_recv(gnrc_netif_t *netif);
+static void _gomach_msg_handler(gnrc_netif_t *netif, msg_t *msg);
 static void _gomach_event_cb(netdev_t *dev, netdev_event_t event);
 
-static const gnrc_netif2_ops_t gomach_ops = {
+static const gnrc_netif_ops_t gomach_ops = {
     .init = _gomach_init,
     .send = _send,
     .recv = _recv,
-    .get = gnrc_netif2_get_from_netdev,
-    .set = gnrc_netif2_set_from_netdev,
+    .get = gnrc_netif_get_from_netdev,
+    .set = gnrc_netif_set_from_netdev,
     .msg_handler = _gomach_msg_handler,
 };
 
-gnrc_netif2_t *gnrc_netif2_gomach_create(char *stack, int stacksize,
+gnrc_netif_t *gnrc_netif_gomach_create(char *stack, int stacksize,
                                          char priority, char *name,
                                          netdev_t *dev)
 {
-    return gnrc_netif2_create(stack, stacksize, priority, name, dev,
+    return gnrc_netif_create(stack, stacksize, priority, name, dev,
                               &gomach_ops);
 }
 
@@ -105,7 +105,7 @@ static gnrc_pktsnip_t *_make_netif_hdr(uint8_t *mhr)
     return snip;
 }
 
-static gnrc_pktsnip_t *_recv(gnrc_netif2_t *netif)
+static gnrc_pktsnip_t *_recv(gnrc_netif_t *netif)
 {
     netdev_t *dev = netif->dev;
     netdev_ieee802154_rx_info_t rx_info;
@@ -192,7 +192,7 @@ static gnrc_pktsnip_t *_recv(gnrc_netif2_t *netif)
     return pkt;
 }
 
-static void gomach_reinit_radio(gnrc_netif2_t *netif)
+static void gomach_reinit_radio(gnrc_netif_t *netif)
 {
     /* Initialize low-level driver. */
     netif->dev->driver->init(netif->dev);
@@ -236,7 +236,7 @@ static void _gomach_rtt_cb(void *arg)
     }
 }
 
-static void _gomach_rtt_handler(uint32_t event, gnrc_netif2_t *netif)
+static void _gomach_rtt_handler(uint32_t event, gnrc_netif_t *netif)
 {
     switch (event & 0xffff) {
         case GNRC_GOMACH_EVENT_RTT_NEW_CYCLE: {
@@ -272,7 +272,7 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_bcast_init(gnrc_netif2_t *netif)
+static void gomach_bcast_init(gnrc_netif_t *netif)
 {
     /* Disable auto-ACK when sending broadcast packets, thus not to receive packet. */
     gnrc_gomach_set_autoack(netif, NETOPT_DISABLE);
@@ -313,11 +313,11 @@ static void gomach_bcast_init(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, true);
 }
 
-static bool _gomach_send_bcast_busy_handle(gnrc_netif2_t *netif)
+static bool _gomach_send_bcast_busy_handle(gnrc_netif_t *netif)
 {
     /* Quit sending broadcast packet if we found ongoing transmissions, for collision avoidance. */
     if ((gnrc_gomach_get_netdev_state(netif) == NETOPT_STATE_RX) ||
-        (gnrc_netif2_get_rx_started(netif) == true)) {
+        (gnrc_netif_get_rx_started(netif) == true)) {
         LOG_DEBUG("[GOMACH] bcast: found ongoing transmission, quit broadcast.\n");
         /* Queue the broadcast packet back to the queue. */
         gnrc_pktsnip_t *payload = netif->mac.tx.packet->next->next;
@@ -342,7 +342,7 @@ static bool _gomach_send_bcast_busy_handle(gnrc_netif2_t *netif)
     return true;
 }
 
-static void gomach_send_bcast_packet(gnrc_netif2_t *netif)
+static void gomach_send_bcast_packet(gnrc_netif_t *netif)
 {
     /* Quit sending broadcast packet if we found ongoing transmissions, for collision avoidance. */
     if (!_gomach_send_bcast_busy_handle(netif)) {
@@ -358,7 +358,7 @@ static void gomach_send_bcast_packet(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, false);
 }
 
-static void gomach_wait_bcast_tx_finish(gnrc_netif2_t *netif)
+static void gomach_wait_bcast_tx_finish(gnrc_netif_t *netif)
 {
     if (gnrc_gomach_get_tx_finish(netif)) {
         gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_BCAST_INTERVAL,
@@ -376,7 +376,7 @@ static void gomach_wait_bcast_tx_finish(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_wait_bcast_wait_next_tx(gnrc_netif2_t *netif)
+static void gomach_wait_bcast_wait_next_tx(gnrc_netif_t *netif)
 {
     /* Quit sending broadcast packet if we found ongoing transmissions, for collision avoidance. */
     if (!_gomach_send_bcast_busy_handle(netif)) {
@@ -409,7 +409,7 @@ static void gomach_wait_bcast_wait_next_tx(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_bcast_end(gnrc_netif2_t *netif)
+static void gomach_bcast_end(gnrc_netif_t *netif)
 {
     gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_SLEEP);
     gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_BCAST_INTERVAL);
@@ -431,7 +431,7 @@ static void gomach_bcast_end(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, true);
 }
 
-static void gomach_bcast_update(gnrc_netif2_t *netif)
+static void gomach_bcast_update(gnrc_netif_t *netif)
 {
     /* State machine of GoMacH's broadcast procedure. */
     switch (netif->mac.tx.bcast_state) {
@@ -459,7 +459,7 @@ static void gomach_bcast_update(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_init_prepare(gnrc_netif2_t *netif)
+static void gomach_init_prepare(gnrc_netif_t *netif)
 {
     rtt_clear_alarm();
 
@@ -478,7 +478,7 @@ static void gomach_init_prepare(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, true);
 }
 
-static void gomach_init_announce_subchannel(gnrc_netif2_t *netif)
+static void gomach_init_announce_subchannel(gnrc_netif_t *netif)
 {
     /* Choose a sub-channel for the device. */
     gnrc_gomach_init_choose_subchannel(netif);
@@ -490,7 +490,7 @@ static void gomach_init_announce_subchannel(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, false);
 }
 
-static void gomach_init_wait_announce_feedback(gnrc_netif2_t *netif)
+static void gomach_init_wait_announce_feedback(gnrc_netif_t *netif)
 {
     if (gnrc_gomach_get_tx_finish(netif)) {
         gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
@@ -499,7 +499,7 @@ static void gomach_init_wait_announce_feedback(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_init_end(gnrc_netif2_t *netif)
+static void gomach_init_end(gnrc_netif_t *netif)
 {
     /* Reset initialization state. */
     netif->mac.gomach.init_state = GNRC_GOMACH_INIT_PREPARE;
@@ -513,7 +513,7 @@ static void gomach_init_end(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, true);
 }
 
-static void gomach_t2k_init(gnrc_netif2_t *netif)
+static void gomach_t2k_init(gnrc_netif_t *netif)
 {
     /* Turn off radio to conserve power */
     gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_SLEEP);
@@ -565,7 +565,7 @@ static void gomach_t2k_init(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, false);
 }
 
-static void gomach_t2k_wait_cp(gnrc_netif2_t *netif)
+static void gomach_t2k_wait_cp(gnrc_netif_t *netif)
 {
     if (gnrc_gomach_timeout_is_expired(netif, GNRC_GOMACH_TIMEOUT_WAIT_CP)) {
         gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
@@ -587,7 +587,7 @@ static void gomach_t2k_wait_cp(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_t2k_trans_in_cp(gnrc_netif2_t *netif)
+static void gomach_t2k_trans_in_cp(gnrc_netif_t *netif)
 {
     /* To-do: should we add a rx-start security check and quit t2k when found
      * ongoing transmissions? */
@@ -622,10 +622,10 @@ static void gomach_t2k_trans_in_cp(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, false);
 }
 
-static void gomach_t2k_wait_cp_txfeedback(gnrc_netif2_t *netif)
+static void gomach_t2k_wait_cp_txfeedback(gnrc_netif_t *netif)
 {
     if (gnrc_gomach_get_tx_finish(netif)) {
-        switch (gnrc_netif2_get_tx_feedback(netif)) {
+        switch (gnrc_netif_get_tx_feedback(netif)) {
             case TX_FEEDBACK_SUCCESS: {
                 /* Since the packet will not be released by the sending function,
                  * so, here, if TX success, we first release the packet. */
@@ -728,7 +728,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_t2k_wait_beacon(gnrc_netif2_t *netif)
+static void gomach_t2k_wait_beacon(gnrc_netif_t *netif)
 {
     /* Process the beacon if we receive it. */
     if (gnrc_gomach_get_pkt_received(netif)) {
@@ -802,7 +802,7 @@ static void gomach_t2k_wait_beacon(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_t2k_wait_own_slots(gnrc_netif2_t *netif)
+static void gomach_t2k_wait_own_slots(gnrc_netif_t *netif)
 {
     if (gnrc_gomach_timeout_is_expired(netif, GNRC_GOMACH_TIMEOUT_WAIT_SLOTS)) {
         /* The node is now in its scheduled slots period, start burst sending packets. */
@@ -821,7 +821,7 @@ static void gomach_t2k_wait_own_slots(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_t2k_trans_in_slots(gnrc_netif2_t *netif)
+static void gomach_t2k_trans_in_slots(gnrc_netif_t *netif)
 {
     /* If this packet is being retransmitted, use the same recorded MAC sequence number. */
     if (netif->mac.tx.no_ack_counter > 0) {
@@ -851,10 +851,10 @@ static void gomach_t2k_trans_in_slots(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, false);
 }
 
-static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netif2_t *netif)
+static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netif_t *netif)
 {
     if (gnrc_gomach_get_tx_finish(netif)) {
-        switch (gnrc_netif2_get_tx_feedback(netif)) {
+        switch (gnrc_netif_get_tx_feedback(netif)) {
             case TX_FEEDBACK_SUCCESS: {
                 /* First release the packet. */
                 gnrc_pktbuf_release(netif->mac.tx.packet);
@@ -917,7 +917,7 @@ static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_t2k_end(gnrc_netif2_t *netif)
+static void gomach_t2k_end(gnrc_netif_t *netif)
 {
     gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_SLEEP);
 
@@ -965,7 +965,7 @@ static void gomach_t2k_end(gnrc_netif2_t *netif)
 #endif
 }
 
-static void gomach_t2k_update(gnrc_netif2_t *netif)
+static void gomach_t2k_update(gnrc_netif_t *netif)
 {
     /* State machine of GoMacH's t2k (transmit to phase-known device) procedure. */
     switch (netif->mac.tx.t2k_state) {
@@ -1009,14 +1009,14 @@ static void gomach_t2k_update(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_t2u_init(gnrc_netif2_t *netif)
+static void gomach_t2u_init(gnrc_netif_t *netif)
 {
     /* since t2u is right following CP period (wake-up period), the radio is still on,
      * so we don't need to turn on it again. */
 
     LOG_DEBUG("[GOMACH] t2u initialization.\n");
 
-    gnrc_netif2_set_rx_started(netif, false);
+    gnrc_netif_set_rx_started(netif, false);
     gnrc_gomach_set_quit_cycle(netif, false);
     gnrc_gomach_set_pkt_received(netif, false);
     netif->mac.tx.preamble_sent = 0;
@@ -1037,7 +1037,7 @@ static void gomach_t2u_init(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, true);
 }
 
-static void gomach_t2u_send_preamble_prepare(gnrc_netif2_t *netif)
+static void gomach_t2u_send_preamble_prepare(gnrc_netif_t *netif)
 {
     gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
 
@@ -1068,7 +1068,7 @@ static void gomach_t2u_send_preamble_prepare(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, true);
 }
 
-static void gomach_t2u_send_preamble(gnrc_netif2_t *netif)
+static void gomach_t2u_send_preamble(gnrc_netif_t *netif)
 {
     /* Now, start sending preamble. */
     int res;
@@ -1097,13 +1097,13 @@ static void gomach_t2u_send_preamble(gnrc_netif2_t *netif)
         return;
     }
 
-    gnrc_netif2_set_rx_started(netif, false);
+    gnrc_netif_set_rx_started(netif, false);
     netif->mac.tx.preamble_sent++;
     netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_WAIT_PREAMBLE_TX;
     gnrc_gomach_set_update(netif, false);
 }
 
-static void gomach_t2u_wait_preamble_tx(gnrc_netif2_t *netif)
+static void gomach_t2u_wait_preamble_tx(gnrc_netif_t *netif)
 {
     if (gnrc_gomach_get_tx_finish(netif)) {
         /* Set preamble interval timeout. This is a very short timeout (1ms),
@@ -1127,7 +1127,7 @@ static void gomach_t2u_wait_preamble_tx(gnrc_netif2_t *netif)
     }
 }
 
-static bool _handle_in_t2u_send_preamble(gnrc_netif2_t *netif)
+static bool _handle_in_t2u_send_preamble(gnrc_netif_t *netif)
 {
     /* If packet buffer is full, release one packet to release memory,
      * and reload the next packet.
@@ -1167,7 +1167,7 @@ static bool _handle_in_t2u_send_preamble(gnrc_netif2_t *netif)
 
     /* if we are receiving packet, wait until RX is completed. */
     if ((!gnrc_gomach_timeout_is_running(netif, GNRC_GOMACH_TIMEOUT_WAIT_RX_END)) &&
-        gnrc_netif2_get_rx_started(netif) &&
+        gnrc_netif_get_rx_started(netif) &&
         (!gnrc_gomach_get_max_pream_interv(netif))) {
         gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_PREAMBLE);
         gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
@@ -1204,7 +1204,7 @@ static bool _handle_in_t2u_send_preamble(gnrc_netif2_t *netif)
     return true;
 }
 
-static void gomach_t2u_wait_preamble_ack(gnrc_netif2_t *netif)
+static void gomach_t2u_wait_preamble_ack(gnrc_netif_t *netif)
 {
     if (!_handle_in_t2u_send_preamble(netif)) {
         return;
@@ -1268,7 +1268,7 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_t2u_send_data(gnrc_netif2_t *netif)
+static void gomach_t2u_send_data(gnrc_netif_t *netif)
 {
     /* If we are retrying to send the data, reload its original MAC sequence. */
     if (netif->mac.tx.no_ack_counter > 0) {
@@ -1297,10 +1297,10 @@ static void gomach_t2u_send_data(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, false);
 }
 
-static void gomach_t2u_wait_tx_feedback(gnrc_netif2_t *netif)
+static void gomach_t2u_wait_tx_feedback(gnrc_netif_t *netif)
 {
     if (gnrc_gomach_get_tx_finish(netif)) {
-        if (gnrc_netif2_get_tx_feedback(netif) == TX_FEEDBACK_SUCCESS) {
+        if (gnrc_netif_get_tx_feedback(netif) == TX_FEEDBACK_SUCCESS) {
             /* If transmission succeeded, release the data. */
             gnrc_pktbuf_release(netif->mac.tx.packet);
             netif->mac.tx.packet = NULL;
@@ -1360,7 +1360,7 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_t2u_end(gnrc_netif2_t *netif)
+static void gomach_t2u_end(gnrc_netif_t *netif)
 {
     gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_SLEEP);
     gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_PREAMBLE);
@@ -1405,7 +1405,7 @@ static void gomach_t2u_end(gnrc_netif2_t *netif)
 #endif
 }
 
-static void gomach_t2u_update(gnrc_netif2_t *netif)
+static void gomach_t2u_update(gnrc_netif_t *netif)
 {
     /* State machine of GoMacH's t2u (transmit to phase-unknown device) procedure. */
     switch (netif->mac.tx.t2u_state) {
@@ -1445,7 +1445,7 @@ static void gomach_t2u_update(gnrc_netif2_t *netif)
     }
 }
 
-static void _gomach_phase_backoff(gnrc_netif2_t *netif)
+static void _gomach_phase_backoff(gnrc_netif_t *netif)
 {
     /* Execute phase backoff for avoiding CP (wake-up period) overlap. */
     rtt_clear_alarm();
@@ -1459,7 +1459,7 @@ static void _gomach_phase_backoff(gnrc_netif2_t *netif)
              RTT_TICKS_TO_US(netif->mac.gomach.backoff_phase_ticks));
 }
 
-static void gomach_listen_init(gnrc_netif2_t *netif)
+static void gomach_listen_init(gnrc_netif_t *netif)
 {
     /* Reset last_seq_info, for avoiding receiving duplicate packets.
      * To-do: remove this in the future? */
@@ -1490,7 +1490,7 @@ static void gomach_listen_init(gnrc_netif2_t *netif)
     gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_END, listen_period);
     gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_MAX, GNRC_GOMACH_CP_DURATION_MAX_US);
 
-    gnrc_netif2_set_rx_started(netif, false);
+    gnrc_netif_set_rx_started(netif, false);
     gnrc_gomach_set_pkt_received(netif, false);
     netif->mac.gomach.cp_extend_count = 0;
     gnrc_gomach_set_quit_cycle(netif, false);
@@ -1520,7 +1520,7 @@ static void gomach_listen_init(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, false);
 }
 
-static void gomach_listen_cp_listen(gnrc_netif2_t *netif)
+static void gomach_listen_cp_listen(gnrc_netif_t *netif)
 {
     if (gnrc_gomach_get_pkt_received(netif)) {
         gnrc_gomach_set_pkt_received(netif, false);
@@ -1578,7 +1578,7 @@ static void gomach_listen_cp_listen(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_listen_cp_end(gnrc_netif2_t *netif)
+static void gomach_listen_cp_end(gnrc_netif_t *netif)
 {
     gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
     gnrc_mac_dispatch(&netif->mac.rx);
@@ -1593,7 +1593,7 @@ static void gomach_listen_cp_end(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, true);
 }
 
-static void gomach_listen_send_beacon(gnrc_netif2_t *netif)
+static void gomach_listen_send_beacon(gnrc_netif_t *netif)
 {
     /* First check if there are slots needed to be allocated. */
     uint8_t slot_num = 0;
@@ -1629,7 +1629,7 @@ static void gomach_listen_send_beacon(gnrc_netif2_t *netif)
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_WAIT_BEACON_TX;
 }
 
-static void gomach_listen_wait_beacon_tx(gnrc_netif2_t *netif)
+static void gomach_listen_wait_beacon_tx(gnrc_netif_t *netif)
 {
     if ((gnrc_gomach_timeout_is_expired(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR))) {
         /* No TX-ISR, go to sleep. */
@@ -1720,7 +1720,7 @@ static void gomach_listen_wait_beacon_tx(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_vtdma_init(gnrc_netif2_t *netif)
+static void gomach_vtdma_init(gnrc_netif_t *netif)
 {
     /* Switch the radio to the device's sub-channel. */
     gnrc_gomach_turn_channel(netif, netif->mac.gomach.sub_channel_seq);
@@ -1739,7 +1739,7 @@ static void gomach_vtdma_init(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, false);
 }
 
-static void gomach_vtdma(gnrc_netif2_t *netif)
+static void gomach_vtdma(gnrc_netif_t *netif)
 {
     /* Process received packet here. */
     if (gnrc_gomach_get_pkt_received(netif)) {
@@ -1767,7 +1767,7 @@ static void gomach_vtdma(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_vtdma_end(gnrc_netif2_t *netif)
+static void gomach_vtdma_end(gnrc_netif_t *netif)
 {
     gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
     gnrc_mac_dispatch(&netif->mac.rx);
@@ -1831,7 +1831,7 @@ static void gomach_vtdma_end(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, true);
 }
 
-static void gomach_sleep_init(gnrc_netif2_t *netif)
+static void gomach_sleep_init(gnrc_netif_t *netif)
 {
     /* If the device's wakeup-phase has been changed,
      * figure out the new phases of all neighbors. */
@@ -1846,7 +1846,7 @@ static void gomach_sleep_init(gnrc_netif2_t *netif)
     gnrc_gomach_set_update(netif, true);
 }
 
-static void gomach_sleep(gnrc_netif2_t *netif)
+static void gomach_sleep(gnrc_netif_t *netif)
 {
     /* If we are entering a new cycle, quit sleeping. */
     if (gnrc_gomach_get_enter_new_cycle(netif)) {
@@ -1855,14 +1855,14 @@ static void gomach_sleep(gnrc_netif2_t *netif)
     }
 }
 
-static void gomach_sleep_end(gnrc_netif2_t *netif)
+static void gomach_sleep_end(gnrc_netif_t *netif)
 {
     /* Go to CP (start of the new cycle), start listening on the public-channel. */
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
     gnrc_gomach_set_update(netif, true);
 }
 
-static void gomach_update(gnrc_netif2_t *netif)
+static void gomach_update(gnrc_netif_t *netif)
 {
     switch (netif->mac.gomach.basic_state) {
         case GNRC_GOMACH_INIT: {
@@ -1962,7 +1962,7 @@ static void gomach_update(gnrc_netif2_t *netif)
     }
 }
 
-static int _send(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt)
+static int _send(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
 {
     if (!gnrc_mac_queue_tx_packet(&netif->mac.tx, 0, pkt)) {
         /* TX packet queue full, release the packet. */
@@ -1979,7 +1979,7 @@ static int _send(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt)
     return 0;
 }
 
-static void _gomach_msg_handler(gnrc_netif2_t *netif, msg_t *msg)
+static void _gomach_msg_handler(gnrc_netif_t *netif, msg_t *msg)
 {
     switch (msg->type) {
         case GNRC_GOMACH_EVENT_RTT_TYPE: {
@@ -2011,7 +2011,7 @@ static void _gomach_msg_handler(gnrc_netif2_t *netif, msg_t *msg)
  */
 static void _gomach_event_cb(netdev_t *dev, netdev_event_t event)
 {
-    gnrc_netif2_t *netif = (gnrc_netif2_t *) dev->context;
+    gnrc_netif_t *netif = (gnrc_netif_t *) dev->context;
 
     if (event == NETDEV_EVENT_ISR) {
         msg_t msg;
@@ -2027,7 +2027,7 @@ static void _gomach_event_cb(netdev_t *dev, netdev_event_t event)
         DEBUG("gnrc_netdev: event triggered -> %i\n", event);
         switch (event) {
             case NETDEV_EVENT_RX_STARTED: {
-                gnrc_netif2_set_rx_started(netif, true);
+                gnrc_netif_set_rx_started(netif, true);
                 gnrc_gomach_set_update(netif, true);
                 break;
             }
@@ -2040,19 +2040,19 @@ static void _gomach_event_cb(netdev_t *dev, netdev_event_t event)
 
                     LOG_DEBUG("[GOMACH] gnrc_netdev: packet is NULL, memory full?\n");
                     gnrc_gomach_set_pkt_received(netif, false);
-                    gnrc_netif2_set_rx_started(netif, false);
+                    gnrc_netif_set_rx_started(netif, false);
                     break;
                 }
 
-                if (!gnrc_netif2_get_rx_started(netif)) {
+                if (!gnrc_netif_get_rx_started(netif)) {
                     LOG_DEBUG("[GOMACH] gnrc_netdev: maybe sending kicked in "
                               "and frame buffer is now corrupted?\n");
                     gnrc_pktbuf_release(pkt);
-                    gnrc_netif2_set_rx_started(netif, false);
+                    gnrc_netif_set_rx_started(netif, false);
                     break;
                 }
 
-                gnrc_netif2_set_rx_started(netif, false);
+                gnrc_netif_set_rx_started(netif, false);
 
                 if (!gnrc_mac_queue_rx_packet(&netif->mac.rx, 0, pkt)) {
                     LOG_ERROR("ERROR: [GOMACH] gnrc_netdev: can't push RX packet, queue full?\n");
@@ -2066,21 +2066,21 @@ static void _gomach_event_cb(netdev_t *dev, netdev_event_t event)
                 break;
             }
             case NETDEV_EVENT_TX_COMPLETE: {
-                gnrc_netif2_set_tx_feedback(netif, TX_FEEDBACK_SUCCESS);
+                gnrc_netif_set_tx_feedback(netif, TX_FEEDBACK_SUCCESS);
                 gnrc_gomach_set_tx_finish(netif, true);
                 gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
                 gnrc_gomach_set_update(netif, true);
                 break;
             }
             case NETDEV_EVENT_TX_NOACK: {
-                gnrc_netif2_set_tx_feedback(netif, TX_FEEDBACK_NOACK);
+                gnrc_netif_set_tx_feedback(netif, TX_FEEDBACK_NOACK);
                 gnrc_gomach_set_tx_finish(netif, true);
                 gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
                 gnrc_gomach_set_update(netif, true);
                 break;
             }
             case NETDEV_EVENT_TX_MEDIUM_BUSY: {
-                gnrc_netif2_set_tx_feedback(netif, TX_FEEDBACK_BUSY);
+                gnrc_netif_set_tx_feedback(netif, TX_FEEDBACK_BUSY);
                 gnrc_gomach_set_tx_finish(netif, true);
                 gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
                 gnrc_gomach_set_update(netif, true);
@@ -2098,7 +2098,7 @@ static void _gomach_event_cb(netdev_t *dev, netdev_event_t event)
     }
 }
 
-static void _gomach_init(gnrc_netif2_t *netif)
+static void _gomach_init(gnrc_netif_t *netif)
 {
     netdev_t *dev;
 

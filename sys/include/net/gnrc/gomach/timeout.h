@@ -24,7 +24,7 @@
 
 #include "msg.h"
 #include "xtimer.h"
-#include "net/gnrc/netif2.h"
+#include "net/gnrc/netif.h"
 #include "types.h"
 
 #ifdef __cplusplus
@@ -38,7 +38,7 @@ extern "C" {
  * @param[in]     type         GoMacH timeout type.
  * @param[in]     offset       timeout offset.
  */
-void gnrc_gomach_set_timeout(gnrc_netif2_t *netif, gnrc_gomach_timeout_type_t type, uint32_t offset);
+void gnrc_gomach_set_timeout(gnrc_netif_t *netif, gnrc_gomach_timeout_type_t type, uint32_t offset);
 
 /**
  * @brief   Clear GoMacH timeout of type @p type.
@@ -46,7 +46,7 @@ void gnrc_gomach_set_timeout(gnrc_netif2_t *netif, gnrc_gomach_timeout_type_t ty
  * @param[in,out] netif    the network interface.
  * @param[in]     type         GoMacH timeout type.
  */
-void gnrc_gomach_clear_timeout(gnrc_netif2_t *netif, gnrc_gomach_timeout_type_t type);
+void gnrc_gomach_clear_timeout(gnrc_netif_t *netif, gnrc_gomach_timeout_type_t type);
 
 /**
  * @brief   Check whether GoMacH timeout of type @p type is running.
@@ -57,7 +57,7 @@ void gnrc_gomach_clear_timeout(gnrc_netif2_t *netif, gnrc_gomach_timeout_type_t 
  * @return        true, if timeout of type @p type is running.
  * @return        false, if timeout of type @p type is not running.
  */
-bool gnrc_gomach_timeout_is_running(gnrc_netif2_t *netif, gnrc_gomach_timeout_type_t type);
+bool gnrc_gomach_timeout_is_running(gnrc_netif_t *netif, gnrc_gomach_timeout_type_t type);
 
 /**
  * @brief   Check whether GoMacH timeout of type @p type is expired. It will clear
@@ -69,14 +69,14 @@ bool gnrc_gomach_timeout_is_running(gnrc_netif2_t *netif, gnrc_gomach_timeout_ty
  * @return        true, if timeout of type @p type is expired.
  * @return        false, if timeout of type @p type is not expired, or not exist.
  */
-bool gnrc_gomach_timeout_is_expired(gnrc_netif2_t *netif, gnrc_gomach_timeout_type_t type);
+bool gnrc_gomach_timeout_is_expired(gnrc_netif_t *netif, gnrc_gomach_timeout_type_t type);
 
 /**
  * @brief   Reset all GoMacH timeouts.
  *
  * @param[in,out] netif    the network interface.
  */
-void gnrc_gomach_reset_timeouts(gnrc_netif2_t *netif);
+void gnrc_gomach_reset_timeouts(gnrc_netif_t *netif);
 
 /**
  * @brief   Make a specific GoMacH timeout expired.

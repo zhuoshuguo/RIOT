@@ -22,7 +22,7 @@
 #include <stdint.h>
 
 #include "periph/rtt.h"
-#include "net/gnrc/netif2.h"
+#include "net/gnrc/netif.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -125,7 +125,7 @@ extern "C" {
  * @param[in] tx_finish    value for GoMacH @ref GNRC_GOMACH_INFO_TX_FINISHED flag.
  *
  */
-static inline void gnrc_gomach_set_tx_finish(gnrc_netif2_t *netif, bool tx_finish)
+static inline void gnrc_gomach_set_tx_finish(gnrc_netif_t *netif, bool tx_finish)
 {
     if (tx_finish) {
         netif->mac.mac_info |= GNRC_GOMACH_INFO_TX_FINISHED;
@@ -143,7 +143,7 @@ static inline void gnrc_gomach_set_tx_finish(gnrc_netif2_t *netif, bool tx_finis
  * @return                 true if TX has finished.
  * @return                 false if TX hasn't finished yet.
  */
-static inline bool gnrc_gomach_get_tx_finish(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_tx_finish(gnrc_netif_t *netif)
 {
     return (netif->mac.mac_info & GNRC_GOMACH_INFO_TX_FINISHED);
 }
@@ -155,7 +155,7 @@ static inline bool gnrc_gomach_get_tx_finish(gnrc_netif2_t *netif)
  * @param[in] received     value for GoMacH @ref GNRC_GOMACH_INFO_PKT_RECEIVED flag.
  *
  */
-static inline void gnrc_gomach_set_pkt_received(gnrc_netif2_t *netif, bool received)
+static inline void gnrc_gomach_set_pkt_received(gnrc_netif_t *netif, bool received)
 {
     if (received) {
         netif->mac.mac_info |= GNRC_GOMACH_INFO_PKT_RECEIVED;
@@ -173,7 +173,7 @@ static inline void gnrc_gomach_set_pkt_received(gnrc_netif2_t *netif, bool recei
  * @return                 true if radio has successfully received a packet.
  * @return                 false if radio hasn't received a packet yet.
  */
-static inline bool gnrc_gomach_get_pkt_received(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_pkt_received(gnrc_netif_t *netif)
 {
     return (netif->mac.mac_info & GNRC_GOMACH_INFO_PKT_RECEIVED);
 }
@@ -185,7 +185,7 @@ static inline bool gnrc_gomach_get_pkt_received(gnrc_netif2_t *netif)
  * @param[in] quit         value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_QUIT_CYCLE flag.
  *
  */
-static inline void gnrc_gomach_set_quit_cycle(gnrc_netif2_t *netif, bool quit)
+static inline void gnrc_gomach_set_quit_cycle(gnrc_netif_t *netif, bool quit)
 {
     if (quit) {
         netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_QUIT_CYCLE;
@@ -203,7 +203,7 @@ static inline void gnrc_gomach_set_quit_cycle(gnrc_netif2_t *netif, bool quit)
  * @return                 true if need to quit cycle.
  * @return                 false if no need to quit cycle.
  */
-static inline bool gnrc_gomach_get_quit_cycle(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_quit_cycle(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_QUIT_CYCLE);
 }
@@ -215,7 +215,7 @@ static inline bool gnrc_gomach_get_quit_cycle(gnrc_netif2_t *netif)
  * @param[in] got_preamble  value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLE flag.
  *
  */
-static inline void gnrc_gomach_set_got_preamble(gnrc_netif2_t *netif, bool got_preamble)
+static inline void gnrc_gomach_set_got_preamble(gnrc_netif_t *netif, bool got_preamble)
 {
     if (got_preamble) {
         netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLE;
@@ -233,7 +233,7 @@ static inline void gnrc_gomach_set_got_preamble(gnrc_netif2_t *netif, bool got_p
  * @return                 true if get preamble packet.
  * @return                 false if not get preamble packet yet.
  */
-static inline bool gnrc_gomach_get_got_preamble(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_got_preamble(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLE);
 }
@@ -245,7 +245,7 @@ static inline bool gnrc_gomach_get_got_preamble(gnrc_netif2_t *netif)
  * @param[in] cp_end     value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_CP_END flag.
  *
  */
-static inline void gnrc_gomach_set_cp_end(gnrc_netif2_t *netif, bool cp_end)
+static inline void gnrc_gomach_set_cp_end(gnrc_netif_t *netif, bool cp_end)
 {
     if (cp_end) {
         netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_CP_END;
@@ -263,7 +263,7 @@ static inline void gnrc_gomach_set_cp_end(gnrc_netif2_t *netif, bool cp_end)
  * @return                 true if cp has ended.
  * @return                 false if cp hasn't ended yet.
  */
-static inline bool gnrc_gomach_get_cp_end(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_cp_end(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_CP_END);
 }
@@ -275,7 +275,7 @@ static inline bool gnrc_gomach_get_cp_end(gnrc_netif2_t *netif)
  * @param[in] vtdma_end     value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_VTDMA_END flag.
  *
  */
-static inline void gnrc_gomach_set_vTDMA_end(gnrc_netif2_t *netif, bool vtdma_end)
+static inline void gnrc_gomach_set_vTDMA_end(gnrc_netif_t *netif, bool vtdma_end)
 {
     if (vtdma_end) {
         netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_VTDMA_END;
@@ -293,7 +293,7 @@ static inline void gnrc_gomach_set_vTDMA_end(gnrc_netif2_t *netif, bool vtdma_en
  * @return                 true if vTDMA has ended.
  * @return                 false if vTDMA hasn't ended yet.
  */
-static inline bool gnrc_gomach_get_vTDMA_end(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_vTDMA_end(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_VTDMA_END);
 }
@@ -305,7 +305,7 @@ static inline bool gnrc_gomach_get_vTDMA_end(gnrc_netif2_t *netif)
  * @param[in] uintd_preamble   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE flag.
  *
  */
-static inline void gnrc_gomach_set_unintd_preamble(gnrc_netif2_t *netif, bool uintd_preamble)
+static inline void gnrc_gomach_set_unintd_preamble(gnrc_netif_t *netif, bool uintd_preamble)
 {
     if (uintd_preamble) {
         netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE;
@@ -323,7 +323,7 @@ static inline void gnrc_gomach_set_unintd_preamble(gnrc_netif2_t *netif, bool ui
  * @return                 true if has received unintended-preamble.
  * @return                 false if hasn't received unintended-preamble yet.
  */
-static inline bool gnrc_gomach_get_unintd_preamble(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_unintd_preamble(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE);
 }
@@ -335,7 +335,7 @@ static inline bool gnrc_gomach_get_unintd_preamble(gnrc_netif2_t *netif)
  * @param[in] update   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_ND_UPDATE flag.
  *
  */
-static inline void gnrc_gomach_set_update(gnrc_netif2_t *netif, bool update)
+static inline void gnrc_gomach_set_update(gnrc_netif_t *netif, bool update)
 {
     if (update) {
         netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_ND_UPDATE;
@@ -353,7 +353,7 @@ static inline void gnrc_gomach_set_update(gnrc_netif2_t *netif, bool update)
  * @return                 true if need update GoMacH.
  * @return                 false if no need to update GoMacH.
  */
-static inline bool gnrc_gomach_get_update(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_update(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_ND_UPDATE);
 }
@@ -365,7 +365,7 @@ static inline bool gnrc_gomach_get_update(gnrc_netif2_t *netif)
  * @param[in] start   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START flag.
  *
  */
-static inline void gnrc_gomach_set_duty_cycle_start(gnrc_netif2_t *netif, bool start)
+static inline void gnrc_gomach_set_duty_cycle_start(gnrc_netif_t *netif, bool start)
 {
     if (start) {
         netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START;
@@ -383,7 +383,7 @@ static inline void gnrc_gomach_set_duty_cycle_start(gnrc_netif2_t *netif, bool s
  * @return                 true if duty-cycle has started.
  * @return                 false if duty-cycle hasn't started yet.
  */
-static inline bool gnrc_gomach_get_duty_cycle_start(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_duty_cycle_start(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START);
 }
@@ -395,7 +395,7 @@ static inline bool gnrc_gomach_get_duty_cycle_start(gnrc_netif2_t *netif)
  * @param[in] backoff   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF flag.
  *
  */
-static inline void gnrc_gomach_set_phase_backoff(gnrc_netif2_t *netif, bool backoff)
+static inline void gnrc_gomach_set_phase_backoff(gnrc_netif_t *netif, bool backoff)
 {
     if (backoff) {
         netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF;
@@ -413,7 +413,7 @@ static inline void gnrc_gomach_set_phase_backoff(gnrc_netif2_t *netif, bool back
  * @return                 true if need to run phase backoff.
  * @return                 false if no need to run phase backoff.
  */
-static inline bool gnrc_gomach_get_phase_backoff(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_phase_backoff(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF);
 }
@@ -425,7 +425,7 @@ static inline bool gnrc_gomach_get_phase_backoff(gnrc_netif2_t *netif)
  * @param[in] change   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_PHASE_CHANGED flag.
  *
  */
-static inline void gnrc_gomach_set_phase_changed(gnrc_netif2_t *netif, bool change)
+static inline void gnrc_gomach_set_phase_changed(gnrc_netif_t *netif, bool change)
 {
     if (change) {
         netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_PHASE_CHANGED;
@@ -443,7 +443,7 @@ static inline void gnrc_gomach_set_phase_changed(gnrc_netif2_t *netif, bool chan
  * @return                 true if node's phase has changed.
  * @return                 false if node's phase hasn't changed yet.
  */
-static inline bool gnrc_gomach_get_phase_changed(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_phase_changed(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_PHASE_CHANGED);
 }
@@ -455,7 +455,7 @@ static inline bool gnrc_gomach_get_phase_changed(gnrc_netif2_t *netif)
  * @param[in] fail   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_BEACON_FAIL flag.
  *
  */
-static inline void gnrc_gomach_set_beacon_fail(gnrc_netif2_t *netif, bool fail)
+static inline void gnrc_gomach_set_beacon_fail(gnrc_netif_t *netif, bool fail)
 {
     if (fail) {
         netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_BEACON_FAIL;
@@ -473,7 +473,7 @@ static inline void gnrc_gomach_set_beacon_fail(gnrc_netif2_t *netif, bool fail)
  * @return                 true if send beacon fail.
  * @return                 false upon beacon transmission success.
  */
-static inline bool gnrc_gomach_get_beacon_fail(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_beacon_fail(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_BEACON_FAIL);
 }
@@ -485,7 +485,7 @@ static inline bool gnrc_gomach_get_beacon_fail(gnrc_netif2_t *netif)
  * @param[in] full   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_BUFFER_FULL flag.
  *
  */
-static inline void gnrc_gomach_set_buffer_full(gnrc_netif2_t *netif, bool full)
+static inline void gnrc_gomach_set_buffer_full(gnrc_netif_t *netif, bool full)
 {
     if (full) {
         netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_BUFFER_FULL;
@@ -503,7 +503,7 @@ static inline void gnrc_gomach_set_buffer_full(gnrc_netif2_t *netif, bool full)
  * @return                 true if node's packet buffer is full.
  * @return                 false if node's packet buffer is not full.
  */
-static inline bool gnrc_gomach_get_buffer_full(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_buffer_full(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_BUFFER_FULL);
 }
@@ -515,7 +515,7 @@ static inline bool gnrc_gomach_get_buffer_full(gnrc_netif2_t *netif)
  * @param[in] enter   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE flag.
  *
  */
-static inline void gnrc_gomach_set_enter_new_cycle(gnrc_netif2_t *netif, bool enter)
+static inline void gnrc_gomach_set_enter_new_cycle(gnrc_netif_t *netif, bool enter)
 {
     if (enter) {
         netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE;
@@ -533,7 +533,7 @@ static inline void gnrc_gomach_set_enter_new_cycle(gnrc_netif2_t *netif, bool en
  * @return                 true if node has entered a new cycle.
  * @return                 false if node hasn't entered a new cycle yet.
  */
-static inline bool gnrc_gomach_get_enter_new_cycle(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_enter_new_cycle(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE);
 }
@@ -545,7 +545,7 @@ static inline bool gnrc_gomach_get_enter_new_cycle(gnrc_netif2_t *netif)
  * @param[in] got   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK flag.
  *
  */
-static inline void gnrc_gomach_set_got_preamble_ack(gnrc_netif2_t *netif, bool got)
+static inline void gnrc_gomach_set_got_preamble_ack(gnrc_netif_t *netif, bool got)
 {
     if (got) {
         netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK;
@@ -563,7 +563,7 @@ static inline void gnrc_gomach_set_got_preamble_ack(gnrc_netif2_t *netif, bool g
  * @return                 true if node has got preamble-ACK.
  * @return                 false if node hasn't got preamble-ACK yet.
  */
-static inline bool gnrc_gomach_get_got_preamble_ack(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_got_preamble_ack(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK);
 }
@@ -575,7 +575,7 @@ static inline bool gnrc_gomach_get_got_preamble_ack(gnrc_netif2_t *netif)
  * @param[in] on_pubchan_1   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1 flag.
  *
  */
-static inline void gnrc_gomach_set_on_pubchan_1(gnrc_netif2_t *netif, bool on_pubchan_1)
+static inline void gnrc_gomach_set_on_pubchan_1(gnrc_netif_t *netif, bool on_pubchan_1)
 {
     if (on_pubchan_1) {
         netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1;
@@ -593,7 +593,7 @@ static inline void gnrc_gomach_set_on_pubchan_1(gnrc_netif2_t *netif, bool on_pu
  * @return                 true if node is on public channel 1.
  * @return                 false if node is not on public channel 1.
  */
-static inline bool gnrc_gomach_get_on_pubchan_1(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_on_pubchan_1(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1);
 }
@@ -605,7 +605,7 @@ static inline bool gnrc_gomach_get_on_pubchan_1(gnrc_netif2_t *netif)
  * @param[in] max   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV flag.
  *
  */
-static inline void gnrc_gomach_set_max_pream_interv(gnrc_netif2_t *netif, bool max)
+static inline void gnrc_gomach_set_max_pream_interv(gnrc_netif_t *netif, bool max)
 {
     if (max) {
         netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV;
@@ -623,7 +623,7 @@ static inline void gnrc_gomach_set_max_pream_interv(gnrc_netif2_t *netif, bool m
  * @return                 true if node has reached maximum preamble interval.
  * @return                 false if node hasn't reached maximum preamble interval yet.
  */
-static inline bool gnrc_gomach_get_max_pream_interv(gnrc_netif2_t *netif)
+static inline bool gnrc_gomach_get_max_pream_interv(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV);
 }
@@ -635,7 +635,7 @@ static inline bool gnrc_gomach_get_max_pream_interv(gnrc_netif2_t *netif)
  *
  * @return             device's current phase.
  */
-uint64_t gnrc_gomach_phase_now(gnrc_netif2_t *netif);
+uint64_t gnrc_gomach_phase_now(gnrc_netif_t *netif);
 
 /**
  * @brief Shortcut to set the state of netdev
@@ -643,7 +643,7 @@ uint64_t gnrc_gomach_phase_now(gnrc_netif2_t *netif);
  * @param[in]   netif       ptr to the network interface
  * @param[in]   devstate    new state for netdev
  */
-static inline void gnrc_gomach_set_netdev_state(gnrc_netif2_t *netif, netopt_state_t devstate)
+static inline void gnrc_gomach_set_netdev_state(gnrc_netif_t *netif, netopt_state_t devstate)
 {
     assert(netif != NULL);
 
@@ -680,7 +680,7 @@ static inline void gnrc_gomach_set_netdev_state(gnrc_netif2_t *netif, netopt_sta
  * @param[in] autoack      value for the auto-ACK parameter.
  *
  */
-static inline void gnrc_gomach_set_autoack(gnrc_netif2_t *netif, netopt_enable_t autoack)
+static inline void gnrc_gomach_set_autoack(gnrc_netif_t *netif, netopt_enable_t autoack)
 {
     assert(netif != NULL);
 
@@ -697,7 +697,7 @@ static inline void gnrc_gomach_set_autoack(gnrc_netif2_t *netif, netopt_enable_t
  * @param[in] ack_req      value for the ACK-require parameter.
  *
  */
-static inline void gnrc_gomach_set_ack_req(gnrc_netif2_t *netif, netopt_enable_t ack_req)
+static inline void gnrc_gomach_set_ack_req(gnrc_netif_t *netif, netopt_enable_t ack_req)
 {
     assert(netif != NULL);
 
@@ -715,7 +715,7 @@ static inline void gnrc_gomach_set_ack_req(gnrc_netif2_t *netif, netopt_enable_t
  * @return                 state of netdev upon success.
  * @return                 -ENOSYS, upon failure.
  */
-static inline netopt_state_t gnrc_gomach_get_netdev_state(gnrc_netif2_t *netif)
+static inline netopt_state_t gnrc_gomach_get_netdev_state(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
 
@@ -737,7 +737,7 @@ static inline netopt_state_t gnrc_gomach_get_netdev_state(gnrc_netif2_t *netif)
  * @param[in] channel_num  targeted channel number to turn to.
  *
  */
-static inline void gnrc_gomach_turn_channel(gnrc_netif2_t *netif, uint16_t channel_num)
+static inline void gnrc_gomach_turn_channel(gnrc_netif_t *netif, uint16_t channel_num)
 {
     assert(netif != NULL);
 
@@ -767,9 +767,9 @@ static inline void gnrc_gomach_turn_channel(gnrc_netif2_t *netif, uint16_t chann
  *          or is in an unexpected format.
  * @return  -ENOTSUP, if sending @p pkt in the given format isn't supported
  *          (e.g. empty payload with Ethernet).
- * @return  Any negative error code reported by gnrc_netif2_t::dev.
+ * @return  Any negative error code reported by gnrc_netif_t::dev.
  */
-int _gnrc_gomach_transmit(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt);
+int _gnrc_gomach_transmit(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt);
 
 /**
  * @brief Check if the received packet is a duplicate packet.
@@ -780,7 +780,7 @@ int _gnrc_gomach_transmit(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt);
  * @return                 true if the received packet is a duplicate packet.
  * @return                 false if the received packet is not a duplicate packet.
  */
-bool gnrc_gomach_check_duplicate(gnrc_netif2_t *netif, gnrc_gomach_packet_info_t *pa_info);
+bool gnrc_gomach_check_duplicate(gnrc_netif_t *netif, gnrc_gomach_packet_info_t *pa_info);
 
 /**
  * @brief Send a pktsnip in GoMacH.
@@ -792,7 +792,7 @@ bool gnrc_gomach_check_duplicate(gnrc_netif2_t *netif, gnrc_gomach_packet_info_t
  * @return                 >0 upon sending success.
  * @return                 0< upon sending failure.
  */
-int gnrc_gomach_send(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable);
+int gnrc_gomach_send(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt, netopt_enable_t csma_enable);
 
 /**
  * @brief Reply a preamble-ACK packet in GoMacH.
@@ -803,7 +803,7 @@ int gnrc_gomach_send(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt, netopt_enable_t 
  * @return                 >0 upon sending success.
  * @return                 0< upon sending failure.
  */
-int gnrc_gomach_send_preamble_ack(gnrc_netif2_t *netif, gnrc_gomach_packet_info_t *info);
+int gnrc_gomach_send_preamble_ack(gnrc_netif_t *netif, gnrc_gomach_packet_info_t *info);
 
 /**
  * @brief Broadcast a beacon packet in GoMacH.
@@ -813,7 +813,7 @@ int gnrc_gomach_send_preamble_ack(gnrc_netif2_t *netif, gnrc_gomach_packet_info_
  * @return                 >0 upon sending success.
  * @return                 0< upon sending failure.
  */
-int gnrc_gomach_send_beacon(gnrc_netif2_t *netif);
+int gnrc_gomach_send_beacon(gnrc_netif_t *netif);
 
 /**
  * @brief Store the received packet to the dispatch buffer.
@@ -834,7 +834,7 @@ int gnrc_gomach_dispatch_defer(gnrc_pktsnip_t * buffer[], gnrc_pktsnip_t * pkt);
  * @param[in] info         ptr to the info of the received packet.
  *
  */
-void gnrc_gomach_indicator_update(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt,
+void gnrc_gomach_indicator_update(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt,
                                   gnrc_gomach_packet_info_t *pa_info);
 
 /**
@@ -843,7 +843,7 @@ void gnrc_gomach_indicator_update(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt,
  * @param[in,out] netif    the network interface.
  *
  */
-void gnrc_gomach_cp_packet_process(gnrc_netif2_t *netif);
+void gnrc_gomach_cp_packet_process(gnrc_netif_t *netif);
 
 /**
  * @brief Choose a sub-channel for a device running GoMacH.
@@ -851,7 +851,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netif2_t *netif);
  * @param[in,out] netif    the network interface.
  *
  */
-void gnrc_gomach_init_choose_subchannel(gnrc_netif2_t *netif);
+void gnrc_gomach_init_choose_subchannel(gnrc_netif_t *netif);
 
 /**
  * @brief Broadcast the chosen sub-channel sequence to the device's neighbors.
@@ -861,7 +861,7 @@ void gnrc_gomach_init_choose_subchannel(gnrc_netif2_t *netif);
  * @return                 >0 upon sending success.
  * @return                 0< upon sending failure.
  */
-int gnrc_gomach_bcast_subchann_seq(gnrc_netif2_t *netif, netopt_enable_t use_csma);
+int gnrc_gomach_bcast_subchann_seq(gnrc_netif_t *netif, netopt_enable_t use_csma);
 
 /**
  * @brief Send a preamble packet to the targeted neighbor.
@@ -872,7 +872,7 @@ int gnrc_gomach_bcast_subchann_seq(gnrc_netif2_t *netif, netopt_enable_t use_csm
  * @return                 >0 upon sending success.
  * @return                 0< upon sending failure.
  */
-int gnrc_gomach_send_preamble(gnrc_netif2_t *netif, netopt_enable_t csma_enable);
+int gnrc_gomach_send_preamble(gnrc_netif_t *netif, netopt_enable_t csma_enable);
 
 /**
  * @brief Process the received preamble-ACK packet to get phase-locked with the sender.
@@ -881,7 +881,7 @@ int gnrc_gomach_send_preamble(gnrc_netif2_t *netif, netopt_enable_t csma_enable)
  * @param[in] pkt          ptr to the received preamble-ACK.
  *
  */
-void gnrc_gomach_process_preamble_ack(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt);
+void gnrc_gomach_process_preamble_ack(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt);
 
 /**
  * @brief Process the received packets to when waiting for the preamble-ACK packet.
@@ -889,7 +889,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt)
  * @param[in,out] netif    the network interface.
  *
  */
-void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netif2_t *netif);
+void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netif_t *netif);
 
 /**
  * @brief Send a data packet to the targeted neighbor.
@@ -900,7 +900,7 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netif2_t *netif);
  * @return                 >0 upon sending success.
  * @return                 0< upon sending failure.
  */
-int gnrc_gomach_send_data(gnrc_netif2_t *netif, netopt_enable_t csma_enable);
+int gnrc_gomach_send_data(gnrc_netif_t *netif, netopt_enable_t csma_enable);
 
 /**
  * @brief Find a neighbor that is next to send packet to.
@@ -911,7 +911,7 @@ int gnrc_gomach_send_data(gnrc_netif2_t *netif, netopt_enable_t csma_enable);
  * @return                 false, if not found next TX neighbor.
  *
  */
-bool gnrc_gomach_find_next_tx_neighbor(gnrc_netif2_t *netif);
+bool gnrc_gomach_find_next_tx_neighbor(gnrc_netif_t *netif);
 
 /**
  * @brief Process the received beacon packet.
@@ -920,7 +920,7 @@ bool gnrc_gomach_find_next_tx_neighbor(gnrc_netif2_t *netif);
  * @param[in]     pkt          ptr to the received beacon.
  *
  */
-void gnrc_gomach_beacon_process(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt);
+void gnrc_gomach_beacon_process(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt);
 
 /**
  * @brief Process the received packets when waiting for the beacon during t2k procedure in
@@ -929,7 +929,7 @@ void gnrc_gomach_beacon_process(gnrc_netif2_t *netif, gnrc_pktsnip_t *pkt);
  * @param[in,out] netif    the network interface.
  *
  */
-void gnrc_gomach_packet_process_in_wait_beacon(gnrc_netif2_t *netif);
+void gnrc_gomach_packet_process_in_wait_beacon(gnrc_netif_t *netif);
 
 /**
  * @brief Process the received packets in the vTDMA period in GoMacH.
@@ -937,7 +937,7 @@ void gnrc_gomach_packet_process_in_wait_beacon(gnrc_netif2_t *netif);
  * @param[in,out] netif    the network interface.
  *
  */
-void gnrc_gomach_packet_process_in_vtdma(gnrc_netif2_t *netif);
+void gnrc_gomach_packet_process_in_vtdma(gnrc_netif_t *netif);
 
 /**
  * @brief Update the TX neighbors' phases in GoMacH.
@@ -945,7 +945,7 @@ void gnrc_gomach_packet_process_in_vtdma(gnrc_netif2_t *netif);
  * @param[in,out] netif    the network interface.
  *
  */
-void gnrc_gomach_update_neighbor_phase(gnrc_netif2_t *netif);
+void gnrc_gomach_update_neighbor_phase(gnrc_netif_t *netif);
 
 /**
  * @brief Update the TX neighbors' public channel phase in GoMacH.
@@ -953,7 +953,7 @@ void gnrc_gomach_update_neighbor_phase(gnrc_netif2_t *netif);
  * @param[in,out] netif    the network interface.
  *
  */
-void gnrc_gomach_update_neighbor_pubchan(gnrc_netif2_t *netif);
+void gnrc_gomach_update_neighbor_pubchan(gnrc_netif_t *netif);
 
 #ifdef __cplusplus
 }
