@@ -673,7 +673,7 @@ static inline void gnrc_gomach_set_netdev_state(gnrc_netdev_t *gnrc_netdev, neto
                                   &devstate,
                                   sizeof(devstate));
     if (devstate == NETOPT_STATE_IDLE) {
-    	xtimer_usleep(500);
+    	xtimer_usleep(1000);
     }
 
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
@@ -768,6 +768,7 @@ static inline void gnrc_gomach_turn_channel(gnrc_netdev_t *gnrc_netdev, uint16_t
                                   NETOPT_CHANNEL,
                                   &channel_num,
                                   sizeof(channel_num));
+    xtimer_usleep(1000);
 }
 
 /**
