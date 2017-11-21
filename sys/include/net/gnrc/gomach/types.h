@@ -294,6 +294,9 @@ typedef struct gomach {
     uint64_t system_start_time_ticks;                           /**< The time in ticks when chip is started */
     uint64_t awake_duration_sum_ticks;                          /**< The sum of time in ticks when radio is on */
 #endif
+
+    uint8_t slot_varia[60];
+	uint32_t total_csma;
 } gnrc_gomach_t;
 
 #ifdef __cplusplus
