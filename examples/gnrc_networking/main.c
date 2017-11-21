@@ -126,7 +126,7 @@ void *sender_thread(void *arg)
     _netif_add(ifconfig, dev, 1, &ipadd);
     */
 
-    xtimer_sleep(30);
+    xtimer_sleep(10);
 
     /* RPL must be initialized on that particular interface-7 */
     char inface = '7';
@@ -157,7 +157,7 @@ void *sender_thread(void *arg)
    while (1) {
      xtimer_sleep((uint32_t) data_rate);
 
-	for(int i=0; i<1; i++){
+	for(int i=0; i<6; i++){
 		generate_and_send_pkt();
 	}
    }
