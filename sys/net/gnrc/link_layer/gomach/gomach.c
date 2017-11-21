@@ -164,6 +164,10 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.awake_duration_sum_ticks = 0;
     gnrc_netdev->gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
 #endif
+
+    rtt_set_counter(0);
+
+    gnrc_netdev->gomach.total_csma = 0;
 }
 
 static void _gomach_rtt_cb(void *arg)
@@ -1850,10 +1854,22 @@ static void gomach_sleep(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 {
-	if (gnrc_gomach_get_phase_backoff(gnrc_netdev)) {
-	    gnrc_gomach_set_phase_backoff(gnrc_netdev, false);
-	    _gomach_phase_backoff(gnrc_netdev);
+	int dd;
+	if(RTT_TICKS_TO_MIN(rtt_get_counter()) >= 10) {
+	    puts("Slot summary.");
+		for(int j=0;j<60;j++){
+			dd = (int) gnrc_netdev->gomach.slot_varia[j];
+			printf("%d\n",dd);
+		}
+
+		printf("Total csma count: %lu\n", gnrc_netdev->gomach.total_csma);
+
 	}
+
+    if (gnrc_gomach_get_phase_backoff(gnrc_netdev)) {
+        gnrc_gomach_set_phase_backoff(gnrc_netdev, false);
+        _gomach_phase_backoff(gnrc_netdev);
+    }
 
     /* Go to CP (start of the new cycle), start listening on the public-channel. */
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
