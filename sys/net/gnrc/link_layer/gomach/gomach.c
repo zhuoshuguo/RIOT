@@ -164,6 +164,9 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.awake_duration_sum_ticks = 0;
     gnrc_netdev->gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
 #endif
+
+    gnrc_netdev->gomach.csma_count = 0;
+    gnrc_netdev->gomach.vtdma_count = 0;
 }
 
 static void _gomach_rtt_cb(void *arg)
@@ -608,6 +611,8 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                 gnrc_netdev->tx.no_ack_counter = 0;
                 gnrc_netdev->tx.t2u_fail_count = 0;
 
+                gnrc_netdev->gomach.csma_count ++;
+
                 /* If has pending packets, join the vTDMA period, first wait for receiver's beacon. */
                 if (gnrc_priority_pktqueue_length(&gnrc_netdev->tx.current_neighbor->queue) > 0) {
                     gnrc_netdev->tx.vtdma_para.slots_num = 0;
@@ -821,6 +826,8 @@ static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev)
                 gnrc_pktbuf_release(gnrc_netdev->tx.packet);
                 gnrc_netdev->tx.packet = NULL;
                 gnrc_netdev->tx.no_ack_counter = 0;
+
+                gnrc_netdev->gomach.vtdma_count ++;
 
                 /* If the sender has pending packets and scheduled slots,
                  * continue vTDMA transmission. */
