@@ -32,10 +32,18 @@
 #include "net/sixlowpan.h"
 #include "od.h"
 #include <periph/rtt.h>
+#include "net/gnrc/netdev.h"
 
+typedef struct gnrc_netdev gnrc_netdev_t;
 
-uint32_t idlist[20];
-uint32_t reception_list[20];
+#define GNRC_GOMACH_EX_NODE_NUM 70
+
+extern gnrc_netdev_t gnrc_netdev;
+
+uint32_t idlist[GNRC_GOMACH_EX_NODE_NUM];
+uint32_t reception_list[GNRC_GOMACH_EX_NODE_NUM];
+uint32_t node_tdma_record_list[GNRC_GOMACH_EX_NODE_NUM];
+uint32_t node_csma_record_list[GNRC_GOMACH_EX_NODE_NUM];
 
 uint64_t delay_sum;
 uint32_t system_start_time = 0;
@@ -147,16 +155,19 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
     int i=0;
     /* find id exist or not */
-    for(i=0;i<20;i++){
+    for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
     	if(idlist[i] == payload[1]){
     		found_id = true;
     		reception_list[i] ++;
+
+    		node_tdma_record_list[i] = payload[3];
+    		node_csma_record_list[i] = payload[2];
     		break;
     	}
     }
 
     if(found_id == false){
-    	for(i=0;i<20;i++){
+    	for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
     		if(idlist[i] == 0){
     			idlist[i] = payload[1];
     			reception_list[i] ++;
@@ -169,6 +180,22 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
    // printf("s: %x, g: %lu, r: %lu, t: %lu. \n", addr[1], payload[0], reception_list[i], received_pkt_counter);
 
    printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], reception_list[i], received_pkt_counter);
+
+   uint32_t current_slots_sum =0;
+   gnrc_netdev.gomach.total_csma = 0;
+
+	for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
+		current_slots_sum += node_tdma_record_list[i];
+		gnrc_netdev.gomach.total_csma += node_csma_record_list[i];
+	}
+
+   uint32_t current_rtt = 0;
+   current_rtt = rtt_get_counter();
+   current_rtt = RTT_TICKS_TO_MIN(current_rtt);
+
+   if(current_rtt < 60) {
+	   gnrc_netdev.gomach.slot_varia[current_rtt] = current_slots_sum;
+   }
 
     gnrc_pktbuf_release(pkt);
 }
@@ -191,9 +218,15 @@ static void *_eventloop(void *arg)
     reply.content.value = (uint32_t)(-ENOTSUP);
     reply.type = GNRC_NETAPI_MSG_TYPE_ACK;
 
-    for(int i=0;i<20;i++){
+    for(int i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
     	idlist[i] =0;
     	reception_list[i] =0;
+    	node_tdma_record_list[i]=0;
+    	node_csma_record_list[i]=0;
+    }
+
+    for (int i=0;i<60;i++) {
+    	gnrc_netdev.gomach.slot_varia[i] = 0;
     }
 
     while (1) {
