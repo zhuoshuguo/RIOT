@@ -32,7 +32,9 @@
 #include "net/gnrc/nettype.h"
 #include "xtimer.h"
 #include <periph/rtt.h>
+#include "net/gnrc/netdev.h"
 
+typedef struct gnrc_netdev gnrc_netdev_t;
 
 uint32_t send_counter;
 uint32_t send_counter1;
@@ -53,6 +55,8 @@ extern void udp_send(char *addr_str, char *port_str, uint32_t *data, size_t data
 extern int _netif_add(char *cmd_name, kernel_pid_t dev, int argc, char **argv);
 
 extern void start_server(char *port_str);
+
+extern gnrc_netdev_t gnrc_netdev;
 
 //extern int _gnrc_rpl_dodag_root(char *arg1, char *arg2);
 
@@ -77,6 +81,9 @@ static void generate_and_send_pkt(void){
 
    	payload[0] = send_counter;
    	payload[1] = own_address2;
+   	// report tdma slots number.
+   	payload[2] = gnrc_netdev.gomach.csma_count;
+   	payload[3] = gnrc_netdev.gomach.vtdma_count;
 
     if(own_address2 != 0x5ad6) {
         udp_send(add, port, payload, sizeof(payload), num, delay);

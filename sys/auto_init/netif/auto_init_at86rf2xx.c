@@ -42,18 +42,18 @@
 #define AT86RF2XX_NUM (sizeof(at86rf2xx_params) / sizeof(at86rf2xx_params[0]))
 
 static at86rf2xx_t at86rf2xx_devs[AT86RF2XX_NUM];
-static gnrc_netdev_t gnrc_adpt[AT86RF2XX_NUM];
+gnrc_netdev_t gnrc_netdev;
 static char _at86rf2xx_stacks[AT86RF2XX_NUM][AT86RF2XX_MAC_STACKSIZE];
 
 void auto_init_at86rf2xx(void)
 {
-    for (unsigned i = 0; i < AT86RF2XX_NUM; i++) {
+    for (unsigned i = 0; i < 1; i++) {
         int res;
 
         LOG_DEBUG("[auto_init_netif] initializing at86rf2xx #%u\n", i);
 
         at86rf2xx_setup(&at86rf2xx_devs[i], &at86rf2xx_params[i]);
-        res = gnrc_netdev_ieee802154_init(&gnrc_adpt[i],
+        res = gnrc_netdev_ieee802154_init(&gnrc_netdev,
                                           (netdev_ieee802154_t *)&at86rf2xx_devs[i]);
 
         if (res < 0) {
@@ -65,21 +65,21 @@ void auto_init_at86rf2xx(void)
                             AT86RF2XX_MAC_STACKSIZE,
                             AT86RF2XX_MAC_PRIO,
                             "at86rf2xx-lwmac",
-                            &gnrc_adpt[i]);
+                            &gnrc_netdev);
 #else
 #ifdef MODULE_GNRC_GOMACH
             gnrc_gomach_init(_at86rf2xx_stacks[i],
                              AT86RF2XX_MAC_STACKSIZE,
                              AT86RF2XX_MAC_PRIO,
                              "at86rf2xx-gomach",
-                             &gnrc_adpt[i]);
+                             &gnrc_netdev);
 #else
 
             gnrc_netdev_init(_at86rf2xx_stacks[i],
                              AT86RF2XX_MAC_STACKSIZE,
                              AT86RF2XX_MAC_PRIO,
                              "at86rf2xx",
-                             &gnrc_adpt[i]);
+                             &gnrc_netdev);
 #endif
 #endif
         }
