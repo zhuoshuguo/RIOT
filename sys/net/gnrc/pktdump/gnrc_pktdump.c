@@ -45,6 +45,9 @@ uint32_t reception_list[GNRC_GOMACH_EX_NODE_NUM];
 uint32_t node_tdma_record_list[GNRC_GOMACH_EX_NODE_NUM];
 uint32_t node_csma_record_list[GNRC_GOMACH_EX_NODE_NUM];
 
+uint64_t node_wake_duration[GNRC_GOMACH_EX_NODE_NUM];
+uint64_t node_life_duration[GNRC_GOMACH_EX_NODE_NUM];
+
 uint64_t delay_sum;
 uint32_t system_start_time = 0;
 
@@ -162,6 +165,17 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
     		node_tdma_record_list[i] = payload[3];
     		node_csma_record_list[i] = payload[2];
+
+    		uint64_t *payload_long = (uint64_t *)payload;
+
+    		node_wake_duration[i] = payload_long[2];
+    		node_life_duration[i] = payload_long[3];
+
+
+            uint64_t duty;
+            duty = (node_wake_duration[i]) * 100 / node_life_duration[i];
+            printf("duty: %lu %% \n", (uint32_t)duty);
+
     		break;
     	}
     }
