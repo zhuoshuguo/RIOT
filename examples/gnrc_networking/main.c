@@ -85,6 +85,12 @@ static void generate_and_send_pkt(void){
    	payload[2] = gnrc_netdev.gomach.csma_count;
    	payload[3] = gnrc_netdev.gomach.vtdma_count;
 
+   	uint64_t *payload_long = (uint64_t *)payload;
+
+   	payload_long[2] = gnrc_netdev.gomach.awake_duration_sum_ticks;
+   	payload_long[3] = xtimer_now_usec64() - gnrc_netdev.gomach.system_start_time_ticks;
+
+
     if(own_address2 != 0x5ad6) {
         udp_send(add, port, payload, sizeof(payload), num, delay);
 
