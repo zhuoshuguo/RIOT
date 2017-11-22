@@ -167,6 +167,7 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
 
     rtt_set_counter(0);
 
+    gnrc_netdev->gomach.exp_started = false;
     gnrc_netdev->gomach.exp_end = false;
     gnrc_netdev->gomach.total_csma = 0;
 }
@@ -1855,10 +1856,14 @@ static void gomach_sleep(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 {
-	int dd;
-	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 10) && (gnrc_netdev->gomach.exp_end == false)) {
-		gnrc_netdev->gomach.exp_end = true;
 
+	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 7) && (gnrc_netdev->gomach.exp_started == false)) {
+		gnrc_netdev->gomach.exp_started = true;
+	}
+
+	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 20) && (gnrc_netdev->gomach.exp_end == false)) {
+		gnrc_netdev->gomach.exp_end = true;
+		int dd;
 	    puts("Slot summary.");
 		for(int j=0;j<60;j++){
 			dd = (int) gnrc_netdev->gomach.slot_varia[j];
