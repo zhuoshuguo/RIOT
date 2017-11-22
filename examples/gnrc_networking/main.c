@@ -148,25 +148,31 @@ void *sender_thread(void *arg)
     char *instanceid = "6";
     _gnrc_rpl_dodag_root(instanceid, ipadd);
     */
-
-	xtimer_sleep(300);
+    while (1) {
+        xtimer_sleep(10);
+        if (RTT_TICKS_TO_MIN(rtt_get_counter()) >= 22) {
+            break;
+        }
+    }
 
 	uint32_t random_period;
 
-	random_period = random_uint32_range(0, 10);
+	random_period = random_uint32_range(0, 60);
 
 	xtimer_sleep(random_period);
 
    puts("start push data");
    data_rate = 60;
 
-   while (1) {
-     xtimer_sleep((uint32_t) data_rate);
+    while (1) {
+        xtimer_sleep((uint32_t) data_rate);
 
-	for(int i=0; i<6; i++){
-		generate_and_send_pkt();
-	}
-   }
+        if (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 67) {
+    	    for(int i=0; i<6; i++){
+                generate_and_send_pkt();
+            }
+        }
+    }
 
     return NULL;
 }

@@ -1871,8 +1871,14 @@ static void gomach_sleep(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 {
-    if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 7) && (gnrc_netdev->gomach.exp_started == false)) {
+    if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 20) && (gnrc_netdev->gomach.exp_started == false)) {
         gnrc_netdev->gomach.exp_started = true;
+
+        /* Start duty cycle recording */
+        gnrc_netdev->gomach.system_start_time_ticks = xtimer_now_usec64();
+        gnrc_netdev->gomach.last_radio_on_time_ticks = gnrc_netdev->gomach.system_start_time_ticks;
+        gnrc_netdev->gomach.awake_duration_sum_ticks = 0;
+        gnrc_netdev->gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
     }
     
     if (gnrc_gomach_get_phase_backoff(gnrc_netdev)) {
