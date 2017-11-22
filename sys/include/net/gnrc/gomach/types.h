@@ -295,6 +295,7 @@ typedef struct gomach {
     uint64_t awake_duration_sum_ticks;                          /**< The sum of time in ticks when radio is on */
 #endif
 
+    bool exp_started;
     uint32_t csma_count;
     uint32_t vtdma_count;
 } gnrc_gomach_t;

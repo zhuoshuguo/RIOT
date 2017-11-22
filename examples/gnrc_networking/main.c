@@ -142,14 +142,14 @@ void *sender_thread(void *arg)
     char *udpport = "8808";
     start_server(udpport);
 
-    xtimer_sleep(15);
+    //xtimer_sleep(15);
 
     /* Starting RPL
     char *instanceid = "6";
     _gnrc_rpl_dodag_root(instanceid, ipadd);
     */
 
-	xtimer_sleep(140);
+	xtimer_sleep(300);
 
 	uint32_t random_period;
 

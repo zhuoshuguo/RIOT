@@ -170,7 +170,7 @@ extern "C" {
  * broadcast copies.
  */
 #ifndef GNRC_GOMACH_BCAST_INTERVAL_US
-#define GNRC_GOMACH_BCAST_INTERVAL_US        (1U * US_PER_MS)
+#define GNRC_GOMACH_BCAST_INTERVAL_US        (2U * US_PER_MS)
 #endif
 
 /**
