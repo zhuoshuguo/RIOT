@@ -23,9 +23,14 @@
 
 #include "net/gnrc.h"
 #include "net/gnrc/mac/internal.h"
+#include "net/gnrc/netdev.h"
+
+typedef struct gnrc_netdev gnrc_netdev_t;
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
+
+extern gnrc_netdev_t gnrc_netdev;
 
 #if ((GNRC_MAC_TX_QUEUE_SIZE != 0) || (GNRC_MAC_RX_QUEUE_SIZE != 0))
 gnrc_priority_pktqueue_node_t *_alloc_pktqueue_node(gnrc_priority_pktqueue_node_t *nodes,
@@ -147,6 +152,12 @@ bool gnrc_mac_queue_tx_packet(gnrc_mac_tx_t *tx, uint32_t priority, gnrc_pktsnip
     /* Check whether the packet it for broadcast or multicast */
     if (gnrc_netif_hdr_get_flag(pkt) &
         (GNRC_NETIF_HDR_FLAGS_MULTICAST | GNRC_NETIF_HDR_FLAGS_BROADCAST)) {
+
+    	if (gnrc_netdev.gomach.exp_started == true) {
+    	    gnrc_pktbuf_release(pkt);
+    	 	puts("release bcast");
+    	 	return true;
+    	}
         /* Broadcast/multicast queue is neighbor 0 by definition */
         neighbor_id = 0;
         neighbor = &tx->neighbors[neighbor_id];
