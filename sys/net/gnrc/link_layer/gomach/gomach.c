@@ -165,6 +165,9 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
 #endif
 
+    rtt_set_counter(0);
+
+    gnrc_netdev->gomach.exp_started = false;
     gnrc_netdev->gomach.csma_count = 0;
     gnrc_netdev->gomach.vtdma_count = 0;
 }
@@ -1868,10 +1871,14 @@ static void gomach_sleep(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 {
-	if (gnrc_gomach_get_phase_backoff(gnrc_netdev)) {
-	    gnrc_gomach_set_phase_backoff(gnrc_netdev, false);
-	    _gomach_phase_backoff(gnrc_netdev);
-	}
+    if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 7) && (gnrc_netdev->gomach.exp_started == false)) {
+        gnrc_netdev->gomach.exp_started = true;
+    }
+    
+    if (gnrc_gomach_get_phase_backoff(gnrc_netdev)) {
+        gnrc_gomach_set_phase_backoff(gnrc_netdev, false);
+        _gomach_phase_backoff(gnrc_netdev);
+    }
 
     /* Go to CP (start of the new cycle), start listening on the public-channel. */
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
