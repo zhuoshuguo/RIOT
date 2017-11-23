@@ -135,7 +135,7 @@ int fib_register_rp(fib_table_t *table, uint8_t *prefix, size_t prefix_addr_type
 int fib_add_entry(fib_table_t *table, kernel_pid_t iface_id, uint8_t *dst,
                   size_t dst_size, uint32_t dst_flags, uint8_t *next_hop,
                   size_t next_hop_size, uint32_t next_hop_flags,
-                  uint32_t lifetime);
+                  uint64_t lifetime);
 
 /**
  * @brief Updates an entry in the FIB table with next hop and lifetime
@@ -154,7 +154,7 @@ int fib_add_entry(fib_table_t *table, kernel_pid_t iface_id, uint8_t *dst,
  */
 int fib_update_entry(fib_table_t *table, uint8_t *dst, size_t dst_size,
                      uint8_t *next_hop, size_t next_hop_size,
-                     uint32_t next_hop_flags, uint32_t lifetime);
+                     uint32_t next_hop_flags, uint64_t lifetime);
 
 /**
  * @brief removes an entry from the corresponding FIB table
@@ -239,7 +239,7 @@ int fib_get_destination_set(fib_table_t *table, uint8_t *prefix,
 *         -ENOBUFS on insufficient memory, i.e. all source route fields are in use
 */
 int fib_sr_create(fib_table_t *table, fib_sr_t **fib_sr, kernel_pid_t sr_iface_id,
-                  uint32_t sr_flags, uint32_t sr_lifetime);
+                  uint32_t sr_flags, uint64_t sr_lifetime);
 
 /**
 * @brief reads the information from the sr head to the given locations
@@ -255,7 +255,7 @@ int fib_sr_create(fib_table_t *table, fib_sr_t **fib_sr, kernel_pid_t sr_iface_i
 *         -EFAULT on fib_sr is NULL
 */
 int fib_sr_read_head(fib_table_t *table, fib_sr_t *fib_sr, kernel_pid_t *sr_iface_id,
-                     uint32_t *sr_flags, uint32_t *sr_lifetime);
+                     uint32_t *sr_flags, uint64_t *sr_lifetime);
 
 /**
 * @brief reads the destination address from the sr head to the given location
@@ -289,7 +289,7 @@ int fib_sr_read_destination(fib_table_t *table, fib_sr_t *fib_sr,
 *         -EFAULT on passed fib_sr is NULL
 */
 int fib_sr_set(fib_table_t *table, fib_sr_t *fib_sr, kernel_pid_t *sr_iface_id,
-               uint32_t *sr_flags, uint32_t *sr_lifetime);
+               uint32_t *sr_flags, uint64_t *sr_lifetime);
 
 /**
 * @brief deletes the sr
