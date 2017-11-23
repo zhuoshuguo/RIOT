@@ -113,7 +113,7 @@ typedef struct __attribute__((packed)) {
     network_uint16_t min_hop_rank_inc;  /**< DAGRank(rank) = floor(rank/MinHopRankIncrease) */
     network_uint16_t ocp;               /**< Objective Code Point */
     uint8_t reserved;                   /**< reserved */
-    uint64_t default_lifetime;           /**< lifetime of RPL routes (lifetime * lifetime_unit) */
+    uint8_t default_lifetime;           /**< lifetime of RPL routes (lifetime * lifetime_unit) */
     network_uint16_t lifetime_unit;     /**< unit in seconds */
 } gnrc_rpl_opt_dodag_conf_t;
 
@@ -180,7 +180,7 @@ typedef struct __attribute__((packed)) {
     uint8_t e_flags;            /**< external flag indicates external routes */
     uint8_t path_control;       /**< limits the number of DAO parents */
     uint8_t path_sequence;      /**< increased value for route updates */
-    uint64_t path_lifetime;      /**< lifetime of routes */
+    uint8_t path_lifetime;      /**< lifetime of routes */
 } gnrc_rpl_opt_transit_t;
 
 /**
@@ -224,7 +224,7 @@ struct gnrc_rpl_parent {
     uint8_t dtsn;                   /**< last seen dtsn of this parent */
     uint16_t rank;                  /**< rank of the parent */
     gnrc_rpl_dodag_t *dodag;        /**< DODAG the parent belongs to */
-    uint64_t lifetime;              /**< lifetime of this parent in seconds */
+    uint32_t lifetime;              /**< lifetime of this parent in seconds */
     double  link_metric;            /**< metric of the link */
     uint8_t link_metric_type;       /**< type of the metric */
 };
@@ -259,8 +259,8 @@ struct gnrc_rpl_dodag {
     uint8_t dio_interval_doubl;     /**< trickle Imax parameter */
     uint8_t dio_min;                /**< trickle Imin parameter */
     uint8_t dio_redun;              /**< trickle k parameter */
-    uint64_t default_lifetime;       /**< lifetime of routes (lifetime * unit) */
-    uint64_t lifetime_unit;         /**< unit in seconds of the lifetime */
+    uint8_t default_lifetime;       /**< lifetime of routes (lifetime * unit) */
+    uint16_t lifetime_unit;         /**< unit in seconds of the lifetime */
     kernel_pid_t iface;             /**< interface PID this DODAG operates on */
     uint8_t version;                /**< version of this DODAG */
     uint8_t grounded;               /**< grounded flag */
