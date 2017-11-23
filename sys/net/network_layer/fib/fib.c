@@ -215,6 +215,8 @@ static int fib_upd_entry(fib_entry_t *entry, uint8_t *next_hop,
     entry->next_hop = container;
     entry->next_hop_flags = next_hop_flags;
 
+    lifetime = (uint32_t)FIB_LIFETIME_NO_EXPIRE;
+
     if (lifetime != (uint32_t)FIB_LIFETIME_NO_EXPIRE) {
         fib_lifetime_to_absolute(lifetime, &entry->lifetime);
     }
@@ -260,6 +262,8 @@ static int fib_create_entry(fib_table_t *table, kernel_pid_t iface_id,
             if (table->data.entries[i].next_hop != NULL) {
                 /* everything worked fine */
                 table->data.entries[i].iface_id = iface_id;
+
+                lifetime = (uint32_t)FIB_LIFETIME_NO_EXPIRE;
 
                 if (lifetime != (uint32_t) FIB_LIFETIME_NO_EXPIRE) {
                     fib_lifetime_to_absolute(lifetime, &table->data.entries[i].lifetime);

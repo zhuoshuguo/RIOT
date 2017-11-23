@@ -265,7 +265,7 @@ void gnrc_rpl_parent_update(gnrc_rpl_dodag_t *dodag, gnrc_rpl_parent_t *parent)
 {
     /* update Parent lifetime */
     if (parent != NULL) {
-        parent->lifetime = dodag->default_lifetime * dodag->lifetime_unit;
+        parent->lifetime = (uint32_t)FIB_LIFETIME_NO_EXPIRE; //dodag->default_lifetime * dodag->lifetime_unit;
 #ifdef MODULE_GNRC_RPL_P2P
         if (dodag->instance->mop != GNRC_RPL_P2P_MOP) {
 #endif
