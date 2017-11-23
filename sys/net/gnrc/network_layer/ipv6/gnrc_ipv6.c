@@ -275,7 +275,14 @@ static void *_event_loop(void *args)
                 break;
 
             case GNRC_NETAPI_MSG_TYPE_SND:
-            	_send(msg.content.ptr, true);
+               	if (msg.sender_pid == 5) {
+                    puts("release ipv6");
+                    gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)msg.content.ptr;
+                    gnrc_pktbuf_release(pkt);
+                }
+                else {
+                    _send(msg.content.ptr, true);
+                }
                 break;
 
             case GNRC_NETAPI_MSG_TYPE_GET:
