@@ -386,7 +386,7 @@ static int fib_signal_rp(fib_table_t *table, uint16_t type, uint8_t *dat,
 int fib_add_entry(fib_table_t *table,
                   kernel_pid_t iface_id, uint8_t *dst, size_t dst_size,
                   uint32_t dst_flags, uint8_t *next_hop, size_t next_hop_size,
-                  uint32_t next_hop_flags, uint64_t lifetime)
+                  uint32_t next_hop_flags, uint32_t lifetime)
 {
     mutex_lock(&(table->mtx_access));
     DEBUG("[fib_add_entry]\n");
@@ -416,7 +416,7 @@ int fib_add_entry(fib_table_t *table,
 
 int fib_update_entry(fib_table_t *table, uint8_t *dst, size_t dst_size,
                      uint8_t *next_hop, size_t next_hop_size,
-                     uint32_t next_hop_flags, uint64_t lifetime)
+                     uint32_t next_hop_flags, uint32_t lifetime)
 {
     mutex_lock(&(table->mtx_access));
     DEBUG("[fib_update_entry]\n");
@@ -667,7 +667,7 @@ int fib_get_num_used_entries(fib_table_t *table)
 
 /* source route handling */
 int fib_sr_create(fib_table_t *table, fib_sr_t **fib_sr, kernel_pid_t sr_iface_id,
-                  uint32_t sr_flags, uint64_t sr_lifetime)
+                  uint32_t sr_flags, uint32_t sr_lifetime)
 {
     mutex_lock(&(table->mtx_access));
     if ((fib_sr == NULL) || (sr_lifetime == 0)) {
@@ -762,7 +762,7 @@ static int fib_is_sr_in_table(fib_table_t *table, fib_sr_t *fib_sr)
 }
 
 int fib_sr_read_head(fib_table_t *table, fib_sr_t *fib_sr, kernel_pid_t *iface_id,
-                     uint32_t *sr_flags, uint64_t *sr_lifetime)
+                     uint32_t *sr_flags, uint32_t *sr_lifetime)
 {
     mutex_lock(&(table->mtx_access));
     if ((fib_sr == NULL) || (iface_id == NULL) || (sr_flags == NULL)
@@ -814,7 +814,7 @@ int fib_sr_read_destination(fib_table_t *table, fib_sr_t *fib_sr,
 }
 
 int fib_sr_set(fib_table_t *table, fib_sr_t *fib_sr, kernel_pid_t *sr_iface_id,
-               uint32_t *sr_flags, uint64_t *sr_lifetime)
+               uint32_t *sr_flags, uint32_t *sr_lifetime)
 {
     mutex_lock(&(table->mtx_access));
     if ((fib_sr == NULL) || (fib_is_sr_in_table(table, fib_sr) == -ENOENT)) {
