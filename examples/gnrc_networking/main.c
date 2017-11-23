@@ -93,7 +93,7 @@ void *sender_thread(void *arg)
 
     printf("own add is %lx.\n", own_address2);
 
-    xtimer_sleep(5);
+    xtimer_sleep(20);
     /* configure a global IPv6 address for the root node */
     char *ifconfig = "ifconfig";
     char *ipadd = "2001:db8::1";
