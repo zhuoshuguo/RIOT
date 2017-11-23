@@ -57,7 +57,7 @@ extern "C" {
  * receiver will not miss the preamble packet.
  */
 #ifndef GNRC_GOMACH_CP_DURATION_US
-#define GNRC_GOMACH_CP_DURATION_US        (13U * US_PER_MS)
+#define GNRC_GOMACH_CP_DURATION_US        (15U * US_PER_MS)
 #endif
 
 /**
@@ -83,7 +83,7 @@ extern "C" {
  * duration.
  */
 #ifndef GNRC_GOMACH_CP_DURATION_MAX_US
-#define GNRC_GOMACH_CP_DURATION_MAX_US        (5LU * GNRC_GOMACH_CP_DURATION_US)
+#define GNRC_GOMACH_CP_DURATION_MAX_US        (10LU * GNRC_GOMACH_CP_DURATION_US)
 #endif
 
 /**
@@ -222,7 +222,7 @@ extern "C" {
  * incoming packets. This macro defines the maximum WP period extension number allowed in GoMacH.
  */
 #ifndef GNRC_GOMACH_CP_EXTEND_THRESHOLD
-#define GNRC_GOMACH_CP_EXTEND_THRESHOLD      (5U)
+#define GNRC_GOMACH_CP_EXTEND_THRESHOLD      (10U)
 #endif
 
 /**
@@ -246,7 +246,7 @@ extern "C" {
  * in one cycle.
  */
 #ifndef GNRC_GOMACH_MAX_ALLOC_SLOTS_NUM
-#define GNRC_GOMACH_MAX_ALLOC_SLOTS_NUM           (25U)
+#define GNRC_GOMACH_MAX_ALLOC_SLOTS_NUM           (200U)
 #endif
 
 /**
