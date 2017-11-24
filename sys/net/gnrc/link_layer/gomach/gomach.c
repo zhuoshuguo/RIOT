@@ -537,13 +537,38 @@ static void gomach_t2k_trans_in_cp(gnrc_netdev_t *gnrc_netdev)
         return;
     }
 
+    gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR,
+                            GNRC_GOMACH_NO_TX_ISR_US);
+
     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_WAIT_CPTX_FEEDBACK;
     gnrc_gomach_set_update(gnrc_netdev, false);
 }
 
 static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
 {
+    if ((gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR))) {
+        /* No TX-ISR, go to sleep. */
+        gnrc_netdev->tx.no_ack_counter++;
+
+        netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
+        gnrc_netdev->tx.tx_seq = device_state->seq - 1;
+
+        if (gnrc_netdev->tx.no_ack_counter >= GNRC_GOMACH_REPHASELOCK_THRESHOLD) {
+            LOG_DEBUG("[GOMACH] t2k failed, go to t2u.\n");
+            /* Here, we don't queue the packet again, but keep it in tx.packet. */
+            gnrc_netdev->tx.current_neighbor->mac_type = GNRC_GOMACH_TYPE_UNKNOWN;
+            gnrc_netdev->tx.t2u_retry_counter = 0;
+        }
+
+        gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
+        gnrc_gomach_set_update(gnrc_netdev, true);
+        gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
+        return;
+    }
+
     if (gnrc_gomach_get_tx_finish(gnrc_netdev)) {
+    	gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
+
         switch (gnrc_netdev_get_tx_feedback(gnrc_netdev)) {
             case TX_FEEDBACK_SUCCESS: {
                 /* Since the packet will not be released by the sending function,
@@ -765,6 +790,9 @@ static void gomach_t2k_trans_in_slots(gnrc_netdev_t *gnrc_netdev)
         return;
     }
 
+    gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR,
+                            GNRC_GOMACH_NO_TX_ISR_US);
+
     gnrc_netdev->tx.vtdma_para.slots_num--;
     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_WAIT_VTDMA_FEEDBACK;
     gnrc_gomach_set_update(gnrc_netdev, false);
@@ -772,7 +800,22 @@ static void gomach_t2k_trans_in_slots(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev)
 {
+    if ((gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR))) {
+        /* No TX-ISR, go to sleep. */
+        gnrc_netdev->tx.no_ack_counter++;
+
+        netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
+        gnrc_netdev->tx.tx_seq = device_state->seq - 1;
+
+        gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_END;
+        gnrc_gomach_set_update(gnrc_netdev, true);
+        gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
+        return;
+    }
+
     if (gnrc_gomach_get_tx_finish(gnrc_netdev)) {
+    	gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
+
         switch (gnrc_netdev_get_tx_feedback(gnrc_netdev)) {
             case TX_FEEDBACK_SUCCESS: {
                 /* First release the packet. */
@@ -868,6 +911,8 @@ static void gomach_t2k_end(gnrc_netdev_t *gnrc_netdev)
         gnrc_gomach_set_phase_changed(gnrc_netdev, false);
         gnrc_gomach_update_neighbor_phase(gnrc_netdev);
     }
+
+	gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
 
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
@@ -1203,13 +1248,34 @@ static void gomach_t2u_send_data(gnrc_netdev_t *gnrc_netdev)
         return;
     }
 
+    gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR,
+                            GNRC_GOMACH_NO_TX_ISR_US);
+
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_WAIT_DATA_TX;
     gnrc_gomach_set_update(gnrc_netdev, false);
 }
 
 static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
 {
+    if ((gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR))) {
+        /* No TX-ISR, go to sleep. */
+        gnrc_netdev->tx.t2u_retry_counter++;
+
+        gnrc_netdev->tx.no_ack_counter = GNRC_GOMACH_REPHASELOCK_THRESHOLD;
+        netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)gnrc_netdev->dev;
+        gnrc_netdev->tx.tx_seq = device_state->seq - 1;
+
+        gnrc_gomach_set_quit_cycle(gnrc_netdev, true);
+        gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
+
+        gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
+        gnrc_gomach_set_update(gnrc_netdev, true);
+        return;
+    }
+
     if (gnrc_gomach_get_tx_finish(gnrc_netdev)) {
+        gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
+
         if (gnrc_netdev_get_tx_feedback(gnrc_netdev) == TX_FEEDBACK_SUCCESS) {
             /* If transmission succeeded, release the data. */
             gnrc_pktbuf_release(gnrc_netdev->tx.packet);
@@ -1277,6 +1343,7 @@ static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_PREAM_DURATION);
     gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
     gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
+    gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
 
     /* In case quit_current_cycle is true, don't release neighbor pointer,
      * will retry t2u immediately in next cycle.*/
