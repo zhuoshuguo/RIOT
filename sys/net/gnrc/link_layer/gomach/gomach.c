@@ -223,6 +223,7 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
 {
+	puts("B");
     /* Disable auto-ACK when sending broadcast packets, thus not to receive packet. */
     gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
 
@@ -1862,11 +1863,11 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 		gnrc_netdev->gomach.exp_started = true;
 	}
 
-	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 100) && (gnrc_netdev->gomach.exp_end == false)) {
+	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 150) && (gnrc_netdev->gomach.exp_end == false)) {
 		gnrc_netdev->gomach.exp_end = true;
 		int dd;
 	    puts("Slot summary.");
-		for(int j=0;j<60;j++){
+		for(int j=0;j<150;j++){
 			dd = (int) gnrc_netdev->gomach.slot_varia[j];
 			printf("%d\n",dd);
 		}
