@@ -132,7 +132,7 @@ extern "C" {
  * state-machine.
  */
 #ifndef GNRC_GOMACH_NO_TX_ISR_US
-#define GNRC_GOMACH_NO_TX_ISR_US          (15U * US_PER_MS)
+#define GNRC_GOMACH_NO_TX_ISR_US          (50U * US_PER_MS)
 #endif
 
 /**
