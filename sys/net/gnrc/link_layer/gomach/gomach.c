@@ -2044,9 +2044,37 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                 gnrc_netdev_set_rx_started(gnrc_netdev, false);
 
                 if (!gnrc_mac_queue_rx_packet(&gnrc_netdev->rx, 0, pkt)) {
-                    LOG_ERROR("ERROR: [GOMACH] gnrc_netdev: can't push RX packet, queue full?\n");
+                    LOG_ERROR("ERROR: queue full?\n");
                     gnrc_pktbuf_release(pkt);
                     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
+
+                    printf("b%u\n",gnrc_netdev->gomach.basic_state);
+
+                     switch(gnrc_netdev->gomach.basic_state) {
+                         case GNRC_GOMACH_LISTEN: {
+                         	printf("C%u\n",gnrc_netdev->rx.listen_state);
+                         	break;
+                         }
+                         case GNRC_GOMACH_TRANSMIT: {
+                             switch (gnrc_netdev->tx.transmit_state) {
+                                 case GNRC_GOMACH_TRANS_TO_UNKNOWN: {
+                                 	printf("U%u\n",gnrc_netdev->tx.t2u_state);
+                                     break;
+                                 }
+                                 case GNRC_GOMACH_TRANS_TO_KNOWN: {
+                                 	printf("K%u\n",gnrc_netdev->tx.t2k_state);
+                                     break;
+                                 }
+                                 case GNRC_GOMACH_BROADCAST: {
+                                 	printf("BC%u\n",gnrc_netdev->tx.bcast_state);
+                                     break;
+                                 }
+                             }
+                             break;
+                         }
+                         default: break;
+                     }
+
                     break;
                 }
                 else {
