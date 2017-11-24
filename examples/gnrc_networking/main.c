@@ -150,7 +150,7 @@ void *sender_thread(void *arg)
     */
     while (1) {
         xtimer_sleep(10);
-        if (RTT_TICKS_TO_MIN(rtt_get_counter()) >= 128) {
+        if (RTT_TICKS_TO_MIN(rtt_get_counter()) >= 45) {
             break;
         }
     }
@@ -167,7 +167,7 @@ void *sender_thread(void *arg)
     while (1) {
         xtimer_sleep((uint32_t) data_rate);
 
-        if (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 240) {
+        if (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 110) {
     	    for(int i=0; i<5; i++){
                 generate_and_send_pkt();
             }
