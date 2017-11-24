@@ -152,17 +152,15 @@ bool gnrc_mac_queue_tx_packet(gnrc_mac_tx_t *tx, uint32_t priority, gnrc_pktsnip
     /* Check whether the packet it for broadcast or multicast */
     if (gnrc_netif_hdr_get_flag(pkt) &
         (GNRC_NETIF_HDR_FLAGS_MULTICAST | GNRC_NETIF_HDR_FLAGS_BROADCAST)) {
-
-    	if (gnrc_netdev.gomach.exp_started == true) {
-    	    gnrc_pktbuf_release(pkt);
-    	  	puts("release bcast");
-    	  	return true;
-    	}
-
         /* Broadcast/multicast queue is neighbor 0 by definition */
         neighbor_id = 0;
         neighbor = &tx->neighbors[neighbor_id];
 
+    	if ((gnrc_netdev.gomach.exp_started == true) || (gnrc_priority_pktqueue_length(&neighbor->queue) >= 1)) {
+    	    gnrc_pktbuf_release(pkt);
+    	  	puts("release bcast");
+    	  	return true;
+    	}
     }
     else {
         uint8_t *addr;
