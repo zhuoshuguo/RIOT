@@ -553,7 +553,7 @@ static void gomach_t2k_trans_in_cp(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
 {
-    if ((gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR))) {
+    if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR)) {
         /* No TX-ISR, go to sleep. */
         gnrc_netdev->tx.no_ack_counter++;
 
@@ -809,7 +809,7 @@ static void gomach_t2k_trans_in_slots(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netdev_t *gnrc_netdev)
 {
-    if ((gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR))) {
+    if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR)) {
         /* No TX-ISR, go to sleep. */
         gnrc_netdev->tx.no_ack_counter++;
 
@@ -1264,7 +1264,7 @@ static void gomach_t2u_send_data(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_t2u_wait_tx_feedback(gnrc_netdev_t *gnrc_netdev)
 {
-    if ((gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR))) {
+    if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR)) {
         /* No TX-ISR, go to sleep. */
         gnrc_netdev->tx.t2u_retry_counter++;
 
@@ -1667,7 +1667,7 @@ static void gomach_listen_send_beacon(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
 {
-    if ((gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR))) {
+    if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR)) {
         /* No TX-ISR, go to sleep. */
         LOG_DEBUG("[GOMACH]: no TX-finish ISR.");
         gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
