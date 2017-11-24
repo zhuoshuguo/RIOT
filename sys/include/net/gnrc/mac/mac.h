@@ -32,7 +32,7 @@ extern "C" {
  * @brief   The default rx queue size for incoming packets
  */
 #ifndef GNRC_MAC_RX_QUEUE_SIZE
-#define GNRC_MAC_RX_QUEUE_SIZE             (8U)
+#define GNRC_MAC_RX_QUEUE_SIZE             (15U)
 #endif
 
 /**
@@ -46,14 +46,14 @@ extern "C" {
  * @brief   Count of neighbor nodes in one-hop distance
  */
 #ifndef GNRC_MAC_NEIGHBOR_COUNT
-#define GNRC_MAC_NEIGHBOR_COUNT            (8U)
+#define GNRC_MAC_NEIGHBOR_COUNT            (60U)
 #endif
 
 /**
  * @brief   The default queue size for transmission packets coming from higher layers
  */
 #ifndef GNRC_MAC_TX_QUEUE_SIZE
-#define GNRC_MAC_TX_QUEUE_SIZE             (8U)
+#define GNRC_MAC_TX_QUEUE_SIZE             (20U)
 #endif
 
 #ifdef __cplusplus
