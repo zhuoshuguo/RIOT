@@ -168,7 +168,7 @@ void *sender_thread(void *arg)
         xtimer_sleep((uint32_t) data_rate);
 
         if (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 150) {
-    	    for(int i=0; i<5; i++){
+    	    for(int i=0; i<1; i++){
                 generate_and_send_pkt();
             }
         }
