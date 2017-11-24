@@ -207,7 +207,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
    current_rtt = rtt_get_counter();
    current_rtt = RTT_TICKS_TO_MIN(current_rtt);
 
-   if(current_rtt < 60) {
+   if(current_rtt < 150) {
 	   gnrc_netdev.gomach.slot_varia[current_rtt] = current_slots_sum;
    }
 
