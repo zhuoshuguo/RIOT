@@ -282,6 +282,7 @@ static void *_event_loop(void *args)
 
             case GNRC_NETAPI_MSG_TYPE_SND:
 
+            	printf("pkt-pid:%u",msg.sender_pid);
             	if (msg.sender_pid == 5) {
                     puts("release ipv6");
                     gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)msg.content.ptr;
