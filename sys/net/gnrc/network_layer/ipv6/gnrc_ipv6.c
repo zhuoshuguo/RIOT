@@ -36,6 +36,10 @@
 
 #include "net/gnrc/ipv6.h"
 
+#include "net/gnrc/netdev.h"
+
+typedef struct gnrc_netdev gnrc_netdev_t;
+
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
@@ -66,6 +70,8 @@ static char addr_str[IPV6_ADDR_MAX_STR_LEN];
 #endif
 
 kernel_pid_t gnrc_ipv6_pid = KERNEL_PID_UNDEF;
+
+extern gnrc_netdev_t gnrc_netdev;
 
 /* handles GNRC_NETAPI_MSG_TYPE_RCV commands */
 static void _receive(gnrc_pktsnip_t *pkt);
@@ -275,7 +281,8 @@ static void *_event_loop(void *args)
                 break;
 
             case GNRC_NETAPI_MSG_TYPE_SND:
-               	if (msg.sender_pid == 5) {
+
+            	if (msg.sender_pid == 5) {
                     puts("release ipv6");
                     gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)msg.content.ptr;
                     gnrc_pktbuf_release(pkt);
