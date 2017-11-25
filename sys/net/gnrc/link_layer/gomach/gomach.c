@@ -2216,15 +2216,13 @@ static void *_gnrc_gomach_thread(void *args)
                 DEBUG("gnrc_netdev: GNRC_NETAPI_MSG_TYPE_SND received\n");
 
                 gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)msg.content.ptr;
-                /*
+
             	if (gnrc_netdev->gomach.exp_started == true) {
             		if (msg.sender_pid != 9) {
             			gnrc_pktbuf_release(pkt);
-            			puts("");
+            			puts("z");
             		}
-            	}*/
-
-            	printf("pkt-pid:%u",msg.sender_pid);
+            	}
 
                 if (!gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, pkt)) {
                     /* TX packet queue full, release the packet. */
