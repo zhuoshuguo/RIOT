@@ -2210,6 +2210,7 @@ static void *_gnrc_gomach_thread(void *args)
             		if (msg.sender_pid != 9) {
             			gnrc_pktbuf_release(pkt);
             			puts("z");
+            			break;
             		}
             	}
 

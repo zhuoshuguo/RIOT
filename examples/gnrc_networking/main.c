@@ -162,14 +162,16 @@ void *sender_thread(void *arg)
 	xtimer_sleep(random_period);
 
    puts("start push data");
-   data_rate = 60;
+   data_rate = 10;
 
     while (1) {
-        xtimer_sleep((uint32_t) data_rate);
+
 
 	    for(int i=0; i<1; i++){
             generate_and_send_pkt();
         }
+
+	    xtimer_sleep((uint32_t) data_rate);
 
 	    /*
         if (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 150) {
