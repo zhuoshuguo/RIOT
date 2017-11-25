@@ -157,7 +157,7 @@ void *sender_thread(void *arg)
 
 	uint32_t random_period;
 
-	random_period = random_uint32_range(0, 60);
+	random_period = random_uint32_range(0, 10);
 
 	xtimer_sleep(random_period);
 
