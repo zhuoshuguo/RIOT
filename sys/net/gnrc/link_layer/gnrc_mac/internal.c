@@ -179,6 +179,7 @@ bool gnrc_mac_queue_tx_packet(gnrc_mac_tx_t *tx, uint32_t priority, gnrc_pktsnip
 
         /* neighbor node doesn't have a queue yet */
         if (neighbor_id < 0) {
+            puts("un");
             neighbor_known = false;
 
             /* Try to allocate neighbor entry */
