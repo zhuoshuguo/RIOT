@@ -84,7 +84,7 @@ void *sender_thread(void *arg)
                             sizeof(own_addr));
 
 
-    xtimer_sleep(3);
+    xtimer_sleep(5);
 
     own_address2 = 0;
     own_address2 = own_addr[0];
@@ -108,7 +108,7 @@ void *sender_thread(void *arg)
     char *udpport = "8808";
     start_server(udpport);
 
-    xtimer_sleep(60);
+    xtimer_sleep(180);
     puts("start RPL");
 
     /* Starting RPL */
