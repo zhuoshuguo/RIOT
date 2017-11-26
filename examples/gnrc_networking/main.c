@@ -100,7 +100,6 @@ void *sender_thread(void *arg)
     kernel_pid_t dev = 7;
     _netif_add(ifconfig, dev, 1, &ipadd);
 
-
     /* RPL must be initialized on that particular interface-7 */
     char inface = '7';
     _gnrc_rpl_init(&inface);
@@ -109,7 +108,7 @@ void *sender_thread(void *arg)
     char *udpport = "8808";
     start_server(udpport);
 
-    xtimer_sleep(180);
+    xtimer_sleep(60);
     puts("start RPL");
 
     /* Starting RPL */
