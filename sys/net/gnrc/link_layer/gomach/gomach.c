@@ -652,7 +652,8 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
             default: {
                 gnrc_netdev->tx.no_ack_counter++;
 
-                LOG_DEBUG("[GOMACH] t2k %d times No-ACK.\n", gnrc_netdev->tx.no_ack_counter);
+                //LOG_DEBUG("[GOMACH] t2k %d times No-ACK.\n", gnrc_netdev->tx.no_ack_counter);
+                printf("k%d\n",gnrc_netdev->tx.no_ack_counter);
 
                 /* This packet will be retried. Store the TX sequence number for this packet.
                  * Always use the same sequence number for sending the same packet. */
@@ -919,7 +920,7 @@ static void gomach_t2k_end(gnrc_netdev_t *gnrc_netdev)
 
 	gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
 
-#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
+#if 0 //(GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
                     /* Output radio duty-cycle ratio */
                     uint64_t duty;
                     duty = (uint64_t) xtimer_now_usec64();
