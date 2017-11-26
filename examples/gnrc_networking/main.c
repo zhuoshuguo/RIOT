@@ -114,16 +114,22 @@ void *sender_thread(void *arg)
 
     devpid = 7;
 
-    uint8_t own_addr[2];
+    uint8_t own_addr[8];
 
-    gnrc_netapi_get(devpid, NETOPT_ADDRESS, 0, &own_addr,
+    gnrc_netapi_get(devpid, NETOPT_ADDRESS_LONG, 0, &own_addr,
                             sizeof(own_addr));
 
 
     own_address2 = 0;
-    own_address2 = own_addr[0];
+    own_address2 = own_addr[4];
     own_address2 = own_address2 << 8;
-    own_address2 |= own_addr[1];
+    own_address2 |= own_addr[5];
+
+    own_address2 = own_address2 << 8;
+    own_address2 |= own_addr[6];
+
+    own_address2 = own_address2 << 8;
+    own_address2 |= own_addr[7];
 
     /* configure a global IPv6 address for the root node
     char *ifconfig = "ifconfig";
@@ -133,6 +139,7 @@ void *sender_thread(void *arg)
     */
 
     xtimer_sleep(10);
+    printf("own address is %lx\n",own_address2);
 
     /* RPL must be initialized on that particular interface-7 */
     char inface = '7';
