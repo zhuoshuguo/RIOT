@@ -262,6 +262,7 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netif_t *netif)
             uint32_t alarm = netif->mac.gomach.last_wakeup +
                              RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
             rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GNRC_GOMACH_EVENT_RTT_NEW_CYCLE);
+            puts("t");
 
             /* Update neighbors' public channel phases. */
             gnrc_gomach_update_neighbor_pubchan(netif);
@@ -504,6 +505,10 @@ static void gomach_init_wait_announce_feedback(gnrc_netif_t *netif)
 static void gomach_init_end(gnrc_netif_t *netif)
 {
     if (exp_stt == true) {
+        if (netif->l2addr[7] == 0x02) {
+            puts("d");
+            xtimer_usleep(5000);
+        }
         /* Reset initialization state. */
         netif->mac.gomach.init_state = GNRC_GOMACH_INIT_PREPARE;
         /* Switch to duty-cycle listen mode. */
@@ -557,10 +562,12 @@ static void gomach_t2k_init(gnrc_netif_t *netif)
     }
 
     if (wait_phase_duration > GNRC_GOMACH_SUPERFRAME_DURATION_US) {
-        wait_phase_duration = wait_phase_duration % GNRC_GOMACH_SUPERFRAME_DURATION_US;
+        //wait_phase_duration = wait_phase_duration % GNRC_GOMACH_SUPERFRAME_DURATION_US;
         puts("la");
     }
     gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_CP, (uint32_t)wait_phase_duration);
+
+    printf("w%lu\n",wait_phase_duration);
 
     /* Flush the rx-queue. */
     gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
@@ -577,6 +584,7 @@ static void gomach_t2k_wait_cp(gnrc_netif_t *netif)
         gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
         /* Turn radio onto the neighbor's public channel, which will not change in this cycle. */
         gnrc_gomach_turn_channel(netif, netif->mac.tx.current_neighbor->pub_chanseq);
+        printf("k%u\n",netif->mac.tx.current_neighbor->pub_chanseq);
 
         /* Disable auto-ack, don't try to receive packet! */
         gnrc_gomach_set_autoack(netif, NETOPT_DISABLE);
@@ -604,7 +612,7 @@ static void gomach_t2k_trans_in_cp(gnrc_netif_t *netif)
         netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)netif->dev;
         device_state->seq = netif->mac.tx.tx_seq;
     }
-
+    //puts("k");
     /* Send the data packet here. */
     int res = gnrc_gomach_send_data(netif, NETOPT_ENABLE);
     if (res < 0) {
@@ -1224,6 +1232,7 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netif_t *netif)
         else {
             netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.gomach.pub_channel_2;
         }
+        printf("p%u\n",netif->mac.tx.current_neighbor->pub_chanseq);
 
         /* Require ACK for the packet waiting to be sent! */
         gnrc_gomach_set_ack_req(netif, NETOPT_ENABLE);
@@ -1467,8 +1476,6 @@ static void _gomach_phase_backoff(gnrc_netif_t *netif)
 
 static void gomach_listen_init(gnrc_netif_t *netif)
 {
-    puts("c");
-
     /* Reset last_seq_info, for avoiding receiving duplicate packets.
      * To-do: remove this in the future? */
     for (int i = 0; i < GNRC_GOMACH_DUPCHK_BUFFER_SIZE; i++) {
@@ -1520,6 +1527,7 @@ static void gomach_listen_init(gnrc_netif_t *netif)
 
     /* Turn to current public channel. */
     gnrc_gomach_turn_channel(netif, netif->mac.gomach.cur_pub_channel);
+    printf("c%u\n",netif->mac.gomach.cur_pub_channel);
 
     /* Enable Auto-ACK for data packet reception. */
     gnrc_gomach_set_autoack(netif, NETOPT_ENABLE);

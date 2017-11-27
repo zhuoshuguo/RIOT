@@ -597,6 +597,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netif_t *netif)
                     if (gnrc_gomach_get_netdev_state(netif) == NETOPT_STATE_IDLE) {
                         /* Disable auto-ack. */
                         gnrc_gomach_set_autoack(netif, NETOPT_DISABLE);
+                        printf("p%lu\n",(uint32_t)gnrc_gomach_phase_now(netif));
 
                         int res = gnrc_gomach_send_preamble_ack(netif, &receive_packet_info);
                         if (res < 0) {
@@ -627,6 +628,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netif_t *netif)
                         LOG_DEBUG("[GOMACH]: received a duplicate packet.\n");
                         return;
                     }
+
                     gnrc_gomach_dispatch_defer(netif->mac.rx.dispatch_buffer, pkt);
                     gnrc_mac_dispatch(&netif->mac.rx);
 
@@ -825,6 +827,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
     if (phase_ms < 0) {
     	phase_ms += GNRC_GOMACH_SUPERFRAME_DURATION_US;
     }
+    printf("p%lu\n",phase_ms);
 
     netif->mac.tx.current_neighbor->cp_phase = phase_ms;
 }
