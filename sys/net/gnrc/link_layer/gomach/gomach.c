@@ -61,6 +61,8 @@ static gnrc_pktsnip_t *_recv(gnrc_netif_t *netif);
 static void _gomach_msg_handler(gnrc_netif_t *netif, msg_t *msg);
 static void _gomach_event_cb(netdev_t *dev, netdev_event_t event);
 
+static bool exp_stt;
+
 static const gnrc_netif_ops_t gomach_ops = {
     .init = _gomach_init,
     .send = _send,
@@ -464,8 +466,8 @@ static void gomach_init_prepare(gnrc_netif_t *netif)
     rtt_clear_alarm();
 
     /* Random delay for avoiding the same wake-up phase among devices. */
-    uint32_t random_backoff = random_uint32_range(0, GNRC_GOMACH_SUPERFRAME_DURATION_US);
-    xtimer_usleep(random_backoff);
+    ///uint32_t random_backoff = random_uint32_range(0, GNRC_GOMACH_SUPERFRAME_DURATION_US);
+    //xtimer_usleep(random_backoff);
 
     gnrc_gomach_set_quit_cycle(netif, false);
     netif->mac.gomach.subchannel_occu_flags = 0;
@@ -484,10 +486,10 @@ static void gomach_init_announce_subchannel(gnrc_netif_t *netif)
     gnrc_gomach_init_choose_subchannel(netif);
 
     /* Announce the device's chosen sub-channel sequence to its neighbors. */
-    gnrc_gomach_bcast_subchann_seq(netif, NETOPT_ENABLE);
+    //gnrc_gomach_bcast_subchann_seq(netif, NETOPT_ENABLE);
 
-    netif->mac.gomach.init_state = GNRC_GOMACH_INIT_WAIT_FEEDBACK;
-    gnrc_gomach_set_update(netif, false);
+    netif->mac.gomach.init_state = GNRC_GOMACH_INIT_END;
+    gnrc_gomach_set_update(netif, true);
 }
 
 static void gomach_init_wait_announce_feedback(gnrc_netif_t *netif)
@@ -501,16 +503,19 @@ static void gomach_init_wait_announce_feedback(gnrc_netif_t *netif)
 
 static void gomach_init_end(gnrc_netif_t *netif)
 {
-    /* Reset initialization state. */
-    netif->mac.gomach.init_state = GNRC_GOMACH_INIT_PREPARE;
-    /* Switch to duty-cycle listen mode. */
-    netif->mac.gomach.basic_state = GNRC_GOMACH_LISTEN;
-    netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
+    if (exp_stt == true) {
+        /* Reset initialization state. */
+        netif->mac.gomach.init_state = GNRC_GOMACH_INIT_PREPARE;
+        /* Switch to duty-cycle listen mode. */
+        netif->mac.gomach.basic_state = GNRC_GOMACH_LISTEN;
+        netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
 
-    /* Start duty-cycle scheme. */
-    gnrc_gomach_set_duty_cycle_start(netif, false);
-    _gomach_rtt_handler(GNRC_GOMACH_EVENT_RTT_NEW_CYCLE, netif);
-    gnrc_gomach_set_update(netif, true);
+        /* Start duty-cycle scheme. */
+        gnrc_gomach_set_duty_cycle_start(netif, false);
+        _gomach_rtt_handler(GNRC_GOMACH_EVENT_RTT_NEW_CYCLE, netif);
+        gnrc_gomach_set_update(netif, true);
+    }
+
 }
 
 static void gomach_t2k_init(gnrc_netif_t *netif)
@@ -553,6 +558,7 @@ static void gomach_t2k_init(gnrc_netif_t *netif)
 
     if (wait_phase_duration > GNRC_GOMACH_SUPERFRAME_DURATION_US) {
         wait_phase_duration = wait_phase_duration % GNRC_GOMACH_SUPERFRAME_DURATION_US;
+        puts("la");
     }
     gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_CP, (uint32_t)wait_phase_duration);
 
@@ -1461,6 +1467,8 @@ static void _gomach_phase_backoff(gnrc_netif_t *netif)
 
 static void gomach_listen_init(gnrc_netif_t *netif)
 {
+    puts("c");
+
     /* Reset last_seq_info, for avoiding receiving duplicate packets.
      * To-do: remove this in the future? */
     for (int i = 0; i < GNRC_GOMACH_DUPCHK_BUFFER_SIZE; i++) {
@@ -2029,6 +2037,7 @@ static void _gomach_event_cb(netdev_t *dev, netdev_event_t event)
             case NETDEV_EVENT_RX_STARTED: {
                 gnrc_netif_set_rx_started(netif, true);
                 gnrc_gomach_set_update(netif, true);
+                exp_stt = true;
                 break;
             }
             case NETDEV_EVENT_RX_COMPLETE: {
@@ -2192,6 +2201,8 @@ static void _gomach_init(gnrc_netif_t *netif)
 #endif
 
     gnrc_gomach_set_update(netif, true);
+
+    exp_stt = false;
 
     while (gnrc_gomach_get_update(netif)) {
         gnrc_gomach_set_update(netif, false);
