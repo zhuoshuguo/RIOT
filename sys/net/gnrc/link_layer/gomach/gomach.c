@@ -1027,7 +1027,7 @@ static void gomach_t2u_init(gnrc_netif_t *netif)
 {
     /* since t2u is right following CP period (wake-up period), the radio is still on,
      * so we don't need to turn on it again. */
-
+    puts("U");
     LOG_DEBUG("[GOMACH] t2u initialization.\n");
 
     gnrc_netif_set_rx_started(netif, false);
@@ -1464,12 +1464,22 @@ static void _gomach_phase_backoff(gnrc_netif_t *netif)
 {
     /* Execute phase backoff for avoiding CP (wake-up period) overlap. */
     rtt_clear_alarm();
+    printf("backoff:%lu\n",netif->mac.gomach.backoff_phase_ticks);
+
+    xtimer_usleep(netif->mac.gomach.backoff_phase_ticks);
+
+    rtt_set_counter(0);
+    netif->mac.gomach.last_wakeup = rtt_get_counter();
+
     uint32_t alarm = netif->mac.gomach.last_wakeup +
-                     RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US) +
-                     netif->mac.gomach.backoff_phase_ticks;
+                     RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
+
     rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GNRC_GOMACH_EVENT_RTT_NEW_CYCLE);
 
-    gnrc_gomach_set_phase_changed(netif, true);
+    gnrc_gomach_set_phase_changed(netif, false);
+
+    gnrc_gomach_update_neighbor_phase(netif);
+
     LOG_INFO("INFO: [GOMACH] phase backoffed: %lu us.\n",
              RTT_TICKS_TO_US(netif->mac.gomach.backoff_phase_ticks));
 }
@@ -1518,12 +1528,6 @@ static void gomach_listen_init(gnrc_netif_t *netif)
     /* Flush RX queue and turn on radio. */
     gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
     gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
-
-    /* Run phase-backoff if needed, select a new wake-up phase. */
-    if (gnrc_gomach_get_phase_backoff(netif)) {
-        gnrc_gomach_set_phase_backoff(netif, false);
-        _gomach_phase_backoff(netif);
-    }
 
     /* Turn to current public channel. */
     gnrc_gomach_turn_channel(netif, netif->mac.gomach.cur_pub_channel);
@@ -1873,6 +1877,12 @@ static void gomach_sleep(gnrc_netif_t *netif)
 
 static void gomach_sleep_end(gnrc_netif_t *netif)
 {
+    /* Run phase-backoff if needed, select a new wake-up phase. */
+    if (gnrc_gomach_get_phase_backoff(netif)) {
+        gnrc_gomach_set_phase_backoff(netif, false);
+        _gomach_phase_backoff(netif);
+    }
+
     /* Go to CP (start of the new cycle), start listening on the public-channel. */
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
     gnrc_gomach_set_update(netif, true);
