@@ -467,8 +467,8 @@ static void gomach_init_prepare(gnrc_netif_t *netif)
     rtt_clear_alarm();
 
     /* Random delay for avoiding the same wake-up phase among devices. */
-    ///uint32_t random_backoff = random_uint32_range(0, GNRC_GOMACH_SUPERFRAME_DURATION_US);
-    //xtimer_usleep(random_backoff);
+    uint32_t random_backoff = random_uint32_range(0, GNRC_GOMACH_SUPERFRAME_DURATION_US);
+    xtimer_usleep(random_backoff);
 
     gnrc_gomach_set_quit_cycle(netif, false);
     netif->mac.gomach.subchannel_occu_flags = 0;
@@ -504,11 +504,6 @@ static void gomach_init_wait_announce_feedback(gnrc_netif_t *netif)
 
 static void gomach_init_end(gnrc_netif_t *netif)
 {
-    if (exp_stt == true) {
-        if (netif->l2addr[7] == 0x02) {
-            puts("d");
-            xtimer_usleep(5000);
-        }
         /* Reset initialization state. */
         netif->mac.gomach.init_state = GNRC_GOMACH_INIT_PREPARE;
         /* Switch to duty-cycle listen mode. */
@@ -519,7 +514,7 @@ static void gomach_init_end(gnrc_netif_t *netif)
         gnrc_gomach_set_duty_cycle_start(netif, false);
         _gomach_rtt_handler(GNRC_GOMACH_EVENT_RTT_NEW_CYCLE, netif);
         gnrc_gomach_set_update(netif, true);
-    }
+
 
 }
 
