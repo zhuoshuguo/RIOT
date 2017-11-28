@@ -137,7 +137,6 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_set_beacon_fail(gnrc_netdev, false);
     gnrc_gomach_set_buffer_full(gnrc_netdev, false);
     gnrc_gomach_set_phase_backoff(gnrc_netdev, false);
-    gnrc_gomach_set_phase_changed(gnrc_netdev, false);
     gnrc_netdev->rx.check_dup_pkt.queue_head = 0;
     gnrc_netdev->tx.last_tx_neighbor_id = 0;
 
@@ -906,12 +905,6 @@ static void gomach_t2k_end(gnrc_netdev_t *gnrc_netdev)
     /* Reset t2k_state to the initial state. */
     gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_INIT;
 
-    /* If the sender's phase has been changed, figure out the related phase of tx-neighbors. */
-    if (gnrc_gomach_get_phase_changed(gnrc_netdev)) {
-        gnrc_gomach_set_phase_changed(gnrc_netdev, false);
-        gnrc_gomach_update_neighbor_phase(gnrc_netdev);
-    }
-
 	gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
 
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
@@ -1166,13 +1159,6 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
     }
 
     if (gnrc_gomach_get_got_preamble_ack(gnrc_netdev)) {
-        /* Record the public-channel phase of the receiver. */
-        if (gnrc_gomach_get_on_pubchan_1(gnrc_netdev)) {
-            gnrc_netdev->tx.current_neighbor->pub_chanseq = gnrc_netdev->gomach.pub_channel_1;
-        }
-        else {
-            gnrc_netdev->tx.current_neighbor->pub_chanseq = gnrc_netdev->gomach.pub_channel_2;
-        }
 
         /* Require ACK for the packet waiting to be sent! */
         gnrc_gomach_set_ack_req(gnrc_netdev, NETOPT_ENABLE);
@@ -1360,12 +1346,6 @@ static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
     /* Reset t2u state. */
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_INIT;
 
-    /* If the node's phase has been changed, figure out the related phase of all neighbors. */
-    if (gnrc_gomach_get_phase_changed(gnrc_netdev)) {
-        gnrc_gomach_set_phase_changed(gnrc_netdev, false);
-        gnrc_gomach_update_neighbor_phase(gnrc_netdev);
-    }
-
     /* Resume to listen state and go to sleep. */
     gnrc_netdev->gomach.basic_state = GNRC_GOMACH_LISTEN;
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
@@ -1417,14 +1397,19 @@ static void _gomach_phase_backoff(gnrc_netdev_t *gnrc_netdev)
 {
     /* Execute phase backoff for avoiding CP (wake-up period) overlap. */
     rtt_clear_alarm();
+    rtt_poweroff();
+    xtimer_usleep(gnrc_netdev->gomach.backoff_phase_us);
+
+    rtt_poweron();
+    rtt_set_counter(0);
+    gnrc_netdev->gomach.last_wakeup = rtt_get_counter();
+
     uint32_t alarm = gnrc_netdev->gomach.last_wakeup +
-                     RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US) +
-                     gnrc_netdev->gomach.backoff_phase_ticks;
+                     RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
+
     rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GNRC_GOMACH_EVENT_RTT_NEW_CYCLE);
 
-    gnrc_gomach_set_phase_changed(gnrc_netdev, true);
-    LOG_INFO("INFO: [GOMACH] phase backoffed: %lu us.\n",
-             RTT_TICKS_TO_US(gnrc_netdev->gomach.backoff_phase_ticks));
+    puts("ph-bckf");
 }
 
 static void gomach_send_RI_beacon(gnrc_netdev_t *gnrc_netdev)
@@ -1480,12 +1465,10 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_set_beacon_fail(gnrc_netdev, false);
     gnrc_gomach_set_cp_end(gnrc_netdev, false);
     gnrc_gomach_set_got_preamble(gnrc_netdev, false);
-    gnrc_gomach_set_phase_changed(gnrc_netdev, false);
 
     /* Flush RX queue and turn on radio. */
     gnrc_priority_pktqueue_flush(&gnrc_netdev->rx.queue);
     gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
-
 
     gomach_send_RI_beacon(gnrc_netdev);
 
@@ -1668,12 +1651,6 @@ static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
                         /* If we find ongoing preamble stream, go to sleep. */
                         gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
                     }
-                    /* If the device's wakeup-phase has been changed,
-                     * figure out the new phases of all neighbors. */
-                    if (gnrc_gomach_get_phase_changed(gnrc_netdev)) {
-                        gnrc_gomach_set_phase_changed(gnrc_netdev, false);
-                        gnrc_gomach_update_neighbor_phase(gnrc_netdev);
-                    }
                 }
                 else {
                     /* The packet waiting to be sent is for unicast. */
@@ -1785,13 +1762,6 @@ static void gomach_vtdma_end(gnrc_netdev_t *gnrc_netdev)
             else {
                 gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
             }
-
-            /* If the device's wakeup-phase has been changed,
-             * figure out the new phases of all neighbors. */
-            if (gnrc_gomach_get_phase_changed(gnrc_netdev)) {
-                gnrc_gomach_set_phase_changed(gnrc_netdev, false);
-                gnrc_gomach_update_neighbor_phase(gnrc_netdev);
-            }
         }
         else {
             switch (gnrc_netdev->tx.current_neighbor->mac_type) {
@@ -1832,13 +1802,6 @@ static void gomach_vtdma_end(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_sleep_init(gnrc_netdev_t *gnrc_netdev)
 {
-    /* If the device's wakeup-phase has been changed,
-     * figure out the new phases of all neighbors. */
-    if (gnrc_gomach_get_phase_changed(gnrc_netdev)) {
-        gnrc_gomach_set_phase_changed(gnrc_netdev, false);
-        gnrc_gomach_update_neighbor_phase(gnrc_netdev);
-    }
-
     /* Turn off the radio during sleep period to conserve power. */
     gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
@@ -1856,6 +1819,11 @@ static void gomach_sleep(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 {
+	if (gnrc_gomach_get_phase_backoff(gnrc_netdev)) {
+	    gnrc_gomach_set_phase_backoff(gnrc_netdev, false);
+	    _gomach_phase_backoff(gnrc_netdev);
+	}
+
     /* Go to CP (start of the new cycle), start listening on the public-channel. */
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
     gnrc_gomach_set_update(gnrc_netdev, true);

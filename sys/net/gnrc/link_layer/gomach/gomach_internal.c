@@ -857,7 +857,36 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
        	phase_ms += GNRC_GOMACH_SUPERFRAME_DURATION_US;
     }
 
+    if ((phase_ms > (GNRC_GOMACH_SUPERFRAME_DURATION_US - GNRC_GOMACH_CP_MIN_GAP_US)) ||
+         (phase_ms < GNRC_GOMACH_CP_MIN_GAP_US)) {
+            LOG_DEBUG("[GOMACH] t2u: own phase is close to the neighbor's.\n");
+            gnrc_gomach_set_phase_backoff(gnrc_netdev, true);
+            /* Set a random phase-backoff value. */
+            gnrc_netdev->gomach.backoff_phase_us =
+                random_uint32_range(GNRC_GOMACH_CP_MIN_GAP_US,
+                                   (GNRC_GOMACH_SUPERFRAME_DURATION_US - GNRC_GOMACH_CP_MIN_GAP_US));
+    }
+
     gnrc_netdev->tx.current_neighbor->cp_phase = (uint32_t) phase_ms;
+
+    /* Record the public-channel phase of the neighbor. */
+    if (gnrc_gomach_get_enter_new_cycle(gnrc_netdev) && (phase_ms > gnrc_gomach_phase_now(gnrc_netdev))) {
+        if (gnrc_gomach_get_on_pubchan_1(gnrc_netdev)) {
+        	gnrc_netdev->tx.current_neighbor->pub_chanseq = gnrc_netdev->gomach.pub_channel_2;
+        }
+        else {
+        	gnrc_netdev->tx.current_neighbor->pub_chanseq = gnrc_netdev->gomach.pub_channel_1;
+        }
+    }
+    else {
+        if (gnrc_gomach_get_on_pubchan_1(gnrc_netdev)) {
+        	gnrc_netdev->tx.current_neighbor->pub_chanseq = gnrc_netdev->gomach.pub_channel_1;
+        }
+        else {
+        	gnrc_netdev->tx.current_neighbor->pub_chanseq = gnrc_netdev->gomach.pub_channel_2;
+        }
+    }
+
 }
 
 void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netdev_t *gnrc_netdev)
@@ -1244,9 +1273,9 @@ void gnrc_gomach_update_neighbor_phase(gnrc_netdev_t *gnrc_netdev)
     for (int i = 1; i < GNRC_MAC_NEIGHBOR_COUNT; i++) {
         if (gnrc_netdev->tx.neighbors[i].mac_type == GNRC_GOMACH_TYPE_KNOWN) {
             long int tmp = gnrc_netdev->tx.neighbors[i].cp_phase -
-                           gnrc_netdev->gomach.backoff_phase_ticks;
+                           gnrc_netdev->gomach.backoff_phase_us;
             if (tmp < 0) {
-                tmp += RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
+                tmp += GNRC_GOMACH_SUPERFRAME_DURATION_US;
 
                 /* Toggle the neighbor's public channel phase if tmp < 0. */
                 if (gnrc_netdev->tx.neighbors[i].pub_chanseq ==
