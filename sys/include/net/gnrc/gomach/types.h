@@ -284,7 +284,7 @@ typedef struct gomach {
     uint16_t cur_pub_channel;                                   /**< Node's current public channel. */
     uint8_t cp_extend_count;                                    /**< Node's CP extend count. */
     uint32_t last_wakeup;                                       /**< Node's last wake-up timing. */
-    uint32_t backoff_phase_ticks;                               /**< Node's phase backoff time. */
+    uint32_t backoff_phase_us;                               /**< Node's phase backoff time. */
     uint16_t gomach_info;                                       /**< GoMacH's internal information. */
     uint32_t last_wakeup_phase_ms;                              /**< GoMacH's last cycle wakeup phase. */
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
