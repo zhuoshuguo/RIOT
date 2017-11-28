@@ -67,7 +67,6 @@ typedef enum {
 	  * @}
 	  */
 
-
     /**
      * @{
      * @name Link layer

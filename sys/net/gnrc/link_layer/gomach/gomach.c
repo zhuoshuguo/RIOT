@@ -624,6 +624,104 @@ static void gomach_t2k_trans_in_cp(gnrc_netif_t *netif)
     gnrc_gomach_set_update(netif, false);
 }
 
+static inline void _cp_tx_success(gnrc_netif_t *netif)
+{
+    /* Since the packet will not be released by the sending function,
+     * so, here, if TX success, we first release the packet. */
+    gnrc_pktbuf_release(netif->mac.tx.packet);
+    netif->mac.tx.packet = NULL;
+
+    /* Here is the phase-lock auto-adjust scheme. Use the new adjusted
+     * phase upon success. Here the new phase will be put ahead to the
+     * original phase. */
+    if (netif->mac.tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD - 2)) {
+        if (netif->mac.tx.current_neighbor->cp_phase >=
+            GNRC_GOMACH_CP_DURATION_US) {
+            netif->mac.tx.current_neighbor->cp_phase -=
+                GNRC_GOMACH_CP_DURATION_US;
+        }
+        else {
+            netif->mac.tx.current_neighbor->cp_phase +=
+                GNRC_GOMACH_SUPERFRAME_DURATION_US;
+            netif->mac.tx.current_neighbor->cp_phase -=
+                GNRC_GOMACH_CP_DURATION_US;
+        }
+    }
+    /* Here is the phase-lock auto-adjust scheme. Use the new adjusted
+     * phase upon success. Here the new phase will be put behind the original
+     * phase. */
+    if (netif->mac.tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD - 1)) {
+        netif->mac.tx.current_neighbor->cp_phase +=
+            (GNRC_GOMACH_CP_DURATION_US + 20 * US_PER_MS);
+
+        if (netif->mac.tx.current_neighbor->cp_phase >=
+            GNRC_GOMACH_SUPERFRAME_DURATION_US) {
+            netif->mac.tx.current_neighbor->cp_phase -=
+                GNRC_GOMACH_SUPERFRAME_DURATION_US;
+        }
+    }
+
+    netif->mac.tx.no_ack_counter = 0;
+    netif->mac.tx.t2u_fail_count = 0;
+
+    /* If has pending packets, join the vTDMA period, first wait for receiver's beacon. */
+    if (gnrc_priority_pktqueue_length(&netif->mac.tx.current_neighbor->queue) > 0) {
+        netif->mac.tx.vtdma_para.slots_num = 0;
+        gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_BEACON,
+                                GNRC_GOMACH_WAIT_BEACON_TIME_US);
+        gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
+        netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_WAIT_BEACON;
+    }
+    else {
+        netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_END;
+    }
+    gnrc_gomach_set_update(netif, true);
+}
+
+static inline bool _cp_tx_busy(gnrc_netif_t *netif)
+{
+    /* If the channel busy counter is below threshold, retry CSMA immediately,
+     * by knowing that the CP will be automatically extended. */
+    if (netif->mac.tx.tx_busy_count < GNRC_GOMACH_TX_BUSY_THRESHOLD) {
+        netif->mac.tx.tx_busy_count++;
+
+        /* Store the TX sequence number for this packet. Always use the same
+         * sequence number for sending the same packet, to avoid duplicated
+         * packet reception at the receiver. */
+        netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)netif->dev;
+        netif->mac.tx.tx_seq = device_state->seq - 1;
+
+        netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_TRANS_IN_CP;
+        gnrc_gomach_set_update(netif, true);
+        return false;
+    }
+    return true;
+}
+
+static inline void _cp_tx_default(gnrc_netif_t *netif)
+{
+    netif->mac.tx.no_ack_counter++;
+
+    LOG_DEBUG("[GOMACH] t2k %d times No-ACK.\n", netif->mac.tx.no_ack_counter);
+
+    /* This packet will be retried. Store the TX sequence number for this packet.
+     * Always use the same sequence number for sending the same packet. */
+    netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)netif->dev;
+    netif->mac.tx.tx_seq = device_state->seq - 1;
+
+    /* If no_ack_counter reaches the threshold, regarded as phase-lock failed. So
+     * retry to send the packet in t2u, i.e., try to phase-lock with the receiver
+     * again. */
+    if (netif->mac.tx.no_ack_counter >= GNRC_GOMACH_REPHASELOCK_THRESHOLD) {
+        LOG_DEBUG("[GOMACH] t2k failed, go to t2u.\n");
+        /* Here, we don't queue the packet again, but keep it in tx.packet. */
+        netif->mac.tx.current_neighbor->mac_type = GNRC_GOMACH_TYPE_UNKNOWN;
+        netif->mac.tx.t2u_retry_counter = 0;
+    }
+
+    netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_END;
+    gnrc_gomach_set_update(netif, true);
+}
 static void gomach_t2k_wait_cp_txfeedback(gnrc_netif_t *netif)
 {
     if (gnrc_gomach_timeout_is_expired(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR)) {
@@ -645,101 +743,16 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netif_t *netif)
 
         switch (gnrc_netif_get_tx_feedback(netif)) {
             case TX_FEEDBACK_SUCCESS: {
-                /* Since the packet will not be released by the sending function,
-                 * so, here, if TX success, we first release the packet. */
-                gnrc_pktbuf_release(netif->mac.tx.packet);
-                netif->mac.tx.packet = NULL;
-
-                /* Here is the phase-lock auto-adjust scheme. Use the new adjusted
-                 * phase upon success. Here the new phase will be put ahead to the
-                 * original phase. */
-                if (netif->mac.tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD - 2)) {
-                    if (netif->mac.tx.current_neighbor->cp_phase >=
-                        GNRC_GOMACH_CP_DURATION_US) {
-                        netif->mac.tx.current_neighbor->cp_phase -=
-                            GNRC_GOMACH_CP_DURATION_US;
-                    }
-                    else {
-                        netif->mac.tx.current_neighbor->cp_phase +=
-                            GNRC_GOMACH_SUPERFRAME_DURATION_US;
-                        netif->mac.tx.current_neighbor->cp_phase -=
-                            GNRC_GOMACH_CP_DURATION_US;
-                    }
-                }
-                /* Here is the phase-lock auto-adjust scheme. Use the new adjusted
-                 * phase upon success. Here the new phase will be put behind the original
-                 * phase. */
-                if (netif->mac.tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD - 1)) {
-                    netif->mac.tx.current_neighbor->cp_phase +=
-                        (GNRC_GOMACH_CP_DURATION_US + 20 * US_PER_MS);
-
-                    if (netif->mac.tx.current_neighbor->cp_phase >=
-                        GNRC_GOMACH_SUPERFRAME_DURATION_US) {
-                        netif->mac.tx.current_neighbor->cp_phase -=
-                            GNRC_GOMACH_SUPERFRAME_DURATION_US;
-                    }
-                }
-
-                netif->mac.tx.no_ack_counter = 0;
-                netif->mac.tx.t2u_fail_count = 0;
-
-                /* If has pending packets, join the vTDMA period, first wait for receiver's beacon. */
-                if (gnrc_priority_pktqueue_length(&netif->mac.tx.current_neighbor->queue) > 0) {
-                    netif->mac.tx.vtdma_para.slots_num = 0;
-                    gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_BEACON,
-                                            GNRC_GOMACH_WAIT_BEACON_TIME_US);
-                    gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
-                    netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_WAIT_BEACON;
-                }
-                else {
-                    netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_END;
-                }
-                gnrc_gomach_set_update(netif, true);
+            	_cp_tx_success(netif);
                 break;
             }
             case TX_FEEDBACK_BUSY:
-                /* If the channel busy counter is below threshold, retry CSMA immediately,
-                 * by knowing that the CP will be automatically extended. */
-                if (netif->mac.tx.tx_busy_count < GNRC_GOMACH_TX_BUSY_THRESHOLD) {
-                    netif->mac.tx.tx_busy_count++;
-
-                    /* Store the TX sequence number for this packet. Always use the same
-                     * sequence number for sending the same packet, to avoid duplicated
-                     * packet reception at the receiver. */
-                    netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)netif->dev;
-                    netif->mac.tx.tx_seq = device_state->seq - 1;
-
-                    netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_TRANS_IN_CP;
-                    gnrc_gomach_set_update(netif, true);
+                if(!_cp_tx_busy(netif)) {
                     return;
                 }
             case TX_FEEDBACK_NOACK:
             default: {
-                netif->mac.tx.no_ack_counter++;
-
-                LOG_DEBUG("[GOMACH] t2k %d times No-ACK.\n", netif->mac.tx.no_ack_counter);
-
-                /* This packet will be retried. Store the TX sequence number for this packet.
-                 * Always use the same sequence number for sending the same packet. */
-                netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)netif->dev;
-                netif->mac.tx.tx_seq = device_state->seq - 1;
-
-                /* If no_ack_counter reaches the threshold, regarded as phase-lock failed. So
-                 * retry to send the packet in t2u, i.e., try to phase-lock with the receiver
-                 * again. */
-                if (netif->mac.tx.no_ack_counter >= GNRC_GOMACH_REPHASELOCK_THRESHOLD) {
-                    LOG_DEBUG("[GOMACH] t2k failed, go to t2u.\n");
-                    /* Here, we don't queue the packet again, but keep it in tx.packet. */
-                    netif->mac.tx.current_neighbor->mac_type = GNRC_GOMACH_TYPE_UNKNOWN;
-                    netif->mac.tx.t2u_retry_counter = 0;
-                }
-                else {
-                    /* If no_ack_counter is below the threshold, retry sending the packet in t2k
-                     * procedure in the following cycle. */
-
-                }
-                netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_END;
-                gnrc_gomach_set_update(netif, true);
+                _cp_tx_default(netif);
                 break;
             }
         }
@@ -871,6 +884,63 @@ static void gomach_t2k_trans_in_slots(gnrc_netif_t *netif)
     gnrc_gomach_set_update(netif, false);
 }
 
+static inline void _t2k_wait_vtdma_tx_success(gnrc_netif_t *netif)
+{
+    /* First release the packet. */
+    gnrc_pktbuf_release(netif->mac.tx.packet);
+    netif->mac.tx.packet = NULL;
+    netif->mac.tx.no_ack_counter = 0;
+
+    /* If the sender has pending packets and scheduled slots,
+     * continue vTDMA transmission. */
+    if ((netif->mac.tx.vtdma_para.slots_num > 0) &&
+        (gnrc_priority_pktqueue_length(&netif->mac.tx.current_neighbor->queue) > 0)) {
+        gnrc_pktsnip_t *pkt = gnrc_priority_pktqueue_pop(&netif->mac.tx.current_neighbor->queue);
+        if (pkt != NULL) {
+            netif->mac.tx.packet = pkt;
+            netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_VTDMA_TRANS;
+        }
+        else {
+            LOG_ERROR("ERROR: [GOMACH] t2k vTDMA: null packet.\n");
+            netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_END;
+        }
+    }
+    else {
+        /* If no scheduled slots or pending packets, go to t2k end. */
+        netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_END;
+    }
+    gnrc_gomach_set_update(netif, true);
+}
+
+static inline void _t2k_wait_vtdma_tx_default(gnrc_netif_t *netif)
+{
+    /* In case of transmission failure in vTDMA, retransmit the packet in the next
+     * scheduled slot, or the next cycle's t2k procedure. */
+
+    /* Firstly, mark the current TX packet as not ACKed and record the MAC sequence
+     * number, such that the MAC will use the same MAC sequence to send it.
+     * Also, by marking no_ack_counter as non-zero, the neighbor and packet pointers
+     *  will then not be released in t2k-end. Then, the packet can be retried right in
+     *  the following cycle. */
+    netif->mac.tx.no_ack_counter = 1;
+
+    netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)netif->dev;
+    netif->mac.tx.tx_seq = device_state->seq - 1;
+
+    /* Do not release the packet here, continue sending the same packet. ***/
+    if (netif->mac.tx.vtdma_para.slots_num > 0) {
+        LOG_DEBUG("[GOMACH] no ACK in vTDMA, retry in next slot.\n");
+        netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_VTDMA_TRANS;
+    }
+    else {
+        /* If no slots for sending, retry in next cycle's t2r, without releasing
+         * tx.packet pointer. */
+        LOG_DEBUG("[GOMACH] no ACK in vTDMA, retry in next cycle.\n");
+
+        netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_END;
+    }
+    gnrc_gomach_set_update(netif, true);
+}
 static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netif_t *netif)
 {
     if (gnrc_gomach_timeout_is_expired(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR)) {
@@ -892,61 +962,13 @@ static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netif_t *netif)
 
         switch (gnrc_netif_get_tx_feedback(netif)) {
             case TX_FEEDBACK_SUCCESS: {
-                /* First release the packet. */
-                gnrc_pktbuf_release(netif->mac.tx.packet);
-                netif->mac.tx.packet = NULL;
-                netif->mac.tx.no_ack_counter = 0;
-
-                /* If the sender has pending packets and scheduled slots,
-                 * continue vTDMA transmission. */
-                if ((netif->mac.tx.vtdma_para.slots_num > 0) &&
-                    (gnrc_priority_pktqueue_length(&netif->mac.tx.current_neighbor->queue) > 0)) {
-                    gnrc_pktsnip_t *pkt = gnrc_priority_pktqueue_pop(&netif->mac.tx.current_neighbor->queue);
-                    if (pkt != NULL) {
-                        netif->mac.tx.packet = pkt;
-                        netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_VTDMA_TRANS;
-                    }
-                    else {
-                        LOG_ERROR("ERROR: [GOMACH] t2k vTDMA: null packet.\n");
-                        netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_END;
-                    }
-                }
-                else {
-                    /* If no scheduled slots or pending packets, go to t2k end. */
-                    netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_END;
-                }
-                gnrc_gomach_set_update(netif, true);
+                _t2k_wait_vtdma_tx_success(netif);
                 break;
             }
             case TX_FEEDBACK_BUSY:
             case TX_FEEDBACK_NOACK:
             default: {
-                /* In case of transmission failure in vTDMA, retransmit the packet in the next
-                 * scheduled slot, or the next cycle's t2k procedure. */
-
-                /* Firstly, mark the current TX packet as not ACKed and record the MAC sequence
-                 * number, such that the MAC will use the same MAC sequence to send it.
-                 * Also, by marking no_ack_counter as non-zero, the neighbor and packet pointers
-                 *  will then not be released in t2k-end. Then, the packet can be retried right in
-                 *  the following cycle. */
-                netif->mac.tx.no_ack_counter = 1;
-
-                netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)netif->dev;
-                netif->mac.tx.tx_seq = device_state->seq - 1;
-
-                /* Do not release the packet here, continue sending the same packet. ***/
-                if (netif->mac.tx.vtdma_para.slots_num > 0) {
-                    LOG_DEBUG("[GOMACH] no ACK in vTDMA, retry in next slot.\n");
-                    netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_VTDMA_TRANS;
-                }
-                else {
-                    /* If no slots for sending, retry in next cycle's t2r, without releasing
-                     * tx.packet pointer. */
-                    LOG_DEBUG("[GOMACH] no ACK in vTDMA, retry in next cycle.\n");
-
-                    netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_END;
-                }
-                gnrc_gomach_set_update(netif, true);
+                _t2k_wait_vtdma_tx_default(netif);
                 break;
             }
         }

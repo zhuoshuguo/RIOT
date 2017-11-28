@@ -31,32 +31,32 @@ extern "C" {
 /**
  * @brief Flag to track if the transmission has finished.
  */
-#define GNRC_GOMACH_INFO_TX_FINISHED         (0x0008U)
+#define GNRC_GOMACH_INFO_TX_FINISHED                     (0x0008U)
 
 /**
  * @brief Flag to track if a packet has been successfully received.
  */
-#define GNRC_GOMACH_INFO_PKT_RECEIVED        (0x0010U)
+#define GNRC_GOMACH_INFO_PKT_RECEIVED                    (0x0010U)
 
 /**
  * @brief Flag to track if need to update GoMacH.
  */
-#define GNRC_GOMACH_INTERNAL_INFO_ND_UPDATE        (0x0001U)
+#define GNRC_GOMACH_INTERNAL_INFO_ND_UPDATE              (0x0001U)
 
 /**
  * @brief Flag to track if need to quit the current cycle in GoMacH.
  */
-#define GNRC_GOMACH_INTERNAL_INFO_QUIT_CYCLE        (0x0002U)
+#define GNRC_GOMACH_INTERNAL_INFO_QUIT_CYCLE             (0x0002U)
 
 /**
  * @brief Flag to track if CP period has ended in GoMacH.
  */
-#define GNRC_GOMACH_INTERNAL_INFO_CP_END        (0x0004U)
+#define GNRC_GOMACH_INTERNAL_INFO_CP_END                 (0x0004U)
 
 /**
  * @brief Flag to track if vTDMA has ended in GoMacH.
  */
-#define GNRC_GOMACH_INTERNAL_INFO_VTDMA_END        (0x0008U)
+#define GNRC_GOMACH_INTERNAL_INFO_VTDMA_END              (0x0008U)
 
 /**
  * @brief Flag to track if the node has received unintended preamble.
@@ -66,27 +66,27 @@ extern "C" {
 /**
  * @brief Flag to track if need to quit the current cycle in GoMacH.
  */
-#define GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLE        (0x0020U)
+#define GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLE           (0x0020U)
 
 /**
  * @brief Flag to track if node's duty-cycle has started in GoMacH.
  */
-#define GNRC_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START        (0x0040U)
+#define GNRC_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START       (0x0040U)
 
 /**
  * @brief Flag to track if node need to backoff its phase in GoMacH.
  */
-#define GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF        (0x0080U)
+#define GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF          (0x0080U)
 
 /**
  * @brief Flag to track if beacon transmission fail in GoMacH.
  */
-#define GNRC_GOMACH_INTERNAL_INFO_BEACON_FAIL        (0x0200U)
+#define GNRC_GOMACH_INTERNAL_INFO_BEACON_FAIL            (0x0200U)
 
 /**
  * @brief Flag to track if node's packet buffer is full in GoMacH.
  */
-#define GNRC_GOMACH_INTERNAL_INFO_BUFFER_FULL        (0x0400U)
+#define GNRC_GOMACH_INTERNAL_INFO_BUFFER_FULL            (0x0400U)
 
 /**
  * @brief Flag to track if node has entered a new cycle in GoMacH.
@@ -101,17 +101,17 @@ extern "C" {
 /**
  * @brief Flag to track if node's radio is on public-channel-1.
  */
-#define GNRC_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1        (0x2000U)
+#define GNRC_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1           (0x2000U)
 
 /**
  * @brief Flag to track if node has reached maximum preamble interval.
  */
-#define GNRC_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV        (0x4000U)
+#define GNRC_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV       (0x4000U)
 
 /**
  * @brief Flag to track if node has turned on its radio.
  */
-#define GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON        (0x8000U)
+#define GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON            (0x8000U)
 
 /**
  * @brief Set the @ref GNRC_GOMACH_INFO_TX_FINISHED flag of the device.

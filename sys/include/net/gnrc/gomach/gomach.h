@@ -40,7 +40,7 @@ extern "C" {
  * receiver will not miss the preamble packet.
  */
 #ifndef GNRC_GOMACH_CP_DURATION_US
-#define GNRC_GOMACH_CP_DURATION_US        (10U *US_PER_MS)
+#define GNRC_GOMACH_CP_DURATION_US        (10U * US_PER_MS)
 #endif
 
 /**
@@ -62,15 +62,16 @@ extern "C" {
  * RTT tickle interval.
  */
 #ifndef GNRC_GOMACH_SUPERFRAME_DURATION_US
-#define GNRC_GOMACH_SUPERFRAME_DURATION_US        (300LU *US_PER_MS)
+#define GNRC_GOMACH_SUPERFRAME_DURATION_US        (300LU * US_PER_MS)
+#endif
+
 #if ((GNRC_GOMACH_SUPERFRAME_DURATION_US < ((1000LU *US_PER_MS) / RTT_FREQUENCY)) || \
      (GNRC_GOMACH_SUPERFRAME_DURATION_US < (10 *GNRC_GOMACH_CP_DURATION_US)))
 #undef GNRC_GOMACH_SUPERFRAME_DURATION_US
-#if ((1000LU *US_PER_MS) / RTT_FREQUENCY) > (10 *GNRC_GOMACH_CP_DURATION_US)
-#define GNRC_GOMACH_SUPERFRAME_DURATION_US        ((1000LU *US_PER_MS) / RTT_FREQUENCY)
+#if (((1000LU *US_PER_MS) / RTT_FREQUENCY) > (10 * GNRC_GOMACH_CP_DURATION_US))
+#define GNRC_GOMACH_SUPERFRAME_DURATION_US        ((1000LU * US_PER_MS) / RTT_FREQUENCY)
 #else
-#define GNRC_GOMACH_SUPERFRAME_DURATION_US        (10 *GNRC_GOMACH_CP_DURATION_US)
-#endif
+#define GNRC_GOMACH_SUPERFRAME_DURATION_US        (10 * GNRC_GOMACH_CP_DURATION_US)
 #endif
 #endif
 
@@ -82,7 +83,7 @@ extern "C" {
  * collision among neighbor nodes. This macro may be removed in the future.
  */
 #ifndef GNRC_GOMACH_CP_RANDOM_END_US
-#define GNRC_GOMACH_CP_RANDOM_END_US        (1U *US_PER_MS)
+#define GNRC_GOMACH_CP_RANDOM_END_US        (1U * US_PER_MS)
 #endif
 
 /**
@@ -97,7 +98,7 @@ extern "C" {
  * duration.
  */
 #ifndef GNRC_GOMACH_CP_DURATION_MAX_US
-#define GNRC_GOMACH_CP_DURATION_MAX_US        (5LU *GNRC_GOMACH_CP_DURATION_US)
+#define GNRC_GOMACH_CP_DURATION_MAX_US        (5LU * GNRC_GOMACH_CP_DURATION_US)
 #endif
 
 /**
@@ -123,7 +124,7 @@ extern "C" {
  * select a new phase for itself.
  */
 #ifndef GNRC_GOMACH_CP_MIN_GAP_US
-#define GNRC_GOMACH_CP_MIN_GAP_US        (25U *US_PER_MS)
+#define GNRC_GOMACH_CP_MIN_GAP_US        (25U * US_PER_MS)
 #endif
 
 /**
@@ -134,7 +135,7 @@ extern "C" {
  * @ref GNRC_GOMACH_WAIT_RX_END_US duration.
  */
 #ifndef GNRC_GOMACH_WAIT_RX_END_US
-#define GNRC_GOMACH_WAIT_RX_END_US        (6U *US_PER_MS)
+#define GNRC_GOMACH_WAIT_RX_END_US        (6U * US_PER_MS)
 #endif
 
 /**
@@ -146,7 +147,7 @@ extern "C" {
  * state-machine.
  */
 #ifndef GNRC_GOMACH_NO_TX_ISR_US
-#define GNRC_GOMACH_NO_TX_ISR_US          (50U *US_PER_MS)
+#define GNRC_GOMACH_NO_TX_ISR_US          (50U * US_PER_MS)
 #endif
 
 /**
@@ -157,7 +158,7 @@ extern "C" {
  * consecutive preamble packets.
  */
 #ifndef GNRC_GOMACH_MAX_PREAM_INTERVAL_US
-#define GNRC_GOMACH_MAX_PREAM_INTERVAL_US        (6U *US_PER_MS)
+#define GNRC_GOMACH_MAX_PREAM_INTERVAL_US        (6U * US_PER_MS)
 #endif
 
 /**
@@ -171,7 +172,7 @@ extern "C" {
  * event which leads to shorter time interval between two consecutive preamble transmissions.
  */
 #ifndef GNRC_GOMACH_PREAMBLE_INTERVAL_US
-#define GNRC_GOMACH_PREAMBLE_INTERVAL_US        (2U *US_PER_MS)
+#define GNRC_GOMACH_PREAMBLE_INTERVAL_US        (2U * US_PER_MS)
 #endif
 
 /**
@@ -184,7 +185,7 @@ extern "C" {
  * broadcast copies.
  */
 #ifndef GNRC_GOMACH_BCAST_INTERVAL_US
-#define GNRC_GOMACH_BCAST_INTERVAL_US        (1U *US_PER_MS)
+#define GNRC_GOMACH_BCAST_INTERVAL_US        (1U * US_PER_MS)
 #endif
 
 /**
@@ -198,7 +199,7 @@ extern "C" {
  * (preamble duration) slightly longer than twice of @ref GNRC_GOMACH_SUPERFRAME_DURATION_US.
  */
 #ifndef GNRC_GOMACH_PREAMBLE_DURATION_US
-#define GNRC_GOMACH_PREAMBLE_DURATION_US        (21LU *GNRC_GOMACH_SUPERFRAME_DURATION_US / 10)
+#define GNRC_GOMACH_PREAMBLE_DURATION_US        (21LU * GNRC_GOMACH_SUPERFRAME_DURATION_US / 10)
 #endif
 
 /**
@@ -211,7 +212,7 @@ extern "C" {
  * not be changed.
  */
 #ifndef GNRC_GOMACH_VTDMA_SLOT_SIZE_US
-#define GNRC_GOMACH_VTDMA_SLOT_SIZE_US        (5U *US_PER_MS)
+#define GNRC_GOMACH_VTDMA_SLOT_SIZE_US        (5U * US_PER_MS)
 #endif
 
 /**

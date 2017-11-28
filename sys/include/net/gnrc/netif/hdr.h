@@ -87,7 +87,9 @@ typedef struct {
     uint8_t flags;              /**< flags as defined above */
     int16_t rssi;               /**< rssi of received packet in dBm (optional) */
     uint8_t lqi;                /**< lqi of received packet (optional) */
+#ifdef MODULE_GNRC_GOMACH
     uint8_t seq;                /**< seq of received packet (optional) */
+#endif
 } gnrc_netif_hdr_t;
 
 /**
