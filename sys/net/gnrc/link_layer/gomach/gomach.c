@@ -1225,15 +1225,6 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netif_t *netif)
     }
 
     if (gnrc_gomach_get_got_preamble_ack(netif)) {
-        /* Record the public-channel phase of the receiver. */
-        if (gnrc_gomach_get_on_pubchan_1(netif)) {
-            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.gomach.pub_channel_1;
-        }
-        else {
-            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.gomach.pub_channel_2;
-        }
-        printf("p%u\n",netif->mac.tx.current_neighbor->pub_chanseq);
-
         /* Require ACK for the packet waiting to be sent! */
         gnrc_gomach_set_ack_req(netif, NETOPT_ENABLE);
 

@@ -842,6 +842,26 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
     printf("p%lu\n",phase_ms);
 
     netif->mac.tx.current_neighbor->cp_phase = phase_ms;
+
+    if (gnrc_gomach_get_enter_new_cycle(netif) && (phase_ms > gnrc_gomach_phase_now(netif))) {
+        if (gnrc_gomach_get_on_pubchan_1(netif)) {
+            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.gomach.pub_channel_2;
+        }
+        else {
+            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.gomach.pub_channel_1;
+        }
+    }
+    else {
+        /* Record the public-channel phase of the receiver. */
+        if (gnrc_gomach_get_on_pubchan_1(netif)) {
+            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.gomach.pub_channel_1;
+        }
+        else {
+            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.gomach.pub_channel_2;
+        }
+    }
+    printf("p%u\n",netif->mac.tx.current_neighbor->pub_chanseq);
+
 }
 
 void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netif_t *netif)
