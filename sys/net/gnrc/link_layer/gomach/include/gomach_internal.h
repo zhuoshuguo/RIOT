@@ -79,11 +79,6 @@ extern "C" {
 #define GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF        (0x0080U)
 
 /**
- * @brief Flag to track if node's phase has changed in GoMacH.
- */
-#define GNRC_GOMACH_INTERNAL_INFO_PHASE_CHANGED        (0x0100U)
-
-/**
  * @brief Flag to track if beacon transmission fail in GoMacH.
  */
 #define GNRC_GOMACH_INTERNAL_INFO_BEACON_FAIL        (0x0200U)
@@ -416,36 +411,6 @@ static inline void gnrc_gomach_set_phase_backoff(gnrc_netif_t *netif, bool backo
 static inline bool gnrc_gomach_get_phase_backoff(gnrc_netif_t *netif)
 {
     return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF);
-}
-
-/**
- * @brief Set the @ref GNRC_GOMACH_INTERNAL_INFO_PHASE_CHANGED flag of the device.
- *
- * @param[in,out] netif    the network interface.
- * @param[in] change   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_PHASE_CHANGED flag.
- *
- */
-static inline void gnrc_gomach_set_phase_changed(gnrc_netif_t *netif, bool change)
-{
-    if (change) {
-        netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_PHASE_CHANGED;
-    }
-    else {
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_PHASE_CHANGED;
-    }
-}
-
-/**
- * @brief Get the @ref GNRC_GOMACH_INTERNAL_INFO_PHASE_CHANGED flag of the device.
- *
- * @param[in] netif    the network interface.
- *
- * @return                 true if node's phase has changed.
- * @return                 false if node's phase hasn't changed yet.
- */
-static inline bool gnrc_gomach_get_phase_changed(gnrc_netif_t *netif)
-{
-    return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_PHASE_CHANGED);
 }
 
 /**

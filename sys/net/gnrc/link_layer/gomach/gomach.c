@@ -254,7 +254,7 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netif_t *netif)
                 gnrc_gomach_set_enter_new_cycle(netif, true);
             }
 
-            netif->mac.gomach.last_wakeup_phase_ms = xtimer_now_usec64();
+            netif->mac.gomach.last_wakeup_phase_us = xtimer_now_usec64();
 
             /* Set next cycle's starting time. */
             uint32_t alarm = netif->mac.gomach.last_wakeup +
@@ -944,12 +944,6 @@ static void gomach_t2k_end(gnrc_netif_t *netif)
     /* Reset t2k_state to the initial state. */
     netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_INIT;
 
-    /* If the sender's phase has been changed, figure out the related phase of tx-neighbors. */
-    if (gnrc_gomach_get_phase_changed(netif)) {
-        gnrc_gomach_set_phase_changed(netif, false);
-        gnrc_gomach_update_neighbor_phase(netif);
-    }
-
     netif->mac.gomach.basic_state = GNRC_GOMACH_LISTEN;
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_gomach_set_enter_new_cycle(netif, false);
@@ -1211,14 +1205,6 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netif_t *netif)
     }
 
     if (gnrc_gomach_get_got_preamble_ack(netif)) {
-        /* Record the public-channel phase of the receiver. */
-        if (gnrc_gomach_get_on_pubchan_1(netif)) {
-            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.gomach.pub_channel_1;
-        }
-        else {
-            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.gomach.pub_channel_2;
-        }
-
         /* Require ACK for the packet waiting to be sent! */
         gnrc_gomach_set_ack_req(netif, NETOPT_ENABLE);
 
@@ -1383,12 +1369,6 @@ static void gomach_t2u_end(gnrc_netif_t *netif)
     /* Reset t2u state. */
     netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_INIT;
 
-    /* If the node's phase has been changed, figure out the related phase of all neighbors. */
-    if (gnrc_gomach_get_phase_changed(netif)) {
-        gnrc_gomach_set_phase_changed(netif, false);
-        gnrc_gomach_update_neighbor_phase(netif);
-    }
-
     /* Resume to listen state and go to sleep. */
     netif->mac.gomach.basic_state = GNRC_GOMACH_LISTEN;
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
@@ -1449,14 +1429,20 @@ static void _gomach_phase_backoff(gnrc_netif_t *netif)
 {
     /* Execute phase backoff for avoiding CP (wake-up period) overlap. */
     rtt_clear_alarm();
+    xtimer_usleep(netif->mac.gomach.backoff_phase_us);
+
+    rtt_set_counter(0);
+    netif->mac.gomach.last_wakeup = rtt_get_counter();
+
     uint32_t alarm = netif->mac.gomach.last_wakeup +
-                     RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US) +
-                     netif->mac.gomach.backoff_phase_ticks;
+                     RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
+
     rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GNRC_GOMACH_EVENT_RTT_NEW_CYCLE);
 
-    gnrc_gomach_set_phase_changed(netif, true);
+    gnrc_gomach_update_neighbor_phase(netif);
+
     LOG_INFO("INFO: [GOMACH] phase backoffed: %lu us.\n",
-             RTT_TICKS_TO_US(netif->mac.gomach.backoff_phase_ticks));
+             netif->mac.gomach.backoff_phase_us);
 }
 
 static void gomach_listen_init(gnrc_netif_t *netif)
@@ -1498,17 +1484,10 @@ static void gomach_listen_init(gnrc_netif_t *netif)
     gnrc_gomach_set_beacon_fail(netif, false);
     gnrc_gomach_set_cp_end(netif, false);
     gnrc_gomach_set_got_preamble(netif, false);
-    gnrc_gomach_set_phase_changed(netif, false);
 
     /* Flush RX queue and turn on radio. */
     gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
     gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
-
-    /* Run phase-backoff if needed, select a new wake-up phase. */
-    if (gnrc_gomach_get_phase_backoff(netif)) {
-        gnrc_gomach_set_phase_backoff(netif, false);
-        _gomach_phase_backoff(netif);
-    }
 
     /* Turn to current public channel. */
     gnrc_gomach_turn_channel(netif, netif->mac.gomach.cur_pub_channel);
@@ -1669,12 +1648,6 @@ static void gomach_listen_wait_beacon_tx(gnrc_netif_t *netif)
                         /* If we find ongoing preamble stream, go to sleep. */
                         netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
                     }
-                    /* If the device's wakeup-phase has been changed,
-                     * figure out the new phases of all neighbors. */
-                    if (gnrc_gomach_get_phase_changed(netif)) {
-                        gnrc_gomach_set_phase_changed(netif, false);
-                        gnrc_gomach_update_neighbor_phase(netif);
-                    }
                 }
                 else {
                     /* The packet waiting to be sent is for unicast. */
@@ -1786,13 +1759,6 @@ static void gomach_vtdma_end(gnrc_netif_t *netif)
             else {
                 netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_INIT;
             }
-
-            /* If the device's wakeup-phase has been changed,
-             * figure out the new phases of all neighbors. */
-            if (gnrc_gomach_get_phase_changed(netif)) {
-                gnrc_gomach_set_phase_changed(netif, false);
-                gnrc_gomach_update_neighbor_phase(netif);
-            }
         }
         else {
             switch (netif->mac.tx.current_neighbor->mac_type) {
@@ -1833,13 +1799,6 @@ static void gomach_vtdma_end(gnrc_netif_t *netif)
 
 static void gomach_sleep_init(gnrc_netif_t *netif)
 {
-    /* If the device's wakeup-phase has been changed,
-     * figure out the new phases of all neighbors. */
-    if (gnrc_gomach_get_phase_changed(netif)) {
-        gnrc_gomach_set_phase_changed(netif, false);
-        gnrc_gomach_update_neighbor_phase(netif);
-    }
-
     /* Turn off the radio during sleep period to conserve power. */
     gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_SLEEP);
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
@@ -1857,6 +1816,12 @@ static void gomach_sleep(gnrc_netif_t *netif)
 
 static void gomach_sleep_end(gnrc_netif_t *netif)
 {
+    /* Run phase-backoff if needed, select a new wake-up phase. */
+    if (gnrc_gomach_get_phase_backoff(netif)) {
+        gnrc_gomach_set_phase_backoff(netif, false);
+        _gomach_phase_backoff(netif);
+    }
+
     /* Go to CP (start of the new cycle), start listening on the public-channel. */
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
     gnrc_gomach_set_update(netif, true);
@@ -2162,7 +2127,6 @@ static void _gomach_init(gnrc_netif_t *netif)
     gnrc_gomach_set_beacon_fail(netif, false);
     gnrc_gomach_set_buffer_full(netif, false);
     gnrc_gomach_set_phase_backoff(netif, false);
-    gnrc_gomach_set_phase_changed(netif, false);
     netif->mac.rx.check_dup_pkt.queue_head = 0;
     netif->mac.tx.last_tx_neighbor_id = 0;
 
