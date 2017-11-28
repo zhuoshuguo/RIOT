@@ -157,22 +157,22 @@ void *sender_thread(void *arg)
     */
     while (1) {
         xtimer_sleep(10);
-        if (RTT_TICKS_TO_MIN(rtt_get_counter()) >= 5) {
+        if (RTT_TICKS_TO_MIN(rtt_get_counter()) >= 45) {
             break;
         }
     }
 
 	uint32_t random_period;
 
-	random_period = random_uint32_range(0, 10);
+	random_period = random_uint32_range(0, 150);
 
 	xtimer_sleep(random_period);
 
    puts("start push data");
-   data_rate = 30;
+   data_rate = 60;
 
     while (1) {
-	    for(int i=0; i<5; i++){
+	    for(int i=0; i<1; i++){
             generate_and_send_pkt();
         }
 
