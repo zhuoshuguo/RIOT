@@ -570,6 +570,79 @@ bool gnrc_gomach_check_duplicate(gnrc_netif_t *netif, gnrc_gomach_packet_info_t 
     return false;
 }
 
+static inline void _cp_packet_process_preamble(gnrc_netif_t *netif,
+                                               gnrc_gomach_packet_info_t *info,
+                                               gnrc_pktsnip_t *pkt)
+{
+    if (memcmp(&netif->l2addr, &info->dst_addr.addr,
+               netif->l2addr_len) == 0) {
+        /* Get a preamble packet that is for the device itself. */
+        gnrc_gomach_set_got_preamble(netif, true);
+
+        /* If reception is not going on, reply preamble-ack. */
+        if (gnrc_gomach_get_netdev_state(netif) == NETOPT_STATE_IDLE) {
+            /* Disable auto-ack. */
+            gnrc_gomach_set_autoack(netif, NETOPT_DISABLE);
+
+            int res = gnrc_gomach_send_preamble_ack(netif, info);
+            if (res < 0) {
+                LOG_ERROR("ERROR: [GOMACH]: send preamble-ACK failed: %d.\n", res);
+            }
+
+            /* Enable Auto ACK again for data reception. */
+            gnrc_gomach_set_autoack(netif, NETOPT_ENABLE);
+        }
+    }
+    else {
+        /* Receives unintended preamble that is not for the device. */
+        gnrc_gomach_set_unintd_preamble(netif, true);
+    }
+    gnrc_pktbuf_release(pkt);
+}
+
+static inline void _cp_packet_process_data(gnrc_netif_t *netif,
+                                           gnrc_gomach_packet_info_t *info,
+                                           gnrc_pktsnip_t *pkt)
+{
+    if (memcmp(&netif->l2addr, &info->dst_addr.addr,
+               netif->l2addr_len) == 0) {
+        /* The data is for itself, now update the sender's queue-length indicator. */
+        gnrc_gomach_indicator_update(netif, pkt, info);
+
+        /* Check that whether this is a duplicate packet. */
+        if ((gnrc_gomach_check_duplicate(netif, info))) {
+            gnrc_pktbuf_release(pkt);
+            LOG_DEBUG("[GOMACH]: received a duplicate packet.\n");
+            return;
+        }
+        gnrc_gomach_dispatch_defer(netif->mac.rx.dispatch_buffer, pkt);
+        gnrc_mac_dispatch(&netif->mac.rx);
+
+#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
+        /* Output radio duty-cycle ratio */
+        uint64_t duty;
+        duty = xtimer_now_usec64();
+        duty = (netif->mac.gomach.awake_duration_sum_ticks) * 100 /
+               (duty - netif->mac.gomach.system_start_time_ticks);
+        printf("[GoMacH]: achieved radio duty-cycle: %lu %% \n", (uint32_t)duty);
+#endif
+    }
+    else {
+        /* If the data is not for the device, release it. */
+        gnrc_pktbuf_release(pkt);
+    }
+}
+
+static inline void _cp_packet_process_bcast(gnrc_netif_t *netif,
+                                            gnrc_pktsnip_t *pkt)
+{
+    /* Receive a broadcast packet, quit the listening period to avoid receive duplicate
+     * broadcast packet. */
+    gnrc_gomach_set_quit_cycle(netif, true);
+    gnrc_gomach_dispatch_defer(netif->mac.rx.dispatch_buffer, pkt);
+    gnrc_mac_dispatch(&netif->mac.rx);
+}
+
 void gnrc_gomach_cp_packet_process(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
@@ -588,69 +661,16 @@ void gnrc_gomach_cp_packet_process(gnrc_netif_t *netif)
 
         switch (receive_packet_info.header->type) {
             case GNRC_GOMACH_FRAME_PREAMBLE: {
-                if (memcmp(&netif->l2addr, &receive_packet_info.dst_addr.addr,
-                           netif->l2addr_len) == 0) {
-                    /* Get a preamble packet that is for the device itself. */
-                    gnrc_gomach_set_got_preamble(netif, true);
-
-                    /* If reception is not going on, reply preamble-ack. */
-                    if (gnrc_gomach_get_netdev_state(netif) == NETOPT_STATE_IDLE) {
-                        /* Disable auto-ack. */
-                        gnrc_gomach_set_autoack(netif, NETOPT_DISABLE);
-
-                        int res = gnrc_gomach_send_preamble_ack(netif, &receive_packet_info);
-                        if (res < 0) {
-                            LOG_ERROR("ERROR: [GOMACH]: send preamble-ACK failed: %d.\n", res);
-                        }
-
-                        /* Enable Auto ACK again for data reception. */
-                        gnrc_gomach_set_autoack(netif, NETOPT_ENABLE);
-                    }
-                }
-                else {
-                    /* Receives unintended preamble that is not for the device. */
-                    gnrc_gomach_set_unintd_preamble(netif, true);
-                }
-                gnrc_pktbuf_release(pkt);
+                _cp_packet_process_preamble(netif, &receive_packet_info, pkt);
                 break;
             }
 
             case GNRC_GOMACH_FRAME_DATA: {
-                if (memcmp(&netif->l2addr, &receive_packet_info.dst_addr.addr,
-                           netif->l2addr_len) == 0) {
-                    /* The data is for itself, now update the sender's queue-length indicator. */
-                    gnrc_gomach_indicator_update(netif, pkt, &receive_packet_info);
-
-                    /* Check that whether this is a duplicate packet. */
-                    if ((gnrc_gomach_check_duplicate(netif, &receive_packet_info))) {
-                        gnrc_pktbuf_release(pkt);
-                        LOG_DEBUG("[GOMACH]: received a duplicate packet.\n");
-                        return;
-                    }
-                    gnrc_gomach_dispatch_defer(netif->mac.rx.dispatch_buffer, pkt);
-                    gnrc_mac_dispatch(&netif->mac.rx);
-
-#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
-                    /* Output radio duty-cycle ratio */
-                    uint64_t duty;
-                    duty = xtimer_now_usec64();
-                    duty = (netif->mac.gomach.awake_duration_sum_ticks) * 100 /
-                           (duty - netif->mac.gomach.system_start_time_ticks);
-                    printf("[GoMacH]: achieved radio duty-cycle: %lu %% \n", (uint32_t)duty);
-#endif
-                }
-                else {
-                    /* If the data is not for the device, release it. */
-                    gnrc_pktbuf_release(pkt);
-                }
+                _cp_packet_process_data(netif, &receive_packet_info, pkt);
                 break;
             }
             case GNRC_GOMACH_FRAME_BROADCAST: {
-                /* Receive a broadcast packet, quit the listening period to avoid receive duplicate
-                 * broadcast packet. */
-                gnrc_gomach_set_quit_cycle(netif, true);
-                gnrc_gomach_dispatch_defer(netif->mac.rx.dispatch_buffer, pkt);
-                gnrc_mac_dispatch(&netif->mac.rx);
+                _cp_packet_process_bcast(netif, pkt);
                 break;
             }
             default: {
@@ -857,6 +877,76 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
     }
 }
 
+static inline void _wait_preamble_ack_preamble(gnrc_netif_t *netif,
+                                               gnrc_pktsnip_t *pkt)
+{
+    /* Found other ongoing preamble transmission, quit its own t2u for
+     * collision avoidance. */
+    gnrc_pktbuf_release(pkt);
+    LOG_DEBUG("[GOMACH] t2u: found other preamble, quit t2u.\n");
+    gnrc_gomach_set_quit_cycle(netif, true);
+}
+
+static inline bool _wait_preamble_ack_preambleack(gnrc_netif_t *netif,
+                                                  gnrc_gomach_packet_info_t *info,
+                                                  gnrc_pktsnip_t *pkt)
+{
+    if ((memcmp(&netif->l2addr, &info->dst_addr.addr,
+                netif->l2addr_len) == 0) &&
+        (memcmp(&netif->mac.tx.current_neighbor->l2_addr,
+                &info->src_addr.addr,
+                netif->mac.tx.current_neighbor->l2_addr_len) == 0)) {
+        /* Got preamble-ACK from targeted device. */
+        gnrc_gomach_set_got_preamble_ack(netif, true);
+
+        /* Analyze the preamble-ACK to get phase-locked with the neighbor device. */
+        gnrc_gomach_process_preamble_ack(netif, pkt);
+
+        gnrc_pktbuf_release(pkt);
+        gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
+        return false;
+    }
+
+    /* Preamble-ACK is not from targeted device. release it. */
+    gnrc_pktbuf_release(pkt);
+    return true;
+}
+
+static inline bool _wait_preamble_ack_data(gnrc_netif_t *netif,
+                                           gnrc_gomach_packet_info_t *info,
+                                           gnrc_pktsnip_t *pkt)
+{
+    if (memcmp(&netif->l2addr, &info->dst_addr.addr,
+               netif->l2addr_len) == 0) {
+        /* The data is for itself, now update the sender's queue-length indicator. */
+        gnrc_gomach_indicator_update(netif, pkt, info);
+
+        /* Check that whether this is a duplicate packet. */
+        if ((gnrc_gomach_check_duplicate(netif, info))) {
+            gnrc_pktbuf_release(pkt);
+            LOG_DEBUG("[GOMACH] t2u: received a duplicate packet.\n");
+            return false;
+        }
+
+        gnrc_gomach_dispatch_defer(netif->mac.rx.dispatch_buffer, pkt);
+        gnrc_mac_dispatch(&netif->mac.rx);
+    }
+    else {
+        /* If the data is not for the device, release it.  */
+        gnrc_pktbuf_release(pkt);
+    }
+    return true;
+}
+
+static inline void _wait_preamble_ack_bcast(gnrc_netif_t *netif,
+                                            gnrc_pktsnip_t *pkt)
+{
+    /* Release the received broadcast pkt. Only receive broadcast packets in CP,
+     * thus to reduce complexity. */
+    gnrc_gomach_set_quit_cycle(netif, true);
+    gnrc_pktbuf_release(pkt);
+    LOG_DEBUG("WARNING: [GOMACH] t2u: receive a broadcast packet, quit t2u.\n");
+}
 void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
@@ -875,62 +965,23 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netif_t *netif)
 
         switch (receive_packet_info.header->type) {
             case GNRC_GOMACH_FRAME_PREAMBLE: {
-                /* Found other ongoing preamble transmission, quit its own t2u for
-                 * collision avoidance. */
-                gnrc_pktbuf_release(pkt);
-                LOG_DEBUG("[GOMACH] t2u: found other preamble, quit t2u.\n");
-                gnrc_gomach_set_quit_cycle(netif, true);
+            	_wait_preamble_ack_preamble(netif, pkt);
                 break;
             }
             case GNRC_GOMACH_FRAME_PREAMBLE_ACK: {
-                if ((memcmp(&netif->l2addr, &receive_packet_info.dst_addr.addr,
-                            netif->l2addr_len) == 0) &&
-                    (memcmp(&netif->mac.tx.current_neighbor->l2_addr,
-                            &receive_packet_info.src_addr.addr,
-                            netif->mac.tx.current_neighbor->l2_addr_len) == 0)) {
-                    /* Got preamble-ACK from targeted device. */
-                    gnrc_gomach_set_got_preamble_ack(netif, true);
-
-                    /* Analyze the preamble-ACK to get phase-locked with the neighbor device. */
-                    gnrc_gomach_process_preamble_ack(netif, pkt);
-
-                    gnrc_pktbuf_release(pkt);
-                    gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
+                if (!_wait_preamble_ack_preambleack(netif, &receive_packet_info, pkt)) {
                     return;
                 }
-
-                /* Preamble-ACK is not from targeted device. release it. */
-                gnrc_pktbuf_release(pkt);
                 break;
             }
             case GNRC_GOMACH_FRAME_DATA: {
-                if (memcmp(&netif->l2addr, &receive_packet_info.dst_addr.addr,
-                           netif->l2addr_len) == 0) {
-                    /* The data is for itself, now update the sender's queue-length indicator. */
-                    gnrc_gomach_indicator_update(netif, pkt, &receive_packet_info);
-
-                    /* Check that whether this is a duplicate packet. */
-                    if ((gnrc_gomach_check_duplicate(netif, &receive_packet_info))) {
-                        gnrc_pktbuf_release(pkt);
-                        LOG_DEBUG("[GOMACH] t2u: received a duplicate packet.\n");
-                        return;
-                    }
-
-                    gnrc_gomach_dispatch_defer(netif->mac.rx.dispatch_buffer, pkt);
-                    gnrc_mac_dispatch(&netif->mac.rx);
-                }
-                else {
-                    /* If the data is not for the device, release it.  */
-                    gnrc_pktbuf_release(pkt);
+                if (!_wait_preamble_ack_data(netif, &receive_packet_info, pkt)) {
+                    return;
                 }
                 break;
             }
             case GNRC_GOMACH_FRAME_BROADCAST: {
-                /* Release the received broadcast pkt. Only receive broadcast packets in CP,
-                 * thus to reduce complexity. */
-                gnrc_gomach_set_quit_cycle(netif, true);
-                gnrc_pktbuf_release(pkt);
-                LOG_DEBUG("WARNING: [GOMACH] t2u: receive a broadcast packet, quit t2u.\n");
+            	_wait_preamble_ack_bcast(netif, pkt);
                 break;
             }
             default: {
