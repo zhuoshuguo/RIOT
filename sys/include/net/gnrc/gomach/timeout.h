@@ -38,7 +38,9 @@ extern "C" {
  * @param[in]     type         GoMacH timeout type.
  * @param[in]     offset       timeout offset.
  */
-void gnrc_gomach_set_timeout(gnrc_netif_t *netif, gnrc_gomach_timeout_type_t type, uint32_t offset);
+void gnrc_gomach_set_timeout(gnrc_netif_t *netif,
+                             gnrc_gomach_timeout_type_t type,
+                             uint32_t offset);
 
 /**
  * @brief   Clear GoMacH timeout of type @p type.

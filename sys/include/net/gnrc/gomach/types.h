@@ -67,17 +67,20 @@ extern "C" {
 #define GNRC_GOMACH_TIMEOUT_COUNT             (6U)
 
 /**
- * @brief The default number of slot-schedule-unit @ref gnrc_gomach_slosch_unit_t in GoMacH.
+ * @brief The default number of slot-schedule-unit
+ *        @ref gnrc_gomach_slosch_unit_t in GoMacH.
  */
 #define GNRC_GOMACH_SLOSCH_UNIT_COUNT           (11U)
 
 /**
- * @brief MAC type of unknown in GoMacH for indicating that the node's phase is unknown.
+ * @brief MAC type of unknown in GoMacH for indicating that
+ *        the node's phase is unknown.
  */
 #define GNRC_GOMACH_TYPE_UNKNOWN           (0U)
 
 /**
- * @brief MAC type of known in GoMacH for indicating that the node's phase is known.
+ * @brief MAC type of known in GoMacH for indicating that the
+ *        node's phase is known.
  */
 #define GNRC_GOMACH_TYPE_KNOWN             (1U)
 
@@ -102,7 +105,8 @@ typedef enum {
 } gnrc_gomach_bcast_state_t;
 
 /**
- * @brief   State-machine states of Transmission-to-phase-known (t2k) procedure of GoMacH.
+ * @brief   State-machine states of Transmission-to-phase-known
+ *          (t2k) procedure of GoMacH.
  */
 typedef enum {
     GNRC_GOMACH_T2K_INIT,                   /**< Initiate t2k procedure. */
@@ -117,7 +121,8 @@ typedef enum {
 } gnrc_gomach_t2k_state_t;
 
 /**
- * @brief   State-machine states of Transmission-to-phase-unknown (t2u) procedure of GoMacH.
+ * @brief   State-machine states of Transmission-to-phase-unknown
+ *          (t2u) procedure of GoMacH.
  */
 typedef enum {
     GNRC_GOMACH_T2U_INIT,                   /**< Initiate t2u procedure. */
@@ -235,8 +240,10 @@ typedef struct {
  *          duplicate packets.
  */
 typedef struct {
-    gnrc_gomach_dupchk_unit_t last_nodes[GNRC_GOMACH_DUPCHK_BUFFER_SIZE];   /**< Duplicate check unit. */
-    uint8_t queue_head;                                                     /**< Check queue's head. */
+    gnrc_gomach_dupchk_unit_t last_nodes[GNRC_GOMACH_DUPCHK_BUFFER_SIZE]; /**< Duplicate
+                                                                               check unit. */
+    uint8_t queue_head;                                                   /**< Check queue's
+                                                                               head. */
 } gnrc_gomach_dupchk_t;
 
 /**
@@ -279,24 +286,30 @@ typedef struct {
 typedef struct gomach {
     gnrc_gomach_basic_state_t basic_state;                      /**< Basic state. */
     gnrc_gomach_init_state_t init_state;                        /**< Initialization state. */
-    gnrc_gomach_timeout_t timeouts[GNRC_GOMACH_TIMEOUT_COUNT];  /**< Timeouts used for protocol. */
-    uint16_t subchannel_occu_flags;                             /**< Sub-channel usage indicator. */
-    uint16_t sub_channel_seq;                                   /**< Node's sub-channel sequence. */
-    uint16_t pub_channel_1;                                     /**< Node's public channel 1. */
-    uint16_t pub_channel_2;                                     /**< Node's public channel 2. */
-    uint16_t cur_pub_channel;                                   /**< Node's current public channel. */
-    uint8_t cp_extend_count;                                    /**< Node's CP extend count. */
-    uint32_t last_wakeup;                                       /**< Node's last wake-up timing. */
-    uint32_t backoff_phase_us;                                  /**< Node's phase backoff time. */
-    uint16_t gomach_info;                                       /**< GoMacH's internal information. */
-    uint64_t last_wakeup_phase_us;                              /**< GoMacH's last cycle wakeup phase. */
+    gnrc_gomach_timeout_t timeouts[GNRC_GOMACH_TIMEOUT_COUNT];  /**< GoMacH's timeouts. */
+    uint16_t subchannel_occu_flags;                             /**< Sub-channel
+                                                                     usage indicator. */
+    uint16_t sub_channel_seq;                                   /**< Sub-channel sequence. */
+    uint16_t pub_channel_1;                                     /**< Public channel 1. */
+    uint16_t pub_channel_2;                                     /**< Public channel 2. */
+    uint16_t cur_pub_channel;                                   /**< Current public channel. */
+    uint8_t cp_extend_count;                                    /**< CP extend count. */
+    uint32_t last_wakeup;                                       /**< Last wake-up timing. */
+    uint32_t backoff_phase_us;                                  /**< Phase backoff time. */
+    uint16_t gomach_info;                                       /**< GoMacH's internal
+                                                                     information. */
+    uint64_t last_wakeup_phase_us;                              /**< Last cycle wakeup phase. */
 
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
     /* Parameters for recording duty-cycle */
-    uint64_t last_radio_on_time_ticks;                          /**< The last time in ticks when radio is on */
-    uint64_t radio_off_time_ticks;                              /**< The time in ticks when radio is off */
-    uint64_t system_start_time_ticks;                           /**< The time in ticks when chip is started */
-    uint64_t awake_duration_sum_ticks;                          /**< The sum of time in ticks when radio is on */
+    uint64_t last_radio_on_time_ticks;                          /**< The last time in ticks
+                                                                     when radio is on */
+    uint64_t radio_off_time_ticks;                              /**< The time in ticks when
+                                                                     radio is off */
+    uint64_t system_start_time_ticks;                           /**< The time in ticks when
+                                                                     chip is started */
+    uint64_t awake_duration_sum_ticks;                          /**< The sum of time in ticks
+                                                                     when radio is on */
 #endif
 } gnrc_gomach_t;
 

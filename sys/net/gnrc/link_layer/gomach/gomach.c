@@ -315,7 +315,8 @@ static void gomach_bcast_init(gnrc_netif_t *netif)
 
 static bool _gomach_send_bcast_busy_handle(gnrc_netif_t *netif)
 {
-    /* Quit sending broadcast packet if we found ongoing transmissions, for collision avoidance. */
+    /* Quit sending broadcast packet if we found ongoing transmissions,
+     * for collision avoidance. */
     if ((gnrc_gomach_get_netdev_state(netif) == NETOPT_STATE_RX) ||
         (gnrc_netif_get_rx_started(netif) == true)) {
         LOG_DEBUG("[GOMACH] bcast: found ongoing transmission, quit broadcast.\n");
@@ -344,7 +345,8 @@ static bool _gomach_send_bcast_busy_handle(gnrc_netif_t *netif)
 
 static void gomach_send_bcast_packet(gnrc_netif_t *netif)
 {
-    /* Quit sending broadcast packet if we found ongoing transmissions, for collision avoidance. */
+    /* Quit sending broadcast packet if we found ongoing transmissions,
+     * for collision avoidance. */
     if (!_gomach_send_bcast_busy_handle(netif)) {
         return;
     }
@@ -378,7 +380,8 @@ static void gomach_wait_bcast_tx_finish(gnrc_netif_t *netif)
 
 static void gomach_wait_bcast_wait_next_tx(gnrc_netif_t *netif)
 {
-    /* Quit sending broadcast packet if we found ongoing transmissions, for collision avoidance. */
+    /* Quit sending broadcast packet if we found ongoing transmissions,
+     * for collision avoidance. */
     if (!_gomach_send_bcast_busy_handle(netif)) {
         return;
     }
@@ -801,7 +804,8 @@ static void gomach_t2k_wait_beacon(gnrc_netif_t *netif)
             else {
                 /* If the allocated slots period is the first one in vTDMA,
                  * start sending packets. */
-                gnrc_pktsnip_t *pkt = gnrc_priority_pktqueue_pop(&(netif->mac.tx.current_neighbor->queue));
+                gnrc_pktsnip_t *pkt =
+                    gnrc_priority_pktqueue_pop(&(netif->mac.tx.current_neighbor->queue));
                 if (pkt != NULL) {
                     netif->mac.tx.packet = pkt;
                     netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_VTDMA_TRANS;
@@ -1292,8 +1296,8 @@ static void gomach_t2u_wait_preamble_ack(gnrc_netif_t *netif)
             netif->mac.tx.t2u_fail_count++;
         }
         else {
-            /* If we haven't reach the maximum t2u limit, try again. Set quit_current_cycle flag
-             * to true such that we will release the current neighbor pointer.  */
+            /* If we haven't reach the maximum t2u limit, try again. Set quit_current_cycle
+             * flag to true such that we will release the current neighbor pointer. */
             gnrc_gomach_set_quit_cycle(netif, true);
             netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_END;
         }
@@ -2230,7 +2234,8 @@ static void _gomach_init(gnrc_netif_t *netif)
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
     /* Start duty cycle recording */
     netif->mac.prot.gomach.system_start_time_ticks = xtimer_now_usec64();
-    netif->mac.prot.gomach.last_radio_on_time_ticks = netif->mac.prot.gomach.system_start_time_ticks;
+    netif->mac.prot.gomach.last_radio_on_time_ticks =
+        netif->mac.prot.gomach.system_start_time_ticks;
     netif->mac.prot.gomach.awake_duration_sum_ticks = 0;
     netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
 #endif

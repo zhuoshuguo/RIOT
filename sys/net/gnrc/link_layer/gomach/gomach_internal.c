@@ -244,7 +244,8 @@ uint64_t gnrc_gomach_phase_now(gnrc_netif_t *netif)
 
     /* in case timer overflows */
     if (phase_now < netif->mac.prot.gomach.last_wakeup_phase_us) {
-        uint64_t gap_to_full = GNRC_GOMACH_PHASE_MAX - netif->mac.prot.gomach.last_wakeup_phase_us;
+        uint64_t gap_to_full = GNRC_GOMACH_PHASE_MAX -
+                               netif->mac.prot.gomach.last_wakeup_phase_us;
         phase_now += gap_to_full;
     }
     else {
@@ -320,7 +321,8 @@ int gnrc_gomach_send_preamble_ack(gnrc_netif_t *netif, gnrc_gomach_packet_info_t
 
     int res = gnrc_gomach_send(netif, pkt, NETOPT_DISABLE);
     if (res < 0) {
-        LOG_ERROR("ERROR: [GOMACH]: send preamble-ack failed in gnrc_gomach_send_preamble_ack().\n");
+        LOG_ERROR("ERROR: [GOMACH]: send preamble-ack failed in"
+                  " gnrc_gomach_send_preamble_ack().\n");
         gnrc_pktbuf_release(gomach_pkt);
     }
     return res;
@@ -402,7 +404,8 @@ int gnrc_gomach_send_beacon(gnrc_netif_t *netif)
         gomach_pkt = pkt;
 
         /* Add the GoMacH header to the beacon. */
-        pkt = gnrc_pktbuf_add(pkt, &gomach_beaocn_hdr, sizeof(gomach_beaocn_hdr), GNRC_NETTYPE_GOMACH);
+        pkt = gnrc_pktbuf_add(pkt, &gomach_beaocn_hdr, sizeof(gomach_beaocn_hdr),
+                              GNRC_NETTYPE_GOMACH);
         if (pkt == NULL) {
             LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_beacon().\n");
             gnrc_pktbuf_release(gomach_pkt);
@@ -859,7 +862,8 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
     netif->mac.tx.current_neighbor->cp_phase = phase_us;
 
     /* Record the public-channel phase of the neighbor. */
-    if (gnrc_gomach_get_enter_new_cycle(netif) && ((uint32_t)phase_us > gnrc_gomach_phase_now(netif))) {
+    if (gnrc_gomach_get_enter_new_cycle(netif) &&
+        ((uint32_t)phase_us > gnrc_gomach_phase_now(netif))) {
         if (gnrc_gomach_get_on_pubchan_1(netif)) {
             netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.prot.gomach.pub_channel_2;
         }
@@ -1017,7 +1021,8 @@ int gnrc_gomach_send_data(gnrc_netif_t *netif, netopt_enable_t csma_enable)
         gomach_data_hdr.header.type = GNRC_GOMACH_FRAME_DATA;
 
         /* Set the queue-length indicator according to its current queue situation. */
-        gomach_data_hdr.queue_indicator = gnrc_priority_pktqueue_length(&netif->mac.tx.current_neighbor->queue);
+        gomach_data_hdr.queue_indicator =
+            gnrc_priority_pktqueue_length(&netif->mac.tx.current_neighbor->queue);
 
         /* Save the payload pointer. */
         gnrc_pktsnip_t *payload = netif->mac.tx.packet->next;
@@ -1034,7 +1039,8 @@ int gnrc_gomach_send_data(gnrc_netif_t *netif, netopt_enable_t csma_enable)
     }
     else {
         /* GoMacH header exists, update the queue-indicator. */
-        gomach_data_hdr_pointer->queue_indicator = gnrc_priority_pktqueue_length(&netif->mac.tx.current_neighbor->queue);
+        gomach_data_hdr_pointer->queue_indicator =
+            gnrc_priority_pktqueue_length(&netif->mac.tx.current_neighbor->queue);
     }
 
     gnrc_pktbuf_hold(netif->mac.tx.packet, 1);

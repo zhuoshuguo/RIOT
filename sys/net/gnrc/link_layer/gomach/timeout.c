@@ -38,7 +38,8 @@ static int _gomach_find_timeout(gnrc_gomach_t *gomach, gnrc_gomach_timeout_type_
     return -ENOENT;
 }
 
-inline bool gnrc_gomach_timeout_is_running(gnrc_netif_t *netif, gnrc_gomach_timeout_type_t type)
+inline bool gnrc_gomach_timeout_is_running(gnrc_netif_t *netif,
+                                           gnrc_gomach_timeout_type_t type)
 {
     assert(netif);
     return (_gomach_find_timeout(&netif->mac.prot.gomach, type) >= 0);
@@ -59,7 +60,8 @@ bool gnrc_gomach_timeout_is_expired(gnrc_netif_t *netif, gnrc_gomach_timeout_typ
     return false;
 }
 
-gnrc_gomach_timeout_t *_gomach_acquire_timeout(gnrc_netif_t *netif, gnrc_gomach_timeout_type_t type)
+gnrc_gomach_timeout_t *_gomach_acquire_timeout(gnrc_netif_t *netif,
+                                               gnrc_gomach_timeout_type_t type)
 {
     assert(netif);
 
@@ -88,7 +90,9 @@ void gnrc_gomach_clear_timeout(gnrc_netif_t *netif, gnrc_gomach_timeout_type_t t
     }
 }
 
-void gnrc_gomach_set_timeout(gnrc_netif_t *netif, gnrc_gomach_timeout_type_t type, uint32_t offset)
+void gnrc_gomach_set_timeout(gnrc_netif_t *netif,
+                             gnrc_gomach_timeout_type_t type,
+                             uint32_t offset)
 {
     assert(netif);
 

@@ -117,7 +117,8 @@ extern "C" {
  * @brief Set the @ref GNRC_GOMACH_INFO_TX_FINISHED flag of the device.
  *
  * @param[in,out] netif    the network interface.
- * @param[in] tx_finish    value for GoMacH @ref GNRC_GOMACH_INFO_TX_FINISHED flag.
+ * @param[in] tx_finish    value for GoMacH's
+ *                         @ref GNRC_GOMACH_INFO_TX_FINISHED flag.
  *
  */
 static inline void gnrc_gomach_set_tx_finish(gnrc_netif_t *netif, bool tx_finish)
@@ -135,8 +136,8 @@ static inline void gnrc_gomach_set_tx_finish(gnrc_netif_t *netif, bool tx_finish
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if TX has finished.
- * @return                 false if TX hasn't finished yet.
+ * @return             true if TX has finished.
+ * @return             false if TX hasn't finished yet.
  */
 static inline bool gnrc_gomach_get_tx_finish(gnrc_netif_t *netif)
 {
@@ -147,7 +148,8 @@ static inline bool gnrc_gomach_get_tx_finish(gnrc_netif_t *netif)
  * @brief Set the @ref GNRC_GOMACH_INFO_PKT_RECEIVED flag of the device.
  *
  * @param[in,out] netif    the network interface.
- * @param[in] received     value for GoMacH @ref GNRC_GOMACH_INFO_PKT_RECEIVED flag.
+ * @param[in] received     value for GoMacH's
+ *                         @ref GNRC_GOMACH_INFO_PKT_RECEIVED flag.
  *
  */
 static inline void gnrc_gomach_set_pkt_received(gnrc_netif_t *netif, bool received)
@@ -165,8 +167,8 @@ static inline void gnrc_gomach_set_pkt_received(gnrc_netif_t *netif, bool receiv
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if radio has successfully received a packet.
- * @return                 false if radio hasn't received a packet yet.
+ * @return             true if radio has successfully received a packet.
+ * @return             false if radio hasn't received a packet yet.
  */
 static inline bool gnrc_gomach_get_pkt_received(gnrc_netif_t *netif)
 {
@@ -177,7 +179,8 @@ static inline bool gnrc_gomach_get_pkt_received(gnrc_netif_t *netif)
  * @brief Set the @ref GNRC_GOMACH_INTERNAL_INFO_QUIT_CYCLE flag of the device.
  *
  * @param[in,out] netif    the network interface.
- * @param[in] quit         value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_QUIT_CYCLE flag.
+ * @param[in] quit         value for GoMacH's
+ *                         @ref GNRC_GOMACH_INTERNAL_INFO_QUIT_CYCLE flag.
  *
  */
 static inline void gnrc_gomach_set_quit_cycle(gnrc_netif_t *netif, bool quit)
@@ -195,8 +198,8 @@ static inline void gnrc_gomach_set_quit_cycle(gnrc_netif_t *netif, bool quit)
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if need to quit cycle.
- * @return                 false if no need to quit cycle.
+ * @return             true if need to quit cycle.
+ * @return             false if no need to quit cycle.
  */
 static inline bool gnrc_gomach_get_quit_cycle(gnrc_netif_t *netif)
 {
@@ -207,7 +210,8 @@ static inline bool gnrc_gomach_get_quit_cycle(gnrc_netif_t *netif)
  * @brief Set the @ref GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLE flag of the device.
  *
  * @param[in,out] netif     the network interface.
- * @param[in] got_preamble  value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLE flag.
+ * @param[in] got_preamble  value for GoMacH's
+ *                          @ref GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLE flag.
  *
  */
 static inline void gnrc_gomach_set_got_preamble(gnrc_netif_t *netif, bool got_preamble)
@@ -225,8 +229,8 @@ static inline void gnrc_gomach_set_got_preamble(gnrc_netif_t *netif, bool got_pr
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if get preamble packet.
- * @return                 false if not get preamble packet yet.
+ * @return             true if get preamble packet.
+ * @return             false if not get preamble packet yet.
  */
 static inline bool gnrc_gomach_get_got_preamble(gnrc_netif_t *netif)
 {
@@ -237,7 +241,8 @@ static inline bool gnrc_gomach_get_got_preamble(gnrc_netif_t *netif)
  * @brief Set the @ref GNRC_GOMACH_INTERNAL_INFO_CP_END flag of the device.
  *
  * @param[in,out] netif    the network interface.
- * @param[in] cp_end     value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_CP_END flag.
+ * @param[in] cp_end       value for GoMacH's
+ *                         @ref GNRC_GOMACH_INTERNAL_INFO_CP_END flag.
  *
  */
 static inline void gnrc_gomach_set_cp_end(gnrc_netif_t *netif, bool cp_end)
@@ -255,8 +260,8 @@ static inline void gnrc_gomach_set_cp_end(gnrc_netif_t *netif, bool cp_end)
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if cp has ended.
- * @return                 false if cp hasn't ended yet.
+ * @return             true if cp has ended.
+ * @return             false if cp hasn't ended yet.
  */
 static inline bool gnrc_gomach_get_cp_end(gnrc_netif_t *netif)
 {
@@ -267,7 +272,8 @@ static inline bool gnrc_gomach_get_cp_end(gnrc_netif_t *netif)
  * @brief Set the @ref GNRC_GOMACH_INTERNAL_INFO_VTDMA_END flag of the device.
  *
  * @param[in,out] netif    the network interface.
- * @param[in] vtdma_end     value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_VTDMA_END flag.
+ * @param[in] vtdma_end    value for GoMacH's
+ *                         @ref GNRC_GOMACH_INTERNAL_INFO_VTDMA_END flag.
  *
  */
 static inline void gnrc_gomach_set_vTDMA_end(gnrc_netif_t *netif, bool vtdma_end)
@@ -285,8 +291,8 @@ static inline void gnrc_gomach_set_vTDMA_end(gnrc_netif_t *netif, bool vtdma_end
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if vTDMA has ended.
- * @return                 false if vTDMA hasn't ended yet.
+ * @return             true if vTDMA has ended.
+ * @return             false if vTDMA hasn't ended yet.
  */
 static inline bool gnrc_gomach_get_vTDMA_end(gnrc_netif_t *netif)
 {
@@ -296,8 +302,9 @@ static inline bool gnrc_gomach_get_vTDMA_end(gnrc_netif_t *netif)
 /**
  * @brief Set the @ref GNRC_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE flag of the device.
  *
- * @param[in,out] netif    the network interface.
- * @param[in] uintd_preamble   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE flag.
+ * @param[in,out] netif        the network interface.
+ * @param[in] uintd_preamble   value for GoMacH's
+ *                             @ref GNRC_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE flag.
  *
  */
 static inline void gnrc_gomach_set_unintd_preamble(gnrc_netif_t *netif, bool uintd_preamble)
@@ -315,8 +322,8 @@ static inline void gnrc_gomach_set_unintd_preamble(gnrc_netif_t *netif, bool uin
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if has received unintended-preamble.
- * @return                 false if hasn't received unintended-preamble yet.
+ * @return             true if has received unintended-preamble.
+ * @return             false if hasn't received unintended-preamble yet.
  */
 static inline bool gnrc_gomach_get_unintd_preamble(gnrc_netif_t *netif)
 {
@@ -326,8 +333,9 @@ static inline bool gnrc_gomach_get_unintd_preamble(gnrc_netif_t *netif)
 /**
  * @brief Set the @ref GNRC_GOMACH_INTERNAL_INFO_ND_UPDATE flag of the device.
  *
- * @param[in,out] netif    the network interface.
- * @param[in] update   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_ND_UPDATE flag.
+ * @param[in,out] netif  the network interface.
+ * @param[in] update     value for GoMacH's
+ *                       @ref GNRC_GOMACH_INTERNAL_INFO_ND_UPDATE flag.
  *
  */
 static inline void gnrc_gomach_set_update(gnrc_netif_t *netif, bool update)
@@ -345,8 +353,8 @@ static inline void gnrc_gomach_set_update(gnrc_netif_t *netif, bool update)
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if need update GoMacH.
- * @return                 false if no need to update GoMacH.
+ * @return             true if need update GoMacH.
+ * @return             false if no need to update GoMacH.
  */
 static inline bool gnrc_gomach_get_update(gnrc_netif_t *netif)
 {
@@ -356,8 +364,9 @@ static inline bool gnrc_gomach_get_update(gnrc_netif_t *netif)
 /**
  * @brief Set the @ref GNRC_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START flag of the device.
  *
- * @param[in,out] netif    the network interface.
- * @param[in] start   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START flag.
+ * @param[in,out] netif  the network interface.
+ * @param[in] start      value for GoMacH's
+ *                       @ref GNRC_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START flag.
  *
  */
 static inline void gnrc_gomach_set_duty_cycle_start(gnrc_netif_t *netif, bool start)
@@ -375,8 +384,8 @@ static inline void gnrc_gomach_set_duty_cycle_start(gnrc_netif_t *netif, bool st
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if duty-cycle has started.
- * @return                 false if duty-cycle hasn't started yet.
+ * @return             true if duty-cycle has started.
+ * @return             false if duty-cycle hasn't started yet.
  */
 static inline bool gnrc_gomach_get_duty_cycle_start(gnrc_netif_t *netif)
 {
@@ -386,8 +395,9 @@ static inline bool gnrc_gomach_get_duty_cycle_start(gnrc_netif_t *netif)
 /**
  * @brief Set the @ref GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF flag of the device.
  *
- * @param[in,out] netif    the network interface.
- * @param[in] backoff   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF flag.
+ * @param[in,out] netif   the network interface.
+ * @param[in] backoff     value for GoMacH's
+ *                        @ref GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF flag.
  *
  */
 static inline void gnrc_gomach_set_phase_backoff(gnrc_netif_t *netif, bool backoff)
@@ -405,8 +415,8 @@ static inline void gnrc_gomach_set_phase_backoff(gnrc_netif_t *netif, bool backo
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if need to run phase backoff.
- * @return                 false if no need to run phase backoff.
+ * @return             true if need to run phase backoff.
+ * @return             false if no need to run phase backoff.
  */
 static inline bool gnrc_gomach_get_phase_backoff(gnrc_netif_t *netif)
 {
@@ -416,8 +426,9 @@ static inline bool gnrc_gomach_get_phase_backoff(gnrc_netif_t *netif)
 /**
  * @brief Set the @ref GNRC_GOMACH_INTERNAL_INFO_BEACON_FAIL flag of the device.
  *
- * @param[in,out] netif    the network interface.
- * @param[in] fail   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_BEACON_FAIL flag.
+ * @param[in,out] netif  the network interface.
+ * @param[in] fail       value for GoMacH's
+ *                       @ref GNRC_GOMACH_INTERNAL_INFO_BEACON_FAIL flag.
  *
  */
 static inline void gnrc_gomach_set_beacon_fail(gnrc_netif_t *netif, bool fail)
@@ -435,8 +446,8 @@ static inline void gnrc_gomach_set_beacon_fail(gnrc_netif_t *netif, bool fail)
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if send beacon fail.
- * @return                 false upon beacon transmission success.
+ * @return             true if send beacon fail.
+ * @return             false upon beacon transmission success.
  */
 static inline bool gnrc_gomach_get_beacon_fail(gnrc_netif_t *netif)
 {
@@ -446,8 +457,9 @@ static inline bool gnrc_gomach_get_beacon_fail(gnrc_netif_t *netif)
 /**
  * @brief Set the @ref GNRC_GOMACH_INTERNAL_INFO_BUFFER_FULL flag of the device.
  *
- * @param[in,out] netif    the network interface.
- * @param[in] full   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_BUFFER_FULL flag.
+ * @param[in,out] netif  the network interface.
+ * @param[in] full       value for GoMacH's
+ *                       @ref GNRC_GOMACH_INTERNAL_INFO_BUFFER_FULL flag.
  *
  */
 static inline void gnrc_gomach_set_buffer_full(gnrc_netif_t *netif, bool full)
@@ -465,8 +477,8 @@ static inline void gnrc_gomach_set_buffer_full(gnrc_netif_t *netif, bool full)
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if node's packet buffer is full.
- * @return                 false if node's packet buffer is not full.
+ * @return             true if node's packet buffer is full.
+ * @return             false if node's packet buffer is not full.
  */
 static inline bool gnrc_gomach_get_buffer_full(gnrc_netif_t *netif)
 {
@@ -476,8 +488,9 @@ static inline bool gnrc_gomach_get_buffer_full(gnrc_netif_t *netif)
 /**
  * @brief Set the @ref GNRC_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE flag of the device.
  *
- * @param[in,out] netif    the network interface.
- * @param[in] enter   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE flag.
+ * @param[in,out] netif  the network interface.
+ * @param[in] enter      value for GoMacH's
+ *                       @ref GNRC_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE flag.
  *
  */
 static inline void gnrc_gomach_set_enter_new_cycle(gnrc_netif_t *netif, bool enter)
@@ -495,8 +508,8 @@ static inline void gnrc_gomach_set_enter_new_cycle(gnrc_netif_t *netif, bool ent
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if node has entered a new cycle.
- * @return                 false if node hasn't entered a new cycle yet.
+ * @return             true if node has entered a new cycle.
+ * @return             false if node hasn't entered a new cycle yet.
  */
 static inline bool gnrc_gomach_get_enter_new_cycle(gnrc_netif_t *netif)
 {
@@ -506,8 +519,9 @@ static inline bool gnrc_gomach_get_enter_new_cycle(gnrc_netif_t *netif)
 /**
  * @brief Set the @ref GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK flag of the device.
  *
- * @param[in,out] netif    the network interface.
- * @param[in] got   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK flag.
+ * @param[in,out] netif  the network interface.
+ * @param[in] got        value for GoMacH's
+ *                       @ref GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK flag.
  *
  */
 static inline void gnrc_gomach_set_got_preamble_ack(gnrc_netif_t *netif, bool got)
@@ -525,8 +539,8 @@ static inline void gnrc_gomach_set_got_preamble_ack(gnrc_netif_t *netif, bool go
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if node has got preamble-ACK.
- * @return                 false if node hasn't got preamble-ACK yet.
+ * @return             true if node has got preamble-ACK.
+ * @return             false if node hasn't got preamble-ACK yet.
  */
 static inline bool gnrc_gomach_get_got_preamble_ack(gnrc_netif_t *netif)
 {
@@ -536,8 +550,9 @@ static inline bool gnrc_gomach_get_got_preamble_ack(gnrc_netif_t *netif)
 /**
  * @brief Set the @ref GNRC_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1 flag of the device.
  *
- * @param[in,out] netif    the network interface.
- * @param[in] on_pubchan_1   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1 flag.
+ * @param[in,out] netif      the network interface.
+ * @param[in] on_pubchan_1   value for GoMacH's
+ *                           @ref GNRC_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1 flag.
  *
  */
 static inline void gnrc_gomach_set_on_pubchan_1(gnrc_netif_t *netif, bool on_pubchan_1)
@@ -555,8 +570,8 @@ static inline void gnrc_gomach_set_on_pubchan_1(gnrc_netif_t *netif, bool on_pub
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if node is on public channel 1.
- * @return                 false if node is not on public channel 1.
+ * @return             true if node is on public channel 1.
+ * @return             false if node is not on public channel 1.
  */
 static inline bool gnrc_gomach_get_on_pubchan_1(gnrc_netif_t *netif)
 {
@@ -566,8 +581,9 @@ static inline bool gnrc_gomach_get_on_pubchan_1(gnrc_netif_t *netif)
 /**
  * @brief Set the @ref GNRC_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV flag of the device.
  *
- * @param[in,out] netif    the network interface.
- * @param[in] max   value for GoMacH's @ref GNRC_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV flag.
+ * @param[in,out] netif  the network interface.
+ * @param[in] max        value for GoMacH's @ref
+ *                       GNRC_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV flag.
  *
  */
 static inline void gnrc_gomach_set_max_pream_interv(gnrc_netif_t *netif, bool max)
@@ -585,8 +601,8 @@ static inline void gnrc_gomach_set_max_pream_interv(gnrc_netif_t *netif, bool ma
  *
  * @param[in] netif    the network interface.
  *
- * @return                 true if node has reached maximum preamble interval.
- * @return                 false if node hasn't reached maximum preamble interval yet.
+ * @return             true if node has reached maximum preamble interval.
+ * @return             false if node hasn't reached maximum preamble interval yet.
  */
 static inline bool gnrc_gomach_get_max_pream_interv(gnrc_netif_t *netif)
 {
@@ -677,8 +693,8 @@ static inline void gnrc_gomach_set_ack_req(gnrc_netif_t *netif, netopt_enable_t 
  *
  * @param[in] netif    the network interface.
  *
- * @return                 state of netdev upon success.
- * @return                 -ENOSYS, upon failure.
+ * @return             state of netdev upon success.
+ * @return             -ENOSYS, upon failure.
  */
 static inline netopt_state_t gnrc_gomach_get_netdev_state(gnrc_netif_t *netif)
 {
@@ -740,17 +756,17 @@ int _gnrc_gomach_transmit(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt);
  * @brief Check if the received packet is a duplicate packet.
  *
  * @param[in] netif    the network interface.
- * @param[in] pa_info      ptr to received packet's parsed information.
+ * @param[in] pa_info  ptr to received packet's parsed information.
  *
- * @return                 true if the received packet is a duplicate packet.
- * @return                 false if the received packet is not a duplicate packet.
+ * @return             true if the received packet is a duplicate packet.
+ * @return             false if the received packet is not a duplicate packet.
  */
 bool gnrc_gomach_check_duplicate(gnrc_netif_t *netif, gnrc_gomach_packet_info_t *pa_info);
 
 /**
  * @brief Send a pktsnip in GoMacH.
  *
- * @param[in] netif    the network interface.
+ * @param[in] netif        the network interface.
  * @param[in] pkt          ptr to the packet for sending.
  * @param[in] csma_enable  value of csma-enable parameter.
  *
@@ -762,7 +778,7 @@ int gnrc_gomach_send(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt, netopt_enable_t c
 /**
  * @brief Reply a preamble-ACK packet in GoMacH.
  *
- * @param[in] netif    the network interface.
+ * @param[in] netif        the network interface.
  * @param[in] info         ptr to the info of the preamble packet.
  *
  * @return                 >0 upon sending success.
@@ -773,7 +789,7 @@ int gnrc_gomach_send_preamble_ack(gnrc_netif_t *netif, gnrc_gomach_packet_info_t
 /**
  * @brief Broadcast a beacon packet in GoMacH.
  *
- * @param[in] netif    the network interface.
+ * @param[in] netif        the network interface.
  *
  * @return                 >0 upon sending success.
  * @return                 0< upon sending failure.
@@ -821,8 +837,8 @@ void gnrc_gomach_init_choose_subchannel(gnrc_netif_t *netif);
 /**
  * @brief Broadcast the chosen sub-channel sequence to the device's neighbors.
  *
- * @param[in] netif    the network interface.
- * @param[in] use_csma value of csma-enable parameter.
+ * @param[in] netif        the network interface.
+ * @param[in] use_csma     value of csma-enable parameter.
  *
  * @return                 >0 upon sending success.
  * @return                 0< upon sending failure.
@@ -832,7 +848,7 @@ int gnrc_gomach_bcast_subchann_seq(gnrc_netif_t *netif, netopt_enable_t use_csma
 /**
  * @brief Send a preamble packet to the targeted neighbor.
  *
- * @param[in] netif    the network interface.
+ * @param[in] netif        the network interface.
  * @param[in] csma_enable  value of csma-enable parameter.
  *
  * @return                 >0 upon sending success.
@@ -889,8 +905,8 @@ bool gnrc_gomach_find_next_tx_neighbor(gnrc_netif_t *netif);
 void gnrc_gomach_beacon_process(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt);
 
 /**
- * @brief Process the received packets when waiting for the beacon during t2k procedure in
- *        GoMacH.
+ * @brief Process the received packets when waiting for the beacon during
+ *        t2k procedure in GoMacH.
  *
  * @param[in,out] netif    the network interface.
  *
