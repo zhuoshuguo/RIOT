@@ -840,20 +840,20 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
 
     /* Fetch and deduce the exact wake-up phase of the neighbor. */
     long int phase_us = gnrc_gomach_phase_now(netif) -
-                           gomach_preamble_ack_hdr->phase_in_us;
+                        gomach_preamble_ack_hdr->phase_in_us;
 
     if (phase_us < 0) {
-    	phase_us += GNRC_GOMACH_SUPERFRAME_DURATION_US;
+        phase_us += GNRC_GOMACH_SUPERFRAME_DURATION_US;
     }
 
     if ((phase_us > (GNRC_GOMACH_SUPERFRAME_DURATION_US - GNRC_GOMACH_CP_MIN_GAP_US)) ||
-         (phase_us < GNRC_GOMACH_CP_MIN_GAP_US)) {
-            LOG_DEBUG("[GOMACH] t2u: own phase is close to the neighbor's.\n");
-            gnrc_gomach_set_phase_backoff(netif, true);
-            /* Set a random phase-backoff value. */
-            netif->mac.gomach.backoff_phase_us =
-                random_uint32_range(GNRC_GOMACH_CP_MIN_GAP_US,
-                                   (GNRC_GOMACH_SUPERFRAME_DURATION_US - GNRC_GOMACH_CP_MIN_GAP_US));
+        (phase_us < GNRC_GOMACH_CP_MIN_GAP_US)) {
+        LOG_DEBUG("[GOMACH] t2u: own phase is close to the neighbor's.\n");
+        gnrc_gomach_set_phase_backoff(netif, true);
+        /* Set a random phase-backoff value. */
+        netif->mac.gomach.backoff_phase_us =
+            random_uint32_range(GNRC_GOMACH_CP_MIN_GAP_US,
+                                (GNRC_GOMACH_SUPERFRAME_DURATION_US - GNRC_GOMACH_CP_MIN_GAP_US));
     }
 
     netif->mac.tx.current_neighbor->cp_phase = phase_us;
@@ -965,7 +965,7 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netif_t *netif)
 
         switch (receive_packet_info.header->type) {
             case GNRC_GOMACH_FRAME_PREAMBLE: {
-            	_wait_preamble_ack_preamble(netif, pkt);
+                _wait_preamble_ack_preamble(netif, pkt);
                 break;
             }
             case GNRC_GOMACH_FRAME_PREAMBLE_ACK: {
@@ -981,7 +981,7 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netif_t *netif)
                 break;
             }
             case GNRC_GOMACH_FRAME_BROADCAST: {
-            	_wait_preamble_ack_bcast(netif, pkt);
+                _wait_preamble_ack_bcast(netif, pkt);
                 break;
             }
             default: {

@@ -327,8 +327,8 @@ extern "C" {
  * @return  NULL, on error.
  */
 gnrc_netif_t *gnrc_netif_gomach_create(char *stack, int stacksize,
-                                         char priority, char *name,
-                                         netdev_t *dev);
+                                       char priority, char *name,
+                                       netdev_t *dev);
 
 #ifdef __cplusplus
 }

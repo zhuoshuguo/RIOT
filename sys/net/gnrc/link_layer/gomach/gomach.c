@@ -71,11 +71,11 @@ static const gnrc_netif_ops_t gomach_ops = {
 };
 
 gnrc_netif_t *gnrc_netif_gomach_create(char *stack, int stacksize,
-                                         char priority, char *name,
-                                         netdev_t *dev)
+                                       char priority, char *name,
+                                       netdev_t *dev)
 {
     return gnrc_netif_create(stack, stacksize, priority, name, dev,
-                              &gomach_ops);
+                             &gomach_ops);
 }
 
 static gnrc_pktsnip_t *_make_netif_hdr(uint8_t *mhr)
@@ -525,7 +525,7 @@ static void gomach_t2k_init(gnrc_netif_t *netif)
                                    gnrc_gomach_phase_now(netif);
 
     if (wait_phase_duration < 0) {
-    	wait_phase_duration += GNRC_GOMACH_SUPERFRAME_DURATION_US;
+        wait_phase_duration += GNRC_GOMACH_SUPERFRAME_DURATION_US;
     }
 
     /* Upon several times of t2k failure, we now doubt that the phase-lock may fail due to drift.
@@ -743,11 +743,11 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netif_t *netif)
 
         switch (gnrc_netif_get_tx_feedback(netif)) {
             case TX_FEEDBACK_SUCCESS: {
-            	_cp_tx_success(netif);
+                _cp_tx_success(netif);
                 break;
             }
             case TX_FEEDBACK_BUSY:
-                if(!_cp_tx_busy(netif)) {
+                if (!_cp_tx_busy(netif)) {
                     return;
                 }
             case TX_FEEDBACK_NOACK:
@@ -1348,9 +1348,9 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netif_t *netif)
 {
     if (gnrc_gomach_timeout_is_expired(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR)) {
         /* No TX-ISR, go to sleep. */
-    	netif->mac.tx.t2u_retry_counter++;
+        netif->mac.tx.t2u_retry_counter++;
 
-    	netif->mac.tx.no_ack_counter = GNRC_GOMACH_REPHASELOCK_THRESHOLD;
+        netif->mac.tx.no_ack_counter = GNRC_GOMACH_REPHASELOCK_THRESHOLD;
         netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)netif->dev;
         netif->mac.tx.tx_seq = device_state->seq - 1;
 
@@ -1657,9 +1657,10 @@ static void gomach_listen_send_beacon(gnrc_netif_t *netif)
     /* First check if there are slots needed to be allocated. */
     uint8_t slot_num = 0;
     int i;
+
     for (i = 0; i < GNRC_GOMACH_SLOSCH_UNIT_COUNT; i++) {
         if (netif->mac.rx.slosch_list[i].queue_indicator > 0) {
-        	slot_num += netif->mac.rx.slosch_list[i].queue_indicator;
+            slot_num += netif->mac.rx.slosch_list[i].queue_indicator;
             break;
         }
     }
@@ -1680,7 +1681,7 @@ static void gomach_listen_send_beacon(gnrc_netif_t *netif)
         }
     }
     else {
-    	/* No need to send beacon, go to next state. */
+        /* No need to send beacon, go to next state. */
         gnrc_gomach_set_beacon_fail(netif, true);
         gnrc_gomach_set_update(netif, true);
     }
