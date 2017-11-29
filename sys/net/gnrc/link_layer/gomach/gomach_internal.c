@@ -243,12 +243,12 @@ uint64_t gnrc_gomach_phase_now(gnrc_netif_t *netif)
     uint64_t phase_now = xtimer_now_usec64();
 
     /* in case timer overflows */
-    if (phase_now < netif->mac.gomach.last_wakeup_phase_us) {
-        uint64_t gap_to_full = GNRC_GOMACH_PHASE_MAX - netif->mac.gomach.last_wakeup_phase_us;
+    if (phase_now < netif->mac.prot.gomach.last_wakeup_phase_us) {
+        uint64_t gap_to_full = GNRC_GOMACH_PHASE_MAX - netif->mac.prot.gomach.last_wakeup_phase_us;
         phase_now += gap_to_full;
     }
     else {
-        phase_now = phase_now - netif->mac.gomach.last_wakeup_phase_us;
+        phase_now = phase_now - netif->mac.prot.gomach.last_wakeup_phase_us;
     }
 
     return phase_now;
@@ -341,7 +341,7 @@ int gnrc_gomach_send_beacon(gnrc_netif_t *netif)
     /* Start assemble the beacon packet */
     gnrc_gomach_frame_beacon_t gomach_beaocn_hdr;
     gomach_beaocn_hdr.header.type = GNRC_GOMACH_FRAME_BEACON;
-    gomach_beaocn_hdr.sub_channel_seq = netif->mac.gomach.sub_channel_seq;
+    gomach_beaocn_hdr.sub_channel_seq = netif->mac.prot.gomach.sub_channel_seq;
 
     /* Start generating the slots list and the related ID list for guiding
      * the following vTMDA procedure (slotted transmission). */
@@ -622,8 +622,8 @@ static inline void _cp_packet_process_data(gnrc_netif_t *netif,
         /* Output radio duty-cycle ratio */
         uint64_t duty;
         duty = xtimer_now_usec64();
-        duty = (netif->mac.gomach.awake_duration_sum_ticks) * 100 /
-               (duty - netif->mac.gomach.system_start_time_ticks);
+        duty = (netif->mac.prot.gomach.awake_duration_sum_ticks) * 100 /
+               (duty - netif->mac.prot.gomach.system_start_time_ticks);
         printf("[GoMacH]: achieved radio duty-cycle: %lu %% \n", (uint32_t)duty);
 #endif
     }
@@ -701,7 +701,7 @@ void gnrc_gomach_init_choose_subchannel(gnrc_netif_t *netif)
         check_seq = subchannel_seq - 11;
         check_seq = (1 << check_seq);
 
-        if (check_seq & netif->mac.gomach.subchannel_occu_flags) {
+        if (check_seq & netif->mac.prot.gomach.subchannel_occu_flags) {
             LOG_INFO("INFO: [GOMACH]: sub-channel already occupied, find a new one.\n");
             own_id += 1;
             subchannel_seq = 12 + (own_id % 14);
@@ -711,7 +711,7 @@ void gnrc_gomach_init_choose_subchannel(gnrc_netif_t *netif)
         }
     }
 
-    netif->mac.gomach.sub_channel_seq = subchannel_seq;
+    netif->mac.prot.gomach.sub_channel_seq = subchannel_seq;
 }
 
 int gnrc_gomach_send_preamble(gnrc_netif_t *netif, netopt_enable_t csma_enable)
@@ -778,7 +778,7 @@ int gnrc_gomach_bcast_subchann_seq(gnrc_netif_t *netif, netopt_enable_t use_csma
     gnrc_gomach_frame_announce_t gomach_announce_hdr;
 
     gomach_announce_hdr.header.type = GNRC_GOMACH_FRAME_ANNOUNCE;
-    gomach_announce_hdr.subchannel_seq = netif->mac.gomach.sub_channel_seq;
+    gomach_announce_hdr.subchannel_seq = netif->mac.prot.gomach.sub_channel_seq;
 
     pkt = gnrc_pktbuf_add(NULL, &gomach_announce_hdr, sizeof(gomach_announce_hdr),
                           GNRC_NETTYPE_GOMACH);
@@ -851,7 +851,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
         LOG_DEBUG("[GOMACH] t2u: own phase is close to the neighbor's.\n");
         gnrc_gomach_set_phase_backoff(netif, true);
         /* Set a random phase-backoff value. */
-        netif->mac.gomach.backoff_phase_us =
+        netif->mac.prot.gomach.backoff_phase_us =
             random_uint32_range(GNRC_GOMACH_CP_MIN_GAP_US,
                                 (GNRC_GOMACH_SUPERFRAME_DURATION_US - GNRC_GOMACH_CP_MIN_GAP_US));
     }
@@ -861,18 +861,18 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
     /* Record the public-channel phase of the neighbor. */
     if (gnrc_gomach_get_enter_new_cycle(netif) && (phase_us > gnrc_gomach_phase_now(netif))) {
         if (gnrc_gomach_get_on_pubchan_1(netif)) {
-            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.gomach.pub_channel_2;
+            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.prot.gomach.pub_channel_2;
         }
         else {
-            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.gomach.pub_channel_1;
+            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.prot.gomach.pub_channel_1;
         }
     }
     else {
         if (gnrc_gomach_get_on_pubchan_1(netif)) {
-            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.gomach.pub_channel_1;
+            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.prot.gomach.pub_channel_1;
         }
         else {
-            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.gomach.pub_channel_2;
+            netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.prot.gomach.pub_channel_2;
         }
     }
 }
@@ -1292,17 +1292,17 @@ void gnrc_gomach_update_neighbor_phase(gnrc_netif_t *netif)
     for (int i = 1; i < GNRC_MAC_NEIGHBOR_COUNT; i++) {
         if (netif->mac.tx.neighbors[i].mac_type == GNRC_GOMACH_TYPE_KNOWN) {
             long int tmp = netif->mac.tx.neighbors[i].cp_phase -
-                           netif->mac.gomach.backoff_phase_us;
+                           netif->mac.prot.gomach.backoff_phase_us;
             if (tmp < 0) {
                 tmp += GNRC_GOMACH_SUPERFRAME_DURATION_US;
 
                 /* Toggle the neighbor's public channel phase if tmp < 0. */
                 if (netif->mac.tx.neighbors[i].pub_chanseq ==
-                    netif->mac.gomach.pub_channel_1) {
-                    netif->mac.tx.neighbors[i].pub_chanseq = netif->mac.gomach.pub_channel_2;
+                    netif->mac.prot.gomach.pub_channel_1) {
+                    netif->mac.tx.neighbors[i].pub_chanseq = netif->mac.prot.gomach.pub_channel_2;
                 }
                 else {
-                    netif->mac.tx.neighbors[i].pub_chanseq = netif->mac.gomach.pub_channel_1;
+                    netif->mac.tx.neighbors[i].pub_chanseq = netif->mac.prot.gomach.pub_channel_1;
                 }
             }
             netif->mac.tx.neighbors[i].cp_phase = (uint32_t)tmp;
@@ -1315,21 +1315,21 @@ void gnrc_gomach_update_neighbor_pubchan(gnrc_netif_t *netif)
     assert(netif != NULL);
 
     /* Toggle this device's current channel. */
-    if (netif->mac.gomach.cur_pub_channel == netif->mac.gomach.pub_channel_1) {
-        netif->mac.gomach.cur_pub_channel = netif->mac.gomach.pub_channel_2;
+    if (netif->mac.prot.gomach.cur_pub_channel == netif->mac.prot.gomach.pub_channel_1) {
+        netif->mac.prot.gomach.cur_pub_channel = netif->mac.prot.gomach.pub_channel_2;
     }
     else {
-        netif->mac.gomach.cur_pub_channel = netif->mac.gomach.pub_channel_1;
+        netif->mac.prot.gomach.cur_pub_channel = netif->mac.prot.gomach.pub_channel_1;
     }
 
     /* Toggle TX neighbors' current channel. */
     for (int i = 1; i < GNRC_MAC_NEIGHBOR_COUNT; i++) {
         if (netif->mac.tx.neighbors[i].mac_type == GNRC_GOMACH_TYPE_KNOWN) {
-            if (netif->mac.tx.neighbors[i].pub_chanseq == netif->mac.gomach.pub_channel_1) {
-                netif->mac.tx.neighbors[i].pub_chanseq = netif->mac.gomach.pub_channel_2;
+            if (netif->mac.tx.neighbors[i].pub_chanseq == netif->mac.prot.gomach.pub_channel_1) {
+                netif->mac.tx.neighbors[i].pub_chanseq = netif->mac.prot.gomach.pub_channel_2;
             }
             else {
-                netif->mac.tx.neighbors[i].pub_chanseq = netif->mac.gomach.pub_channel_1;
+                netif->mac.tx.neighbors[i].pub_chanseq = netif->mac.prot.gomach.pub_channel_1;
             }
         }
     }

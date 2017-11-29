@@ -183,10 +183,10 @@ static inline bool gnrc_gomach_get_pkt_received(gnrc_netif_t *netif)
 static inline void gnrc_gomach_set_quit_cycle(gnrc_netif_t *netif, bool quit)
 {
     if (quit) {
-        netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_QUIT_CYCLE;
+        netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_QUIT_CYCLE;
     }
     else {
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_QUIT_CYCLE;
+        netif->mac.prot.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_QUIT_CYCLE;
     }
 }
 
@@ -200,7 +200,7 @@ static inline void gnrc_gomach_set_quit_cycle(gnrc_netif_t *netif, bool quit)
  */
 static inline bool gnrc_gomach_get_quit_cycle(gnrc_netif_t *netif)
 {
-    return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_QUIT_CYCLE);
+    return (netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_QUIT_CYCLE);
 }
 
 /**
@@ -213,10 +213,10 @@ static inline bool gnrc_gomach_get_quit_cycle(gnrc_netif_t *netif)
 static inline void gnrc_gomach_set_got_preamble(gnrc_netif_t *netif, bool got_preamble)
 {
     if (got_preamble) {
-        netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLE;
+        netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLE;
     }
     else {
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLE;
+        netif->mac.prot.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLE;
     }
 }
 
@@ -230,7 +230,7 @@ static inline void gnrc_gomach_set_got_preamble(gnrc_netif_t *netif, bool got_pr
  */
 static inline bool gnrc_gomach_get_got_preamble(gnrc_netif_t *netif)
 {
-    return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLE);
+    return (netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLE);
 }
 
 /**
@@ -243,10 +243,10 @@ static inline bool gnrc_gomach_get_got_preamble(gnrc_netif_t *netif)
 static inline void gnrc_gomach_set_cp_end(gnrc_netif_t *netif, bool cp_end)
 {
     if (cp_end) {
-        netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_CP_END;
+        netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_CP_END;
     }
     else {
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_CP_END;
+        netif->mac.prot.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_CP_END;
     }
 }
 
@@ -260,7 +260,7 @@ static inline void gnrc_gomach_set_cp_end(gnrc_netif_t *netif, bool cp_end)
  */
 static inline bool gnrc_gomach_get_cp_end(gnrc_netif_t *netif)
 {
-    return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_CP_END);
+    return (netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_CP_END);
 }
 
 /**
@@ -273,10 +273,10 @@ static inline bool gnrc_gomach_get_cp_end(gnrc_netif_t *netif)
 static inline void gnrc_gomach_set_vTDMA_end(gnrc_netif_t *netif, bool vtdma_end)
 {
     if (vtdma_end) {
-        netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_VTDMA_END;
+        netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_VTDMA_END;
     }
     else {
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_VTDMA_END;
+        netif->mac.prot.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_VTDMA_END;
     }
 }
 
@@ -290,7 +290,7 @@ static inline void gnrc_gomach_set_vTDMA_end(gnrc_netif_t *netif, bool vtdma_end
  */
 static inline bool gnrc_gomach_get_vTDMA_end(gnrc_netif_t *netif)
 {
-    return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_VTDMA_END);
+    return (netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_VTDMA_END);
 }
 
 /**
@@ -303,10 +303,10 @@ static inline bool gnrc_gomach_get_vTDMA_end(gnrc_netif_t *netif)
 static inline void gnrc_gomach_set_unintd_preamble(gnrc_netif_t *netif, bool uintd_preamble)
 {
     if (uintd_preamble) {
-        netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE;
+        netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE;
     }
     else {
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE;
+        netif->mac.prot.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE;
     }
 }
 
@@ -320,7 +320,7 @@ static inline void gnrc_gomach_set_unintd_preamble(gnrc_netif_t *netif, bool uin
  */
 static inline bool gnrc_gomach_get_unintd_preamble(gnrc_netif_t *netif)
 {
-    return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE);
+    return (netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_UNINTD_PREAMBLE);
 }
 
 /**
@@ -333,10 +333,10 @@ static inline bool gnrc_gomach_get_unintd_preamble(gnrc_netif_t *netif)
 static inline void gnrc_gomach_set_update(gnrc_netif_t *netif, bool update)
 {
     if (update) {
-        netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_ND_UPDATE;
+        netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_ND_UPDATE;
     }
     else {
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_ND_UPDATE;
+        netif->mac.prot.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_ND_UPDATE;
     }
 }
 
@@ -350,7 +350,7 @@ static inline void gnrc_gomach_set_update(gnrc_netif_t *netif, bool update)
  */
 static inline bool gnrc_gomach_get_update(gnrc_netif_t *netif)
 {
-    return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_ND_UPDATE);
+    return (netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_ND_UPDATE);
 }
 
 /**
@@ -363,10 +363,10 @@ static inline bool gnrc_gomach_get_update(gnrc_netif_t *netif)
 static inline void gnrc_gomach_set_duty_cycle_start(gnrc_netif_t *netif, bool start)
 {
     if (start) {
-        netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START;
+        netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START;
     }
     else {
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START;
+        netif->mac.prot.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START;
     }
 }
 
@@ -380,7 +380,7 @@ static inline void gnrc_gomach_set_duty_cycle_start(gnrc_netif_t *netif, bool st
  */
 static inline bool gnrc_gomach_get_duty_cycle_start(gnrc_netif_t *netif)
 {
-    return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START);
+    return (netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_DUTY_CYCLE_START);
 }
 
 /**
@@ -393,10 +393,10 @@ static inline bool gnrc_gomach_get_duty_cycle_start(gnrc_netif_t *netif)
 static inline void gnrc_gomach_set_phase_backoff(gnrc_netif_t *netif, bool backoff)
 {
     if (backoff) {
-        netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF;
+        netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF;
     }
     else {
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF;
+        netif->mac.prot.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF;
     }
 }
 
@@ -410,7 +410,7 @@ static inline void gnrc_gomach_set_phase_backoff(gnrc_netif_t *netif, bool backo
  */
 static inline bool gnrc_gomach_get_phase_backoff(gnrc_netif_t *netif)
 {
-    return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF);
+    return (netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_PHASE_BACKOFF);
 }
 
 /**
@@ -423,10 +423,10 @@ static inline bool gnrc_gomach_get_phase_backoff(gnrc_netif_t *netif)
 static inline void gnrc_gomach_set_beacon_fail(gnrc_netif_t *netif, bool fail)
 {
     if (fail) {
-        netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_BEACON_FAIL;
+        netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_BEACON_FAIL;
     }
     else {
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_BEACON_FAIL;
+        netif->mac.prot.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_BEACON_FAIL;
     }
 }
 
@@ -440,7 +440,7 @@ static inline void gnrc_gomach_set_beacon_fail(gnrc_netif_t *netif, bool fail)
  */
 static inline bool gnrc_gomach_get_beacon_fail(gnrc_netif_t *netif)
 {
-    return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_BEACON_FAIL);
+    return (netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_BEACON_FAIL);
 }
 
 /**
@@ -453,10 +453,10 @@ static inline bool gnrc_gomach_get_beacon_fail(gnrc_netif_t *netif)
 static inline void gnrc_gomach_set_buffer_full(gnrc_netif_t *netif, bool full)
 {
     if (full) {
-        netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_BUFFER_FULL;
+        netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_BUFFER_FULL;
     }
     else {
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_BUFFER_FULL;
+        netif->mac.prot.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_BUFFER_FULL;
     }
 }
 
@@ -470,7 +470,7 @@ static inline void gnrc_gomach_set_buffer_full(gnrc_netif_t *netif, bool full)
  */
 static inline bool gnrc_gomach_get_buffer_full(gnrc_netif_t *netif)
 {
-    return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_BUFFER_FULL);
+    return (netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_BUFFER_FULL);
 }
 
 /**
@@ -483,10 +483,10 @@ static inline bool gnrc_gomach_get_buffer_full(gnrc_netif_t *netif)
 static inline void gnrc_gomach_set_enter_new_cycle(gnrc_netif_t *netif, bool enter)
 {
     if (enter) {
-        netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE;
+        netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE;
     }
     else {
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE;
+        netif->mac.prot.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE;
     }
 }
 
@@ -500,7 +500,7 @@ static inline void gnrc_gomach_set_enter_new_cycle(gnrc_netif_t *netif, bool ent
  */
 static inline bool gnrc_gomach_get_enter_new_cycle(gnrc_netif_t *netif)
 {
-    return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE);
+    return (netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_ENTER_NEW_CYCLE);
 }
 
 /**
@@ -513,10 +513,10 @@ static inline bool gnrc_gomach_get_enter_new_cycle(gnrc_netif_t *netif)
 static inline void gnrc_gomach_set_got_preamble_ack(gnrc_netif_t *netif, bool got)
 {
     if (got) {
-        netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK;
+        netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK;
     }
     else {
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK;
+        netif->mac.prot.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK;
     }
 }
 
@@ -530,7 +530,7 @@ static inline void gnrc_gomach_set_got_preamble_ack(gnrc_netif_t *netif, bool go
  */
 static inline bool gnrc_gomach_get_got_preamble_ack(gnrc_netif_t *netif)
 {
-    return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK);
+    return (netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_GOT_PREAMBLEACK);
 }
 
 /**
@@ -543,10 +543,10 @@ static inline bool gnrc_gomach_get_got_preamble_ack(gnrc_netif_t *netif)
 static inline void gnrc_gomach_set_on_pubchan_1(gnrc_netif_t *netif, bool on_pubchan_1)
 {
     if (on_pubchan_1) {
-        netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1;
+        netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1;
     }
     else {
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1;
+        netif->mac.prot.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1;
     }
 }
 
@@ -560,7 +560,7 @@ static inline void gnrc_gomach_set_on_pubchan_1(gnrc_netif_t *netif, bool on_pub
  */
 static inline bool gnrc_gomach_get_on_pubchan_1(gnrc_netif_t *netif)
 {
-    return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1);
+    return (netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_ON_PUBCHAN_1);
 }
 
 /**
@@ -573,10 +573,10 @@ static inline bool gnrc_gomach_get_on_pubchan_1(gnrc_netif_t *netif)
 static inline void gnrc_gomach_set_max_pream_interv(gnrc_netif_t *netif, bool max)
 {
     if (max) {
-        netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV;
+        netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV;
     }
     else {
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV;
+        netif->mac.prot.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV;
     }
 }
 
@@ -590,7 +590,7 @@ static inline void gnrc_gomach_set_max_pream_interv(gnrc_netif_t *netif, bool ma
  */
 static inline bool gnrc_gomach_get_max_pream_interv(gnrc_netif_t *netif)
 {
-    return (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV);
+    return (netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_MAX_PREAM_INTERV);
 }
 
 /**
@@ -619,21 +619,21 @@ static inline void gnrc_gomach_set_netdev_state(gnrc_netif_t *netif, netopt_stat
 
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
     if (devstate == NETOPT_STATE_IDLE) {
-        if (!(netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON)) {
-            netif->mac.gomach.last_radio_on_time_ticks = xtimer_now_usec64();
-            netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
+        if (!(netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON)) {
+            netif->mac.prot.gomach.last_radio_on_time_ticks = xtimer_now_usec64();
+            netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
         }
         return;
     }
     else if ((devstate == NETOPT_STATE_SLEEP) &&
-             (netif->mac.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON)) {
-        netif->mac.gomach.radio_off_time_ticks = xtimer_now_usec64();
+             (netif->mac.prot.gomach.gomach_info & GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON)) {
+        netif->mac.prot.gomach.radio_off_time_ticks = xtimer_now_usec64();
 
-        netif->mac.gomach.awake_duration_sum_ticks +=
-            (netif->mac.gomach.radio_off_time_ticks -
-             netif->mac.gomach.last_radio_on_time_ticks);
+        netif->mac.prot.gomach.awake_duration_sum_ticks +=
+            (netif->mac.prot.gomach.radio_off_time_ticks -
+             netif->mac.prot.gomach.last_radio_on_time_ticks);
 
-        netif->mac.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
+        netif->mac.prot.gomach.gomach_info &= ~GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
     }
 #endif
 }

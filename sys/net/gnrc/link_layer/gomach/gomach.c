@@ -245,19 +245,19 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netif_t *netif)
                 gnrc_gomach_set_duty_cycle_start(netif, true);
                 rtt_clear_alarm();
                 /* Record the new cycle's starting time. */
-                netif->mac.gomach.last_wakeup = rtt_get_counter();
+                netif->mac.prot.gomach.last_wakeup = rtt_get_counter();
             }
             else {
                 /* The duty-cycle scheme has already started,
                  * record the new cycle's starting time. */
-                netif->mac.gomach.last_wakeup = rtt_get_alarm();
+                netif->mac.prot.gomach.last_wakeup = rtt_get_alarm();
                 gnrc_gomach_set_enter_new_cycle(netif, true);
             }
 
-            netif->mac.gomach.last_wakeup_phase_us = xtimer_now_usec64();
+            netif->mac.prot.gomach.last_wakeup_phase_us = xtimer_now_usec64();
 
             /* Set next cycle's starting time. */
-            uint32_t alarm = netif->mac.gomach.last_wakeup +
+            uint32_t alarm = netif->mac.prot.gomach.last_wakeup +
                              RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
             rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GNRC_GOMACH_EVENT_RTT_NEW_CYCLE);
 
@@ -278,7 +278,7 @@ static void gomach_bcast_init(gnrc_netif_t *netif)
     gnrc_gomach_set_autoack(netif, NETOPT_DISABLE);
 
     /* Firstly turn the radio to public channel 1. */
-    gnrc_gomach_turn_channel(netif, netif->mac.gomach.pub_channel_1);
+    gnrc_gomach_turn_channel(netif, netif->mac.prot.gomach.pub_channel_1);
     gnrc_gomach_set_on_pubchan_1(netif, true);
 
     netif->mac.tx.broadcast_seq++;
@@ -396,11 +396,11 @@ static void gomach_wait_bcast_wait_next_tx(gnrc_netif_t *netif)
     /* Toggle the radio channel and go to send the next broadcast packet. */
     if (gnrc_gomach_timeout_is_expired(netif, GNRC_GOMACH_TIMEOUT_BCAST_INTERVAL)) {
         if (gnrc_gomach_get_on_pubchan_1(netif)) {
-            gnrc_gomach_turn_channel(netif, netif->mac.gomach.pub_channel_2);
+            gnrc_gomach_turn_channel(netif, netif->mac.prot.gomach.pub_channel_2);
             gnrc_gomach_set_on_pubchan_1(netif, false);
         }
         else {
-            gnrc_gomach_turn_channel(netif, netif->mac.gomach.pub_channel_1);
+            gnrc_gomach_turn_channel(netif, netif->mac.prot.gomach.pub_channel_1);
             gnrc_gomach_set_on_pubchan_1(netif, true);
         }
 
@@ -425,7 +425,7 @@ static void gomach_bcast_end(gnrc_netif_t *netif)
     netif->mac.tx.bcast_state = GNRC_GOMACH_BCAST_INIT;
 
     /* Switch to the listen mode. */
-    netif->mac.gomach.basic_state = GNRC_GOMACH_LISTEN;
+    netif->mac.prot.gomach.basic_state = GNRC_GOMACH_LISTEN;
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_gomach_set_enter_new_cycle(netif, false);
     gnrc_gomach_set_update(netif, true);
@@ -468,13 +468,13 @@ static void gomach_init_prepare(gnrc_netif_t *netif)
     xtimer_usleep(random_backoff);
 
     gnrc_gomach_set_quit_cycle(netif, false);
-    netif->mac.gomach.subchannel_occu_flags = 0;
+    netif->mac.prot.gomach.subchannel_occu_flags = 0;
 
     gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
 
     /* Since devices don't broadcast beacons on default, so no need to collect beacons.
      * Go to announce its chosen sub-channel sequence. */
-    netif->mac.gomach.init_state = GNRC_GOMACH_INIT_ANNC_SUBCHAN;
+    netif->mac.prot.gomach.init_state = GNRC_GOMACH_INIT_ANNC_SUBCHAN;
     gnrc_gomach_set_update(netif, true);
 }
 
@@ -486,7 +486,7 @@ static void gomach_init_announce_subchannel(gnrc_netif_t *netif)
     /* Announce the device's chosen sub-channel sequence to its neighbors. */
     gnrc_gomach_bcast_subchann_seq(netif, NETOPT_ENABLE);
 
-    netif->mac.gomach.init_state = GNRC_GOMACH_INIT_WAIT_FEEDBACK;
+    netif->mac.prot.gomach.init_state = GNRC_GOMACH_INIT_WAIT_FEEDBACK;
     gnrc_gomach_set_update(netif, false);
 }
 
@@ -494,7 +494,7 @@ static void gomach_init_wait_announce_feedback(gnrc_netif_t *netif)
 {
     if (gnrc_gomach_get_tx_finish(netif)) {
         gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
-        netif->mac.gomach.init_state = GNRC_GOMACH_INIT_END;
+        netif->mac.prot.gomach.init_state = GNRC_GOMACH_INIT_END;
         gnrc_gomach_set_update(netif, true);
     }
 }
@@ -502,9 +502,9 @@ static void gomach_init_wait_announce_feedback(gnrc_netif_t *netif)
 static void gomach_init_end(gnrc_netif_t *netif)
 {
     /* Reset initialization state. */
-    netif->mac.gomach.init_state = GNRC_GOMACH_INIT_PREPARE;
+    netif->mac.prot.gomach.init_state = GNRC_GOMACH_INIT_PREPARE;
     /* Switch to duty-cycle listen mode. */
-    netif->mac.gomach.basic_state = GNRC_GOMACH_LISTEN;
+    netif->mac.prot.gomach.basic_state = GNRC_GOMACH_LISTEN;
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
 
     /* Start duty-cycle scheme. */
@@ -1003,7 +1003,7 @@ static void gomach_t2k_end(gnrc_netif_t *netif)
     /* Reset t2k_state to the initial state. */
     netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_INIT;
 
-    netif->mac.gomach.basic_state = GNRC_GOMACH_LISTEN;
+    netif->mac.prot.gomach.basic_state = GNRC_GOMACH_LISTEN;
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_gomach_set_enter_new_cycle(netif, false);
     gnrc_gomach_set_update(netif, true);
@@ -1012,8 +1012,8 @@ static void gomach_t2k_end(gnrc_netif_t *netif)
     /* Output duty-cycle ratio */
     uint64_t duty;
     duty = xtimer_now_usec64();
-    duty = (netif->mac.gomach.awake_duration_sum_ticks) * 100 /
-           (duty - netif->mac.gomach.system_start_time_ticks);
+    duty = (netif->mac.prot.gomach.awake_duration_sum_ticks) * 100 /
+           (duty - netif->mac.prot.gomach.system_start_time_ticks);
     printf("[GoMacH]: achieved radio duty-cycle: %lu %% \n", (uint32_t)duty);
 #endif
 }
@@ -1077,7 +1077,7 @@ static void gomach_t2u_init(gnrc_netif_t *netif)
     gnrc_gomach_set_buffer_full(netif, false);
 
     /* Start sending the preamble firstly on public channel 1. */
-    gnrc_gomach_turn_channel(netif, netif->mac.gomach.pub_channel_1);
+    gnrc_gomach_turn_channel(netif, netif->mac.prot.gomach.pub_channel_1);
 
     /* Disable auto-ACK here! Don't try to reply ACK to any node. */
     gnrc_gomach_set_autoack(netif, NETOPT_DISABLE);
@@ -1097,11 +1097,11 @@ static void gomach_t2u_send_preamble_prepare(gnrc_netif_t *netif)
     if (netif->mac.tx.preamble_sent != 0) {
         /* Toggle the radio channel after each preamble transmission. */
         if (gnrc_gomach_get_on_pubchan_1(netif)) {
-            gnrc_gomach_turn_channel(netif, netif->mac.gomach.pub_channel_2);
+            gnrc_gomach_turn_channel(netif, netif->mac.prot.gomach.pub_channel_2);
             gnrc_gomach_set_on_pubchan_1(netif, false);
         }
         else {
-            gnrc_gomach_turn_channel(netif, netif->mac.gomach.pub_channel_1);
+            gnrc_gomach_turn_channel(netif, netif->mac.prot.gomach.pub_channel_1);
             gnrc_gomach_set_on_pubchan_1(netif, true);
         }
         gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL,
@@ -1450,7 +1450,7 @@ static void gomach_t2u_end(gnrc_netif_t *netif)
     netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_INIT;
 
     /* Resume to listen state and go to sleep. */
-    netif->mac.gomach.basic_state = GNRC_GOMACH_LISTEN;
+    netif->mac.prot.gomach.basic_state = GNRC_GOMACH_LISTEN;
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_gomach_set_enter_new_cycle(netif, false);
     gnrc_gomach_set_update(netif, true);
@@ -1459,8 +1459,8 @@ static void gomach_t2u_end(gnrc_netif_t *netif)
     /* Output duty-cycle ratio */
     uint64_t duty;
     duty = xtimer_now_usec64();
-    duty = (netif->mac.gomach.awake_duration_sum_ticks) * 100 /
-           (duty - netif->mac.gomach.system_start_time_ticks);
+    duty = (netif->mac.prot.gomach.awake_duration_sum_ticks) * 100 /
+           (duty - netif->mac.prot.gomach.system_start_time_ticks);
     printf("[GoMacH]: achieved radio duty-cycle: %lu %% \n", (uint32_t)duty);
 #endif
 }
@@ -1509,12 +1509,12 @@ static void _gomach_phase_backoff(gnrc_netif_t *netif)
 {
     /* Execute phase backoff for avoiding CP (wake-up period) overlap. */
     rtt_clear_alarm();
-    xtimer_usleep(netif->mac.gomach.backoff_phase_us);
+    xtimer_usleep(netif->mac.prot.gomach.backoff_phase_us);
 
     rtt_set_counter(0);
-    netif->mac.gomach.last_wakeup = rtt_get_counter();
+    netif->mac.prot.gomach.last_wakeup = rtt_get_counter();
 
-    uint32_t alarm = netif->mac.gomach.last_wakeup +
+    uint32_t alarm = netif->mac.prot.gomach.last_wakeup +
                      RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
 
     rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GNRC_GOMACH_EVENT_RTT_NEW_CYCLE);
@@ -1522,7 +1522,7 @@ static void _gomach_phase_backoff(gnrc_netif_t *netif)
     gnrc_gomach_update_neighbor_phase(netif);
 
     LOG_INFO("INFO: [GOMACH] phase backoffed: %lu us.\n",
-             netif->mac.gomach.backoff_phase_us);
+             netif->mac.prot.gomach.backoff_phase_us);
 }
 
 static void gomach_listen_init(gnrc_netif_t *netif)
@@ -1558,7 +1558,7 @@ static void gomach_listen_init(gnrc_netif_t *netif)
 
     gnrc_netif_set_rx_started(netif, false);
     gnrc_gomach_set_pkt_received(netif, false);
-    netif->mac.gomach.cp_extend_count = 0;
+    netif->mac.prot.gomach.cp_extend_count = 0;
     gnrc_gomach_set_quit_cycle(netif, false);
     gnrc_gomach_set_unintd_preamble(netif, false);
     gnrc_gomach_set_beacon_fail(netif, false);
@@ -1570,7 +1570,7 @@ static void gomach_listen_init(gnrc_netif_t *netif)
     gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
 
     /* Turn to current public channel. */
-    gnrc_gomach_turn_channel(netif, netif->mac.gomach.cur_pub_channel);
+    gnrc_gomach_turn_channel(netif, netif->mac.prot.gomach.cur_pub_channel);
 
     /* Enable Auto-ACK for data packet reception. */
     gnrc_gomach_set_autoack(netif, NETOPT_ENABLE);
@@ -1621,8 +1621,8 @@ static void gomach_listen_cp_listen(gnrc_netif_t *netif)
     if (gnrc_gomach_get_cp_end(netif) || gnrc_gomach_get_quit_cycle(netif)) {
         /* If we found ongoing reception, wait for reception complete. */
         if ((gnrc_gomach_get_netdev_state(netif) == NETOPT_STATE_RX) &&
-            (netif->mac.gomach.cp_extend_count < GNRC_GOMACH_CP_EXTEND_THRESHOLD)) {
-            netif->mac.gomach.cp_extend_count++;
+            (netif->mac.prot.gomach.cp_extend_count < GNRC_GOMACH_CP_EXTEND_THRESHOLD)) {
+            netif->mac.prot.gomach.cp_extend_count++;
             gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
             gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_RX_END,
                                     GNRC_GOMACH_WAIT_RX_END_US);
@@ -1722,7 +1722,7 @@ static void gomach_listen_wait_beacon_tx(gnrc_netif_t *netif)
 
                     /* If we didn't find ongoing preamble stream, go to send broadcast packet. */
                     if (!gnrc_gomach_get_unintd_preamble(netif)) {
-                        netif->mac.gomach.basic_state = GNRC_GOMACH_TRANSMIT;
+                        netif->mac.prot.gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                         netif->mac.tx.transmit_state = GNRC_GOMACH_BROADCAST;
                     }
                     else {
@@ -1739,7 +1739,7 @@ static void gomach_listen_wait_beacon_tx(gnrc_netif_t *netif)
 
                             /* If we didn't find ongoing preamble stream, go to t2u procedure. */
                             if (!gnrc_gomach_get_unintd_preamble(netif)) {
-                                netif->mac.gomach.basic_state = GNRC_GOMACH_TRANSMIT;
+                                netif->mac.prot.gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                                 netif->mac.tx.transmit_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
                             }
                             else {
@@ -1752,7 +1752,7 @@ static void gomach_listen_wait_beacon_tx(gnrc_netif_t *netif)
                              * to known device) procedure. Here, we don't worry that the t2k
                              * unicast transmission will interrupt with possible ongoing
                              * preamble transmissions of other devices. */
-                            netif->mac.gomach.basic_state = GNRC_GOMACH_TRANSMIT;
+                            netif->mac.prot.gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                             netif->mac.tx.transmit_state = GNRC_GOMACH_TRANS_TO_KNOWN;
                             break;
                         }
@@ -1777,7 +1777,7 @@ static void gomach_listen_wait_beacon_tx(gnrc_netif_t *netif)
 static void gomach_vtdma_init(gnrc_netif_t *netif)
 {
     /* Switch the radio to the device's sub-channel. */
-    gnrc_gomach_turn_channel(netif, netif->mac.gomach.sub_channel_seq);
+    gnrc_gomach_turn_channel(netif, netif->mac.prot.gomach.sub_channel_seq);
 
     /* Enable Auto ACK again for data reception */
     gnrc_gomach_set_autoack(netif, NETOPT_ENABLE);
@@ -1827,14 +1827,14 @@ static void gomach_vtdma_end(gnrc_netif_t *netif)
     gnrc_mac_dispatch(&netif->mac.rx);
 
     /* Switch the radio to the public-channel. */
-    gnrc_gomach_turn_channel(netif, netif->mac.gomach.cur_pub_channel);
+    gnrc_gomach_turn_channel(netif, netif->mac.prot.gomach.cur_pub_channel);
 
     /* Check if there is packet to send. */
     if (gnrc_gomach_find_next_tx_neighbor(netif)) {
         if (netif->mac.tx.current_neighbor == &netif->mac.tx.neighbors[0]) {
             /* The packet is for broadcasting. */
             if (!gnrc_gomach_get_unintd_preamble(netif)) {
-                netif->mac.gomach.basic_state = GNRC_GOMACH_TRANSMIT;
+                netif->mac.prot.gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                 netif->mac.tx.transmit_state = GNRC_GOMACH_BROADCAST;
             }
             else {
@@ -1848,7 +1848,7 @@ static void gomach_vtdma_end(gnrc_netif_t *netif)
                     /* The neighbor's phase is unknown yet, try to run t2u (transmission
                      * to unknown device) procedure to phase-lock the neighbor. */
                     if (!gnrc_gomach_get_unintd_preamble(netif)) {
-                        netif->mac.gomach.basic_state = GNRC_GOMACH_TRANSMIT;
+                        netif->mac.prot.gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                         netif->mac.tx.transmit_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
                     }
                     else {
@@ -1860,7 +1860,7 @@ static void gomach_vtdma_end(gnrc_netif_t *netif)
                      * to known device) procedure. Here, we don't worry that the t2k
                      * unicast transmission will interrupt with possible ongoing
                      * preamble transmissions of other devices. */
-                    netif->mac.gomach.basic_state = GNRC_GOMACH_TRANSMIT;
+                    netif->mac.prot.gomach.basic_state = GNRC_GOMACH_TRANSMIT;
                     netif->mac.tx.transmit_state = GNRC_GOMACH_TRANS_TO_KNOWN;
                 } break;
                 default: {
@@ -1910,10 +1910,10 @@ static void gomach_sleep_end(gnrc_netif_t *netif)
 
 static void gomach_update(gnrc_netif_t *netif)
 {
-    switch (netif->mac.gomach.basic_state) {
+    switch (netif->mac.prot.gomach.basic_state) {
         case GNRC_GOMACH_INIT: {
             /* State machine of GoMacH's initialization procedure. */
-            switch (netif->mac.gomach.init_state) {
+            switch (netif->mac.prot.gomach.init_state) {
                 case GNRC_GOMACH_INIT_PREPARE: {
                     gomach_init_prepare(netif);
                     break;
@@ -2168,8 +2168,8 @@ static void _gomach_init(gnrc_netif_t *netif)
                                          sizeof(netif->l2addr));
 
     /* Initialize GoMacH's state machines. */
-    netif->mac.gomach.basic_state = GNRC_GOMACH_INIT;
-    netif->mac.gomach.init_state = GNRC_GOMACH_INIT_PREPARE;
+    netif->mac.prot.gomach.basic_state = GNRC_GOMACH_INIT;
+    netif->mac.prot.gomach.init_state = GNRC_GOMACH_INIT_PREPARE;
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
     netif->mac.tx.transmit_state = GNRC_GOMACH_TRANS_TO_UNKNOWN;
     netif->mac.tx.bcast_state = GNRC_GOMACH_BCAST_INIT;
@@ -2177,11 +2177,11 @@ static void _gomach_init(gnrc_netif_t *netif)
     netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_INIT;
 
     /* Initialize GoMacH's channels. */
-    netif->mac.gomach.sub_channel_seq = 13;
-    netif->mac.gomach.pub_channel_1 = 26;
-    netif->mac.gomach.pub_channel_2 = 11;
-    netif->mac.gomach.cur_pub_channel = netif->mac.gomach.pub_channel_1;
-    gnrc_gomach_turn_channel(netif, netif->mac.gomach.cur_pub_channel);
+    netif->mac.prot.gomach.sub_channel_seq = 13;
+    netif->mac.prot.gomach.pub_channel_1 = 26;
+    netif->mac.prot.gomach.pub_channel_2 = 11;
+    netif->mac.prot.gomach.cur_pub_channel = netif->mac.prot.gomach.pub_channel_1;
+    gnrc_gomach_turn_channel(netif, netif->mac.prot.gomach.cur_pub_channel);
 
     /* Enable RX-start and TX-started and TX-END interrupts. */
     netopt_enable_t enable = NETOPT_ENABLE;
@@ -2199,7 +2199,7 @@ static void _gomach_init(gnrc_netif_t *netif)
     netif->mac.tx.no_ack_counter = 0;
     gnrc_gomach_set_enter_new_cycle(netif, false);
     netif->mac.rx.vtdma_manag.sub_channel_seq = 26;
-    netif->mac.gomach.subchannel_occu_flags = 0;
+    netif->mac.prot.gomach.subchannel_occu_flags = 0;
     gnrc_gomach_set_pkt_received(netif, false);
     gnrc_gomach_set_update(netif, false);
     gnrc_gomach_set_duty_cycle_start(netif, false);
@@ -2230,10 +2230,10 @@ static void _gomach_init(gnrc_netif_t *netif)
 
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
     /* Start duty cycle recording */
-    netif->mac.gomach.system_start_time_ticks = xtimer_now_usec64();
-    netif->mac.gomach.last_radio_on_time_ticks = netif->mac.gomach.system_start_time_ticks;
-    netif->mac.gomach.awake_duration_sum_ticks = 0;
-    netif->mac.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
+    netif->mac.prot.gomach.system_start_time_ticks = xtimer_now_usec64();
+    netif->mac.prot.gomach.last_radio_on_time_ticks = netif->mac.prot.gomach.system_start_time_ticks;
+    netif->mac.prot.gomach.awake_duration_sum_ticks = 0;
+    netif->mac.prot.gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
 #endif
 
     gnrc_gomach_set_update(netif, true);
