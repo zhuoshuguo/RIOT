@@ -796,7 +796,7 @@ int gnrc_gomach_dispatch_defer(gnrc_pktsnip_t * buffer[], gnrc_pktsnip_t * pkt);
  *
  * @param[in,out] netif    the network interface.
  * @param[in] pkt          received packet
- * @param[in] info         ptr to the info of the received packet.
+ * @param[in] pa_info      ptr to the info of the received packet.
  *
  */
 void gnrc_gomach_indicator_update(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt,
@@ -822,6 +822,7 @@ void gnrc_gomach_init_choose_subchannel(gnrc_netif_t *netif);
  * @brief Broadcast the chosen sub-channel sequence to the device's neighbors.
  *
  * @param[in] netif    the network interface.
+ * @param[in] use_csma value of csma-enable parameter.
  *
  * @return                 >0 upon sending success.
  * @return                 0< upon sending failure.

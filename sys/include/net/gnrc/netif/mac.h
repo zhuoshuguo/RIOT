@@ -45,6 +45,7 @@ extern "C" {
  */
 #define GNRC_NETIF_MAC_INFO_CSMA_ENABLED       (0x0100U)
 
+#if defined(MODULE_GNRC_LWMAC) || defined(MODULE_GNRC_GOMACH)
 /**
  * @brief Data type to hold MAC protocols
  */
@@ -63,6 +64,7 @@ typedef union {
     gnrc_gomach_t gomach;
 #endif
 } gnrc_mac_prot_t;
+#endif
 
 /**
  * @brief   @ref net_gnrc_mac component of @ref gnrc_netif_mac_t

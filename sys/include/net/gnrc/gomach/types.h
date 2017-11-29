@@ -258,6 +258,9 @@ typedef struct {
     uint8_t slots_num;              /**< Node's allocated slots number. */
 } gnrc_gomach_vtdma_t;
 
+/**
+ * @brief   GoMacH's timeout structure
+ */
 typedef struct {
     xtimer_t timer;                     /**< xtimer entity. */
     msg_t msg;                          /**< msg entity. */
