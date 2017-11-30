@@ -100,24 +100,22 @@ static gnrc_pktsnip_t *_recv(gnrc_netif_t *netif)
             return NULL;
         }
         if (!(state->flags & NETDEV_IEEE802154_RAW)) {
-            gnrc_pktsnip_t *ieee802154_hdr;
-            size_t mhr_len = ieee802154_get_frame_hdr_len(pkt->data);
+        	gnrc_pktsnip_t *ieee802154_hdr;
+        	size_t mhr_len = ieee802154_get_frame_hdr_len(pkt->data);
 
-            if (mhr_len == 0) {
-                DEBUG("_recv_ieee802154: illegally formatted frame received\n");
-                gnrc_pktbuf_release(pkt);
-                return NULL;
-            }
-            nread -= mhr_len;
-            /* mark IEEE 802.15.4 header */
-            ieee802154_hdr = gnrc_pktbuf_mark(pkt, mhr_len, GNRC_NETTYPE_UNDEF);
-            if (ieee802154_hdr == NULL) {
-                DEBUG("_recv_ieee802154: no space left in packet buffer\n");
-                gnrc_pktbuf_release(pkt);
-                return NULL;
-            }
-            netif->mac.prot.gomach.rx_pkt_lqi = rx_info.lqi;
-            netif->mac.prot.gomach.rx_pkt_rssi = rx_info.rssi;
+        	if (mhr_len == 0) {
+        	    DEBUG("_recv_ieee802154: illegally formatted frame received\n");
+        	    gnrc_pktbuf_release(pkt);
+        	    return NULL;
+        	}
+        	nread -= mhr_len;
+        	/* mark IEEE 802.15.4 header */
+        	ieee802154_hdr = gnrc_pktbuf_mark(pkt, mhr_len, GNRC_NETTYPE_UNDEF);
+        	if (ieee802154_hdr == NULL) {
+        	    DEBUG("_recv_ieee802154: no space left in packet buffer\n");
+        	    gnrc_pktbuf_release(pkt);
+        	    return NULL;
+        	}
         }
 
         DEBUG("_recv_ieee802154: reallocating.\n");
