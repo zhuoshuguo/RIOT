@@ -156,6 +156,8 @@ static int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
         return -ENODATA;
     }
 
+    info->seq = ieee802154_get_seq(netif_snip->data);
+
     /* Dissect GoMacH header, Every frame has header as first member */
     gomach_hdr = (gnrc_gomach_hdr_t *) pkt->data;
 
@@ -232,7 +234,6 @@ static int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
     }
 
     info->header = gomach_hdr;
-    info->seq = netif_hdr->seq;
     return 0;
 }
 
