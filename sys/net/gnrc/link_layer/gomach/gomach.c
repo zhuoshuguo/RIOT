@@ -1893,6 +1893,7 @@ static void gomach_update(gnrc_netif_t *netif)
         }
         case GNRC_GOMACH_LISTEN: {
             /* State machine of GoMacH's duty-cycled listen procedure. */
+            printf("C%u\n",netif->mac.rx.listen_state);
             switch (netif->mac.rx.listen_state) {
                 case GNRC_GOMACH_LISTEN_CP_INIT: {
                     gomach_listen_init(netif);

@@ -671,6 +671,7 @@ static inline void gnrc_gomach_set_autoack(gnrc_netif_t *netif, netopt_enable_t 
                             NETOPT_AUTOACK,
                             &autoack,
                             sizeof(autoack));
+    xtimer_usleep(1000);
 }
 
 /**
@@ -688,6 +689,7 @@ static inline void gnrc_gomach_set_ack_req(gnrc_netif_t *netif, netopt_enable_t 
                             NETOPT_ACK_REQ,
                             &ack_req,
                             sizeof(ack_req));
+    xtimer_usleep(1000);
 }
 
 /**
@@ -728,6 +730,7 @@ static inline void gnrc_gomach_turn_channel(gnrc_netif_t *netif, uint16_t channe
                             NETOPT_CHANNEL,
                             &channel_num,
                             sizeof(channel_num));
+    xtimer_usleep(1000);
 }
 
 /**
