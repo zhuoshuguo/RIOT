@@ -168,7 +168,7 @@ static int _parse_packet(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt,
     info->seq = ieee802154_get_seq(pkt->next->data);
 
     gnrc_pktsnip_t *netif_snip = _make_netif_hdr(pkt->next->data);
-    if (netif == NULL) {
+    if (netif_snip == NULL) {
         DEBUG("gomach: no space left in packet buffer\n");
         gnrc_pktbuf_release(pkt);
         return -ENODATA;
