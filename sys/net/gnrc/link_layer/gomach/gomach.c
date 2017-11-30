@@ -1513,15 +1513,19 @@ static void gomach_listen_init(gnrc_netif_t *netif)
     gnrc_gomach_set_cp_end(netif, false);
     gnrc_gomach_set_got_preamble(netif, false);
 
+    puts("0");
     /* Flush RX queue and turn on radio. */
     gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
     gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_IDLE);
 
+    puts("1");
     /* Turn to current public channel. */
-    gnrc_gomach_turn_channel(netif, netif->mac.prot.gomach.cur_pub_channel);
+    //gnrc_gomach_turn_channel(netif, netif->mac.prot.gomach.cur_pub_channel);
 
+    puts("2");
     /* Enable Auto-ACK for data packet reception. */
     gnrc_gomach_set_autoack(netif, NETOPT_ENABLE);
+    puts("3");
 
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_CP_LISTEN;
     gnrc_gomach_set_update(netif, false);
