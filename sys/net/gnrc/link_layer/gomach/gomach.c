@@ -2109,6 +2109,8 @@ static void _gomach_init(gnrc_netif_t *netif)
     dev = netif->dev;
     dev->event_callback = _gomach_event_cb;
 
+    xtimer_sleep(10);
+    puts("goamch start");
     /* Initialize RTT. */
     rtt_init();
 
