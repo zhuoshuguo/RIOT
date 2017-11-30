@@ -328,6 +328,47 @@ int gnrc_gomach_send_preamble_ack(gnrc_netif_t *netif, gnrc_gomach_packet_info_t
     return res;
 }
 
+static inline bool _assemble_beacon(gnrc_netif_t *netif, uint8_t total_tdma_slot_num,
+                                    uint8_t total_tdma_node_num, uint8_t *slots_list,
+                                    gnrc_gomach_l2_id_t *id_list, gnrc_pktsnip_t **pkt,
+                                    gnrc_pktsnip_t **gomach_pkt,
+                                    gnrc_gomach_frame_beacon_t *gomach_beaocn_hdr)
+{
+    /* If there are slots to allocate, add the slots list and the ID list to
+     * the beacon! */
+    netif->mac.rx.vtdma_manag.total_slots_num = total_tdma_slot_num;
+
+    /* Add the slots list to the beacon. */
+    *pkt = gnrc_pktbuf_add(NULL, slots_list, total_tdma_node_num * sizeof(uint8_t),
+                           GNRC_NETTYPE_GOMACH);
+    if (*pkt == NULL) {
+        LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_beacon().\n");
+        return false;
+    }
+    *gomach_pkt = *pkt;
+
+    /* Add the ID list to the beacon. */
+    *pkt = gnrc_pktbuf_add(*pkt, id_list, total_tdma_node_num * sizeof(gnrc_gomach_l2_id_t),
+                           GNRC_NETTYPE_GOMACH);
+    if (*pkt == NULL) {
+        LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_beacon().\n");
+        gnrc_pktbuf_release(*gomach_pkt);
+        return false;
+    }
+    *gomach_pkt = *pkt;
+
+    /* Add the GoMacH header to the beacon. */
+    *pkt = gnrc_pktbuf_add(*pkt, gomach_beaocn_hdr, sizeof(gnrc_gomach_frame_beacon_t),
+                           GNRC_NETTYPE_GOMACH);
+    if (*pkt == NULL) {
+        LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_beacon().\n");
+        gnrc_pktbuf_release(*gomach_pkt);
+        return false;
+    }
+
+    return true;
+}
+
 int gnrc_gomach_send_beacon(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
@@ -380,35 +421,8 @@ int gnrc_gomach_send_beacon(gnrc_netif_t *netif)
     gomach_beaocn_hdr.schedulelist_size = total_tdma_node_num;
 
     if (total_tdma_node_num > 0) {
-        /* If there are slots to allocate, add the slots list and the ID list to
-         * the beacon! */
-        netif->mac.rx.vtdma_manag.total_slots_num = total_tdma_slot_num;
-
-        /* Add the slots list to the beacon. */
-        pkt = gnrc_pktbuf_add(NULL, slots_list, total_tdma_node_num * sizeof(uint8_t),
-                              GNRC_NETTYPE_GOMACH);
-        if (pkt == NULL) {
-            LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_beacon().\n");
-            return -ENOBUFS;
-        }
-        gomach_pkt = pkt;
-
-        /* Add the ID list to the beacon. */
-        pkt = gnrc_pktbuf_add(pkt, id_list, total_tdma_node_num * sizeof(gnrc_gomach_l2_id_t),
-                              GNRC_NETTYPE_GOMACH);
-        if (pkt == NULL) {
-            LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_beacon().\n");
-            gnrc_pktbuf_release(gomach_pkt);
-            return -ENOBUFS;
-        }
-        gomach_pkt = pkt;
-
-        /* Add the GoMacH header to the beacon. */
-        pkt = gnrc_pktbuf_add(pkt, &gomach_beaocn_hdr, sizeof(gomach_beaocn_hdr),
-                              GNRC_NETTYPE_GOMACH);
-        if (pkt == NULL) {
-            LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_beacon().\n");
-            gnrc_pktbuf_release(gomach_pkt);
+        if (!_assemble_beacon(netif, total_tdma_slot_num, total_tdma_node_num,
+                              slots_list, id_list, &pkt, &gomach_pkt, &gomach_beaocn_hdr)) {
             return -ENOBUFS;
         }
         gomach_pkt = pkt;

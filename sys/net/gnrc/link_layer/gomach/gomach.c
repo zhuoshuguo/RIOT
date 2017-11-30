@@ -78,33 +78,6 @@ gnrc_netif_t *gnrc_netif_gomach_create(char *stack, int stacksize,
                              &gomach_ops);
 }
 
-static gnrc_pktsnip_t *_make_netif_hdr(uint8_t *mhr)
-{
-    gnrc_pktsnip_t *snip;
-    uint8_t src[IEEE802154_LONG_ADDRESS_LEN], dst[IEEE802154_LONG_ADDRESS_LEN];
-    int src_len, dst_len;
-    le_uint16_t _pan_tmp;   /* TODO: hand-up PAN IDs to GNRC? */
-
-    dst_len = ieee802154_get_dst(mhr, dst, &_pan_tmp);
-    src_len = ieee802154_get_src(mhr, src, &_pan_tmp);
-    if ((dst_len < 0) || (src_len < 0)) {
-        DEBUG("_make_netif_hdr: unable to get addresses\n");
-        return NULL;
-    }
-    /* allocate space for header */
-    snip = gnrc_netif_hdr_build(src, (size_t)src_len, dst, (size_t)dst_len);
-    if (snip == NULL) {
-        DEBUG("_make_netif_hdr: no space left in packet buffer\n");
-        return NULL;
-    }
-    /* set broadcast flag for broadcast destination */
-    if ((dst_len == 2) && (dst[0] == 0xff) && (dst[1] == 0xff)) {
-        gnrc_netif_hdr_t *hdr = snip->data;
-        hdr->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
-    }
-    return snip;
-}
-
 static gnrc_pktsnip_t *_recv(gnrc_netif_t *netif)
 {
     netdev_t *dev = netif->dev;
@@ -127,62 +100,14 @@ static gnrc_pktsnip_t *_recv(gnrc_netif_t *netif)
             return NULL;
         }
         if (!(state->flags & NETDEV_IEEE802154_RAW)) {
-            gnrc_pktsnip_t *ieee802154_hdr, *netif_hdr;
-            gnrc_netif_hdr_t *hdr;
-#if ENABLE_DEBUG
-            char src_str[GNRC_NETIF_HDR_L2ADDR_PRINT_LEN];
-#endif
-            size_t mhr_len = ieee802154_get_frame_hdr_len(pkt->data);
-
-            if (mhr_len == 0) {
-                DEBUG("_recv_ieee802154: illegally formatted frame received\n");
+            nread = dev->driver->recv(dev, pkt->data, bytes_expected, &rx_info);
+            if (nread <= 0) {
                 gnrc_pktbuf_release(pkt);
                 return NULL;
             }
-            nread -= mhr_len;
-            /* mark IEEE 802.15.4 header */
-            ieee802154_hdr = gnrc_pktbuf_mark(pkt, mhr_len, GNRC_NETTYPE_UNDEF);
-            if (ieee802154_hdr == NULL) {
-                DEBUG("_recv_ieee802154: no space left in packet buffer\n");
-                gnrc_pktbuf_release(pkt);
-                return NULL;
-            }
-            netif_hdr = _make_netif_hdr(ieee802154_hdr->data);
-            if (netif_hdr == NULL) {
-                DEBUG("_recv_ieee802154: no space left in packet buffer\n");
-                gnrc_pktbuf_release(pkt);
-                return NULL;
-            }
-
-            hdr = netif_hdr->data;
-
-#ifdef MODULE_L2FILTER
-            if (!l2filter_pass(dev->filter, gnrc_netif_hdr_get_src_addr(hdr),
-                               hdr->src_l2addr_len)) {
-                gnrc_pktbuf_release(pkt);
-                gnrc_pktbuf_release(netif_hdr);
-                DEBUG("_recv_ieee802154: packet dropped by l2filter\n");
-                return NULL;
-            }
-#endif
-
-            hdr->lqi = rx_info.lqi;
-            hdr->rssi = rx_info.rssi;
-            hdr->if_pid = thread_getpid();
-            hdr->seq = (unsigned)ieee802154_get_seq(ieee802154_hdr->data);
-            pkt->type = state->proto;
-#if ENABLE_DEBUG
-            DEBUG("_recv_ieee802154: received packet from %s of length %u\n",
-                  gnrc_netif_addr_to_str(src_str, sizeof(src_str),
-                                         gnrc_netif_hdr_get_src_addr(hdr),
-                                         hdr->src_l2addr_len),
-                  nread);
-#if defined(MODULE_OD)
-            od_hex_dump(pkt->data, nread, OD_WIDTH_DEFAULT);
-#endif
-#endif
-            gnrc_pktbuf_remove_snip(pkt, ieee802154_hdr);
-            LL_APPEND(pkt, netif_hdr);
+            DEBUG("_recv_ieee802154: reallocating.\n");
+            gnrc_pktbuf_realloc_data(pkt, nread);
+            return pkt;
         }
 
         DEBUG("_recv_ieee802154: reallocating.\n");
@@ -1348,6 +1273,65 @@ static void gomach_t2u_send_data(gnrc_netif_t *netif)
     gnrc_gomach_set_update(netif, false);
 }
 
+static inline void _t2u_data_tx_success(gnrc_netif_t *netif)
+{
+    /* If transmission succeeded, release the data. */
+    gnrc_pktbuf_release(netif->mac.tx.packet);
+    netif->mac.tx.packet = NULL;
+
+    netif->mac.tx.no_ack_counter = 0;
+    netif->mac.tx.t2u_retry_counter = 0;
+
+    /* Attend the vTDMA procedure if the sender has pending packets for the receiver. */
+    if (gnrc_priority_pktqueue_length(&netif->mac.tx.current_neighbor->queue) > 0) {
+        netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_INIT;
+        gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_PREAMBLE);
+        gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_PREAM_DURATION);
+        gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
+        gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
+
+        /* Switch to t2k procedure and wait for the beacon of the receiver. */
+        netif->mac.tx.vtdma_para.slots_num = 0;
+        gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_BEACON,
+                                GNRC_GOMACH_WAIT_BEACON_TIME_US);
+        gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
+
+        netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_WAIT_BEACON;
+        netif->mac.tx.transmit_state = GNRC_GOMACH_TRANS_TO_KNOWN;
+    }
+    else {
+        netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_END;
+    }
+}
+
+static inline void _t2u_data_tx_fail(gnrc_netif_t *netif)
+{
+    netif->mac.tx.t2u_retry_counter++;
+    /* If we meet t2u retry limit, release the packet. */
+    if (netif->mac.tx.t2u_retry_counter >= GNRC_GOMACH_T2U_RETYR_THRESHOLD) {
+        LOG_DEBUG("[GOMACH] t2u send data failed on channel %d,"
+                  " drop packet.\n", netif->mac.tx.current_neighbor->pub_chanseq);
+        gnrc_pktbuf_release(netif->mac.tx.packet);
+        netif->mac.tx.packet = NULL;
+        netif->mac.tx.current_neighbor = NULL;
+        netif->mac.tx.no_ack_counter = 0;
+        netif->mac.tx.t2u_retry_counter = 0;
+        netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_END;
+    }
+    else {
+        /* Record the MAC sequence of the data, retry t2u in next cycle. */
+        netif->mac.tx.no_ack_counter = GNRC_GOMACH_REPHASELOCK_THRESHOLD;
+        netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)netif->dev;
+        netif->mac.tx.tx_seq = device_state->seq - 1;
+
+        LOG_DEBUG("[GOMACH] t2u send data failed on channel %d.\n",
+                  netif->mac.tx.current_neighbor->pub_chanseq);
+        /* Set quit_current_cycle to true, thus not to release current_neighbour pointer
+         * in t2u-end */
+        gnrc_gomach_set_quit_cycle(netif, true);
+        netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_END;
+    }
+}
 static void gomach_t2u_wait_tx_feedback(gnrc_netif_t *netif)
 {
     if (gnrc_gomach_timeout_is_expired(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR)) {
@@ -1370,60 +1354,10 @@ static void gomach_t2u_wait_tx_feedback(gnrc_netif_t *netif)
         gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
 
         if (gnrc_netif_get_tx_feedback(netif) == TX_FEEDBACK_SUCCESS) {
-            /* If transmission succeeded, release the data. */
-            gnrc_pktbuf_release(netif->mac.tx.packet);
-            netif->mac.tx.packet = NULL;
-
-            netif->mac.tx.no_ack_counter = 0;
-            netif->mac.tx.t2u_retry_counter = 0;
-
-            /* Attend the vTDMA procedure if the sender has pending packets for the receiver. */
-            if (gnrc_priority_pktqueue_length(&netif->mac.tx.current_neighbor->queue) > 0) {
-                netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_INIT;
-                gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_PREAMBLE);
-                gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_PREAM_DURATION);
-                gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
-                gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
-
-                /* Switch to t2k procedure and wait for the beacon of the receiver. */
-                netif->mac.tx.vtdma_para.slots_num = 0;
-                gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_BEACON,
-                                        GNRC_GOMACH_WAIT_BEACON_TIME_US);
-                gnrc_priority_pktqueue_flush(&netif->mac.rx.queue);
-
-                netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_WAIT_BEACON;
-                netif->mac.tx.transmit_state = GNRC_GOMACH_TRANS_TO_KNOWN;
-            }
-            else {
-                netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_END;
-            }
+            _t2u_data_tx_success(netif);
         }
         else {
-            netif->mac.tx.t2u_retry_counter++;
-            /* If we meet t2u retry limit, release the packet. */
-            if (netif->mac.tx.t2u_retry_counter >= GNRC_GOMACH_T2U_RETYR_THRESHOLD) {
-                LOG_DEBUG("[GOMACH] t2u send data failed on channel %d,"
-                          " drop packet.\n", netif->mac.tx.current_neighbor->pub_chanseq);
-                gnrc_pktbuf_release(netif->mac.tx.packet);
-                netif->mac.tx.packet = NULL;
-                netif->mac.tx.current_neighbor = NULL;
-                netif->mac.tx.no_ack_counter = 0;
-                netif->mac.tx.t2u_retry_counter = 0;
-                netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_END;
-            }
-            else {
-                /* Record the MAC sequence of the data, retry t2u in next cycle. */
-                netif->mac.tx.no_ack_counter = GNRC_GOMACH_REPHASELOCK_THRESHOLD;
-                netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)netif->dev;
-                netif->mac.tx.tx_seq = device_state->seq - 1;
-
-                LOG_DEBUG("[GOMACH] t2u send data failed on channel %d.\n",
-                          netif->mac.tx.current_neighbor->pub_chanseq);
-                /* Set quit_current_cycle to true, thus not to release current_neighbour pointer
-                 * in t2u-end */
-                gnrc_gomach_set_quit_cycle(netif, true);
-                netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_END;
-            }
+            _t2u_data_tx_fail(netif);
         }
         gnrc_gomach_set_update(netif, true);
     }
@@ -1583,27 +1517,51 @@ static void gomach_listen_init(gnrc_netif_t *netif)
     gnrc_gomach_set_update(netif, false);
 }
 
+static inline void _cp_listen_get_pkt(gnrc_netif_t *netif)
+{
+    gnrc_gomach_cp_packet_process(netif);
+
+    /* If the device has replied a preamble-ACK, it must waits for the data.
+     * Here, we extend the CP. */
+    if (gnrc_gomach_get_got_preamble(netif)) {
+        gnrc_gomach_set_got_preamble(netif, false);
+        gnrc_gomach_set_cp_end(netif, false);
+        gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_END);
+        gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_END, GNRC_GOMACH_CP_DURATION_US);
+    }
+    else if ((!gnrc_gomach_get_unintd_preamble(netif)) &&
+             (!gnrc_gomach_get_quit_cycle(netif))) {
+        gnrc_gomach_set_got_preamble(netif, false);
+        gnrc_gomach_set_cp_end(netif, false);
+        gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_END);
+        gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_END, GNRC_GOMACH_CP_DURATION_US);
+    }
+}
+
+static inline void _cp_listen_end(gnrc_netif_t *netif)
+{
+    /* If we found ongoing reception, wait for reception complete. */
+    if ((gnrc_gomach_get_netdev_state(netif) == NETOPT_STATE_RX) &&
+        (netif->mac.prot.gomach.cp_extend_count < GNRC_GOMACH_CP_EXTEND_THRESHOLD)) {
+        netif->mac.prot.gomach.cp_extend_count++;
+        gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
+        gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_RX_END,
+                                GNRC_GOMACH_WAIT_RX_END_US);
+    }
+    else {
+        gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
+        gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_END);
+        gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_MAX);
+        netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_CP_END;
+        gnrc_gomach_set_update(netif, true);
+    }
+}
+
 static void gomach_listen_cp_listen(gnrc_netif_t *netif)
 {
     if (gnrc_gomach_get_pkt_received(netif)) {
         gnrc_gomach_set_pkt_received(netif, false);
-        gnrc_gomach_cp_packet_process(netif);
-
-        /* If the device has replied a preamble-ACK, it must waits for the data.
-         * Here, we extend the CP. */
-        if (gnrc_gomach_get_got_preamble(netif)) {
-            gnrc_gomach_set_got_preamble(netif, false);
-            gnrc_gomach_set_cp_end(netif, false);
-            gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_END);
-            gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_END, GNRC_GOMACH_CP_DURATION_US);
-        }
-        else if ((!gnrc_gomach_get_unintd_preamble(netif)) &&
-                 (!gnrc_gomach_get_quit_cycle(netif))) {
-            gnrc_gomach_set_got_preamble(netif, false);
-            gnrc_gomach_set_cp_end(netif, false);
-            gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_END);
-            gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_END, GNRC_GOMACH_CP_DURATION_US);
-        }
+        _cp_listen_get_pkt(netif);
     }
 
     /* If we have reached the maximum CP duration, quit CP. */
@@ -1623,21 +1581,7 @@ static void gomach_listen_cp_listen(gnrc_netif_t *netif)
 
     /* If CP duration timeouted or we must quit CP, go to CP end. */
     if (gnrc_gomach_get_cp_end(netif) || gnrc_gomach_get_quit_cycle(netif)) {
-        /* If we found ongoing reception, wait for reception complete. */
-        if ((gnrc_gomach_get_netdev_state(netif) == NETOPT_STATE_RX) &&
-            (netif->mac.prot.gomach.cp_extend_count < GNRC_GOMACH_CP_EXTEND_THRESHOLD)) {
-            netif->mac.prot.gomach.cp_extend_count++;
-            gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
-            gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_RX_END,
-                                    GNRC_GOMACH_WAIT_RX_END_US);
-        }
-        else {
-            gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
-            gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_END);
-            gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_CP_MAX);
-            netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_CP_END;
-            gnrc_gomach_set_update(netif, true);
-        }
+        _cp_listen_end(netif);
     }
 }
 
