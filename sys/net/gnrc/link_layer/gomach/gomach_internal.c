@@ -130,15 +130,60 @@ int _gnrc_gomach_transmit(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
     return res;
 }
 
-static int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
+static gnrc_pktsnip_t *_make_netif_hdr(uint8_t *mhr)
+{
+    gnrc_pktsnip_t *snip;
+    uint8_t src[IEEE802154_LONG_ADDRESS_LEN], dst[IEEE802154_LONG_ADDRESS_LEN];
+    int src_len, dst_len;
+    le_uint16_t _pan_tmp;   /* TODO: hand-up PAN IDs to GNRC? */
+
+    dst_len = ieee802154_get_dst(mhr, dst, &_pan_tmp);
+    src_len = ieee802154_get_src(mhr, src, &_pan_tmp);
+    if ((dst_len < 0) || (src_len < 0)) {
+        DEBUG("_make_netif_hdr: unable to get addresses\n");
+        return NULL;
+    }
+    /* allocate space for header */
+    snip = gnrc_netif_hdr_build(src, (size_t)src_len, dst, (size_t)dst_len);
+    if (snip == NULL) {
+        DEBUG("_make_netif_hdr: no space left in packet buffer\n");
+        return NULL;
+    }
+    /* set broadcast flag for broadcast destination */
+    if ((dst_len == 2) && (dst[0] == 0xff) && (dst[1] == 0xff)) {
+        gnrc_netif_hdr_t *hdr = snip->data;
+        hdr->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
+    }
+    return snip;
+}
+
+static int _parse_packet(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt,
+                         gnrc_gomach_packet_info_t *info)
 {
     assert(info != NULL);
     assert(pkt != NULL);
 
-    gnrc_netif_hdr_t *netif_hdr = NULL;
+    netdev_ieee802154_t *state = (netdev_ieee802154_t *)netif->dev;
+    /* Get the packet sequence number */
+    info->seq = ieee802154_get_seq(pkt->next->data);
+
+    gnrc_pktsnip_t *netif_snip = _make_netif_hdr(pkt->next->data);
+    if (netif == NULL) {
+        DEBUG("gomach: no space left in packet buffer\n");
+        gnrc_pktbuf_release(pkt);
+        return -ENODATA;
+    }
+
+    gnrc_netif_hdr_t *netif_hdr = netif_snip->data;
+    netif_hdr->lqi = netif->mac.prot.gomach.rx_pkt_lqi;
+    netif_hdr->rssi = netif->mac.prot.gomach.rx_pkt_rssi;
+    netif_hdr->if_pid = netif->pid;
+    pkt->type = state->proto;
+    gnrc_pktbuf_remove_snip(pkt, pkt->next);
+    LL_APPEND(pkt, netif_snip);
+
     gnrc_pktsnip_t *gomach_snip = NULL;
     gnrc_gomach_hdr_t *gomach_hdr = NULL;
-    gnrc_pktsnip_t *netif_snip = NULL;
 
     netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
     if (netif_snip == NULL) {
@@ -155,8 +200,6 @@ static int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
     if (netif_hdr->src_l2addr_len > sizeof(info->src_addr)) {
         return -ENODATA;
     }
-
-    info->seq = ieee802154_get_seq(netif_snip->data);
 
     /* Dissect GoMacH header, Every frame has header as first member */
     gomach_hdr = (gnrc_gomach_hdr_t *) pkt->data;
@@ -670,7 +713,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netif_t *netif)
 
     while ((pkt = gnrc_priority_pktqueue_pop(&netif->mac.rx.queue)) != NULL) {
         /* Parse the received packet, fetch key MAC informations. */
-        int res = _parse_packet(pkt, &receive_packet_info);
+        int res = _parse_packet(netif, pkt, &receive_packet_info);
         if (res != 0) {
             LOG_DEBUG("[GOMACH] CP: Packet could not be parsed: %i\n", res);
             gnrc_pktbuf_release(pkt);
@@ -975,7 +1018,7 @@ void gnrc_gomach_process_pkt_in_wait_preamble_ack(gnrc_netif_t *netif)
 
     while ((pkt = gnrc_priority_pktqueue_pop(&netif->mac.rx.queue)) != NULL) {
         /* Parse the received packet. */
-        int res = _parse_packet(pkt, &receive_packet_info);
+        int res = _parse_packet(netif, pkt, &receive_packet_info);
         if (res != 0) {
             LOG_DEBUG("[GOMACH] t2u: Packet could not be parsed: %i\n", res);
             gnrc_pktbuf_release(pkt);
@@ -1208,7 +1251,7 @@ void gnrc_gomach_packet_process_in_wait_beacon(gnrc_netif_t *netif)
 
     while ((pkt = gnrc_priority_pktqueue_pop(&netif->mac.rx.queue)) != NULL) {
         /* Parse the received packet. */
-        int res = _parse_packet(pkt, &receive_packet_info);
+        int res = _parse_packet(netif, pkt, &receive_packet_info);
         if (res != 0) {
             LOG_DEBUG("[GOMACH] t2k: Packet could not be parsed: %i\n", res);
             gnrc_pktbuf_release(pkt);
@@ -1276,7 +1319,7 @@ void gnrc_gomach_packet_process_in_vtdma(gnrc_netif_t *netif)
 
     while ((pkt = gnrc_priority_pktqueue_pop(&netif->mac.rx.queue)) != NULL) {
         /* Parse the received packet. */
-        int res = _parse_packet(pkt, &receive_packet_info);
+        int res = _parse_packet(netif, pkt, &receive_packet_info);
         if (res != 0) {
             LOG_DEBUG("[GOMACH] vtdma: Packet could not be parsed: %i\n", res);
             gnrc_pktbuf_release(pkt);

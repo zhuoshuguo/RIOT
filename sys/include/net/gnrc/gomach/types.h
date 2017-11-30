@@ -299,6 +299,11 @@ typedef struct gomach {
     uint16_t gomach_info;                                       /**< GoMacH's internal
                                                                      information. */
     uint64_t last_wakeup_phase_us;                              /**< Last cycle wakeup phase. */
+    int16_t rx_pkt_rssi;                                        /**< RSSI of latest received
+                                                                     packet in dBm */
+    uint8_t rx_pkt_lqi;                                         /**< LQI of latest received
+                                                                     packet */
+
 
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
     /* Parameters for recording duty-cycle */

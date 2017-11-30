@@ -78,33 +78,6 @@ gnrc_netif_t *gnrc_netif_gomach_create(char *stack, int stacksize,
                              &gomach_ops);
 }
 
-static gnrc_pktsnip_t *_make_netif_hdr(uint8_t *mhr)
-{
-    gnrc_pktsnip_t *snip;
-    uint8_t src[IEEE802154_LONG_ADDRESS_LEN], dst[IEEE802154_LONG_ADDRESS_LEN];
-    int src_len, dst_len;
-    le_uint16_t _pan_tmp;   /* TODO: hand-up PAN IDs to GNRC? */
-
-    dst_len = ieee802154_get_dst(mhr, dst, &_pan_tmp);
-    src_len = ieee802154_get_src(mhr, src, &_pan_tmp);
-    if ((dst_len < 0) || (src_len < 0)) {
-        DEBUG("_make_netif_hdr: unable to get addresses\n");
-        return NULL;
-    }
-    /* allocate space for header */
-    snip = gnrc_netif_hdr_build(src, (size_t)src_len, dst, (size_t)dst_len);
-    if (snip == NULL) {
-        DEBUG("_make_netif_hdr: no space left in packet buffer\n");
-        return NULL;
-    }
-    /* set broadcast flag for broadcast destination */
-    if ((dst_len == 2) && (dst[0] == 0xff) && (dst[1] == 0xff)) {
-        gnrc_netif_hdr_t *hdr = snip->data;
-        hdr->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
-    }
-    return snip;
-}
-
 static gnrc_pktsnip_t *_recv(gnrc_netif_t *netif)
 {
     netdev_t *dev = netif->dev;
@@ -127,10 +100,7 @@ static gnrc_pktsnip_t *_recv(gnrc_netif_t *netif)
             return NULL;
         }
         if (!(state->flags & NETDEV_IEEE802154_RAW)) {
-            gnrc_pktsnip_t *ieee802154_hdr, *netif_hdr;
-#if ENABLE_DEBUG
-            char src_str[GNRC_NETIF_HDR_L2ADDR_PRINT_LEN];
-#endif
+            gnrc_pktsnip_t *ieee802154_hdr;
             size_t mhr_len = ieee802154_get_frame_hdr_len(pkt->data);
 
             if (mhr_len == 0) {
@@ -146,26 +116,8 @@ static gnrc_pktsnip_t *_recv(gnrc_netif_t *netif)
                 gnrc_pktbuf_release(pkt);
                 return NULL;
             }
-            netif_hdr = _make_netif_hdr(ieee802154_hdr->data);
-            if (netif_hdr == NULL) {
-                DEBUG("_recv_ieee802154: no space left in packet buffer\n");
-                gnrc_pktbuf_release(pkt);
-                return NULL;
-            }
-
-            pkt->type = state->proto;
-#if ENABLE_DEBUG
-            DEBUG("_recv_ieee802154: received packet from %s of length %u\n",
-                  gnrc_netif_addr_to_str(src_str, sizeof(src_str),
-                                         gnrc_netif_hdr_get_src_addr(hdr),
-                                         hdr->src_l2addr_len),
-                  nread);
-#if defined(MODULE_OD)
-            od_hex_dump(pkt->data, nread, OD_WIDTH_DEFAULT);
-#endif
-#endif
-            gnrc_pktbuf_remove_snip(pkt, ieee802154_hdr);
-            LL_APPEND(pkt, netif_hdr);
+            netif->mac.prot.gomach.rx_pkt_lqi = rx_info.lqi;
+            netif->mac.prot.gomach.rx_pkt_rssi = rx_info.rssi;
         }
 
         DEBUG("_recv_ieee802154: reallocating.\n");
