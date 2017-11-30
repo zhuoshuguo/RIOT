@@ -624,7 +624,7 @@ uint64_t gnrc_gomach_phase_now(gnrc_netif_t *netif);
  * @param[in]   netif       ptr to the network interface
  * @param[in]   devstate    new state for netdev
  */
-static void gnrc_gomach_set_netdev_state(gnrc_netif_t *netif, netopt_state_t devstate)
+static inline void gnrc_gomach_set_netdev_state(gnrc_netif_t *netif, netopt_state_t devstate)
 {
     assert(netif != NULL);
 
