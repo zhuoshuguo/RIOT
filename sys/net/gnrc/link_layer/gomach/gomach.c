@@ -1842,7 +1842,7 @@ static void gomach_vtdma_end(gnrc_netif_t *netif)
 static void gomach_sleep_init(gnrc_netif_t *netif)
 {
     /* Turn off the radio during sleep period to conserve power. */
-    gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_SLEEP);
+    //gnrc_gomach_set_netdev_state(netif, NETOPT_STATE_SLEEP);
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_gomach_set_update(netif, true);
 }
