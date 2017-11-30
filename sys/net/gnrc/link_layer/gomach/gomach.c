@@ -1574,6 +1574,8 @@ static void gomach_listen_cp_listen(gnrc_netif_t *netif)
         _cp_listen_get_pkt(netif);
     }
 
+    puts("c");
+
     /* If we have reached the maximum CP duration, quit CP. */
     if (gnrc_gomach_timeout_is_expired(netif, GNRC_GOMACH_TIMEOUT_CP_MAX)) {
         gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
