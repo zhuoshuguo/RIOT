@@ -330,7 +330,7 @@ int gnrc_gomach_send_beacon(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
 
-    int i;
+    uint8_t i;
     int j = 0;
     uint8_t total_tdma_node_num = 0;
     uint8_t total_tdma_slot_num = 0;
@@ -503,7 +503,7 @@ void gnrc_gomach_indicator_update(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt,
         return;
     }
 
-    int i;
+    uint8_t i;
     /* Check whether the device has been registered or not. */
     for (i = 0; i < GNRC_GOMACH_SLOSCH_UNIT_COUNT; i++) {
         if (memcmp(&netif->mac.rx.slosch_list[i].node_addr.addr,
@@ -536,7 +536,7 @@ bool gnrc_gomach_check_duplicate(gnrc_netif_t *netif, gnrc_gomach_packet_info_t 
     assert(netif != NULL);
     assert(pa_info != NULL);
 
-    int i;
+    uint8_t i;
     /* First check if we can found the same source sender ID in the recorded info units. */
     for (i = 0; i < GNRC_GOMACH_DUPCHK_BUFFER_SIZE; i++) {
         if (memcmp(&netif->mac.rx.check_dup_pkt.last_nodes[i].node_addr.addr,
@@ -826,8 +826,8 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
     	phase_us += GNRC_GOMACH_SUPERFRAME_DURATION_US;
     }
 
-    if ((phase_us > (GNRC_GOMACH_SUPERFRAME_DURATION_US - GNRC_GOMACH_CP_MIN_GAP_US)) ||
-         (phase_us < GNRC_GOMACH_CP_MIN_GAP_US)) {
+    if (((uint32_t)phase_us > (GNRC_GOMACH_SUPERFRAME_DURATION_US - GNRC_GOMACH_CP_MIN_GAP_US)) ||
+         ((uint32_t)phase_us < GNRC_GOMACH_CP_MIN_GAP_US)) {
             LOG_DEBUG("[GOMACH] t2u: own phase is close to the neighbor's.\n");
             gnrc_gomach_set_phase_backoff(netif, true);
             /* Set a random phase-backoff value. */
@@ -839,7 +839,7 @@ void gnrc_gomach_process_preamble_ack(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
     netif->mac.tx.current_neighbor->cp_phase = phase_us;
 
     /* Record the public-channel phase of the neighbor. */
-    if (gnrc_gomach_get_enter_new_cycle(netif) && (phase_us > gnrc_gomach_phase_now(netif))) {
+    if (gnrc_gomach_get_enter_new_cycle(netif) && ((uint32_t)phase_us > gnrc_gomach_phase_now(netif))) {
         if (gnrc_gomach_get_on_pubchan_1(netif)) {
             netif->mac.tx.current_neighbor->pub_chanseq = netif->mac.gomach.pub_channel_2;
         }
@@ -1019,7 +1019,7 @@ bool gnrc_gomach_find_next_tx_neighbor(gnrc_netif_t *netif)
             j = 1;
         }
 
-        for (int i = 1; i < GNRC_MAC_NEIGHBOR_COUNT; i++) {
+        for (uint8_t i = 1; i < GNRC_MAC_NEIGHBOR_COUNT; i++) {
             if (gnrc_priority_pktqueue_length(&netif->mac.tx.neighbors[j].queue) > 0) {
                 netif->mac.tx.last_tx_neighbor_id = j;
                 next = (int) j;
@@ -1238,7 +1238,7 @@ void gnrc_gomach_update_neighbor_phase(gnrc_netif_t *netif)
 {
     assert(netif != NULL);
 
-    for (int i = 1; i < GNRC_MAC_NEIGHBOR_COUNT; i++) {
+    for (uint8_t i = 1; i < GNRC_MAC_NEIGHBOR_COUNT; i++) {
         if (netif->mac.tx.neighbors[i].mac_type == GNRC_GOMACH_TYPE_KNOWN) {
             long int tmp = netif->mac.tx.neighbors[i].cp_phase -
                            netif->mac.gomach.backoff_phase_us;
@@ -1272,7 +1272,7 @@ void gnrc_gomach_update_neighbor_pubchan(gnrc_netif_t *netif)
     }
 
     /* Toggle TX neighbors' current channel. */
-    for (int i = 1; i < GNRC_MAC_NEIGHBOR_COUNT; i++) {
+    for (uint8_t i = 1; i < GNRC_MAC_NEIGHBOR_COUNT; i++) {
         if (netif->mac.tx.neighbors[i].mac_type == GNRC_GOMACH_TYPE_KNOWN) {
             if (netif->mac.tx.neighbors[i].pub_chanseq == netif->mac.gomach.pub_channel_1) {
                 netif->mac.tx.neighbors[i].pub_chanseq = netif->mac.gomach.pub_channel_2;

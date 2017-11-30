@@ -534,8 +534,8 @@ static void gomach_t2k_init(gnrc_netif_t *netif)
      * Firstly, put the calculated phase ahead, check whether the neighbor's phase has gone ahead
      * of the recorded one */
     if (netif->mac.tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD - 2)) {
-        if (wait_phase_duration < GNRC_GOMACH_CP_DURATION_US) {
-            wait_phase_duration = (wait_phase_duration + GNRC_GOMACH_SUPERFRAME_DURATION_US) -
+        if ((uint32_t)wait_phase_duration < GNRC_GOMACH_CP_DURATION_US) {
+        	wait_phase_duration = (wait_phase_duration + GNRC_GOMACH_SUPERFRAME_DURATION_US) -
                                   GNRC_GOMACH_CP_DURATION_US;
         }
         else {
@@ -546,12 +546,12 @@ static void gomach_t2k_init(gnrc_netif_t *netif)
      *  a little bit, to see if the real phase is behind the original calculated one. */
     if (netif->mac.tx.no_ack_counter == (GNRC_GOMACH_REPHASELOCK_THRESHOLD - 1)) {
         wait_phase_duration = wait_phase_duration + GNRC_GOMACH_CP_DURATION_US;
-        if (wait_phase_duration > GNRC_GOMACH_SUPERFRAME_DURATION_US) {
+        if ((uint32_t)wait_phase_duration > GNRC_GOMACH_SUPERFRAME_DURATION_US) {
             wait_phase_duration = wait_phase_duration - GNRC_GOMACH_SUPERFRAME_DURATION_US;
         }
     }
 
-    if (wait_phase_duration > GNRC_GOMACH_SUPERFRAME_DURATION_US) {
+    if ((uint32_t)wait_phase_duration > GNRC_GOMACH_SUPERFRAME_DURATION_US) {
         wait_phase_duration = wait_phase_duration % GNRC_GOMACH_SUPERFRAME_DURATION_US;
     }
     gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_CP, (uint32_t)wait_phase_duration);
@@ -1449,7 +1449,7 @@ static void gomach_listen_init(gnrc_netif_t *netif)
 {
     /* Reset last_seq_info, for avoiding receiving duplicate packets.
      * To-do: remove this in the future? */
-    for (int i = 0; i < GNRC_GOMACH_DUPCHK_BUFFER_SIZE; i++) {
+    for (uint8_t i = 0; i < GNRC_GOMACH_DUPCHK_BUFFER_SIZE; i++) {
         if (netif->mac.rx.check_dup_pkt.last_nodes[i].node_addr.len != 0) {
             netif->mac.rx.check_dup_pkt.last_nodes[i].life_cycle++;
             if (netif->mac.rx.check_dup_pkt.last_nodes[i].life_cycle >=
@@ -1576,7 +1576,7 @@ static void gomach_listen_send_beacon(gnrc_netif_t *netif)
 {
     /* First check if there are slots needed to be allocated. */
     uint8_t slot_num = 0;
-    int i;
+    uint8_t i;
     for (i = 0; i < GNRC_GOMACH_SLOSCH_UNIT_COUNT; i++) {
         if (netif->mac.rx.slosch_list[i].queue_indicator > 0) {
         	slot_num += netif->mac.rx.slosch_list[i].queue_indicator;
@@ -2134,7 +2134,7 @@ static void _gomach_init(gnrc_netif_t *netif)
     device_state->seq = netif->l2addr[netif->l2addr_len - 1];
 
     /* Initialize GoMacH's duplicate-check scheme. */
-    for (int i = 0; i < GNRC_GOMACH_DUPCHK_BUFFER_SIZE; i++) {
+    for (uint8_t i = 0; i < GNRC_GOMACH_DUPCHK_BUFFER_SIZE; i++) {
         netif->mac.rx.check_dup_pkt.last_nodes[i].node_addr.len = 0;
     }
 
