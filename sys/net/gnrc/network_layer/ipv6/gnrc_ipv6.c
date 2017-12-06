@@ -282,6 +282,7 @@ static void *_event_loop(void *args)
             case GNRC_NETAPI_MSG_TYPE_SND:
             	//_send(msg.content.ptr, true);
 
+                /*
             	printf("pid%u\n",msg.sender_pid);
 
             	if (gnrc_netdev.gomach.exp_started == true) {
@@ -292,6 +293,7 @@ static void *_event_loop(void *args)
             			break;
             		}
             	}
+            	*/
 
             	if (msg.sender_pid == 5) {
             	    puts("release ipv6");
