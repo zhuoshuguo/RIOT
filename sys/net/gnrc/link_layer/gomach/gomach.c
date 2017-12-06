@@ -528,6 +528,7 @@ static void gomach_t2k_init(gnrc_netif2_t *netif)
                                                         netif->mac.tx.current_neighbor->cp_phase);
     wait_phase_duration = RTT_TICKS_TO_US(wait_phase_duration);
 
+#if 0
     /* Upon several times of t2k failure, we now doubt that the phase-lock may fail due to drift.
      * Here is the phase-lock auto-adjust scheme, trying to catch the neighbot's phase in case of
      * phase-lock failure due to timer drift.
@@ -550,6 +551,7 @@ static void gomach_t2k_init(gnrc_netif2_t *netif)
             wait_phase_duration = wait_phase_duration - GNRC_GOMACH_SUPERFRAME_DURATION_US;
         }
     }
+#endif
 
     gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_CP, wait_phase_duration);
 
@@ -626,6 +628,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netif2_t *netif)
                 gnrc_pktbuf_release(netif->mac.tx.packet);
                 netif->mac.tx.packet = NULL;
 
+#if 0
                 /* Here is the phase-lock auto-adjust scheme. Use the new adjusted
                  * phase upon success. Here the new phase will be put ahead to the
                  * original phase. */
@@ -655,6 +658,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netif2_t *netif)
                             RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
                     }
                 }
+#endif
 
                 netif->mac.tx.no_ack_counter = 0;
                 netif->mac.tx.t2u_fail_count = 0;
@@ -693,7 +697,9 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netif2_t *netif)
             default: {
                 netif->mac.tx.no_ack_counter++;
 
-                LOG_DEBUG("[GOMACH] t2k %d times No-ACK.\n", netif->mac.tx.no_ack_counter);
+                //LOG_DEBUG("[GOMACH] t2k %d times No-ACK.\n", netif->mac.tx.no_ack_counter);
+
+                printf("t2k %d\n",netif->mac.tx.no_ack_counter);
 
                 /* This packet will be retried. Store the TX sequence number for this packet.
                  * Always use the same sequence number for sending the same packet. */
@@ -1012,6 +1018,7 @@ static void gomach_t2u_init(gnrc_netif2_t *netif)
      * so we don't need to turn on it again. */
 
     LOG_DEBUG("[GOMACH] t2u initialization.\n");
+    puts("t2U!");
 
     gnrc_netif2_set_rx_started(netif, false);
     gnrc_gomach_set_quit_cycle(netif, false);
