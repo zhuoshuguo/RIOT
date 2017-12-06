@@ -93,17 +93,35 @@ static void generate_and_send_pkt(void){
 
         //79:67:27:72:f4:57:9f:e6
         //79:67:27:72:f4:57:9f:e6
-        addr[0] = 0x79;
-        addr[1] = 0x67;
+        if(own_address2 == 0x4c0a) {
+        //15:11:6b:10:65:f6:54:06
+            addr[0] = 0x15;
+            addr[1] = 0x11;
 
-        addr[2] = 0x27;
-        addr[3] = 0x72;
+            addr[2] = 0x6b;
+            addr[3] = 0x10;
 
-        addr[4] = 0xf4;
-        addr[5] = 0x57;
+            addr[4] = 0x65;
+            addr[5] = 0xf6;
 
-        addr[6] = 0x9f;
-        addr[7] = 0xe6;
+            addr[6] = 0x54;
+            addr[7] = 0x06;
+
+        } else {
+            //15:11:6b:10:65:f6:4c:0a
+
+            addr[0] = 0x15;
+            addr[1] = 0x11;
+
+            addr[2] = 0x6b;
+            addr[3] = 0x10;
+
+            addr[4] = 0x65;
+            addr[5] = 0xf6;
+
+            addr[6] = 0x4c;
+            addr[7] = 0x0a;
+        }
 
 #if 0
 	    if(own_address2 == 0x79f6) {  //5ad6
@@ -261,7 +279,7 @@ void *sender_thread(void *arg)
 
    	xtimer_sleep(listen_period);
 
-   	data_rate = 1700;
+   	data_rate = 2700;
 
     while (1) {
    	//xtimer_sleep(data_rate);
