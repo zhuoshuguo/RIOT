@@ -673,7 +673,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                 gnrc_netdev->tx.no_ack_counter++;
 
                 LOG_DEBUG("[GOMACH] t2k %d times No-ACK.\n", gnrc_netdev->tx.no_ack_counter);
-                printf("t2k %d\n",netif->mac.tx.no_ack_counter);
+                printf("t2k %d\n", gnrc_netdev->tx.no_ack_counter);
 
                 /* This packet will be retried. Store the TX sequence number for this packet.
                  * Always use the same sequence number for sending the same packet. */
