@@ -619,13 +619,30 @@ static void gomach_t2k_trans_in_cp(gnrc_netif2_t *netif)
         return;
     }
 
+    gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR,
+                            GNRC_GOMACH_NO_TX_ISR_US);
+
     netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_WAIT_CPTX_FEEDBACK;
     gnrc_gomach_set_update(netif, false);
 }
 
 static void gomach_t2k_wait_cp_txfeedback(gnrc_netif2_t *netif)
 {
+    if ((gnrc_gomach_timeout_is_expired(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR))) {
+        /* No TX-ISR, go to sleep. */
+		netif->mac.tx.no_ack_counter++;
+        netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)netif->dev;
+        netif->mac.tx.tx_seq = device_state->seq - 1;
+
+        netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_END;
+        gnrc_gomach_set_update(netif, true);
+        gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
+        return;
+    }
+
     if (gnrc_gomach_get_tx_finish(netif)) {
+    	gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
+
         switch (gnrc_netif2_get_tx_feedback(netif)) {
             case TX_FEEDBACK_SUCCESS: {
                 /* Since the packet will not be released by the sending function,
@@ -847,6 +864,9 @@ static void gomach_t2k_trans_in_slots(gnrc_netif2_t *netif)
         return;
     }
 
+    gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR,
+                            GNRC_GOMACH_NO_TX_ISR_US);
+
     netif->mac.tx.vtdma_para.slots_num--;
     netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_WAIT_VTDMA_FEEDBACK;
     gnrc_gomach_set_update(netif, false);
@@ -854,7 +874,20 @@ static void gomach_t2k_trans_in_slots(gnrc_netif2_t *netif)
 
 static void gomach_t2k_wait_vtdma_transfeedback(gnrc_netif2_t *netif)
 {
+	if ((gnrc_gomach_timeout_is_expired(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR))) {
+        /* No TX-ISR, go to sleep. */
+		netif->mac.tx.no_ack_counter++;
+        netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)netif->dev;
+        netif->mac.tx.tx_seq = device_state->seq - 1;
+
+        netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_END;
+        gnrc_gomach_set_update(netif, true);
+        gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
+        return;
+    }
+
     if (gnrc_gomach_get_tx_finish(netif)) {
+    	gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
         switch (gnrc_netif2_get_tx_feedback(netif)) {
             case TX_FEEDBACK_SUCCESS: {
                 /* First release the packet. */
@@ -941,6 +974,7 @@ static void gomach_t2k_end(gnrc_netif2_t *netif)
     gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_CP);
     gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_BEACON);
     gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_SLOTS);
+    gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
 
     /* Reset t2k_state to the initial state. */
     netif->mac.tx.t2k_state = GNRC_GOMACH_T2K_INIT;
@@ -950,6 +984,8 @@ static void gomach_t2k_end(gnrc_netif2_t *netif)
         gnrc_gomach_set_phase_changed(netif, false);
         gnrc_gomach_update_neighbor_phase(netif);
     }
+
+
 
     netif->mac.gomach.basic_state = GNRC_GOMACH_LISTEN;
     netif->mac.rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
@@ -1285,13 +1321,34 @@ static void gomach_t2u_send_data(gnrc_netif2_t *netif)
         return;
     }
 
+    gnrc_gomach_set_timeout(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR,
+                            GNRC_GOMACH_NO_TX_ISR_US);
+
     netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_WAIT_DATA_TX;
     gnrc_gomach_set_update(netif, false);
 }
 
 static void gomach_t2u_wait_tx_feedback(gnrc_netif2_t *netif)
 {
+    if ((gnrc_gomach_timeout_is_expired(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR))) {
+        /* No TX-ISR, go to sleep. */
+    	netif->mac.tx.t2u_retry_counter++;
+
+        netif->mac.tx.no_ack_counter = GNRC_GOMACH_REPHASELOCK_THRESHOLD;
+        netdev_ieee802154_t *device_state = (netdev_ieee802154_t *)netif->dev;
+        netif->mac.tx.tx_seq = device_state->seq - 1;
+
+        gnrc_gomach_set_quit_cycle(netif, true);
+        netif->mac.tx.t2u_state = GNRC_GOMACH_T2U_END;
+
+        gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
+        gnrc_gomach_set_update(netif, true);
+        return;
+    }
+
     if (gnrc_gomach_get_tx_finish(netif)) {
+    	gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
+
         if (gnrc_netif2_get_tx_feedback(netif) == TX_FEEDBACK_SUCCESS) {
             /* If transmission succeeded, release the data. */
             gnrc_pktbuf_release(netif->mac.tx.packet);
@@ -1359,6 +1416,7 @@ static void gomach_t2u_end(gnrc_netif2_t *netif)
     gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_PREAM_DURATION);
     gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
     gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL);
+    gnrc_gomach_clear_timeout(netif, GNRC_GOMACH_TIMEOUT_NO_TX_ISR);
 
     /* In case quit_current_cycle is true, don't release neighbor pointer,
      * will retry t2u immediately in next cycle.*/
@@ -1367,7 +1425,7 @@ static void gomach_t2u_end(gnrc_netif2_t *netif)
             gnrc_pktbuf_release(netif->mac.tx.packet);
             netif->mac.tx.packet = NULL;
             netif->mac.tx.no_ack_counter = 0;
-            LOG_WARNING("WARNING: [GOMACH] t2u: drop packet.\n");
+            printf("[GOMACH] t2u: drop packet.\n");
         }
         netif->mac.tx.current_neighbor = NULL;
     }
