@@ -289,10 +289,10 @@ static inline bool GNRC_RPL_COUNTER_GREATER_THAN(uint8_t A, uint8_t B)
  * @{
  */
 #ifndef GNRC_RPL_DEFAULT_LIFETIME
-#define GNRC_RPL_DEFAULT_LIFETIME (5)
+#define GNRC_RPL_DEFAULT_LIFETIME (250)
 #endif
 #ifndef GNRC_RPL_LIFETIME_UNIT
-#define GNRC_RPL_LIFETIME_UNIT (60)
+#define GNRC_RPL_LIFETIME_UNIT (103)
 #endif
 /** @} */
 
