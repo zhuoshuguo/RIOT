@@ -95,7 +95,7 @@ static void generate_and_send_pkt(void){
         //79:67:27:72:f4:57:9f:e6
 
         //79:67:08:4a:13:d3:2c:02
-        if(own_address2 == 0x9fe6) {
+        if(own_address2 == 0x4c0a) {
         //15:11:6b:10:65:f6:54:06
         	/*
             addr[0] = 0x79;
