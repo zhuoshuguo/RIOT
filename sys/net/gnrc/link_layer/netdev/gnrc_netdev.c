@@ -144,6 +144,17 @@ static void *_gnrc_netdev_thread(void *args)
                 DEBUG("gnrc_netdev: GNRC_NETAPI_MSG_TYPE_SND received\n");
                 gnrc_pktsnip_t *pkt = msg.content.ptr;
                 gnrc_netdev->send(gnrc_netdev, pkt);
+
+                xtimer_sleep(3);
+                int16_t u16_power = -20;
+
+                printf("TXPower: %d dBm\n", u16_power);
+                dev->driver->set(dev, NETOPT_TX_POWER, &u16_power, sizeof(u16_power));
+                xtimer_sleep(1);
+                dev->driver->get(dev, NETOPT_TX_POWER, &u16_power, sizeof(u16_power));
+
+                printf("rssi:%d\n",(int)u16_power);
+
                 break;
             case GNRC_NETAPI_MSG_TYPE_SET:
                 /* read incoming options */
