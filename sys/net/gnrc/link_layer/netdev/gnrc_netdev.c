@@ -130,6 +130,13 @@ static void *_gnrc_netdev_thread(void *args)
     /* initialize low-level driver */
     dev->driver->init(dev);
 
+    xtimer_sleep(10);
+    int16_t u16_power =0;
+
+    dev->driver->get(dev, NETOPT_TX_POWER, &u16_power, sizeof(u16_power));
+
+    printf("origin rssi :%d\n",(int)u16_power);
+
     /* start the event loop */
     while (1) {
         DEBUG("gnrc_netdev: waiting for incoming messages\n");
@@ -146,7 +153,7 @@ static void *_gnrc_netdev_thread(void *args)
                 gnrc_netdev->send(gnrc_netdev, pkt);
 
                 xtimer_sleep(3);
-                int16_t u16_power = -20;
+                u16_power = -30;
 
                 printf("TXPower: %d dBm\n", u16_power);
                 dev->driver->set(dev, NETOPT_TX_POWER, &u16_power, sizeof(u16_power));
