@@ -153,7 +153,7 @@ static void *_gnrc_netdev_thread(void *args)
                 gnrc_netdev->send(gnrc_netdev, pkt);
 
                 xtimer_sleep(3);
-                u16_power = -30;
+                u16_power = -50;
 
                 printf("TXPower: %d dBm\n", u16_power);
                 dev->driver->set(dev, NETOPT_TX_POWER, &u16_power, sizeof(u16_power));
