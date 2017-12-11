@@ -137,6 +137,7 @@ static gnrc_pktsnip_t *_recv(gnrc_netif_t *netif)
 
             hdr->lqi = rx_info.lqi;
             hdr->rssi = rx_info.rssi;
+            printf("rssi:%d\n",rx_info.rssi);
             hdr->if_pid = thread_getpid();
             pkt->type = state->proto;
 #if ENABLE_DEBUG

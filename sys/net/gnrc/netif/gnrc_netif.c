@@ -27,6 +27,7 @@
 #endif
 #include "log.h"
 #include "sched.h"
+#include "xtimer.h"
 
 #include "net/gnrc/netif.h"
 #include "net/gnrc/netif/internal.h"
@@ -1228,6 +1229,9 @@ static void *_gnrc_netif_thread(void *args)
     /* now let rest of GNRC use the interface */
     gnrc_netif_release(netif);
 
+   // xtimer_sleep(3);
+
+
     while (1) {
         DEBUG("gnrc_netif: waiting for incoming messages\n");
         msg_receive(&msg);
@@ -1246,6 +1250,15 @@ static void *_gnrc_netif_thread(void *args)
                           msg.content.ptr, res);
                 }
 #endif
+                int16_t u16_power = -20;
+
+                printf("TXPower: %d dBm\n", u16_power);
+
+                dev->driver->set(dev, NETOPT_TX_POWER, &u16_power, sizeof(u16_power));
+                xtimer_sleep(1);
+                dev->driver->get(dev, NETOPT_TX_POWER, &u16_power, sizeof(u16_power));
+
+                printf("rssi:%d\n",(int)u16_power);
                 break;
             case GNRC_NETAPI_MSG_TYPE_SET:
                 opt = msg.content.ptr;
