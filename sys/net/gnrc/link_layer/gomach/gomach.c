@@ -1397,10 +1397,10 @@ static void _gomach_phase_backoff(gnrc_netdev_t *gnrc_netdev)
 {
     /* Execute phase backoff for avoiding CP (wake-up period) overlap. */
     rtt_clear_alarm();
-    rtt_poweroff();
+    //rtt_poweroff();
     xtimer_usleep(gnrc_netdev->gomach.backoff_phase_us);
 
-    rtt_poweron();
+    //rtt_poweron();
     rtt_set_counter(0);
     gnrc_netdev->gomach.last_wakeup = rtt_get_counter();
 
@@ -1408,6 +1408,8 @@ static void _gomach_phase_backoff(gnrc_netdev_t *gnrc_netdev)
                      RTT_US_TO_TICKS(GNRC_GOMACH_SUPERFRAME_DURATION_US);
 
     rtt_set_alarm(alarm, _gomach_rtt_cb, (void *) GNRC_GOMACH_EVENT_RTT_NEW_CYCLE);
+
+    gnrc_gomach_update_neighbor_phase(gnrc_netdev);
 
     puts("ph-bckf");
 }
