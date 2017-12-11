@@ -63,8 +63,13 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
     else {
         DEBUG("gnrc_netdev: event triggered -> %i\n", event);
         switch(event) {
+            case NETDEV_EVENT_RX_STARTED: {
+                puts("s");
+                break;
+            }
             case NETDEV_EVENT_RX_COMPLETE:
                 {
+                puts("RC");
                     gnrc_pktsnip_t *pkt = gnrc_netdev->recv(gnrc_netdev);
 
                     if (pkt) {
@@ -130,6 +135,10 @@ static void *_gnrc_netdev_thread(void *args)
     /* initialize low-level driver */
     dev->driver->init(dev);
 
+    /* Enable RX-start and TX-started and TX-END interrupts. */
+    netopt_enable_t enable = NETOPT_ENABLE;
+    gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_RX_START_IRQ, &enable, sizeof(enable));
+
     /* start the event loop */
     while (1) {
         DEBUG("gnrc_netdev: waiting for incoming messages\n");
@@ -170,6 +179,24 @@ static void *_gnrc_netdev_thread(void *args)
                 reply.type = GNRC_NETAPI_MSG_TYPE_ACK;
                 reply.content.value = (uint32_t)res;
                 msg_reply(&msg, &reply);
+
+                /*
+                netopt_state_t devstate;
+                devstate = NETOPT_STATE_SLEEP;
+                gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
+                                              NETOPT_STATE,
+                                              &devstate,
+                                              sizeof(devstate));
+                                              puts("sleep");
+                xtimer_sleep(1);
+                puts("turn-on");
+
+                devstate = NETOPT_STATE_IDLE;
+                gnrc_netdev->dev->driver->set(gnrc_netdev->dev,
+                                              NETOPT_STATE,
+                                              &devstate,
+                                              sizeof(devstate));
+               */
                 break;
             default:
                 DEBUG("gnrc_netdev: Unknown command %" PRIu16 "\n", msg.type);
