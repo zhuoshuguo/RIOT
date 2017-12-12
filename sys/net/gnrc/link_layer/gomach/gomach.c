@@ -471,6 +471,7 @@ static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
      	wait_phase_duration += GNRC_GOMACH_SUPERFRAME_DURATION_US;
     }
 
+#if 0
     /* Upon several times of t2k failure, we now doubt that the phase-lock may fail due to drift.
      * Here is the phase-lock auto-adjust scheme, trying to catch the neighbot's phase in case of
      * phase-lock failure due to timer drift.
@@ -493,6 +494,7 @@ static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
             wait_phase_duration = wait_phase_duration - GNRC_GOMACH_SUPERFRAME_DURATION_US;
         }
     }
+#endif
 
     if (wait_phase_duration > GNRC_GOMACH_SUPERFRAME_DURATION_US) {
         wait_phase_duration = wait_phase_duration % GNRC_GOMACH_SUPERFRAME_DURATION_US;
@@ -601,6 +603,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                 gnrc_pktbuf_release(gnrc_netdev->tx.packet);
                 gnrc_netdev->tx.packet = NULL;
 
+#if 0
                 /* Here is the phase-lock auto-adjust scheme. Use the new adjusted
                  * phase upon success. Here the new phase will be put ahead to the
                  * original phase. */
@@ -630,6 +633,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                             GNRC_GOMACH_SUPERFRAME_DURATION_US;
                     }
                 }
+#endif
 
                 gnrc_netdev->tx.no_ack_counter = 0;
                 gnrc_netdev->tx.t2u_fail_count = 0;
