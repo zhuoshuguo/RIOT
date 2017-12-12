@@ -95,7 +95,7 @@ static void generate_and_send_pkt(void){
         //79:67:27:72:f4:57:9f:e6
 
         //79:67:08:4a:13:d3:2c:02
-        if(own_address2 == 0x4c0a) {
+        if(own_address2 == 0x4c0a) {  //0x9fe6
         //15:11:6b:10:65:f6:54:06
         	/*
             addr[0] = 0x79;
@@ -121,7 +121,6 @@ static void generate_and_send_pkt(void){
 
             addr[6] = 0x54;
             addr[7] = 0x06;
-
 
         } else {
             //15:11:6b:10:65:f6:4c:0a
@@ -152,6 +151,7 @@ static void generate_and_send_pkt(void){
 
             addr[6] = 0x4c;
             addr[7] = 0x0a;
+
 
         }
 

@@ -668,7 +668,8 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
             default: {
                 gnrc_netdev->tx.no_ack_counter++;
 
-                LOG_DEBUG("[GOMACH] t2k %d times No-ACK.\n", gnrc_netdev->tx.no_ack_counter);
+                //LOG_DEBUG("[GOMACH] t2k %d times No-ACK.\n", gnrc_netdev->tx.no_ack_counter);
+                printf("t2k:%d\n",gnrc_netdev->tx.no_ack_counter);
 
                 /* This packet will be retried. Store the TX sequence number for this packet.
                  * Always use the same sequence number for sending the same packet. */
@@ -989,6 +990,7 @@ static void gomach_t2u_init(gnrc_netdev_t *gnrc_netdev)
      * so we don't need to turn on it again. */
 
     LOG_DEBUG("[GOMACH] t2u initialization.\n");
+    puts("U");
 
     gnrc_netdev_set_rx_started(gnrc_netdev, false);
     gnrc_gomach_set_quit_cycle(gnrc_netdev, false);
@@ -1442,6 +1444,7 @@ static void _gomach_phase_backoff(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
 {
+    puts("C");
     /* Reset last_seq_info, for avoiding receiving duplicate packets.
      * To-do: remove this in the future? */
     for (int i = 0; i < GNRC_GOMACH_DUPCHK_BUFFER_SIZE; i++) {
@@ -1561,11 +1564,15 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
 
         }
         else {
+            /* Disable auto-ACK. Thus not to receive packet (attempt to reply ACK) anymore. */
+            gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX);
             gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_END;
             gnrc_gomach_set_update(gnrc_netdev, true);
+
+            //puts("Ce");
         }
 
         /*
@@ -1983,6 +1990,7 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
             case NETDEV_EVENT_RX_STARTED: {
                 gnrc_netdev_set_rx_started(gnrc_netdev, true);
                 gnrc_gomach_set_update(gnrc_netdev, true);
+                //puts("s");
                 break;
             }
             case NETDEV_EVENT_RX_COMPLETE: {
