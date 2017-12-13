@@ -36,7 +36,9 @@
 #include "net/gnrc/netreg.h"
 #include "net/gnrc/nettype.h"
 #include "xtimer.h"
-#include <periph/rtt.h>
+#include "net/gnrc/netdev.h"
+
+typedef struct gnrc_netdev gnrc_netdev_t;
 
 /*
 #if FEATURE_PERIPH_RTC
@@ -52,6 +54,8 @@
 #include "net/gnrc/pktdump.h"
 #include "net/gnrc.h"
 #endif
+
+extern gnrc_netdev_t gnrc_netdev;
 
 uint32_t send_counter;
 uint32_t send_counter1;
@@ -73,26 +77,23 @@ static void generate_and_send_pkt(void){
 
 	    send_counter++;
 
+        payload[0] = send_counter;
 	    payload[1] = own_address2;
-	    payload[4] = exp_start_time;
-	    payload[5] = rtt_get_counter();
+
+	   	// report tdma slots number.
+	   	payload[2] = gnrc_netdev.gomach.csma_count;
+	   	payload[3] = gnrc_netdev.gomach.vtdma_count;
+
+	   	uint64_t *payload_long = (uint64_t *)payload;
+
+	   	payload_long[2] = gnrc_netdev.gomach.awake_duration_sum_ticks;
+	   	payload_long[3] = xtimer_now_usec64() - gnrc_netdev.gomach.system_start_time_ticks;
 
 	    dev2 = 4;
 	    /* parse interface */
 	    dev = (kernel_pid_t)dev2;
 
 	    addr_len = 8;
-
-    	payload[3] = 0x0000331e;
-
-        payload[0] = send_counter;
-
-        //15:11:6b:10:65:fa:54:32
-
-        //15:11:6b:10:65:f6:4c:0a
-
-        //79:67:27:72:f4:57:9f:e6
-        //79:67:27:72:f4:57:9f:e6
 
         //79:67:08:4a:13:d3:2c:02
         switch (own_address2) {
