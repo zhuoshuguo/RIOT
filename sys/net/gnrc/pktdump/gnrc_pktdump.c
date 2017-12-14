@@ -195,23 +195,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
    printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], reception_list[i], received_pkt_counter);
 
-   uint32_t current_slots_sum =0;
-   gnrc_netdev.gomach.total_csma = 0;
-
-	for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
-		current_slots_sum += node_tdma_record_list[i];
-		gnrc_netdev.gomach.total_csma += node_csma_record_list[i];
-	}
-
-   uint32_t current_rtt = 0;
-   current_rtt = rtt_get_counter();
-   current_rtt = RTT_TICKS_TO_MIN(current_rtt);
-
-   if(current_rtt < 150) {
-	   gnrc_netdev.gomach.slot_varia[current_rtt] = current_slots_sum;
-   }
-
-    gnrc_pktbuf_release(pkt);
+   gnrc_pktbuf_release(pkt);
 }
 
 static void *_eventloop(void *arg)
@@ -237,10 +221,6 @@ static void *_eventloop(void *arg)
     	reception_list[i] =0;
     	node_tdma_record_list[i]=0;
     	node_csma_record_list[i]=0;
-    }
-
-    for (int i=0;i<60;i++) {
-    	gnrc_netdev.gomach.slot_varia[i] = 0;
     }
 
     while (1) {
