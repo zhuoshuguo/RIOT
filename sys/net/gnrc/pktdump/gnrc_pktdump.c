@@ -17,7 +17,6 @@
  *
  * @}
  */
-
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -32,9 +31,25 @@
 #include "net/udp.h"
 #include "net/sixlowpan.h"
 #include "od.h"
-#include "xtimer.h"
+#include <periph/rtt.h>
+#include "net/gnrc/netdev.h"
 
-uint32_t own_addess;
+typedef struct gnrc_netdev gnrc_netdev_t;
+
+#define GNRC_GOMACH_EX_NODE_NUM 70
+
+extern gnrc_netdev_t gnrc_netdev;
+
+uint32_t idlist[GNRC_GOMACH_EX_NODE_NUM];
+uint32_t reception_list[GNRC_GOMACH_EX_NODE_NUM];
+uint32_t node_tdma_record_list[GNRC_GOMACH_EX_NODE_NUM];
+uint32_t node_csma_record_list[GNRC_GOMACH_EX_NODE_NUM];
+
+uint64_t node_wake_duration[GNRC_GOMACH_EX_NODE_NUM];
+uint64_t node_life_duration[GNRC_GOMACH_EX_NODE_NUM];
+
+uint64_t delay_sum;
+uint32_t system_start_time = 0;
 
 /**
  * @brief   PID of the pktdump thread
@@ -45,7 +60,6 @@ kernel_pid_t gnrc_pktdump_pid = KERNEL_PID_UNDEF;
  * @brief   Stack for the pktdump thread
  */
 static char _stack[GNRC_PKTDUMP_STACKSIZE];
-
 #if 0
 static void _dump_snip(gnrc_pktsnip_t *pkt)
 {
@@ -102,12 +116,13 @@ static void _dump_snip(gnrc_pktsnip_t *pkt)
 }
 #endif
 
-static void _dump(gnrc_pktsnip_t *pkt)
+static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 {
 	/*
     int snips = 0;
     int size = 0;
     gnrc_pktsnip_t *snip = pkt;
+
 
     while (snip != NULL) {
         printf("~~ SNIP %2i - size: %3u byte, type: ", snips,
@@ -116,62 +131,87 @@ static void _dump(gnrc_pktsnip_t *pkt)
         ++snips;
         size += snip->size;
         snip = snip->next;
-    }
+    }*/
 
-    printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
-    gnrc_pktbuf_release(pkt);
-    */
+    //printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
 
-	kernel_pid_t dev;
-	uint8_t addr[8];
-	size_t addr_len;
-	gnrc_pktsnip_t *hdr;
 	uint32_t *payload;
 
-	int16_t dev2;
 
-	dev2 = 4;
-	/* parse interface */
-	dev = (kernel_pid_t)dev2;
+    //gnrc_netif_hdr_t *netif_hdr;
 
-	payload = pkt->data;
+    //uint8_t* addr;
 
-	addr_len = 8;
 
-    addr[0] = 0x15;
-    addr[1] = 0x11;
+    payload = pkt->data;
 
-    addr[2] = 0x6b;
-    addr[3] = 0x10;
 
-    addr[4] = 0x65;
-    addr[5] = 0xf8;
+    bool found_id;
+    found_id = false;
 
-    addr[6] = 0x55;
-    addr[7] = 0x06;
+    if(payload[1] == 0x22222222) {
+    	gnrc_pktbuf_release(pkt);
+    	delay_sum = 0;
+    	return;
+    }
 
-	/** release old netif header **/
-	gnrc_pktbuf_release(pkt->next);
-	pkt->next= NULL;
 
-	/** build new netif header **/
-	hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
-	if(hdr == NULL){
-	   	puts("relay: buf full, drop pkt.");
-	   	gnrc_pktbuf_release(pkt);
-	   	return;
+    int i=0;
+    /* find id exist or not */
+    for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
+    	if(idlist[i] == payload[1]){
+    		found_id = true;
+    		reception_list[i] ++;
+
+    		node_tdma_record_list[i] = payload[3];
+    		node_csma_record_list[i] = payload[2];
+
+    		uint64_t *payload_long = (uint64_t *)payload;
+
+    		node_wake_duration[i] = payload_long[2];
+    		node_life_duration[i] = payload_long[3];
+
+
+            uint64_t duty;
+            duty = (node_wake_duration[i]) * 100 / node_life_duration[i];
+            printf("duty: %lu %% \n", (uint32_t)duty);
+
+    		break;
+    	}
+    }
+
+    if(found_id == false){
+    	for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
+    		if(idlist[i] == 0){
+    			idlist[i] = payload[1];
+    			reception_list[i] ++;
+    			break;
+    		}
+    	}
+    }
+
+
+   // printf("s: %x, g: %lu, r: %lu, t: %lu. \n", addr[1], payload[0], reception_list[i], received_pkt_counter);
+
+   printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], reception_list[i], received_pkt_counter);
+
+   uint32_t current_slots_sum =0;
+   gnrc_netdev.gomach.total_csma = 0;
+
+	for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
+		current_slots_sum += node_tdma_record_list[i];
+		gnrc_netdev.gomach.total_csma += node_csma_record_list[i];
 	}
 
-	printf("relay: %lx: %lu\n",payload[1], payload[0]);
+   uint32_t current_rtt = 0;
+   current_rtt = rtt_get_counter();
+   current_rtt = RTT_TICKS_TO_MIN(current_rtt);
 
-	LL_PREPEND(pkt, hdr);
+   if(current_rtt < 150) {
+	   gnrc_netdev.gomach.slot_varia[current_rtt] = current_slots_sum;
+   }
 
-	int res;
-	res = gnrc_netapi_send(dev, pkt);
-	if(res < 1) {
-	   	puts("relay: send data msg failed when push pkt.");
-	}
-
+    gnrc_pktbuf_release(pkt);
 }
 
 static void *_eventloop(void *arg)
@@ -180,39 +220,41 @@ static void *_eventloop(void *arg)
     msg_t msg, reply;
     msg_t msg_queue[GNRC_PKTDUMP_MSG_QUEUE_SIZE];
 
+    uint32_t received_pkt_counter;
+    received_pkt_counter = 0;
+    system_start_time = 0;
+
+    delay_sum = 0;
+
     /* setup the message queue */
     msg_init_queue(msg_queue, GNRC_PKTDUMP_MSG_QUEUE_SIZE);
 
     reply.content.value = (uint32_t)(-ENOTSUP);
     reply.type = GNRC_NETAPI_MSG_TYPE_ACK;
 
-    int16_t devpid;
-    devpid = 4;
+    for(int i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
+    	idlist[i] =0;
+    	reception_list[i] =0;
+    	node_tdma_record_list[i]=0;
+    	node_csma_record_list[i]=0;
+    }
 
-    xtimer_sleep(2);
-
-    uint8_t own_addr[2];
-    gnrc_netapi_get(devpid, NETOPT_ADDRESS, 0, &own_addr,
-                    sizeof(own_addr));
-
-    xtimer_sleep(3);
-
-    own_addess = 0;
-    own_addess = own_addr[0];
-    own_addess = own_addess << 8;
-    own_addess |= own_addr[1];
+    for (int i=0;i<60;i++) {
+    	gnrc_netdev.gomach.slot_varia[i] = 0;
+    }
 
     while (1) {
         msg_receive(&msg);
 
         switch (msg.type) {
             case GNRC_NETAPI_MSG_TYPE_RCV:
-                 //puts("PKTDUMP: data received:");
-                _dump(msg.content.ptr);
+                //puts("PKTDUMP: over data received:");
+            	received_pkt_counter ++;
+                _dump(msg.content.ptr, received_pkt_counter);
                 break;
             case GNRC_NETAPI_MSG_TYPE_SND:
                 puts("PKTDUMP: data to send:");
-                _dump(msg.content.ptr);
+                _dump(msg.content.ptr, received_pkt_counter);
                 break;
             case GNRC_NETAPI_MSG_TYPE_GET:
             case GNRC_NETAPI_MSG_TYPE_SET:

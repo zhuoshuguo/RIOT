@@ -195,18 +195,7 @@ static void generate_and_send_pkt(void){
                 break;
             }
             default: {
-                // 15:11:6b:10:65:f8:55:06  //38
-                addr[0] = 0x15;
-                addr[1] = 0x11;
-
-                addr[2] = 0x6b;
-                addr[3] = 0x10;
-
-                addr[4] = 0x65;
-                addr[5] = 0xf8;
-
-                addr[6] = 0x55;
-                addr[7] = 0x06;
+                return;
             break;
             }
         }
