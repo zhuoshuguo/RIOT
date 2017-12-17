@@ -1553,6 +1553,7 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
     /* If we have reached the maximum CP duration, quit CP. */
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX) ||
         gnrc_gomach_get_quit_cycle(gnrc_netdev)) {
+        gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX);
@@ -2024,6 +2025,7 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                     break;
                 }
 
+                /*
                 if (!gnrc_netdev_get_rx_started(gnrc_netdev)) {
                     LOG_DEBUG("[GOMACH] gnrc_netdev: maybe sending kicked in "
                               "and frame buffer is now corrupted?\n");
@@ -2031,6 +2033,7 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                     gnrc_netdev_set_rx_started(gnrc_netdev, false);
                     break;
                 }
+                */
 
                 gnrc_netdev_set_rx_started(gnrc_netdev, false);
 
