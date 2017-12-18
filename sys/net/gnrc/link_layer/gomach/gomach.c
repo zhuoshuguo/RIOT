@@ -2008,12 +2008,14 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
         DEBUG("gnrc_netdev: event triggered -> %i\n", event);
         switch (event) {
             case NETDEV_EVENT_RX_STARTED: {
+                puts("s");
                 gnrc_netdev_set_rx_started(gnrc_netdev, true);
                 gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
             case NETDEV_EVENT_RX_COMPLETE: {
                 gnrc_gomach_set_update(gnrc_netdev, true);
+                puts("f");
 
                 gnrc_pktsnip_t *pkt = gnrc_netdev->recv(gnrc_netdev);
                 if (pkt == NULL) {

@@ -500,6 +500,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
             gnrc_pktbuf_release(pkt);
             continue;
         }
+        printf("m%d\n",receive_packet_info.header->type);
 
         switch (receive_packet_info.header->type) {
             case GNRC_GOMACH_FRAME_PREAMBLE: {
