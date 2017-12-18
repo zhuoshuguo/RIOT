@@ -166,6 +166,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     		node_tdma_record_list[i] = payload[3];
     		node_csma_record_list[i] = payload[2];
 
+            /*
     		uint64_t *payload_long = (uint64_t *)payload;
 
     		node_wake_duration[i] = payload_long[2];
@@ -175,6 +176,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
             uint64_t duty;
             duty = (node_wake_duration[i]) * 100 / node_life_duration[i];
             printf("duty: %lu %% \n", (uint32_t)duty);
+            */
 
     		break;
     	}
