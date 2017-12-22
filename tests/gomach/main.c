@@ -286,12 +286,12 @@ void *sender_thread(void *arg)
 
    	xtimer_sleep(listen_period);
 
-   	data_rate = 60;
+   	data_rate = 20;
    	puts("start pushing data!");
 
     while (1) {
 	    for(int i=0; i<1; i++){
-	    if (own_address2 != 0x65fa8a22)
+	    if ((own_address2 != 0x65fa8a22) && (send_counter <= 20))
 		    generate_and_send_pkt();
 	    }
         xtimer_sleep(data_rate);
