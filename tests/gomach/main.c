@@ -95,7 +95,20 @@ static void generate_and_send_pkt(void){
 
 	    addr_len = 8;
 
-        //79:67:08:4a:13:d3:2c:02
+	    //15:11:6b:10:65:fa:8a:22
+        addr[0] = 0x15;
+        addr[1] = 0x11;
+
+        addr[2] = 0x6b;
+        addr[3] = 0x10;
+
+        addr[4] = 0x65;
+        addr[5] = 0xfa;
+
+        addr[6] = 0x8a;
+        addr[7] = 0x22;
+
+#if 0
         switch (own_address2) {
             case 0x65fd5836:   //m1
             case 0x65fd5936:  //m2
@@ -199,6 +212,7 @@ static void generate_and_send_pkt(void){
             break;
             }
         }
+#endif
 
 	    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
 	    if(hdr == NULL){
@@ -277,6 +291,7 @@ void *sender_thread(void *arg)
 
     while (1) {
 	    for(int i=0; i<1; i++){
+	    if (own_address2 != 0x65fa8a22)
 		    generate_and_send_pkt();
 	    }
         xtimer_sleep(data_rate);
