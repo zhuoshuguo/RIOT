@@ -40,16 +40,18 @@ typedef struct gnrc_netdev gnrc_netdev_t;
 
 extern gnrc_netdev_t gnrc_netdev;
 
-uint32_t idlist[GNRC_GOMACH_EX_NODE_NUM];
-uint32_t reception_list[GNRC_GOMACH_EX_NODE_NUM];
-uint32_t node_tdma_record_list[GNRC_GOMACH_EX_NODE_NUM];
-uint32_t node_csma_record_list[GNRC_GOMACH_EX_NODE_NUM];
+static uint32_t idlist[GNRC_GOMACH_EX_NODE_NUM];
+static uint32_t reception_list[GNRC_GOMACH_EX_NODE_NUM];
+static uint32_t node_tdma_record_list[GNRC_GOMACH_EX_NODE_NUM];
+static uint32_t node_csma_record_list[GNRC_GOMACH_EX_NODE_NUM];
 
-uint64_t node_wake_duration[GNRC_GOMACH_EX_NODE_NUM];
-uint64_t node_life_duration[GNRC_GOMACH_EX_NODE_NUM];
+//static uint64_t node_wake_duration[GNRC_GOMACH_EX_NODE_NUM];
+//static uint64_t node_life_duration[GNRC_GOMACH_EX_NODE_NUM];
 
-uint64_t delay_sum;
-uint32_t system_start_time = 0;
+static uint64_t delay_sum;
+static uint32_t system_start_time = 0;
+
+static bool found_id;
 
 /**
  * @brief   PID of the pktdump thread
@@ -146,7 +148,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     payload = pkt->data;
 
 
-    bool found_id;
+
     found_id = false;
 
     int i=0;
