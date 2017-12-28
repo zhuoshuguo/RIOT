@@ -281,17 +281,17 @@ void *sender_thread(void *arg)
 	data_rate = 1;
 
  	uint32_t listen_period;
-   	listen_period = random_uint32_range(20, 200);
+   	listen_period = random_uint32_range(30, 300);
  	printf("random wait: %lu s.\n", listen_period);
 
    	xtimer_sleep(listen_period);
 
    	data_rate = 120;
-   	puts("start pushing data!");
+   	//puts("start pushing data!");
 
     while (1) {
 	    for(int i=0; i<1; i++){   //65:f6:8b:26
-	    if ((own_address2 != 0x65f68b26) && (send_counter < 30))
+	    if ((own_address2 != 0x65f68b26) && (send_counter < 5))
 		    generate_and_send_pkt();
 	    }
         xtimer_sleep(data_rate);
