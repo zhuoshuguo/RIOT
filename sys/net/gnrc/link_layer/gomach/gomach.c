@@ -1464,7 +1464,7 @@ static void _gomach_phase_backoff(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
 {
-    puts("C");
+    //puts("C");
     /* Reset last_seq_info, for avoiding receiving duplicate packets.
      * To-do: remove this in the future? */
     for (int i = 0; i < GNRC_GOMACH_DUPCHK_BUFFER_SIZE; i++) {
@@ -2008,14 +2008,14 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
         DEBUG("gnrc_netdev: event triggered -> %i\n", event);
         switch (event) {
             case NETDEV_EVENT_RX_STARTED: {
-                puts("s");
+                //puts("s");
                 gnrc_netdev_set_rx_started(gnrc_netdev, true);
                 gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
             case NETDEV_EVENT_RX_COMPLETE: {
                 gnrc_gomach_set_update(gnrc_netdev, true);
-                puts("f");
+                // puts("f");
 
                 gnrc_pktsnip_t *pkt = gnrc_netdev->recv(gnrc_netdev);
                 if (pkt == NULL) {
