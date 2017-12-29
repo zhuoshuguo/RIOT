@@ -154,9 +154,11 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     int i=0;
     /* find id exist or not */
     for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
-        if (memcmp(&idlist[i], &payload[1],
-                   8) == 0) {
-    	//if(idlist[i] == payload[1]){
+        //if (memcmp(&idlist[i], &payload[1],
+          //         8) == 0) {
+    	if(idlist[i] == payload[1]){
+    	    printf("i:%d, idlist: %lx, address: %lx\n",i, idlist[i],payload[1]);
+
     		found_id = true;
     		reception_list[i] ++;
 
