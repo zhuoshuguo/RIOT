@@ -1538,6 +1538,7 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
     /* If we have reached the maximum CP duration, quit CP. */
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX) ||
         gnrc_gomach_get_quit_cycle(gnrc_netdev)) {
+    	gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX);
