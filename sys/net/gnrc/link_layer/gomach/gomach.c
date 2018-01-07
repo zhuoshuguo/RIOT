@@ -2170,6 +2170,83 @@ static void *_gnrc_gomach_thread(void *args)
 
     gnrc_gomach_set_update(gnrc_netdev, true);
 
+
+    uint32_t own_address2;
+    own_address2 = 0;
+    own_address2 = gnrc_netdev->l2_addr[4];
+    own_address2 = own_address2 << 8;
+    own_address2 |= gnrc_netdev->l2_addr[5];
+
+    own_address2 = own_address2 << 8;
+    own_address2 |= gnrc_netdev->l2_addr[6];
+
+    own_address2 = own_address2 << 8;
+    own_address2 |= gnrc_netdev->l2_addr[7];
+
+    gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
+
+    switch (own_address2) {
+        case 0x65fbbe26:  //m3 - 11
+        case 0x65f9be36:
+        case 0x65f3af06:
+        case 0x65fc8b22:
+        case 0x65f78a36:
+        case 0x65f8a83a:
+        case 0x65f4be52:
+        case 0x65f9a802:
+        case 0x65fd8a3a:{
+        	xtimer_sleep(10);
+        }
+
+        case 0x65f95c02:
+        case 0x65f7be36:
+        case 0x65fb8b26:
+        case 0x65fba836:
+        case 0x65f8a822:
+        case 0x65fabe52:
+        case 0x65f9af06:
+        case 0x65fa8a2a:
+        case 0x65f7a80a:{
+        	xtimer_sleep(300);
+        }
+        case 0x65f8a93a:
+        case 0x65f7a922:
+        case 0x65faa92a:
+        case 0x65f6a802:
+        case 0x65f7a926:
+        case 0x65fbbe3a:
+        case 0x65fb8b22:
+        case 0x65f8be36:
+        case 0x65fb8b2a:
+        case 0x65fca92a:{
+        	xtimer_sleep(600);
+        }
+        case 0x65fb8b36:
+        case 0x65faa832:
+        case 0x65f7bf52:
+        case 0x65f8a926:
+        case 0x65f9a836:
+        case 0x65f48a26:
+        case 0x65fbaf12:
+        case 0x65fa8a22:
+        case 0x65fd8b3a:
+        case 0x65f68b22:{
+        	xtimer_sleep(900);
+        }
+        case 0x65fb8b32:
+        case 0x65f6a83a:
+        case 0x65fca806:
+        case 0x65f98b36:
+        case 0x65f8a806:
+        case 0x65f8a826:
+        case 0x65f75c16:
+        case 0x65fca82a:{
+        	xtimer_sleep(1200);
+        }
+    }
+
+    gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
+
     while (gnrc_gomach_get_update(gnrc_netdev)) {
         gnrc_gomach_set_update(gnrc_netdev, false);
         gomach_update(gnrc_netdev);
