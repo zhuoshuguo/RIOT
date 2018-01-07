@@ -173,7 +173,9 @@ void *sender_thread(void *arg)
 
     while (1) {
 	    for(int i=0; i<1; i++){
-            generate_and_send_pkt();
+            if (send_counter < 20) {
+                generate_and_send_pkt();
+            }
         }
 
 	    xtimer_sleep((uint32_t) data_rate);
