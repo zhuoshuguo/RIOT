@@ -2168,8 +2168,7 @@ static void *_gnrc_gomach_thread(void *args)
     /* Initialize GoMacH's parameters. */
     gomach_init(gnrc_netdev);
 
-    gnrc_gomach_set_update(gnrc_netdev, true);
-
+    xtimer_sleep(20);
 
     uint32_t own_address2;
     own_address2 = 0;
@@ -2184,6 +2183,7 @@ static void *_gnrc_gomach_thread(void *args)
     own_address2 |= gnrc_netdev->l2_addr[7];
 
     gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
+    printf("address:%lx\n",own_address2);
 
     switch (own_address2) {
         case 0x65fbbe26:  //m3 - 11
@@ -2195,6 +2195,7 @@ static void *_gnrc_gomach_thread(void *args)
         case 0x65f4be52:
         case 0x65f9a802:
         case 0x65fd8a3a:{
+            puts("sleep-10");
         	xtimer_sleep(10);
         }
 
@@ -2207,6 +2208,7 @@ static void *_gnrc_gomach_thread(void *args)
         case 0x65f9af06:
         case 0x65fa8a2a:
         case 0x65f7a80a:{
+            puts("sleep-300");
         	xtimer_sleep(300);
         }
         case 0x65f8a93a:
@@ -2219,6 +2221,7 @@ static void *_gnrc_gomach_thread(void *args)
         case 0x65f8be36:
         case 0x65fb8b2a:
         case 0x65fca92a:{
+            puts("sleep-600");
         	xtimer_sleep(600);
         }
         case 0x65fb8b36:
@@ -2231,6 +2234,7 @@ static void *_gnrc_gomach_thread(void *args)
         case 0x65fa8a22:
         case 0x65fd8b3a:
         case 0x65f68b22:{
+            puts("sleep-900");
         	xtimer_sleep(900);
         }
         case 0x65fb8b32:
@@ -2241,11 +2245,17 @@ static void *_gnrc_gomach_thread(void *args)
         case 0x65f8a826:
         case 0x65f75c16:
         case 0x65fca82a:{
+            puts("sleep-1200");
         	xtimer_sleep(1200);
+        }
+        default:{
+            puts("sleep-default");
         }
     }
 
     gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
+
+    gnrc_gomach_set_update(gnrc_netdev, true);
 
     while (gnrc_gomach_get_update(gnrc_netdev)) {
         gnrc_gomach_set_update(gnrc_netdev, false);
