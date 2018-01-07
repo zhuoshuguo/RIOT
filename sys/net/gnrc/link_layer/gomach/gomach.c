@@ -2195,8 +2195,8 @@ static void *_gnrc_gomach_thread(void *args)
         case 0x65f4be52:
         case 0x65f9a802:
         case 0x65fd8a3a:{
-            puts("sleep-10");
-        	xtimer_sleep(10);
+            puts("sleep-1200");
+        	xtimer_sleep(1200);
         	break;
         }
 
@@ -2209,8 +2209,8 @@ static void *_gnrc_gomach_thread(void *args)
         case 0x65f9af06:
         case 0x65fa8a2a:
         case 0x65f7a80a:{
-            puts("sleep-300");
-        	xtimer_sleep(300);
+            puts("sleep-900");
+        	xtimer_sleep(900);
         	break;
         }
         case 0x65f8a93a:
@@ -2237,8 +2237,8 @@ static void *_gnrc_gomach_thread(void *args)
         case 0x65fa8a22:
         case 0x65fd8b3a:
         case 0x65f68b22:{
-            puts("sleep-900");
-        	xtimer_sleep(900);
+            puts("sleep-300");
+        	xtimer_sleep(300);
         	break;
         }
         case 0x65fb8b32:
@@ -2249,8 +2249,8 @@ static void *_gnrc_gomach_thread(void *args)
         case 0x65f8a826:
         case 0x65f75c16:
         case 0x65fca82a:{
-            puts("sleep-1200");
-        	xtimer_sleep(1200);
+            puts("sleep-10");
+        	xtimer_sleep(10);
         	break;
         }
         default:{
