@@ -733,8 +733,8 @@ void gnrc_gomach_process_preamble_ack(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t
        	phase_ms += GNRC_GOMACH_SUPERFRAME_DURATION_US;
     }
 
-    if (1) { //((phase_ms > (GNRC_GOMACH_SUPERFRAME_DURATION_US - GNRC_GOMACH_CP_MIN_GAP_US)) ||
-        // (phase_ms < GNRC_GOMACH_CP_MIN_GAP_US)) {
+    if ((phase_ms > (GNRC_GOMACH_SUPERFRAME_DURATION_US - GNRC_GOMACH_CP_MIN_GAP_US)) ||
+        (phase_ms < GNRC_GOMACH_CP_MIN_GAP_US)) {
             LOG_DEBUG("[GOMACH] t2u: own phase is close to the neighbor's.\n");
             gnrc_gomach_set_phase_backoff(gnrc_netdev, true);
             /* Set a random phase-backoff value. */
