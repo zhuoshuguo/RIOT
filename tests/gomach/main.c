@@ -96,6 +96,7 @@ static void generate_and_send_pkt(void){
 	    addr_len = 8;
 
 	    // 15:11:6b:10:65:fa:8a:22   m3-53
+	    /*
         addr[0] = 0x15;
         addr[1] = 0x11;
 
@@ -107,6 +108,7 @@ static void generate_and_send_pkt(void){
 
         addr[6] = 0x8a;
         addr[7] = 0x22;
+        */
 
 	    //15:11:6b:10:65:f6:8b:26  m3-69
 	    /*
@@ -136,92 +138,45 @@ static void generate_and_send_pkt(void){
         addr[7] = 0xe6;
         */
 
-#if 0
         switch (own_address2) {
-            case 0x65fd5836:   //m1
-            case 0x65fd5936:  //m2
-            case 0x65f85b06:  //m3
-            case 0x65fa5402:  //m4
-            case 0x65f95b02:  //m6
-            case 0x65f75822:  //m7
-            case 0x65f85b3a:  //m8
-            case 0x65f8592a:  //m9
-            case 0x65fa5a26:  //20
-            case 0x65fc5932:  {//21
-            // 15:11:6b:10:65:fd:54:36  //22
-                addr[0] = 0x15;
-                addr[1] = 0x11;
-
-                addr[2] = 0x6b;
-                addr[3] = 0x10;
-
-                addr[4] = 0x65;
-                addr[5] = 0xfd;
-
-                addr[6] = 0x54;
-                addr[7] = 0x36;
-                break;
+            case 0x65fbbe26:  //m3 - 11
+            case 0x65f9be36:
+            case 0x65f3af06:
+            case 0x65fc8b22:
+            case 0x65f78a36:
+            case 0x65f8a83a:
+            case 0x65f4be52:
+            case 0x65f9a802:
+            case 0x65fd8a3a:{
+                puts("sleep-1200");
+            	xtimer_sleep(1200);
+            	break;
             }
-            //////////////// cluster-1
-            case 0x65f9581a:   //m11
-            case 0x65f85406:  //m12
-            case 0x65fa5822:  //m13
-            case 0x65fa5b22:  //m14
-            case 0x65fb5406:  //m15
-            case 0x65fa5926:  //m17
-            case 0x65fa5b36:  //m18
-            case 0x65fa583a:  //m23
-            case 0x65f55b32:  {//25
-            // 15:11:6b:10:65:f5:58:02  //24
-                addr[0] = 0x15;
-                addr[1] = 0x11;
 
-                addr[2] = 0x6b;
-                addr[3] = 0x10;
-
-                addr[4] = 0x65;
-                addr[5] = 0xf5;
-
-                addr[6] = 0x58;
-                addr[7] = 0x02;
-                break;
+            case 0x65f95c02:
+            case 0x65f7be36:
+            case 0x65fb8b26:
+            case 0x65fba836:
+            case 0x65f8a822:
+            case 0x65fabe52:
+            case 0x65f9af06:
+            case 0x65fa8a2a:
+            case 0x65f7a80a:{
+                puts("sleep-900");
+            	xtimer_sleep(900);
+            	break;
             }
-            /////////////////////////// cluster-2
-            case 0x65fa5a32:   //m37
-            case 0x65f95832:  //m39
-            case 0x65fc590a:  //m41
-            case 0x65f65a22:  //m42
-            case 0x65fd5902:  //m43
-            case 0x65fa5836:  //m44
-            case 0x65fa5922:  //m45
-            case 0x65fa590a:  {//m46
-            // 15:11:6b:10:65:fb:5b:26  //40
-                addr[0] = 0x15;
-                addr[1] = 0x11;
-
-                addr[2] = 0x6b;
-                addr[3] = 0x10;
-
-                addr[4] = 0x65;
-                addr[5] = 0xfb;
-
-                addr[6] = 0x5b;
-                addr[7] = 0x26;
-                break;
-            }
-            /////////////////////////// cluster-3
-            case 0x65fc5832:   //m29
-            case 0x65f85a22:  //m30
-            case 0x65fd593a:  //m31
-            case 0x65f75b22:  //m32
-            //case 0x65f85a22:  //m33
-            case 0x65f95836:  //m35
-            case 0x65f75802:  //m36
-            case 0x65f65b36:  //m47
-            case 0x65f45506:  //m48
-            case 0x65f75a32:  //m49
-            case 0x65f95a26:  {//m50
-            // 15:11:6b:10:65:f8:5a:36  //34
+            //case 0x65f8a93a:
+            case 0x65f7a922:
+            case 0x65faa92a:
+            case 0x65f6a802:
+            case 0x65f7a926:
+            case 0x65fbbe3a:
+            case 0x65fb8b22:
+            case 0x65f8be36:
+            case 0x65fb8b2a:
+            case 0x65fca92a:{
+            //15:11:6b:10:65:f8:a9:3a
                 addr[0] = 0x15;
                 addr[1] = 0x11;
 
@@ -231,16 +186,72 @@ static void generate_and_send_pkt(void){
                 addr[4] = 0x65;
                 addr[5] = 0xf8;
 
-                addr[6] = 0x5a;
-                addr[7] = 0x36;
+                addr[6] = 0xa9;
+                addr[7] = 0x3a;
+            	break;
+            }
+            //case 0x65fb8b36:   //m3 46
+            case 0x65faa832:
+            case 0x65f7bf52:
+            case 0x65f8a926:
+            case 0x65f9a836:
+            case 0x65f48a26:
+            case 0x65fbaf12:
+            case 0x65fa8a22:
+            case 0x65fd8b3a:
+            case 0x65f68b22:{  //m3 57
+                //15:11:6b:10:65:fb:8b:36
+                    addr[0] = 0x15;
+                    addr[1] = 0x11;
+
+                    addr[2] = 0x6b;
+                    addr[3] = 0x10;
+
+                    addr[4] = 0x65;
+                    addr[5] = 0xfb;
+
+                    addr[6] = 0x8b;
+                    addr[7] = 0x36;
+            	break;
+            }
+            //case 0x65fb8b32:
+            case 0x65f6a83a:
+            case 0x65fca806:
+            case 0x65f98b36:
+            case 0x65f8a806:
+            case 0x65f8a826:
+            case 0x65f75c16:
+            case 0x65fca82a:{
+                //15:11:6b:10:65:fb:8b:32
+                    addr[0] = 0x15;
+                    addr[1] = 0x11;
+
+                    addr[2] = 0x6b;
+                    addr[3] = 0x10;
+
+                    addr[4] = 0x65;
+                    addr[5] = 0xfb;
+
+                    addr[6] = 0x8b;
+                    addr[7] = 0x32;
+            	break;
+            }
+            default:{
+                addr[0] = 0x15;
+                addr[1] = 0x11;
+
+                addr[2] = 0x6b;
+                addr[3] = 0x10;
+
+                addr[4] = 0x65;
+                addr[5] = 0xfa;
+
+                addr[6] = 0x8a;
+                addr[7] = 0x22;
                 break;
             }
-            default: {
-                return;
-            break;
-            }
         }
-#endif
+
 
 	    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
 	    if(hdr == NULL){
