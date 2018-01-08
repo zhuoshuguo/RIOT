@@ -107,8 +107,8 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
 
     /* Initialize GoMacH's channels. */
     gnrc_netdev->gomach.sub_channel_seq = 13;
-    gnrc_netdev->gomach.pub_channel_1 = 26;
-    gnrc_netdev->gomach.pub_channel_2 = 11;
+    gnrc_netdev->gomach.pub_channel_1 = 15;
+    gnrc_netdev->gomach.pub_channel_2 = 21;
     gnrc_netdev->gomach.cur_pub_channel = gnrc_netdev->gomach.pub_channel_1;
     gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
 
@@ -2168,6 +2168,7 @@ static void *_gnrc_gomach_thread(void *args)
     /* Initialize GoMacH's parameters. */
     gomach_init(gnrc_netdev);
 
+#if 0
     xtimer_sleep(20);
 
     uint32_t own_address2;
@@ -2227,7 +2228,7 @@ static void *_gnrc_gomach_thread(void *args)
         	xtimer_sleep(600);
         	break;
         }
-        case 0x65fb8b36:
+        case 0x65fb8b36:   //m3 46
         case 0x65faa832:
         case 0x65f7bf52:
         case 0x65f8a926:
@@ -2236,7 +2237,7 @@ static void *_gnrc_gomach_thread(void *args)
         case 0x65fbaf12:
         case 0x65fa8a22:
         case 0x65fd8b3a:
-        case 0x65f68b22:{
+        case 0x65f68b22:{  //m3 57
             puts("sleep-300");
         	xtimer_sleep(300);
         	break;
@@ -2260,6 +2261,8 @@ static void *_gnrc_gomach_thread(void *args)
     }
 
     gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
+
+#endif
 
     gnrc_gomach_set_update(gnrc_netdev, true);
 
