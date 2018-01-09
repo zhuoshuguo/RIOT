@@ -225,7 +225,7 @@ static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
 {
     puts("B");
     /* Disable auto-ACK when sending broadcast packets, thus not to receive packet. */
-    //gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
+    gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
 
     /* Firstly turn the radio to public channel 1. */
     //gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
@@ -524,7 +524,7 @@ static void gomach_t2k_wait_cp(gnrc_netdev_t *gnrc_netdev)
     	//gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->tx.current_neighbor->pub_chanseq);
 
         /* Disable auto-ack, don't try to receive packet! */
-        //gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
+        gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
         /* Require ACK for the packet waiting to be sent! */
         //gnrc_gomach_set_ack_req(gnrc_netdev, NETOPT_ENABLE);
 
@@ -1023,7 +1023,7 @@ static void gomach_t2u_init(gnrc_netdev_t *gnrc_netdev)
     //gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
 
     /* Disable auto-ACK here! Don't try to reply ACK to any node. */
-    //gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
+    gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
 
     gnrc_gomach_set_on_pubchan_1(gnrc_netdev, true);
 
@@ -1514,7 +1514,7 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
     //gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
 
     /* Enable Auto-ACK for data packet reception. */
-    //gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
+    gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_LISTEN;
     gnrc_gomach_set_update(gnrc_netdev, false);
 
@@ -1556,7 +1556,7 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
     /* If we have reached the maximum CP duration, quit CP. */
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX) ||
         gnrc_gomach_get_quit_cycle(gnrc_netdev)) {
-        //gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
+        gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
         gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX);
@@ -1590,7 +1590,7 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
             gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END, GNRC_GOMACH_CP_DURATION_US);
         }
         else {
-            //gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
+            gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX);
@@ -1646,7 +1646,7 @@ static void gomach_listen_send_beacon(gnrc_netdev_t *gnrc_netdev)
 
     if (slot_num > 0) {
         /* Disable auto-ACK. Thus not to receive packet (attempt to reply ACK) anymore. */
-        ////gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
+        //gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
 
         /* Assemble and send the beacon. */
         int res = gnrc_gomach_send_beacon(gnrc_netdev);
@@ -1759,7 +1759,7 @@ static void gomach_vtdma_init(gnrc_netdev_t *gnrc_netdev)
     //gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.sub_channel_seq);
 
     /* Enable Auto ACK again for data reception */
-    //gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
+    gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
 
     /* Set the vTDMA period timeout. */
     uint32_t vtdma_duration = gnrc_netdev->rx.vtdma_manag.total_slots_num *
