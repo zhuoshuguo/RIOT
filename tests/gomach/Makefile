@@ -51,7 +51,7 @@ USEMODULE += gnrc_txtsnd
 # the application dumps received packets to stdout
 USEMODULE += gnrc_pktdump
 # Use GoMacH as the MAC protocol
-USEMODULE += gnrc_gomach
+#USEMODULE += gnrc_gomach
 CFLAGS += -DGNRC_PKTBUF_SIZE=5120
 
 FEATURES_OPTIONAL += config
