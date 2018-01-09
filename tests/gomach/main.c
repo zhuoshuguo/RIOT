@@ -325,7 +325,7 @@ void *sender_thread(void *arg)
 
    	xtimer_sleep(20);
 
-   	data_rate = 5;
+   	data_rate = 10;
    	//puts("start pushing data!");
 
     while (1) {
