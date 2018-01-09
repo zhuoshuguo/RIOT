@@ -56,7 +56,7 @@
  * @brief  GoMacH thread's PID
  */
 static kernel_pid_t gomach_pid;
-
+gomach_reinit_radio
 static void gomach_reinit_radio(gnrc_netdev_t *gnrc_netdev)
 {
     /* Initialize low-level driver. */
@@ -1486,6 +1486,9 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
         LOG_DEBUG("[GOMACH]: Re-initialize radio.");
         gomach_reinit_radio(gnrc_netdev);
     }
+
+    gomach_reinit_radio(gnrc_netdev);
+
     gnrc_gomach_set_enter_new_cycle(gnrc_netdev, false);
 
     /* Set listen period timeout. */
