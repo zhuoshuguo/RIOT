@@ -110,7 +110,7 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.pub_channel_1 = 26;
     gnrc_netdev->gomach.pub_channel_2 = 11;
     gnrc_netdev->gomach.cur_pub_channel = gnrc_netdev->gomach.pub_channel_1;
-    //gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
+    gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
 
     /* Enable RX-start and TX-started and TX-END interrupts. */
     netopt_enable_t enable = NETOPT_ENABLE;
@@ -228,7 +228,7 @@ static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
 
     /* Firstly turn the radio to public channel 1. */
-    //gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
+    gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
     gnrc_gomach_set_on_pubchan_1(gnrc_netdev, true);
 
     gnrc_netdev->tx.broadcast_seq++;
@@ -346,11 +346,11 @@ static void gomach_wait_bcast_wait_next_tx(gnrc_netdev_t *gnrc_netdev)
     /* Toggle the radio channel and go to send the next broadcast packet. */
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_BCAST_INTERVAL)) {
         if (gnrc_gomach_get_on_pubchan_1(gnrc_netdev)) {
-            //gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_2);
+            gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_2);
             gnrc_gomach_set_on_pubchan_1(gnrc_netdev, false);
         }
         else {
-            //gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
+            gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
             gnrc_gomach_set_on_pubchan_1(gnrc_netdev, true);
         }
 
@@ -521,7 +521,7 @@ static void gomach_t2k_wait_cp(gnrc_netdev_t *gnrc_netdev)
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_CP)) {
     	gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
     	/* Turn radio onto the neighbor's public channel, which will not change in this cycle. */
-    	//gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->tx.current_neighbor->pub_chanseq);
+    	gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->tx.current_neighbor->pub_chanseq);
 
         /* Disable auto-ack, don't try to receive packet! */
         gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
@@ -732,7 +732,7 @@ static void gomach_t2k_wait_beacon(gnrc_netdev_t *gnrc_netdev)
          * burst sending all the pending packets to the receiver. */
         if (gnrc_netdev->tx.vtdma_para.slots_num > 0) {
             /* Switch the radio to the sub-channel of the receiver. */
-            //gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->tx.vtdma_para.sub_channel_seq);
+            gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->tx.vtdma_para.sub_channel_seq);
 
             /* If the allocated slots period is not right behind the beacon, i.e., not the first
              * one, turn off the radio and wait for its own slots period. */
@@ -1020,7 +1020,7 @@ static void gomach_t2u_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_set_buffer_full(gnrc_netdev, false);
 
     /* Start sending the preamble firstly on public channel 1. */
-    //gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
+    gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
 
     /* Disable auto-ACK here! Don't try to reply ACK to any node. */
     gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
@@ -1040,11 +1040,11 @@ static void gomach_t2u_send_preamble_prepare(gnrc_netdev_t *gnrc_netdev)
     if (gnrc_netdev->tx.preamble_sent != 0) {
         /* Toggle the radio channel after each preamble transmission. */
         if (gnrc_gomach_get_on_pubchan_1(gnrc_netdev)) {
-            //gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_2);
+            gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_2);
             gnrc_gomach_set_on_pubchan_1(gnrc_netdev, false);
         }
         else {
-            //gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
+            gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.pub_channel_1);
             gnrc_gomach_set_on_pubchan_1(gnrc_netdev, true);
         }
         gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_MAX_PREAM_INTERVAL,
@@ -1511,7 +1511,7 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
 
     /* Turn to current public channel. */
-    //gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
+    gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
 
     /* Enable Auto-ACK for data packet reception. */
     gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
@@ -1756,7 +1756,7 @@ static void gomach_listen_wait_beacon_tx(gnrc_netdev_t *gnrc_netdev)
 static void gomach_vtdma_init(gnrc_netdev_t *gnrc_netdev)
 {
     /* Switch the radio to the device's sub-channel. */
-    //gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.sub_channel_seq);
+    gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.sub_channel_seq);
 
     /* Enable Auto ACK again for data reception */
     gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
@@ -1806,7 +1806,7 @@ static void gomach_vtdma_end(gnrc_netdev_t *gnrc_netdev)
     gnrc_mac_dispatch(&gnrc_netdev->rx);
 
     /* Switch the radio to the public-channel. */
-    //gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
+    gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
 
     /* Check if there is packet to send. */
     if (gnrc_gomach_find_next_tx_neighbor(gnrc_netdev)) {
