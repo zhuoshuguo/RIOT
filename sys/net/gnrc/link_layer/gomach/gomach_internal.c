@@ -174,8 +174,8 @@ int gnrc_gomach_send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt, netopt_ena
     assert(pkt != NULL);
 
     /* Enable/disable CSMA according to the input. */
-    gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA, &csma_enable,
-                                  sizeof(netopt_enable_t));
+    //gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA, &csma_enable,
+      //                            sizeof(netopt_enable_t));
 
     gnrc_gomach_set_tx_finish(gnrc_netdev, false);
     gnrc_netdev_set_tx_feedback(gnrc_netdev, TX_FEEDBACK_UNDEF);

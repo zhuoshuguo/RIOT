@@ -526,12 +526,12 @@ static void gomach_t2k_wait_cp(gnrc_netdev_t *gnrc_netdev)
         /* Disable auto-ack, don't try to receive packet! */
         //gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
         /* Require ACK for the packet waiting to be sent! */
-        gnrc_gomach_set_ack_req(gnrc_netdev, NETOPT_ENABLE);
+        //gnrc_gomach_set_ack_req(gnrc_netdev, NETOPT_ENABLE);
 
         /* Enable csma for sending the packet! */
-        netopt_enable_t csma_enable = NETOPT_ENABLE;
-        gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA, &csma_enable,
-                                      sizeof(netopt_enable_t));
+       // netopt_enable_t csma_enable = NETOPT_ENABLE;
+        //gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_CSMA, &csma_enable,
+          //                            sizeof(netopt_enable_t));
 
 
         gnrc_netdev->tx.t2k_state = GNRC_GOMACH_T2K_TRANS_IN_CP;
