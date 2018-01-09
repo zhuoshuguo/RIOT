@@ -172,13 +172,13 @@ void *sender_thread(void *arg)
    data_rate = 60;
 
     while (1) {
-	    for(int i=0; i<5; i++){
+	    for(int i=0; i<1; i++){
             if (send_counter < 60) {
                 generate_and_send_pkt();
             }
         }
-
-	    xtimer_sleep((uint32_t) data_rate);
+	    data_rate = random_uint32_range(45, 75);
+	    xtimer_sleep(data_rate);
 
 	    /*
         if (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 150) {

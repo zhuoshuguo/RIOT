@@ -107,8 +107,8 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
 
     /* Initialize GoMacH's channels. */
     gnrc_netdev->gomach.sub_channel_seq = 13;
-    gnrc_netdev->gomach.pub_channel_1 = 15;
-    gnrc_netdev->gomach.pub_channel_2 = 21;
+    gnrc_netdev->gomach.pub_channel_1 = 26;
+    gnrc_netdev->gomach.pub_channel_2 = 11;
     gnrc_netdev->gomach.cur_pub_channel = gnrc_netdev->gomach.pub_channel_1;
     gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
 
@@ -1868,6 +1868,7 @@ static void gomach_sleep(gnrc_netdev_t *gnrc_netdev)
 {
     /* If we are entering a new cycle, quit sleeping. */
     if (gnrc_gomach_get_enter_new_cycle(gnrc_netdev)) {
+        gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
         gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_END;
         gnrc_gomach_set_update(gnrc_netdev, true);
     }
