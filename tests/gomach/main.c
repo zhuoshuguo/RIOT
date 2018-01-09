@@ -319,9 +319,9 @@ void *sender_thread(void *arg)
 
 	data_rate = 1;
 
- 	//uint32_t listen_period;
-   	//listen_period = random_uint32_range(20, 120);
- 	//printf("random wait: %lu s.\n", listen_period);
+ 	uint32_t listen_period;
+   	listen_period = random_uint32_range(20, 120);
+ 	printf("random wait: %lu s.\n", listen_period);
 
    	xtimer_sleep(20);
 
