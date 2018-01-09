@@ -56,7 +56,7 @@
  * @brief  GoMacH thread's PID
  */
 static kernel_pid_t gomach_pid;
-gomach_reinit_radio
+
 static void gomach_reinit_radio(gnrc_netdev_t *gnrc_netdev)
 {
     /* Initialize low-level driver. */
