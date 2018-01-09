@@ -81,13 +81,13 @@ static void generate_and_send_pkt(void){
 	    payload[1] = own_address2;
 
 	   	// report tdma slots number.
-	   	payload[2] = gnrc_netdev.gomach.csma_count;
-	   	payload[3] = gnrc_netdev.gomach.vtdma_count;
+	   	//payload[2] = gnrc_netdev.gomach.csma_count;
+	   	//payload[3] = gnrc_netdev.gomach.vtdma_count;
 
-	   	uint64_t *payload_long = (uint64_t *)payload;
+	   //	uint64_t *payload_long = (uint64_t *)payload;
 
-	   	payload_long[2] = gnrc_netdev.gomach.awake_duration_sum_ticks;
-	   	payload_long[3] = xtimer_now_usec64() - gnrc_netdev.gomach.system_start_time_ticks;
+	   //	payload_long[2] = gnrc_netdev.gomach.awake_duration_sum_ticks;
+	   //	payload_long[3] = xtimer_now_usec64() - gnrc_netdev.gomach.system_start_time_ticks;
 
 	    dev2 = 4;
 	    /* parse interface */
@@ -319,11 +319,11 @@ void *sender_thread(void *arg)
 
 	data_rate = 1;
 
- 	uint32_t listen_period;
-   	listen_period = random_uint32_range(20, 120);
- 	printf("random wait: %lu s.\n", listen_period);
+ 	//uint32_t listen_period;
+   	//listen_period = random_uint32_range(20, 120);
+ 	//printf("random wait: %lu s.\n", listen_period);
 
-   	xtimer_sleep(listen_period);
+   	xtimer_sleep(20);
 
    	data_rate = 30;
    	//puts("start pushing data!");
