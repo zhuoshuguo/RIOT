@@ -123,8 +123,10 @@ static void generate_and_send_pkt(void){
 
         addr[6] = 0x8b;
         addr[7] = 0x26;
+        */
 
 	    //79:67:27:72:f4:57:9f:e6   bcc6
+	    /*
         addr[0] = 0x79;
         addr[1] = 0x67;
 
@@ -137,6 +139,7 @@ static void generate_and_send_pkt(void){
         addr[6] = 0x9f;
         addr[7] = 0xe6;
         */
+
 
         switch (own_address2) {
             case 0x65fbbe26:  //m3 - 11
@@ -331,7 +334,7 @@ void *sender_thread(void *arg)
     while (1) {
 	    for(int i=0; i<1; i++){   //65:f6:8b:26
 	    //if ((own_address2 != 0x65f68b26) && (send_counter < 10))
-	    if ((own_address2 != 0x65fb8b36) && (send_counter < 1000))
+	    if ((own_address2 != 0x65fb8b36) && (send_counter < 10000))
 		    generate_and_send_pkt();
 	    }
 
