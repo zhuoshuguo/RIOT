@@ -323,9 +323,9 @@ void *sender_thread(void *arg)
    	listen_period = random_uint32_range(10, 120);
  	printf("random wait: %lu s.\n", listen_period);
 
-   	xtimer_sleep(20);
+   	xtimer_sleep(listen_period);
 
-   	data_rate = 20;
+   	data_rate = 2;
    	//puts("start pushing data!");
 
     while (1) {
