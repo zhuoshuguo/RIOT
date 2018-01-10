@@ -541,6 +541,8 @@ static void gomach_t2k_wait_cp(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_t2k_trans_in_cp(gnrc_netdev_t *gnrc_netdev)
 {
+    gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
+
     /* To-do: should we add a rx-start security check and quit t2k when found
      * ongoing transmissions? */
 
@@ -1867,9 +1869,9 @@ static void gomach_sleep(gnrc_netdev_t *gnrc_netdev)
 {
     /* If we are entering a new cycle, quit sleeping. */
     if (gnrc_gomach_get_enter_new_cycle(gnrc_netdev)) {
+        gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
         gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_END;
         gnrc_gomach_set_update(gnrc_netdev, true);
-        gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
     }
 }
 
@@ -1883,6 +1885,7 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
     /* Go to CP (start of the new cycle), start listening on the public-channel. */
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_INIT;
     gnrc_gomach_set_update(gnrc_netdev, true);
+    gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
 }
 
 static void gomach_update(gnrc_netdev_t *gnrc_netdev)
