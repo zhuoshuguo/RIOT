@@ -334,7 +334,7 @@ void *sender_thread(void *arg)
     while (1) {
 	    for(int i=0; i<1; i++){   //65:f6:8b:26
 	    //if ((own_address2 != 0x65f68b26) && (send_counter < 10))
-	    if ((own_address2 != 0x65fb8b36) && (send_counter < 10000))
+	    if ((own_address2 != 0x65fb8b36) && (send_counter < 1000))
 		    generate_and_send_pkt();
 	    }
 
