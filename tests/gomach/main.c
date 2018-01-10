@@ -335,7 +335,7 @@ void *sender_thread(void *arg)
 		    generate_and_send_pkt();
 	    }
 
-	    data_rate = random_uint32_range(15, 25);
+	    //data_rate = random_uint32_range(15, 25);
         xtimer_sleep(data_rate);
     }
 
