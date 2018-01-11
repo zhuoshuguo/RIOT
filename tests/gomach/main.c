@@ -81,13 +81,13 @@ static void generate_and_send_pkt(void){
 	    payload[1] = own_address2;
 
 	   	// report tdma slots number.
-	   	//payload[2] = gnrc_netdev.gomach.csma_count;
-	   	//payload[3] = gnrc_netdev.gomach.vtdma_count;
+	   	payload[2] = gnrc_netdev.gomach.csma_count;
+	   	payload[3] = gnrc_netdev.gomach.vtdma_count;
 
-	   //	uint64_t *payload_long = (uint64_t *)payload;
+	   	uint64_t *payload_long = (uint64_t *)payload;
 
-	   //	payload_long[2] = gnrc_netdev.gomach.awake_duration_sum_ticks;
-	   //	payload_long[3] = xtimer_now_usec64() - gnrc_netdev.gomach.system_start_time_ticks;
+	   	payload_long[2] = gnrc_netdev.gomach.awake_duration_sum_ticks;
+	   	payload_long[3] = xtimer_now_usec64() - gnrc_netdev.gomach.system_start_time_ticks;
 
 	    dev2 = 4;
 	    /* parse interface */
@@ -300,7 +300,7 @@ static void generate_and_send_pkt(void){
 		    	puts("app: send data msg to mac failed!");
 		    }
 
-		    printf("p: %lx: %lu.\n", own_address2, send_counter);
+		    //printf("p: %lx: %lu.\n", own_address2, send_counter);
 		}
 
 }
@@ -354,9 +354,10 @@ void *sender_thread(void *arg)
 
     while (1) {
 	    for(int i=0; i<5; i++){   //65:f6:8b:26
-	    //if ((own_address2 != 0x65f68b26) && (send_counter < 10))
-	    if ((own_address2 != 0x65fbbe26) && (send_counter < 60))
-		    generate_and_send_pkt();
+	        //if ((own_address2 != 0x65f68b26) && (send_counter < 10))
+	        if ((own_address2 != 0x65fbbe26) && (send_counter < 1000)) {
+		        generate_and_send_pkt();
+		    }
 	    }
 
 	    data_rate = random_uint32_range(55, 65);
