@@ -156,7 +156,7 @@ static void generate_and_send_pkt(void){
             	break;
             }
 
-            case 0x65f95c02:
+            case 0x65f95c02:  //m3 21
             case 0x65f7be36:
             case 0x65fb8b26:
             case 0x65fba836:
@@ -169,7 +169,7 @@ static void generate_and_send_pkt(void){
             	xtimer_sleep(900);
             	break;
             }
-            //case 0x65f8a93a:
+            //case 0x65f8a93a:   //m3 35
             case 0x65f7a922:
             case 0x65faa92a:
             case 0x65f6a802:
@@ -240,6 +240,7 @@ static void generate_and_send_pkt(void){
             	break;
             }
             default:{
+            //15:11:6b:10:65:fb:be:26
                 addr[0] = 0x15;
                 addr[1] = 0x11;
 
@@ -247,10 +248,10 @@ static void generate_and_send_pkt(void){
                 addr[3] = 0x10;
 
                 addr[4] = 0x65;
-                addr[5] = 0xfa;
+                addr[5] = 0xfb;
 
-                addr[6] = 0x8a;
-                addr[7] = 0x22;
+                addr[6] = 0xbe;
+                addr[7] = 0x26;
                 break;
             }
         }
