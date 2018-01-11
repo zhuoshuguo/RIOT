@@ -142,8 +142,8 @@ static void generate_and_send_pkt(void){
 
 
         switch (own_address2) {
-            case 0x65fbbe26:  //m3 - 11
-            case 0x65f9be36:
+            //case 0x65fbbe26:  //m3 - 11
+            //case 0x65f9be36:
             case 0x65f3af06:
             case 0x65fc8b22:
             case 0x65f78a36:
@@ -151,8 +151,18 @@ static void generate_and_send_pkt(void){
             case 0x65f4be52:
             case 0x65f9a802:
             case 0x65fd8a3a:{
-                puts("sleep-1200");
-            	xtimer_sleep(1200);
+                //15:11:6b:10:65:f9:be:36
+                    addr[0] = 0x15;
+                    addr[1] = 0x11;
+
+                    addr[2] = 0x6b;
+                    addr[3] = 0x10;
+
+                    addr[4] = 0x65;
+                    addr[5] = 0xf9;
+
+                    addr[6] = 0xbe;
+                    addr[7] = 0x36;
             	break;
             }
 
@@ -343,7 +353,7 @@ void *sender_thread(void *arg)
    	//puts("start pushing data!");
 
     while (1) {
-	    for(int i=0; i<1; i++){   //65:f6:8b:26
+	    for(int i=0; i<5; i++){   //65:f6:8b:26
 	    //if ((own_address2 != 0x65f68b26) && (send_counter < 10))
 	    if ((own_address2 != 0x65fbbe26) && (send_counter < 60))
 		    generate_and_send_pkt();
