@@ -156,7 +156,7 @@ static void generate_and_send_pkt(void){
             	break;
             }
 
-            case 0x65f95c02:  //m3 21
+           // case 0x65f95c02:  //m3 21
             case 0x65f7be36:
             case 0x65fb8b26:
             case 0x65fba836:
@@ -165,8 +165,18 @@ static void generate_and_send_pkt(void){
             case 0x65f9af06:
             case 0x65fa8a2a:
             case 0x65f7a80a:{
-                puts("sleep-900");
-            	xtimer_sleep(900);
+                //15:11:6b:10:65:f9:5c:02
+                    addr[0] = 0x15;
+                    addr[1] = 0x11;
+
+                    addr[2] = 0x6b;
+                    addr[3] = 0x10;
+
+                    addr[4] = 0x65;
+                    addr[5] = 0xf9;
+
+                    addr[6] = 0x5c;
+                    addr[7] = 0x02;
             	break;
             }
             //case 0x65f8a93a:   //m3 35
@@ -329,17 +339,17 @@ void *sender_thread(void *arg)
 
    	xtimer_sleep(listen_period);
 
-   	data_rate = 1;
+   	data_rate = 60;
    	//puts("start pushing data!");
 
     while (1) {
 	    for(int i=0; i<1; i++){   //65:f6:8b:26
 	    //if ((own_address2 != 0x65f68b26) && (send_counter < 10))
-	    if ((own_address2 != 0x65fb8b36) && (send_counter < 1000))
+	    if ((own_address2 != 0x65fbbe26) && (send_counter < 60))
 		    generate_and_send_pkt();
 	    }
 
-	    //data_rate = random_uint32_range(15, 25);
+	    data_rate = random_uint32_range(55, 65);
         xtimer_sleep(data_rate);
     }
 

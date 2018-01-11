@@ -17,6 +17,7 @@
  *
  * @}
  */
+
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -31,27 +32,9 @@
 #include "net/udp.h"
 #include "net/sixlowpan.h"
 #include "od.h"
-#include <periph/rtt.h>
-#include "net/gnrc/netdev.h"
+#include "xtimer.h"
 
-typedef struct gnrc_netdev gnrc_netdev_t;
-
-#define GNRC_GOMACH_EX_NODE_NUM 70
-
-extern gnrc_netdev_t gnrc_netdev;
-
-static uint32_t idlist[GNRC_GOMACH_EX_NODE_NUM];
-static uint32_t reception_list[GNRC_GOMACH_EX_NODE_NUM];
-static uint32_t node_tdma_record_list[GNRC_GOMACH_EX_NODE_NUM];
-static uint32_t node_csma_record_list[GNRC_GOMACH_EX_NODE_NUM];
-
-//static uint64_t node_wake_duration[GNRC_GOMACH_EX_NODE_NUM];
-//static uint64_t node_life_duration[GNRC_GOMACH_EX_NODE_NUM];
-
-static uint64_t delay_sum;
-static uint32_t system_start_time = 0;
-
-static bool found_id;
+uint32_t own_addess;
 
 /**
  * @brief   PID of the pktdump thread
@@ -62,6 +45,7 @@ kernel_pid_t gnrc_pktdump_pid = KERNEL_PID_UNDEF;
  * @brief   Stack for the pktdump thread
  */
 static char _stack[GNRC_PKTDUMP_STACKSIZE];
+
 #if 0
 static void _dump_snip(gnrc_pktsnip_t *pkt)
 {
@@ -118,13 +102,12 @@ static void _dump_snip(gnrc_pktsnip_t *pkt)
 }
 #endif
 
-static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
+static void _dump(gnrc_pktsnip_t *pkt)
 {
 	/*
     int snips = 0;
     int size = 0;
     gnrc_pktsnip_t *snip = pkt;
-
 
     while (snip != NULL) {
         printf("~~ SNIP %2i - size: %3u byte, type: ", snips,
@@ -133,69 +116,63 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
         ++snips;
         size += snip->size;
         snip = snip->next;
-    }*/
+    }
 
-    //printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
+    printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
+    gnrc_pktbuf_release(pkt);
+    */
 
+	kernel_pid_t dev;
+	uint8_t addr[8];
+	size_t addr_len;
+	gnrc_pktsnip_t *hdr;
 	uint32_t *payload;
 
+	int16_t dev2;
 
-    //gnrc_netif_hdr_t *netif_hdr;
+	dev2 = 4;
+	/* parse interface */
+	dev = (kernel_pid_t)dev2;
 
-    //uint8_t* addr;
+	payload = pkt->data;
 
+	addr_len = 8;
 
-    payload = pkt->data;
+    //15:11:6b:10:65:fb:be:26
+        addr[0] = 0x15;
+        addr[1] = 0x11;
 
+        addr[2] = 0x6b;
+        addr[3] = 0x10;
 
+        addr[4] = 0x65;
+        addr[5] = 0xfb;
 
-    found_id = false;
+        addr[6] = 0xbe;
+        addr[7] = 0x26;
 
-    int i=0;
-    /* find id exist or not */
-    for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
-        //if (memcmp(&idlist[i], &payload[1],8) == 0) {
-    	if(idlist[i] == payload[1]){
-    	    //printf("i:%d, idlist: %lx, address: %lx\n",i, idlist[i],payload[1]);
+	/** release old netif header **/
+	gnrc_pktbuf_release(pkt->next);
+	pkt->next= NULL;
 
-    		found_id = true;
-    		reception_list[i] ++;
+	/** build new netif header **/
+	hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
+	if(hdr == NULL){
+	   	puts("relay: buf full, drop pkt.");
+	   	gnrc_pktbuf_release(pkt);
+	   	return;
+	}
 
-    		node_tdma_record_list[i] = payload[3];
-    		node_csma_record_list[i] = payload[2];
+	printf("relay: %lx: %lu\n",payload[1], payload[0]);
 
-            /*
-    		uint64_t *payload_long = (uint64_t *)payload;
+	LL_PREPEND(pkt, hdr);
 
-    		node_wake_duration[i] = payload_long[2];
-    		node_life_duration[i] = payload_long[3];
+	int res;
+	res = gnrc_netapi_send(dev, pkt);
+	if(res < 1) {
+	   	puts("relay: send data msg failed when push pkt.");
+	}
 
-
-            uint64_t duty;
-            duty = (node_wake_duration[i]) * 100 / node_life_duration[i];
-            printf("duty: %lu %% \n", (uint32_t)duty);
-            */
-
-    		break;
-    	}
-    }
-
-    if(found_id == false){
-    	for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
-    		if(idlist[i] == 0){
-    			idlist[i] = payload[1];
-    			reception_list[i] ++;
-    			break;
-    		}
-    	}
-    }
-
-
-   // printf("s: %x, g: %lu, r: %lu, t: %lu. \n", addr[1], payload[0], reception_list[i], received_pkt_counter);
-
-   printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], reception_list[i], received_pkt_counter);
-
-   gnrc_pktbuf_release(pkt);
 }
 
 static void *_eventloop(void *arg)
@@ -204,37 +181,39 @@ static void *_eventloop(void *arg)
     msg_t msg, reply;
     msg_t msg_queue[GNRC_PKTDUMP_MSG_QUEUE_SIZE];
 
-    uint32_t received_pkt_counter;
-    received_pkt_counter = 0;
-    system_start_time = 0;
-
-    delay_sum = 0;
-
     /* setup the message queue */
     msg_init_queue(msg_queue, GNRC_PKTDUMP_MSG_QUEUE_SIZE);
 
     reply.content.value = (uint32_t)(-ENOTSUP);
     reply.type = GNRC_NETAPI_MSG_TYPE_ACK;
 
-    for(int i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
-    	idlist[i] =0;
-    	reception_list[i] =0;
-    	node_tdma_record_list[i]=0;
-    	node_csma_record_list[i]=0;
-    }
+    int16_t devpid;
+    devpid = 4;
+
+    xtimer_sleep(2);
+
+    uint8_t own_addr[2];
+    gnrc_netapi_get(devpid, NETOPT_ADDRESS, 0, &own_addr,
+                    sizeof(own_addr));
+
+    xtimer_sleep(3);
+
+    own_addess = 0;
+    own_addess = own_addr[0];
+    own_addess = own_addess << 8;
+    own_addess |= own_addr[1];
 
     while (1) {
         msg_receive(&msg);
 
         switch (msg.type) {
             case GNRC_NETAPI_MSG_TYPE_RCV:
-                //puts("PKTDUMP: over data received:");
-            	received_pkt_counter ++;
-                _dump(msg.content.ptr, received_pkt_counter);
+                 //puts("PKTDUMP: data received:");
+                _dump(msg.content.ptr);
                 break;
             case GNRC_NETAPI_MSG_TYPE_SND:
                 puts("PKTDUMP: data to send:");
-                _dump(msg.content.ptr, received_pkt_counter);
+                _dump(msg.content.ptr);
                 break;
             case GNRC_NETAPI_MSG_TYPE_GET:
             case GNRC_NETAPI_MSG_TYPE_SET:
