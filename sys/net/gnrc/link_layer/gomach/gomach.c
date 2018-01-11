@@ -1860,7 +1860,7 @@ static void gomach_vtdma_end(gnrc_netdev_t *gnrc_netdev)
 static void gomach_sleep_init(gnrc_netdev_t *gnrc_netdev)
 {
     /* Turn off the radio during sleep period to conserve power. */
-    //gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
+    gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_gomach_set_update(gnrc_netdev, true);
 }
