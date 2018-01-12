@@ -168,6 +168,7 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     rtt_set_counter(0);
 
     gnrc_netdev->gomach.exp_started = false;
+    gnrc_netdev->gomach.exp_end = false;
     gnrc_netdev->gomach.csma_count = 0;
     gnrc_netdev->gomach.vtdma_count = 0;
 }
@@ -1880,6 +1881,18 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
     if (gnrc_gomach_get_phase_backoff(gnrc_netdev)) {
         gnrc_gomach_set_phase_backoff(gnrc_netdev, false);
         _gomach_phase_backoff(gnrc_netdev);
+    }
+
+	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 5) && (gnrc_netdev->gomach.exp_end == false)) {
+		gnrc_netdev->gomach.exp_end = true;
+		int dd;
+	    puts("Slot summary.");
+		for(int j=0;j<150;j++){
+			dd = (int) gnrc_netdev->gomach.slot_varia[j];
+			printf("%d\n",dd);
+		}
+
+	    printf("Total csma count: %lu\n", gnrc_netdev->gomach.total_csma);
     }
 
     /* Go to CP (start of the new cycle), start listening on the public-channel. */

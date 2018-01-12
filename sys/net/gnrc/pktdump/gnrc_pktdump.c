@@ -40,18 +40,16 @@ typedef struct gnrc_netdev gnrc_netdev_t;
 
 extern gnrc_netdev_t gnrc_netdev;
 
-static uint32_t idlist[GNRC_GOMACH_EX_NODE_NUM];
-static uint32_t reception_list[GNRC_GOMACH_EX_NODE_NUM];
-static uint32_t node_tdma_record_list[GNRC_GOMACH_EX_NODE_NUM];
-static uint32_t node_csma_record_list[GNRC_GOMACH_EX_NODE_NUM];
+uint32_t idlist[GNRC_GOMACH_EX_NODE_NUM];
+uint32_t reception_list[GNRC_GOMACH_EX_NODE_NUM];
+uint32_t node_tdma_record_list[GNRC_GOMACH_EX_NODE_NUM];
+uint32_t node_csma_record_list[GNRC_GOMACH_EX_NODE_NUM];
 
-//static uint64_t node_wake_duration[GNRC_GOMACH_EX_NODE_NUM];
-//static uint64_t node_life_duration[GNRC_GOMACH_EX_NODE_NUM];
+uint64_t node_wake_duration[GNRC_GOMACH_EX_NODE_NUM];
+uint64_t node_life_duration[GNRC_GOMACH_EX_NODE_NUM];
 
-static uint64_t delay_sum;
-static uint32_t system_start_time = 0;
-
-static bool found_id;
+uint64_t delay_sum;
+uint32_t system_start_time = 0;
 
 /**
  * @brief   PID of the pktdump thread
@@ -148,23 +146,26 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     payload = pkt->data;
 
 
-
+    bool found_id;
     found_id = false;
+
+    if(payload[1] == 0x22222222) {
+    	gnrc_pktbuf_release(pkt);
+    	delay_sum = 0;
+    	return;
+    }
+
 
     int i=0;
     /* find id exist or not */
     for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
-        //if (memcmp(&idlist[i], &payload[1],8) == 0) {
     	if(idlist[i] == payload[1]){
-    	    //printf("i:%d, idlist: %lx, address: %lx\n",i, idlist[i],payload[1]);
-
     		found_id = true;
     		reception_list[i] ++;
 
     		node_tdma_record_list[i] = payload[3];
     		node_csma_record_list[i] = payload[2];
 
-            /*
     		uint64_t *payload_long = (uint64_t *)payload;
 
     		node_wake_duration[i] = payload_long[2];
@@ -174,7 +175,6 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
             uint64_t duty;
             duty = (node_wake_duration[i]) * 100 / node_life_duration[i];
             printf("duty: %lu %% \n", (uint32_t)duty);
-            */
 
     		break;
     	}
@@ -190,10 +190,28 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     	}
     }
 
-   //printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], reception_list[i], received_pkt_counter);
-    printf("T:%lu. \n", received_pkt_counter);
 
-   gnrc_pktbuf_release(pkt);
+   // printf("s: %x, g: %lu, r: %lu, t: %lu. \n", addr[1], payload[0], reception_list[i], received_pkt_counter);
+
+   printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], reception_list[i], received_pkt_counter);
+
+   uint32_t current_slots_sum =0;
+   gnrc_netdev.gomach.total_csma = 0;
+
+	for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
+		current_slots_sum += node_tdma_record_list[i];
+		gnrc_netdev.gomach.total_csma += node_csma_record_list[i];
+	}
+
+   uint32_t current_rtt = 0;
+   current_rtt = rtt_get_counter();
+   current_rtt = RTT_TICKS_TO_MIN(current_rtt);
+
+   if(current_rtt < 150) {
+	   gnrc_netdev.gomach.slot_varia[current_rtt] = current_slots_sum;
+   }
+
+    gnrc_pktbuf_release(pkt);
 }
 
 static void *_eventloop(void *arg)
@@ -219,6 +237,10 @@ static void *_eventloop(void *arg)
     	reception_list[i] =0;
     	node_tdma_record_list[i]=0;
     	node_csma_record_list[i]=0;
+    }
+
+    for (int i=0;i<60;i++) {
+    	gnrc_netdev.gomach.slot_varia[i] = 0;
     }
 
     while (1) {
