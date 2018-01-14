@@ -352,6 +352,131 @@ void *sender_thread(void *arg)
    	data_rate = 60;
    	//puts("start pushing data!");
 
+
+    switch (own_address2) {
+        //case 0x65fbbe26:  //m3 - 11
+        case 0x65f9be36:
+        case 0x65f3af06:
+        case 0x65fc8b22:
+        case 0x65f78a36:
+        case 0x65f8a83a:
+        case 0x65f4be52:
+        case 0x65f9a802:
+        case 0x65fd8a3a:{
+            while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 20) {
+        	    for(int i=0; i<1; i++){   //65:f6:8b:26
+        	    	generate_and_send_pkt();
+        	    }
+        	    xtimer_sleep(data_rate);
+            }
+
+            break;
+        }
+
+        case 0x65f95c02:  //m3 21
+        case 0x65f7be36:
+        case 0x65fb8b26:
+        case 0x65fba836:
+        case 0x65f8a822:
+        case 0x65fabe52:
+        case 0x65f9af06:
+        case 0x65fa8a2a:
+        case 0x65f7a80a:{
+            while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 30) {
+        	    for(int i=0; i<1; i++){   //65:f6:8b:26
+        	    	generate_and_send_pkt();
+        	    }
+        	    xtimer_sleep(data_rate);
+            }
+
+            break;
+        }
+        case 0x65f8a93a:   //m3 35
+        case 0x65f7a922:
+        case 0x65faa92a:
+        case 0x65f6a802:
+        case 0x65f7a926:
+        case 0x65fbbe3a:
+        case 0x65fb8b22:
+        case 0x65f8be36:
+        case 0x65fb8b2a:
+        case 0x65fca92a:{
+            while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 40) {
+        	    for(int i=0; i<1; i++){   //65:f6:8b:26
+        	    	generate_and_send_pkt();
+        	    }
+        	    xtimer_sleep(data_rate);
+            }
+            break;
+        }
+        case 0x65fb8b36:   //m3 46
+        case 0x65faa832:
+        case 0x65f7bf52:
+        case 0x65f8a926:
+        case 0x65f9a836:
+        case 0x65f48a26:
+        case 0x65fbaf12:
+        case 0x65fa8a22:
+        case 0x65fd8b3a:
+        case 0x65f68b22:{
+            while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 50) {
+        	    for(int i=0; i<1; i++){   //65:f6:8b:26
+        	    	generate_and_send_pkt();
+        	    }
+        	    xtimer_sleep(data_rate);
+            }
+            break;
+        }
+        case 0x65fb8b32:   //m3 60
+        case 0x65f6a83a:
+        case 0x65fca806:
+        case 0x65f98b36:
+        case 0x65f8a806:
+        case 0x65f8a826:
+        case 0x65f75c16:
+        case 0x65fca82a:{
+            while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 60) {
+        	    for(int i=0; i<1; i++){   //65:f6:8b:26
+        	    	generate_and_send_pkt();
+        	    }
+        	    xtimer_sleep(data_rate);
+            }
+            break;
+        }
+        default:{
+            break;
+        }
+    }
+
+    while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 70) {
+	    for(int i=0; i<5; i++){   //65:f6:8b:26
+	    	generate_and_send_pkt();
+	    }
+	    xtimer_sleep(data_rate);
+    }
+
+    while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 90) {
+	    for(int i=0; i<1; i++){   //65:f6:8b:26
+	    	generate_and_send_pkt();
+	    }
+	    xtimer_sleep(data_rate);
+    }
+
+    while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 110) {
+	    for(int i=0; i<5; i++){   //65:f6:8b:26
+	    	generate_and_send_pkt();
+	    }
+	    xtimer_sleep(data_rate);
+    }
+
+    while (1) {
+	    for(int i=0; i<1; i++){   //65:f6:8b:26
+	    	generate_and_send_pkt();
+	    }
+	    xtimer_sleep(data_rate);
+    }
+
+#if 0
     while (1) {
 	    for(int i=0; i<5; i++){   //65:f6:8b:26
 	        //if ((own_address2 != 0x65f68b26) && (send_counter < 10))
@@ -363,6 +488,7 @@ void *sender_thread(void *arg)
 	    //data_rate = random_uint32_range(55, 65);
         xtimer_sleep(data_rate);
     }
+#endif
 
     return NULL;
 }
