@@ -300,7 +300,7 @@ typedef struct gomach {
     uint32_t csma_count;
     uint32_t vtdma_count;
 
-    uint8_t slot_varia[150];
+    uint32_t slot_varia[150];
 	uint32_t total_csma;
 } gnrc_gomach_t;
 
