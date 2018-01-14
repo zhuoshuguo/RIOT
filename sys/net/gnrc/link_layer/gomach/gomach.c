@@ -1883,7 +1883,7 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
         _gomach_phase_backoff(gnrc_netdev);
     }
 
-	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 35) && (gnrc_netdev->gomach.exp_end == false)) {
+	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 25) && (gnrc_netdev->gomach.exp_end == false)) {
 		gnrc_netdev->gomach.exp_end = true;
 		int dd;
 	    puts("Slot summary.");
@@ -1891,8 +1891,26 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 			dd = (int) gnrc_netdev->gomach.slot_varia[j];
 			printf("%d\n",dd);
 		}
-
 	    printf("Total csma count: %lu\n", gnrc_netdev->gomach.total_csma);
+
+	    puts("Wakeup record.");
+		for(int j=0;j<70;j++){
+			//dd = (int) gnrc_netdev->gomach.slot_varia[j];
+			printf("%" PRIu64 "\n",gnrc_netdev->gomach.node_wake_duration[j]);
+		}
+
+	    puts("Lifetime record.");
+		for(int j=0;j<70;j++){
+			//dd = (int) gnrc_netdev->gomach.slot_varia[j];
+			printf("%" PRIu64 "\n",gnrc_netdev->gomach.node_life_duration[j]);
+		}
+
+	    puts("Generate data record.");
+		for(int j=0;j<70;j++){
+			//dd = (int) gnrc_netdev->gomach.slot_varia[j];
+			printf("%lu\n",gnrc_netdev->gomach.generate_num[j]);
+		}
+
     }
 
     /* Go to CP (start of the new cycle), start listening on the public-channel. */

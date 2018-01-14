@@ -45,9 +45,6 @@ uint32_t reception_list[GNRC_GOMACH_EX_NODE_NUM];
 uint32_t node_tdma_record_list[GNRC_GOMACH_EX_NODE_NUM];
 uint32_t node_csma_record_list[GNRC_GOMACH_EX_NODE_NUM];
 
-uint64_t node_wake_duration[GNRC_GOMACH_EX_NODE_NUM];
-uint64_t node_life_duration[GNRC_GOMACH_EX_NODE_NUM];
-
 uint64_t delay_sum;
 uint32_t system_start_time = 0;
 
@@ -157,6 +154,10 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
 
     int i=0;
+    uint8_t record_id;
+
+    record_id = 0;
+
     /* find id exist or not */
     for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
     	if(idlist[i] == payload[1]){
@@ -168,32 +169,38 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
     		uint64_t *payload_long = (uint64_t *)payload;
 
-    		node_wake_duration[i] = payload_long[2];
-    		node_life_duration[i] = payload_long[3];
+    		gnrc_netdev.gomach.node_wake_duration[i] = payload_long[2];
+    		gnrc_netdev.gomach.node_life_duration[i] = payload_long[3];
 
 
             uint64_t duty;
-            duty = (node_wake_duration[i]) * 100 / node_life_duration[i];
+            duty = (gnrc_netdev.gomach.node_wake_duration[i] * 100) / gnrc_netdev.gomach.node_life_duration[i];
             printf("duty: %lu %% \n", (uint32_t)duty);
 
     		break;
     	}
+    	record_id ++;
     }
 
     if(found_id == false){
+    	record_id = 0;
+
     	for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
     		if(idlist[i] == 0){
     			idlist[i] = payload[1];
     			reception_list[i] ++;
     			break;
     		}
+    		record_id ++;
     	}
     }
 
 
    // printf("s: %x, g: %lu, r: %lu, t: %lu. \n", addr[1], payload[0], reception_list[i], received_pkt_counter);
 
-   printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], reception_list[i], received_pkt_counter);
+   printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], reception_list[record_id], received_pkt_counter);
+
+   gnrc_netdev.gomach.generate_num[record_id] = payload[0];
 
    uint32_t current_slots_sum =0;
    gnrc_netdev.gomach.total_csma = 0;

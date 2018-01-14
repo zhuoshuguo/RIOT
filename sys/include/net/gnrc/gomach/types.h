@@ -302,6 +302,10 @@ typedef struct gomach {
 
     uint32_t slot_varia[150];
 	uint32_t total_csma;
+
+	uint64_t node_wake_duration[70];
+	uint64_t node_life_duration[70];
+	uint32_t generate_num[70];
 } gnrc_gomach_t;
 
 #ifdef __cplusplus
