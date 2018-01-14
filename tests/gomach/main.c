@@ -360,7 +360,7 @@ void *sender_thread(void *arg)
 		    }
 	    }
 
-	    data_rate = random_uint32_range(55, 65);
+	    //data_rate = random_uint32_range(55, 65);
         xtimer_sleep(data_rate);
     }
 
