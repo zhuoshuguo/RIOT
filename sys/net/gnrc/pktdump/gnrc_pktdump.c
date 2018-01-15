@@ -19,8 +19,9 @@
  */
 #include <inttypes.h>
 #include <stdio.h>
-
+#include <inttypes.h>
 #include <errno.h>
+
 #include "byteorder.h"
 #include "thread.h"
 #include "msg.h"

@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <inttypes.h>
 
 #include "kernel_types.h"
 #include "msg.h"
@@ -1896,13 +1897,13 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 	    puts("Wakeup record.");
 		for(int j=0;j<70;j++){
 			//dd = (int) gnrc_netdev->gomach.slot_varia[j];
-			printf("%" PRIu64 "\n",gnrc_netdev->gomach.node_wake_duration[j]);
+			printf("%lx \n", (uint32_t)gnrc_netdev->gomach.node_wake_duration[j]);
 		}
 
 	    puts("Lifetime record.");
 		for(int j=0;j<70;j++){
 			//dd = (int) gnrc_netdev->gomach.slot_varia[j];
-			printf("%" PRIu64 "\n",gnrc_netdev->gomach.node_life_duration[j]);
+			printf("%lx \n", (uint32_t)gnrc_netdev->gomach.node_life_duration[j]);
 		}
 
 	    puts("Generate data record.");
