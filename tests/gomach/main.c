@@ -37,6 +37,7 @@
 #include "net/gnrc/nettype.h"
 #include "xtimer.h"
 #include "net/gnrc/netdev.h"
+#include "periph/rtt.h"
 
 typedef struct gnrc_netdev gnrc_netdev_t;
 
@@ -95,111 +96,68 @@ static void generate_and_send_pkt(void){
 
 	    addr_len = 8;
 
-	    // 15:11:6b:10:65:fa:8a:22   m3-53
-	    /*
-        addr[0] = 0x15;
-        addr[1] = 0x11;
+	    switch (own_address2) {
+	        //case 0x65fbbe26:  //m3 - 11
+	        //case 0x65f9be36:    //m3   12
+	        case 0x65f3af06:  //13
+	        case 0x65fc8b22:   //14
+	        case 0x65f78a36:  //15
+	        case 0x65f8a83a:  //16
+	        case 0x65f4be52:  //17
+	        case 0x65f9a802:  //18
+	        case 0x65fd8a3a: //19
+	        case 0x65f7be36:  //22
+	        case 0x65fb8b26:  //23
+	        case 0x65fba836:{  //24
+                addr[0] = 0x15;
+                addr[1] = 0x11;
 
-        addr[2] = 0x6b;
-        addr[3] = 0x10;
+                addr[2] = 0x6b;
+                addr[3] = 0x10;
 
-        addr[4] = 0x65;
-        addr[5] = 0xfa;
+                addr[4] = 0x65;
+                addr[5] = 0xf9;
 
-        addr[6] = 0x8a;
-        addr[7] = 0x22;
-        */
+                addr[6] = 0xbe;
+                addr[7] = 0x36;
 
-	    //15:11:6b:10:65:f6:8b:26  m3-69
-	    /*
-        addr[0] = 0x15;
-        addr[1] = 0x11;
+	            break;
+	        }
+	        //case 0x65f95c02:  //m3 21
+	        case 0x65f8a822:  // 25
+	        case 0x65fabe52:  //26
+	        case 0x65f9af06:  //28
+	        case 0x65fa8a2a:  //29
+	        case 0x65f7a80a: //31
+	        case 0x65f7a922: //36
+	        case 0x65faa92a:  //37
+	        case 0x65f6a802:  //38
+	        case 0x65f7a926:  //39
+	        case 0x65fbbe3a: {  //40
+                addr[0] = 0x15;
+                addr[1] = 0x11;
 
-        addr[2] = 0x6b;
-        addr[3] = 0x10;
+                addr[2] = 0x6b;
+                addr[3] = 0x10;
 
-        addr[4] = 0x65;
-        addr[5] = 0xf6;
+                addr[4] = 0x65;
+                addr[5] = 0xf9;
 
-        addr[6] = 0x8b;
-        addr[7] = 0x26;
-        */
-
-	    //79:67:27:72:f4:57:9f:e6   bcc6
-	    /*
-        addr[0] = 0x79;
-        addr[1] = 0x67;
-
-        addr[2] = 0x27;
-        addr[3] = 0x72;
-
-        addr[4] = 0xf4;
-        addr[5] = 0x57;
-
-        addr[6] = 0x9f;
-        addr[7] = 0xe6;
-        */
-
-
-        switch (own_address2) {
-            //case 0x65fbbe26:  //m3 - 11
-            //case 0x65f9be36:
-            case 0x65f3af06:
-            case 0x65fc8b22:
-            case 0x65f78a36:
-            case 0x65f8a83a:
-            case 0x65f4be52:
-            case 0x65f9a802:
-            case 0x65fd8a3a:{
-                //15:11:6b:10:65:f9:be:36
-                    addr[0] = 0x15;
-                    addr[1] = 0x11;
-
-                    addr[2] = 0x6b;
-                    addr[3] = 0x10;
-
-                    addr[4] = 0x65;
-                    addr[5] = 0xf9;
-
-                    addr[6] = 0xbe;
-                    addr[7] = 0x36;
-            	break;
-            }
-
-           // case 0x65f95c02:  //m3 21
-            case 0x65f7be36:
-            case 0x65fb8b26:
-            case 0x65fba836:
-            case 0x65f8a822:
-            case 0x65fabe52:
-            case 0x65f9af06:
-            case 0x65fa8a2a:
-            case 0x65f7a80a:{
-                //15:11:6b:10:65:f9:5c:02
-                    addr[0] = 0x15;
-                    addr[1] = 0x11;
-
-                    addr[2] = 0x6b;
-                    addr[3] = 0x10;
-
-                    addr[4] = 0x65;
-                    addr[5] = 0xf9;
-
-                    addr[6] = 0x5c;
-                    addr[7] = 0x02;
-            	break;
-            }
-            //case 0x65f8a93a:   //m3 35
-            case 0x65f7a922:
-            case 0x65faa92a:
-            case 0x65f6a802:
-            case 0x65f7a926:
-            case 0x65fbbe3a:
-            case 0x65fb8b22:
-            case 0x65f8be36:
-            case 0x65fb8b2a:
-            case 0x65fca92a:{
-            //15:11:6b:10:65:f8:a9:3a
+                addr[6] = 0x5c;
+                addr[7] = 0x02;
+	            break;
+	        }
+	        //case 0x65f8a93a:   //m3 35
+	        case 0x65fb8b22: //41
+	        case 0x65f8be36: //42
+	        case 0x65fb8b2a: //43
+	        case 0x65fca92a: //44
+	        case 0x65faa832:  //47
+	        case 0x65f7bf52:  //48
+	        case 0x65f8a926: //49
+	        case 0x65f9a836: //50
+	        case 0x65f48a26: //51
+	        case 0x65fbaf12:{  //52
                 addr[0] = 0x15;
                 addr[1] = 0x11;
 
@@ -211,56 +169,33 @@ static void generate_and_send_pkt(void){
 
                 addr[6] = 0xa9;
                 addr[7] = 0x3a;
-            	break;
-            }
-            //case 0x65fb8b36:   //m3 46
-            case 0x65faa832:
-            case 0x65f7bf52:
-            case 0x65f8a926:
-            case 0x65f9a836:
-            case 0x65f48a26:
-            case 0x65fbaf12:
-            case 0x65fa8a22:
-            case 0x65fd8b3a:
-            case 0x65f68b22:{  //m3 57
-                //15:11:6b:10:65:fb:8b:36
-                    addr[0] = 0x15;
-                    addr[1] = 0x11;
+	            break;
+	        }
+	        //case 0x65fb8b36:   //m3 46
+	        case 0x65fa8a22:  //53
+	        case 0x65fd8b3a:  //55
+	        case 0x65f68b22:  //57
+	        case 0x65f6a83a:  //61
+	        case 0x65fca806:  //63
+	        case 0x65f98b36:  //64
+	        case 0x65f8a806:  //65
+	        case 0x65f8a826:  //66
+	        case 0x65f75c16:  //67
+	        case 0x65fca82a:{ //68
+                addr[0] = 0x15;
+                addr[1] = 0x11;
 
-                    addr[2] = 0x6b;
-                    addr[3] = 0x10;
+                addr[2] = 0x6b;
+                addr[3] = 0x10;
 
-                    addr[4] = 0x65;
-                    addr[5] = 0xfb;
+                addr[4] = 0x65;
+                addr[5] = 0xfb;
 
-                    addr[6] = 0x8b;
-                    addr[7] = 0x36;
-            	break;
-            }
-            //case 0x65fb8b32:
-            case 0x65f6a83a:
-            case 0x65fca806:
-            case 0x65f98b36:
-            case 0x65f8a806:
-            case 0x65f8a826:
-            case 0x65f75c16:
-            case 0x65fca82a:{
-                //15:11:6b:10:65:fb:8b:32
-                    addr[0] = 0x15;
-                    addr[1] = 0x11;
-
-                    addr[2] = 0x6b;
-                    addr[3] = 0x10;
-
-                    addr[4] = 0x65;
-                    addr[5] = 0xfb;
-
-                    addr[6] = 0x8b;
-                    addr[7] = 0x32;
-            	break;
-            }
-            default:{
-            //15:11:6b:10:65:fb:be:26
+                addr[6] = 0x8b;
+                addr[7] = 0x36;
+	            break;
+	        }
+	        default:{
                 addr[0] = 0x15;
                 addr[1] = 0x11;
 
@@ -273,9 +208,8 @@ static void generate_and_send_pkt(void){
                 addr[6] = 0xbe;
                 addr[7] = 0x26;
                 break;
-            }
-        }
-
+	        }
+	    }
 
 	    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
 	    if(hdr == NULL){
@@ -355,14 +289,17 @@ void *sender_thread(void *arg)
 
     switch (own_address2) {
         //case 0x65fbbe26:  //m3 - 11
-        case 0x65f9be36:
-        case 0x65f3af06:
+        case 0x65f9be36:    //m3   12
+        case 0x65f3af06:  //
         case 0x65fc8b22:
         case 0x65f78a36:
         case 0x65f8a83a:
         case 0x65f4be52:
         case 0x65f9a802:
-        case 0x65fd8a3a:{
+        case 0x65fd8a3a: //19
+        case 0x65f7be36:  //22
+        case 0x65fb8b26:  //23
+        case 0x65fba836:{  //24
             while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 20) {
         	    for(int i=0; i<1; i++){   //65:f6:8b:26
         	    	generate_and_send_pkt();
@@ -374,14 +311,16 @@ void *sender_thread(void *arg)
         }
 
         case 0x65f95c02:  //m3 21
-        case 0x65f7be36:
-        case 0x65fb8b26:
-        case 0x65fba836:
-        case 0x65f8a822:
-        case 0x65fabe52:
-        case 0x65f9af06:
-        case 0x65fa8a2a:
-        case 0x65f7a80a:{
+        case 0x65f8a822:  // 25
+        case 0x65fabe52:  //26
+        case 0x65f9af06:  //28
+        case 0x65fa8a2a:  //29
+        case 0x65f7a80a: //31
+        case 0x65f7a922: //36
+        case 0x65faa92a:  //37
+        case 0x65f6a802:  //38
+        case 0x65f7a926:  //39
+        case 0x65fbbe3a: {  //40
             while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 30) {
         	    for(int i=0; i<1; i++){   //65:f6:8b:26
         	    	generate_and_send_pkt();
@@ -392,15 +331,16 @@ void *sender_thread(void *arg)
             break;
         }
         case 0x65f8a93a:   //m3 35
-        case 0x65f7a922:
-        case 0x65faa92a:
-        case 0x65f6a802:
-        case 0x65f7a926:
-        case 0x65fbbe3a:
-        case 0x65fb8b22:
-        case 0x65f8be36:
-        case 0x65fb8b2a:
-        case 0x65fca92a:{
+        case 0x65fb8b22: //41
+        case 0x65f8be36: //42
+        case 0x65fb8b2a: //43
+        case 0x65fca92a: //44
+        case 0x65faa832:  //47
+        case 0x65f7bf52:  //48
+        case 0x65f8a926: //49
+        case 0x65f9a836: //50
+        case 0x65f48a26: //51
+        case 0x65fbaf12:{  //52
             while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 40) {
         	    for(int i=0; i<1; i++){   //65:f6:8b:26
         	    	generate_and_send_pkt();
@@ -410,32 +350,17 @@ void *sender_thread(void *arg)
             break;
         }
         case 0x65fb8b36:   //m3 46
-        case 0x65faa832:
-        case 0x65f7bf52:
-        case 0x65f8a926:
-        case 0x65f9a836:
-        case 0x65f48a26:
-        case 0x65fbaf12:
-        case 0x65fa8a22:
-        case 0x65fd8b3a:
-        case 0x65f68b22:{
+        case 0x65fa8a22:  //53
+        case 0x65fd8b3a:  //55
+        case 0x65f68b22:  //57
+        case 0x65f6a83a:  //61
+        case 0x65fca806:  //63
+        case 0x65f98b36:  //64
+        case 0x65f8a806:  //65
+        case 0x65f8a826:  //66
+        case 0x65f75c16:  //67
+        case 0x65fca82a:{  //68
             while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 50) {
-        	    for(int i=0; i<1; i++){   //65:f6:8b:26
-        	    	generate_and_send_pkt();
-        	    }
-        	    xtimer_sleep(data_rate);
-            }
-            break;
-        }
-        case 0x65fb8b32:   //m3 60
-        case 0x65f6a83a:
-        case 0x65fca806:
-        case 0x65f98b36:
-        case 0x65f8a806:
-        case 0x65f8a826:
-        case 0x65f75c16:
-        case 0x65fca82a:{
-            while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 60) {
         	    for(int i=0; i<1; i++){   //65:f6:8b:26
         	    	generate_and_send_pkt();
         	    }
@@ -448,21 +373,21 @@ void *sender_thread(void *arg)
         }
     }
 
-    while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 70) {
+    while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 60) {
 	    for(int i=0; i<5; i++){   //65:f6:8b:26
 	    	generate_and_send_pkt();
 	    }
 	    xtimer_sleep(data_rate);
     }
 
-    while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 90) {
+    while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 80) {
 	    for(int i=0; i<1; i++){   //65:f6:8b:26
 	    	generate_and_send_pkt();
 	    }
 	    xtimer_sleep(data_rate);
     }
 
-    while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 110) {
+    while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 100) {
 	    for(int i=0; i<5; i++){   //65:f6:8b:26
 	    	generate_and_send_pkt();
 	    }
