@@ -1884,7 +1884,7 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
         _gomach_phase_backoff(gnrc_netdev);
     }
 
-	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 25) && (gnrc_netdev->gomach.exp_end == false)) {
+	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 120) && (gnrc_netdev->gomach.exp_end == false)) {
 		gnrc_netdev->gomach.exp_end = true;
 		int dd;
 	    puts("Slot summary.");
@@ -1909,13 +1909,17 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 	    puts("Lifetime record High.");
 		for(int j=0;j<70;j++){
 			//dd = (int) gnrc_netdev->gomach.slot_varia[j];
-			printf("%lx \n", (uint32_t)(gnrc_netdev->gomach.node_life_duration[j] >> 32) );
+			printf("%lx \n", (uint32_t)(gnrc_netdev->gomach.node_life_duration[j] >> 32));
 		}
 
 	    puts("Generate data record.");
 		for(int j=0;j<70;j++){
 			//dd = (int) gnrc_netdev->gomach.slot_varia[j];
 			printf("%lu\n",gnrc_netdev->gomach.generate_num[j]);
+		}
+
+		while (1) {
+		    ;
 		}
 
     }
