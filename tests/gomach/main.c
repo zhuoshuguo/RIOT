@@ -374,7 +374,7 @@ void *sender_thread(void *arg)
     }
 
     while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 30) {
-	    for(int i=0; i<5; i++){   //65:f6:8b:26
+	    for(int i=0; i<1; i++){   //65:f6:8b:26
 	    	generate_and_send_pkt();
 	    }
 	    xtimer_sleep(data_rate);
@@ -388,7 +388,7 @@ void *sender_thread(void *arg)
     }
 
     while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 50) {
-	    for(int i=0; i<5; i++){   //65:f6:8b:26
+	    for(int i=0; i<1; i++){   //65:f6:8b:26
 	    	generate_and_send_pkt();
 	    }
 	    xtimer_sleep(data_rate);
