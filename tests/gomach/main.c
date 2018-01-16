@@ -301,7 +301,7 @@ void *sender_thread(void *arg)
         case 0x65fb8b26:  //23
         case 0x65fba836:{  //24
             while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 5) {
-        	    for(int i=0; i<1; i++){   //65:f6:8b:26
+        	    for(int i=0; i<5; i++){   //65:f6:8b:26
         	    	generate_and_send_pkt();
         	    }
         	    xtimer_sleep(data_rate);
@@ -322,7 +322,7 @@ void *sender_thread(void *arg)
         case 0x65f7a926:  //39
         case 0x65fbbe3a: {  //40
             while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 10) {
-        	    for(int i=0; i<1; i++){   //65:f6:8b:26
+        	    for(int i=0; i<5; i++){   //65:f6:8b:26
         	    	generate_and_send_pkt();
         	    }
         	    xtimer_sleep(data_rate);
@@ -342,7 +342,7 @@ void *sender_thread(void *arg)
         case 0x65f48a26: //51
         case 0x65fbaf12:{  //52
             while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 15) {
-        	    for(int i=0; i<1; i++){   //65:f6:8b:26
+        	    for(int i=0; i<5; i++){   //65:f6:8b:26
         	    	generate_and_send_pkt();
         	    }
         	    xtimer_sleep(data_rate);
@@ -361,7 +361,7 @@ void *sender_thread(void *arg)
         case 0x65f75c16:  //67
         case 0x65fca82a:{  //68
             while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 20) {
-        	    for(int i=0; i<1; i++){   //65:f6:8b:26
+        	    for(int i=0; i<5; i++){   //65:f6:8b:26
         	    	generate_and_send_pkt();
         	    }
         	    xtimer_sleep(data_rate);
@@ -374,28 +374,28 @@ void *sender_thread(void *arg)
     }
 
     while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 30) {
-	    for(int i=0; i<1; i++){   //65:f6:8b:26
+	    for(int i=0; i<5; i++){   //65:f6:8b:26
 	    	generate_and_send_pkt();
 	    }
 	    xtimer_sleep(data_rate);
     }
 
     while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 40) {
-	    for(int i=0; i<1; i++){   //65:f6:8b:26
+	    for(int i=0; i<5; i++){   //65:f6:8b:26
 	    	generate_and_send_pkt();
 	    }
 	    xtimer_sleep(data_rate);
     }
 
     while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 50) {
-	    for(int i=0; i<1; i++){   //65:f6:8b:26
+	    for(int i=0; i<5; i++){   //65:f6:8b:26
 	    	generate_and_send_pkt();
 	    }
 	    xtimer_sleep(data_rate);
     }
 
     while (1) {
-	    for(int i=0; i<1; i++){   //65:f6:8b:26
+	    for(int i=0; i<5; i++){   //65:f6:8b:26
 	    	generate_and_send_pkt();
 	    }
 	    xtimer_sleep(data_rate);
