@@ -140,8 +140,8 @@ static void *_gnrc_netdev2_thread(void *args)
     gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
 
 
-    uint32_t busy_start_time = 0;
-    uint32_t busy_current_time = 0;
+    uint64_t busy_start_time = 0;
+    uint64_t busy_current_time = 0;
 
     /* start the event loop */
     while (1) {
@@ -160,21 +160,21 @@ static void *_gnrc_netdev2_thread(void *args)
                 puts("p");
 
                 while (1) {
-                    busy_start_time = rtt_get_counter();
+                    busy_start_time = xtimer_now64();
 
                     while(1){
 
                     	gnrc_pktbuf_hold(pkt, 1);
                         gnrc_netdev2->send(gnrc_netdev2, pkt);
 
-                        if (rtt_get_counter() > (busy_start_time + RTT_US_TO_TICKS(100000))) {
+                        if (xtimer_now64() > (busy_start_time + 1000000)) {
                         	break;
                         }
                     }
 
                     while (1) {
-                    	busy_current_time = rtt_get_counter();
-                        if (busy_current_time > (busy_start_time + RTT_US_TO_TICKS(1000000))) {
+                    	busy_current_time = xtimer_now64();
+                        if (busy_current_time > (busy_start_time + 1000000)) {
                         	break;
                         }
                     }
