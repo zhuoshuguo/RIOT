@@ -1898,7 +1898,7 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 	    puts("Wakeup record.");
 		for(int j=0;j<70;j++){
 			//dd = (int) gnrc_netdev->gomach.slot_varia[j];
-			printf("%lx \n", (uint32_t)gnrc_netdev->gomach.node_wake_duration[j]);
+			printf("%lu \n", (uint32_t)gnrc_netdev->gomach.node_wake_duration[j]);
 		}
 
 	    puts("Lifetime record Low.");
