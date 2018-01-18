@@ -167,7 +167,7 @@ static void *_gnrc_netdev2_thread(void *args)
                     	gnrc_pktbuf_hold(pkt, 1);
                         gnrc_netdev2->send(gnrc_netdev2, pkt);
 
-                        if (xtimer_now64() > (busy_start_time + 1000000)) {
+                        if (xtimer_now64() > (busy_start_time + 800000)) {
                         	break;
                         }
                     }
