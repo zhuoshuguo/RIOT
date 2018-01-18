@@ -42,7 +42,8 @@ typedef struct gnrc_netdev gnrc_netdev_t;
 extern gnrc_netdev_t gnrc_netdev;
 
 uint32_t idlist[GNRC_GOMACH_EX_NODE_NUM];
-uint32_t reception_list[GNRC_GOMACH_EX_NODE_NUM];
+//uint32_t reception_list[GNRC_GOMACH_EX_NODE_NUM];
+
 uint32_t node_tdma_record_list[GNRC_GOMACH_EX_NODE_NUM];
 uint32_t node_csma_record_list[GNRC_GOMACH_EX_NODE_NUM];
 
@@ -163,7 +164,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
     	if(idlist[i] == payload[1]){
     		found_id = true;
-    		reception_list[i] ++;
+    		gnrc_netdev.gomach.reception_list[i] ++;
 
     		node_tdma_record_list[i] = payload[3];
     		node_csma_record_list[i] = payload[2];
@@ -189,7 +190,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     	for(i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
     		if(idlist[i] == 0){
     			idlist[i] = payload[1];
-    			reception_list[i] ++;
+    			gnrc_netdev.gomach.reception_list[i] ++;
     			break;
     		}
     		record_id ++;
@@ -199,7 +200,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
    // printf("s: %x, g: %lu, r: %lu, t: %lu. \n", addr[1], payload[0], reception_list[i], received_pkt_counter);
 
-   printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], reception_list[record_id], received_pkt_counter);
+   printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], gnrc_netdev.gomach.reception_list[record_id], received_pkt_counter);
 
    gnrc_netdev.gomach.generate_num[record_id] = payload[0];
 
@@ -242,7 +243,7 @@ static void *_eventloop(void *arg)
 
     for(int i=0;i<GNRC_GOMACH_EX_NODE_NUM;i++){
     	idlist[i] =0;
-    	reception_list[i] =0;
+    	gnrc_netdev.gomach.reception_list[i] =0;
     	node_tdma_record_list[i]=0;
     	node_csma_record_list[i]=0;
     }
