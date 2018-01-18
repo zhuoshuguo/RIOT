@@ -157,8 +157,8 @@ static void generate_and_send_pkt(void){
 	        case 0x65f8a926: //49
 	        case 0x65f9a836: //50
 	        case 0x65f48a26: //51
-	        //case 0x65fbaf12:{  //52
-	        case 0x65f8a922:{  //10
+	        case 0x65fbaf12:{  //52
+	        //case 0x65f8a922:{  //10
                 addr[0] = 0x15;
                 addr[1] = 0x11;
 
@@ -173,8 +173,8 @@ static void generate_and_send_pkt(void){
 	            break;
 	        }
 	        //case 0x65fb8b36:   //m3 46
-	        //case 0x65fa8a22:  //53
-	        case 0x65fb8b32:  //60
+	        case 0x65fa8a22:  //53
+	        //case 0x65fb8b32:  //60
 	        case 0x65fd8b3a:  //55
 	        case 0x65f68b22:  //57
 	        case 0x65f6a83a:  //61
@@ -345,8 +345,8 @@ void *sender_thread(void *arg)
         case 0x65f8a926: //49
         case 0x65f9a836: //50
         case 0x65f48a26: //51
-        //case 0x65fbaf12:{  //52
-        case 0x65f8a922: {  //10
+        case 0x65fbaf12:{  //52
+        //case 0x65f8a922: {  //10
             while (RTT_TICKS_TO_MIN(rtt_get_counter()) <= 15) {
         	    for(int i=0; i<1; i++){   //65:f6:8b:26
         	    	generate_and_send_pkt();
@@ -357,8 +357,8 @@ void *sender_thread(void *arg)
             break;
         }
         case 0x65fb8b36:   //m3 46
-        //case 0x65fa8a22:  //53
-        case 0x65fb8b32:  //60
+        case 0x65fa8a22:  //53
+        //case 0x65fb8b32:  //60
         case 0x65fd8b3a:  //55
         case 0x65f68b22:  //57
         case 0x65f6a83a:  //61
