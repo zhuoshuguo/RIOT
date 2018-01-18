@@ -236,7 +236,7 @@ static void generate_and_send_pkt(void){
 		    	puts("app: send data msg to mac failed!");
 		    }
 
-		    //printf("p: %lx: %lu.\n", own_address2, send_counter);
+		    printf("p: %lx: %lu.\n", own_address2, send_counter);
 		}
 
 }
