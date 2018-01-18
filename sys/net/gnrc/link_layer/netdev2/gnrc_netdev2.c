@@ -173,7 +173,7 @@ static void *_gnrc_netdev2_thread(void *args)
                     }
 
                     while (1) {
-                        puts("b!");
+                        //puts("b!");
                     	busy_current_time = xtimer_now64();
                         if (busy_current_time > (busy_start_time + 1000000)) {
                         	break;
