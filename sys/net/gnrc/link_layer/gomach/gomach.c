@@ -1498,7 +1498,7 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
     uint32_t listen_period = random_uint32_range(0, GNRC_GOMACH_CP_RANDOM_END_US) +
                              GNRC_GOMACH_CP_DURATION_US;
     gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END, listen_period);
-    //gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX, GNRC_GOMACH_CP_DURATION_MAX_US);
+    gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX, GNRC_GOMACH_CP_DURATION_MAX_US);
 
     gnrc_netdev_set_rx_started(gnrc_netdev, false);
     gnrc_gomach_set_pkt_received(gnrc_netdev, false);
@@ -1556,7 +1556,7 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
         }
     }
 
-    /* If we have reached the maximum CP duration, quit CP.
+    /* If we have reached the maximum CP duration, quit CP. */
     if (gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX) ||
         gnrc_gomach_get_quit_cycle(gnrc_netdev)) {
         gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
@@ -1566,7 +1566,7 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_END;
         gnrc_gomach_set_update(gnrc_netdev, true);
         return;
-    }*/
+    }
 
     if ((gnrc_gomach_timeout_is_expired(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END))) {
         gnrc_netdev_set_rx_started(gnrc_netdev, false);
@@ -1885,7 +1885,7 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
         _gomach_phase_backoff(gnrc_netdev);
     }
 
-	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 60) && (gnrc_netdev->gomach.exp_end == false)) {
+	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 30) && (gnrc_netdev->gomach.exp_end == false)) {
 		gnrc_netdev->gomach.exp_end = true;
 		int dd;
 	    puts("Slot summary.");
