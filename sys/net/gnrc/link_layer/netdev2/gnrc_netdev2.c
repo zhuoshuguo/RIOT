@@ -28,6 +28,7 @@
 #include "net/gnrc/nettype.h"
 #include "net/netdev2.h"
 #include <periph/rtt.h>
+#include "random.h"
 
 #include "net/gnrc/netdev2.h"
 #include "net/ethernet/hdr.h"
@@ -139,6 +140,28 @@ static void *_gnrc_netdev2_thread(void *args)
     netopt_enable_t csma_disable = NETOPT_DISABLE;
     gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev, NETOPT_CSMA, &csma_disable, sizeof(csma_disable));
 
+    xtimer_sleep(5);
+
+    uint8_t own_addr[8];
+
+    gnrc_netdev2->dev->driver->get(gnrc_netdev2->dev, NETOPT_ADDRESS_LONG, &own_addr,sizeof(own_addr));
+
+    uint32_t own_address2;
+      own_address2 = 0;
+      own_address2 = own_addr[4];
+      own_address2 = own_address2 << 8;
+      own_address2 |= own_addr[5];
+
+      own_address2 = own_address2 << 8;
+      own_address2 |= own_addr[6];
+
+      own_address2 = own_address2 << 8;
+      own_address2 |= own_addr[7];
+
+      printf("own address:%lx\n",own_address2);
+
+      random_init(own_address2);
+
 
     uint64_t busy_start_time = 0;
     uint64_t busy_current_time = 0;
@@ -167,7 +190,7 @@ static void *_gnrc_netdev2_thread(void *args)
                     	gnrc_pktbuf_hold(pkt, 1);
                         gnrc_netdev2->send(gnrc_netdev2, pkt);
 
-                        if (xtimer_now64() > (busy_start_time + 400000)) {
+                        if (xtimer_now64() > (busy_start_time + 60000000)) {
                         	break;
                         }
                     }
@@ -175,10 +198,22 @@ static void *_gnrc_netdev2_thread(void *args)
                     while (1) {
                         //puts("b!");
                     	busy_current_time = xtimer_now64();
-                        if (busy_current_time > (busy_start_time + 1000000)) {
+                        if (busy_current_time > (busy_start_time + 60000000)) {
+                        /* turn channel */
+                        	uint16_t channel_num;
+                        	channel_num = (uint16_t) random_uint32_range(11,27);
+                        	//channel_num = channel_num % 26;
+                        	printf("turn:%d\n",channel_num);
+                            gnrc_netdev2->dev->driver->set(gnrc_netdev2->dev,
+                                                          NETOPT_CHANNEL,
+                                                          &channel_num,
+                                                          sizeof(channel_num));
+                            xtimer_usleep(5000);
                         	break;
                         }
                     }
+
+
                 }
 
                 break;
