@@ -157,7 +157,8 @@ void *sender_thread(void *arg)
     */
     while (1) {
         xtimer_sleep(10);
-        if (RTT_TICKS_TO_MIN(rtt_get_counter()) >= 10) {
+
+        if (RTT_TICKS_TO_MIN(rtt_get_counter()) >= 20) {
             break;
         }
     }
@@ -180,7 +181,7 @@ void *sender_thread(void *arg)
             }
             */
         }
-	    data_rate = random_uint32_range(45, 75);
+	    data_rate = random_uint32_range(50, 70);
 	    xtimer_sleep(data_rate);
 
 	    /*
