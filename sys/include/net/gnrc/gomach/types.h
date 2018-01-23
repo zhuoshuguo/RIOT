@@ -59,7 +59,7 @@ extern "C" {
 /**
  * @brief   GoMacH check duplicate packet buffer size.
  */
-#define GNRC_GOMACH_DUPCHK_BUFFER_SIZE             (8U)
+#define GNRC_GOMACH_DUPCHK_BUFFER_SIZE             (60U)
 
 /**
  * @brief The default largest number of parallel timeouts in GoMacH.
