@@ -157,14 +157,14 @@ void *sender_thread(void *arg)
     */
     while (1) {
         xtimer_sleep(10);
-        if (RTT_TICKS_TO_MIN(rtt_get_counter()) >= 10) {
+        if (RTT_TICKS_TO_MIN(rtt_get_counter()) >= 50) {
             break;
         }
     }
 
 	uint32_t random_period;
 
-	random_period = random_uint32_range(0, 50);
+	random_period = random_uint32_range(0, 60);
 
 	xtimer_sleep(random_period);
 
