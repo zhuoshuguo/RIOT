@@ -235,7 +235,7 @@ extern "C" {
  * This macro maybe removed in the future.
  */
 #ifndef GNRC_GOMACH_RX_DUPCHK_UNIT_LIFE
-#define GNRC_GOMACH_RX_DUPCHK_UNIT_LIFE            (30U)
+#define GNRC_GOMACH_RX_DUPCHK_UNIT_LIFE            (10U)
 #endif
 
 /**
