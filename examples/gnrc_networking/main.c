@@ -108,7 +108,7 @@ void *sender_thread(void *arg)
     char *udpport = "8808";
     start_server(udpport);
 
-    xtimer_sleep(60);
+    xtimer_sleep(160);
     puts("start RPL");
 
     /* Starting RPL */
