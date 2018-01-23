@@ -1439,7 +1439,7 @@ static void gomach_send_RI_beacon(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
 {
-    puts("C");
+    //puts("C");
     /* Reset last_seq_info, for avoiding receiving duplicate packets.
      * To-do: remove this in the future? */
     for (int i = 0; i < GNRC_GOMACH_DUPCHK_BUFFER_SIZE; i++) {
