@@ -285,7 +285,7 @@ static void *_event_loop(void *args)
 
                 //_send(msg.content.ptr, true);
 
-                /*
+
             	if (gnrc_netdev.gomach.exp_started == true) {
             		if (msg.sender_pid != 6) {
             			gnrc_pktsnip_t *pkt2 = (gnrc_pktsnip_t *)msg.content.ptr;
@@ -294,7 +294,7 @@ static void *_event_loop(void *args)
             			break;
             		}
             	}
-            	*/
+
 
             	if (msg.sender_pid == 5) {
                     puts("release ipv6");
