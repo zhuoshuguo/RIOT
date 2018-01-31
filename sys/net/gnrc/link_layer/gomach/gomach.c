@@ -2243,6 +2243,11 @@ static void *_gnrc_gomach_thread(void *args)
 
                 gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)msg.content.ptr;
 
+            	if (gnrc_netdev->gomach.exp_started == true) {
+        		    gnrc_pktbuf_release(pkt);
+        		    break;
+            	}
+
                 if (!gnrc_mac_queue_tx_packet(&gnrc_netdev->tx, 0, pkt)) {
                     /* TX packet queue full, release the packet. */
                     DEBUG("[GOMACH] TX queue full, drop packet.\n");
