@@ -1883,7 +1883,7 @@ static void gomach_sleep(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 {
-    if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 10) && (gnrc_netdev->gomach.exp_started == false)) {
+    if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 15) && (gnrc_netdev->gomach.exp_started == false)) {
         gnrc_netdev->gomach.exp_started = true;
 
         /* Start duty cycle recording */
