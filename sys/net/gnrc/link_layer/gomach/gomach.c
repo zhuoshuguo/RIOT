@@ -1868,12 +1868,11 @@ static void gomach_sleep(gnrc_netdev_t *gnrc_netdev)
 static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 {
 
-
-	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 15) && (gnrc_netdev->gomach.exp_started == false)) {
+	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 20) && (gnrc_netdev->gomach.exp_started == false)) {
 		gnrc_netdev->gomach.exp_started = true;
 	}
 
-	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 1500) && (gnrc_netdev->gomach.exp_end == false)) {
+	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 80) && (gnrc_netdev->gomach.exp_end == false)) {
 
 		gnrc_netdev->gomach.exp_end = true;
 		int dd;
