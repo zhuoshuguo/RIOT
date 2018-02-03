@@ -175,7 +175,8 @@ void *sender_thread(void *arg)
    data_rate = 60;
 
     while (1) {
-	    for(int i=0; i<1; i++){
+	    for(int i=0; i<5; i++){
+
 	    	generate_and_send_pkt();
 	    	/*
             if (send_counter < 60) {
@@ -183,6 +184,7 @@ void *sender_thread(void *arg)
             }
             */
         }
+
 	    data_rate = random_uint32_range(50, 70);
 	    xtimer_sleep(data_rate);
 
