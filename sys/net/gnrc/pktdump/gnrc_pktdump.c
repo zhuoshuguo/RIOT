@@ -167,10 +167,13 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     		node_tdma_record_list[i] = payload[3];
     		node_csma_record_list[i] = payload[2];
 
-    		uint64_t *payload_long = (uint64_t *)payload;
+    		//uint64_t *payload_long = (uint64_t *)payload;
 
-    		gnrc_netdev.gomach.node_wake_duration[i] = payload_long[2];
-    		gnrc_netdev.gomach.node_life_duration[i] = payload_long[3];
+    		//gnrc_netdev.gomach.node_wake_duration[i] = payload_long[2];
+    		//gnrc_netdev.gomach.node_life_duration[i] = payload_long[3];
+
+    		gnrc_netdev.gomach.node_wake_duration[i] = payload[4];
+    		gnrc_netdev.gomach.node_life_duration[i] = payload[5];
 
 
             uint64_t duty;
