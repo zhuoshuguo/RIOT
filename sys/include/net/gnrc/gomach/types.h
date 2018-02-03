@@ -297,7 +297,7 @@ typedef struct gomach {
 
     bool exp_started;
     bool exp_end;
-    uint8_t slot_varia[150];
+    uint32_t slot_varia[150];
 	uint32_t total_csma;
 
 	/////
