@@ -178,7 +178,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
             uint64_t duty;
             duty = (gnrc_netdev.gomach.node_wake_duration[i]) * 100 / gnrc_netdev.gomach.node_life_duration[i];
-            printf("duty: %lu %% \n", (uint32_t)duty);
+            //printf("duty: %lu %% \n", (uint32_t)duty);
 
     		break;
     	}
@@ -201,7 +201,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
    // printf("s: %x, g: %lu, r: %lu, t: %lu. \n", addr[1], payload[0], reception_list[i], received_pkt_counter);
 
-   printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], gnrc_netdev.gomach.reception_list[record_id], received_pkt_counter);
+   //printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], gnrc_netdev.gomach.reception_list[record_id], received_pkt_counter);
 
 
    gnrc_netdev.gomach.generate_num[record_id] = payload[0];
