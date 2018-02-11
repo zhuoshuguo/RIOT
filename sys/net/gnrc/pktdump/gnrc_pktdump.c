@@ -176,8 +176,8 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
     		gnrc_netdev.gomach.node_life_duration[i] = payload[5];
 
 
-            uint64_t duty;
-            duty = (gnrc_netdev.gomach.node_wake_duration[i]) * 100 / gnrc_netdev.gomach.node_life_duration[i];
+            //uint64_t duty;
+            //duty = (gnrc_netdev.gomach.node_wake_duration[i]) * 100 / gnrc_netdev.gomach.node_life_duration[i];
             //printf("duty: %lu %% \n", (uint32_t)duty);
 
     		break;
