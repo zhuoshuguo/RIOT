@@ -1877,7 +1877,7 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 		gnrc_netdev->gomach.exp_started = true;
 	}
 
-	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 45) && (gnrc_netdev->gomach.exp_end == false)) {
+	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 60) && (gnrc_netdev->gomach.exp_end == false)) {
 
 		gnrc_netdev->gomach.exp_end = true;
 		int dd;
