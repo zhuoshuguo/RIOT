@@ -217,6 +217,7 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
 {
+	puts("B");
     /* Disable auto-ACK when sending broadcast packets, thus not to receive packet. */
     gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
 
@@ -458,6 +459,7 @@ static void gomach_init_end(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
 {
+	puts("k");
     /* Turn off radio to conserve power */
     gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
 
@@ -987,6 +989,8 @@ static void gomach_t2u_init(gnrc_netdev_t *gnrc_netdev)
 {
     /* since t2u is right following CP period (wake-up period), the radio is still on,
      * so we don't need to turn on it again. */
+
+	puts("k");
 
     LOG_DEBUG("[GOMACH] t2u initialization.\n");
 
