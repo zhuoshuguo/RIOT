@@ -1816,6 +1816,7 @@ static void gomach_sleep(gnrc_netdev_t *gnrc_netdev)
 {
     /* If we are entering a new cycle, quit sleeping. */
     if (gnrc_gomach_get_enter_new_cycle(gnrc_netdev)) {
+    	gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_IDLE);
         gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP_END;
         gnrc_gomach_set_update(gnrc_netdev, true);
     }
