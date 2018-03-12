@@ -28,7 +28,7 @@
 
 #define MAX_ADDR_LEN            (8U)
 
-#define CCN_WAIT_TIME_SHUGUO (10000U)
+#define CCN_WAIT_TIME_SHUGUO (10000000U)
 
 static unsigned char _int_buf[BUF_SIZE];
 static unsigned char _cont_buf[BUF_SIZE];
