@@ -28,6 +28,8 @@
 
 #define MAX_ADDR_LEN            (8U)
 
+#define CCN_WAIT_TIME_SHUGUO (100U)
+
 static unsigned char _int_buf[BUF_SIZE];
 static unsigned char _cont_buf[BUF_SIZE];
 
@@ -217,7 +219,7 @@ int _ccnl_interest(int argc, char **argv)
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(argv[1], CCNL_SUITE_NDNTLV, NULL, 0);
     ccnl_send_interest(prefix, _int_buf, BUF_SIZE);
     int res = 0;
-    if (ccnl_wait_for_chunk(_cont_buf, BUF_SIZE, 0) > 0) {
+    if (ccnl_wait_for_chunk(_cont_buf, BUF_SIZE, CCN_WAIT_TIME_SHUGUO) > 0) {
         printf("Content received: %s\n", _cont_buf);
     }
     else {
