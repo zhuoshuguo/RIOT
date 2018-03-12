@@ -1994,6 +1994,7 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                 }
                 else {
                     gnrc_gomach_set_pkt_received(gnrc_netdev, true);
+                    puts("R");
                 }
                 break;
             }
