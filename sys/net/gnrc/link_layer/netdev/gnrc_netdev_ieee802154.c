@@ -19,6 +19,7 @@
 #include "net/l2filter.h"
 #include "net/gnrc.h"
 #include "net/ieee802154.h"
+#include "xtimer.h"
 
 #include "net/gnrc/netdev/ieee802154.h"
 
@@ -180,12 +181,13 @@ static int _send(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pkt)
         (GNRC_NETIF_HDR_FLAGS_BROADCAST | GNRC_NETIF_HDR_FLAGS_MULTICAST)) {
         dst = ieee802154_addr_bcast;
         dst_len = IEEE802154_ADDR_BCAST_LEN;
-        puts("B");
+        //puts("B");
+        //printf("%lu\n",xtimer_now_usec());
     }
     else {
         dst = gnrc_netif_hdr_get_dst_addr(netif_hdr);
         dst_len = netif_hdr->dst_l2addr_len;
-        puts("T");
+        //puts("T");
     }
     src_len = netif_hdr->src_l2addr_len;
     if (src_len > 0) {
