@@ -72,13 +72,13 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                     	snip = snip->next;
                     	gnrc_netif_hdr_t *hdr;
                     	hdr = pkt->data;
-                        if (hdr->flags & GNRC_NETIF_HDR_FLAGS_BROADCAST) {
-                            printf("RB");
+                        if ((hdr->flags & GNRC_NETIF_HDR_FLAGS_BROADCAST)||
+                        	(hdr->flags & GNRC_NETIF_HDR_FLAGS_MULTICAST)) {
+                            puts("RB");
+                        } else {
+                            puts("R");
                         }
-
-                        if (hdr->flags & GNRC_NETIF_HDR_FLAGS_MULTICAST) {
-                            printf("R");
-                        }
+                        puts("r");
 
                         _pass_on_packet(pkt);
                     }
