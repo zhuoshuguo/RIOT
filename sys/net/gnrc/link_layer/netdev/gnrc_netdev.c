@@ -68,6 +68,18 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                     gnrc_pktsnip_t *pkt = gnrc_netdev->recv(gnrc_netdev);
 
                     if (pkt) {
+                    	gnrc_pktsnip_t *snip = pkt;
+                    	snip = snip->next;
+                    	gnrc_netif_hdr_t *hdr;
+                    	hdr = pkt->data;
+                        if (hdr->flags & GNRC_NETIF_HDR_FLAGS_BROADCAST) {
+                            printf("RB");
+                        }
+
+                        if (hdr->flags & GNRC_NETIF_HDR_FLAGS_MULTICAST) {
+                            printf("R");
+                        }
+
                         _pass_on_packet(pkt);
                     }
 
