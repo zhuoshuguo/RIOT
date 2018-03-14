@@ -155,8 +155,8 @@ bool gnrc_mac_queue_tx_packet(gnrc_mac_tx_t *tx, uint32_t priority, gnrc_pktsnip
             tx->get_bcast_pkt = true;
             tx->get_bcast_pkt_time = xtimer_now_usec();
     	} else {
-    		return false;
     		puts("r-b");
+    		return false;
     	}
     }
     else {
