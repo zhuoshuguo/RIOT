@@ -204,6 +204,8 @@ typedef struct {
     uint8_t last_tx_neighbor_id;                  /**< Record last TX neighbor's sequence in the neighbor list. */
     uint8_t tx_busy_count;                        /**< Counter recording csma busy feedback times. */
     uint8_t t2u_fail_count;                      /**< Preamble trial failure count. */
+    bool get_bcast_pkt;
+    uint32_t get_bcast_pkt_time;
 #endif
 } gnrc_mac_tx_t;
 

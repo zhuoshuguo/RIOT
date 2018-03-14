@@ -164,6 +164,9 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->gomach.awake_duration_sum_ticks = 0;
     gnrc_netdev->gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
 #endif
+
+    gnrc_netdev->tx.get_bcast_pkt = false;
+    gnrc_netdev->tx.get_bcast_pkt_time = xtimer_now_usec();
 }
 
 static void _gomach_rtt_cb(void *arg)
@@ -1444,6 +1447,11 @@ static void _gomach_phase_backoff(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
 {
+
+	if ((xtimer_now_usec() - gnrc_netdev->tx.get_bcast_pkt_time) > 60000000) {
+		gnrc_netdev->tx.get_bcast_pkt = false;
+	}
+
     /* Reset last_seq_info, for avoiding receiving duplicate packets.
      * To-do: remove this in the future? */
     for (int i = 0; i < GNRC_GOMACH_DUPCHK_BUFFER_SIZE; i++) {
