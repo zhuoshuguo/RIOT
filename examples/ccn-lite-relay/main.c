@@ -34,6 +34,7 @@ static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 #define TLSF_BUFFER     (10240 / sizeof(uint32_t))
 static uint32_t _tlsf_heap[TLSF_BUFFER];
 
+
 int main(void)
 {
     tlsf_create_with_pool(_tlsf_heap, sizeof(_tlsf_heap));
@@ -56,5 +57,11 @@ int main(void)
 
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);
+
+    /* Add a CCN content */
+    char *interet = "/riot/peter/1 shuguo-1";
+    //char *ipadd = "shuguo-1";
+    _ccnl_content(1, &interet);
+
     return 0;
 }
