@@ -26,6 +26,8 @@
 #include "ccn-lite-riot.h"
 #include "net/gnrc/netif.h"
 
+extern int _ccnl_content(int argc, char **argv);
+
 /* main thread's message queue */
 #define MAIN_QUEUE_SIZE     (8)
 static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
