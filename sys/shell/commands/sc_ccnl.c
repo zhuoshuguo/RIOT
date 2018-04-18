@@ -75,7 +75,7 @@ int _ccnl_open(int argc, char **argv)
     return 0;
 }
 
-
+/*
 static void _content_usage(char *argv)
 {
     printf("usage: %s <URI> [content]\n"
@@ -83,6 +83,7 @@ static void _content_usage(char *argv)
             "%% %s /riot/peter/schmerzl RIOT\n",
             argv, argv, argv);
 }
+*/
 
 int _ccnl_content(int argc, char **argv)
 {
@@ -110,6 +111,8 @@ int _ccnl_content(int argc, char **argv)
 
     printf("argc is %d\n",argc);
 
+    printf("argv is %u\n",argv);
+
     int arg_len;
     char *body = (char*) _default_content;
     char buf[BUF_SIZE+1]; /* add one extra space to fit trailing '\0' */
@@ -117,7 +120,7 @@ int _ccnl_content(int argc, char **argv)
     if (argc > 2) {
         unsigned pos = 0;
         for (int i = 2; (i < argc) && (pos < BUF_SIZE); ++i) {
-        	arg_len = strlen(argv[i]);
+        	//arg_len = strlen(argv[i]);
         	arg_len = strlen(content);
             if ((pos + arg_len) > BUF_SIZE) {
                 arg_len = BUF_SIZE - pos;
