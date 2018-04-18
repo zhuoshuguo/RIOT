@@ -58,13 +58,13 @@ int main(void)
         return -1;
     }
 
-    xtimer_sleep(3);
-    puts("start ccn content");
+    //xtimer_sleep(3);
+    //puts("start ccn content");
 
-    char *arguments[3]={"ccnl_cont","/nancy","Shuguo-meihui"};
+    //char *arguments[3]={"ccnl_cont","/nancy","Shuguo-meihui"};
 
-    _ccnl_content(3, &arguments);
-    puts("add ccn content");
+    //_ccnl_content(3, &arguments);
+    //puts("add ccn content");
 
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);

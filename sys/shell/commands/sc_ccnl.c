@@ -95,6 +95,10 @@ int _ccnl_content(int argc, char **argv)
     char *body = (char*) _default_content;
     char buf[BUF_SIZE+1]; /* add one extra space to fit trailing '\0' */
 
+    printf("argc is %d\n",argc);
+    printf("argv[1] is %s\n",argv[1]);
+    printf("argv[2] is %s\n",argv[2]);
+
     if (argc > 2) {
         unsigned pos = 0;
         for (int i = 2; (i < argc) && (pos < BUF_SIZE); ++i) {
