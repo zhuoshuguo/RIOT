@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 
+#include "thread.h"
 #include "tlsf-malloc.h"
 #include "msg.h"
 #include "shell.h"
