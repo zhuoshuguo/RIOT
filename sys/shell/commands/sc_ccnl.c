@@ -96,7 +96,7 @@ int _ccnl_content(int argc, char **argv)
 
     printf("argc is %d\n",argc);
 
-    printf("argv is %u\n",(unsigned int)argv);
+    printf("argv is %s\n",argv[2]);
 
     int arg_len;
     char *body = (char*) _default_content;
