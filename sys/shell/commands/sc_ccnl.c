@@ -96,80 +96,12 @@ int _ccnl_content(int argc, char **argv)
     puts("in ccn content");
 
     char *path = "/riot/peter/1";
-    char *content = "shuguo-1";
-
-    argv[0] = &path;
-    argv[1] = &content;
-
-    puts("go");
-
-    int arg_len;
-    char *body = (char*) _default_content;
-    char buf[BUF_SIZE+1]; /* add one extra space to fit trailing '\0' */
-
-    if (argc > 2) {
-        unsigned pos = 0;
-        for (int i = 2; (i < argc) && (pos < BUF_SIZE); ++i) {
-            arg_len = strlen(argv[i]);
-            if ((pos + arg_len) > BUF_SIZE) {
-                arg_len = BUF_SIZE - pos;
-            }
-            strncpy(&buf[pos], argv[i], arg_len);
-            pos += arg_len;
-            /* increment pos _after_ adding ' ' */
-            buf[pos++] = ' ';
-        }
-        /* decrement pos _before_ to overwrite last ' ' with '\0' */
-        buf[--pos] = '\0';
-        body = buf;
-    }
-    arg_len = strlen(body);
-
-    struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(argv[1], CCNL_SUITE_NDNTLV, NULL, NULL);
-    int offs = CCNL_MAX_PACKET_SIZE;
-    arg_len = ccnl_ndntlv_prependContent(prefix, (unsigned char*) body, arg_len, NULL, NULL, &offs, _out);
-
-    free_prefix(prefix);
-
-    unsigned char *olddata;
-    unsigned char *data = olddata = _out + offs;
-
-    int len;
-    unsigned typ;
-
-    if (ccnl_ndntlv_dehead(&data, &arg_len, (int*) &typ, &len) ||
-        typ != NDN_TLV_Data) {
-        return -1;
-    }
-
-    struct ccnl_content_s *c = 0;
-    struct ccnl_pkt_s *pk = ccnl_ndntlv_bytes2pkt(typ, olddata, &data, &arg_len);
-    c = ccnl_content_new(&ccnl_relay, &pk);
-    ccnl_content_add2cache(&ccnl_relay, c);
-    c->flags |= CCNL_CONTENT_FLAGS_STATIC;
-
-    return 0;
-}
-
-
-int _ccnl_content22(int argc, char **argv)
-{
-    if (argc < 2) {
-        _content_usage(argv[0]);
-        return -1;
-    }
-
-    //char *interet = "/riot/peter/1 shuguo-1";
-    //char *ipadd = "shuguo-1";
-    puts("in ccn content");
-
-    char *path = "/riot/peter/1";
     char *content = "shuguo1";
 
     puts("go11");
 
-    argv[0] = path;
-    argv[1] = content;
+    argv[1] = path;
+    argv[2] = content;
 
     puts("go");
 

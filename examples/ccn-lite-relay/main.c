@@ -55,7 +55,7 @@ int main(void)
     xtimer_sleep(3);
     puts("start ccn content");
     /* Add a CCN content */
-    _ccnl_content(2, NULL);
+    _ccnl_content(3, NULL);
     puts("add ccn content");
 
     /* set the relay's PID, configure the interface to use CCN nettype */
