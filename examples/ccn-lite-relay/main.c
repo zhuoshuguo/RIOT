@@ -56,7 +56,9 @@ int main(void)
     xtimer_sleep(3);
     puts("start ccn content");
 
-    _ccnl_content(3, NULL);
+    char *arguments[3]={"ccnl_cont","/nancy","Shuguo-meihui"};
+
+    _ccnl_content(3, arguments);
     puts("add ccn content");
 
 

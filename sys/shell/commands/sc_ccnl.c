@@ -75,7 +75,7 @@ int _ccnl_open(int argc, char **argv)
     return 0;
 }
 
-/*
+
 static void _content_usage(char *argv)
 {
     printf("usage: %s <URI> [content]\n"
@@ -83,29 +83,14 @@ static void _content_usage(char *argv)
             "%% %s /riot/peter/schmerzl RIOT\n",
             argv, argv, argv);
 }
-*/
+
 
 int _ccnl_content(int argc, char **argv)
 {
     if (argc < 2) {
-        //_content_usage(argv[0]);
+        _content_usage(argv[0]);
         return -1;
     }
-
-    argc = 3;
-
-    //char *interet = "/riot/peter/1 shuguo-1";
-    //char *ipadd = "shuguo-1";
-    /* */
-    puts("in ccn content");
-
-    char *path = "/riot/peter/1";
-    char *content = "shuguo1";
-
-    puts("go11");
-
-    //argv[1] = path;
-    //argv[2] = content;
 
     puts("go");
 
@@ -120,12 +105,11 @@ int _ccnl_content(int argc, char **argv)
     if (argc > 2) {
         unsigned pos = 0;
         for (int i = 2; (i < argc) && (pos < BUF_SIZE); ++i) {
-        	//arg_len = strlen(argv[i]);
-        	arg_len = strlen(content);
+        	arg_len = strlen(argv[i]);
             if ((pos + arg_len) > BUF_SIZE) {
                 arg_len = BUF_SIZE - pos;
             }
-            strncpy(&buf[pos], content, arg_len);
+            strncpy(&buf[pos], argv[i], arg_len);
             pos += arg_len;
             /* increment pos _after_ adding ' ' */
             buf[pos++] = ' ';
@@ -136,7 +120,7 @@ int _ccnl_content(int argc, char **argv)
     }
     arg_len = strlen(body);
 
-    struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(path, CCNL_SUITE_NDNTLV, NULL, NULL);
+    struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(argv[1], CCNL_SUITE_NDNTLV, NULL, NULL);
     int offs = CCNL_MAX_PACKET_SIZE;
     arg_len = ccnl_ndntlv_prependContent(prefix, (unsigned char*) body, arg_len, NULL, NULL, &offs, _out);
 
