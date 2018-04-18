@@ -37,9 +37,37 @@ static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 #define TLSF_BUFFER     (10240 / sizeof(uint32_t))
 static uint32_t _tlsf_heap[TLSF_BUFFER];
 
+void *sender_thread(void *arg)
+{
+    (void) arg;
+
+    xtimer_sleep(15);
+    puts("start ccn content");
+
+    char *arguments[3]={"ccnl_cont","/nancy","Shuguo-meihui"};
+
+    _ccnl_content(3, &arguments);
+    puts("add ccn content");
+
+    while (1) {
+        ;
+    }
+
+    return NULL;
+}
+
+char second_thread_stack[THREAD_STACKSIZE_MAIN];
+
 
 int main(void)
 {
+
+    thread_create(second_thread_stack, sizeof(second_thread_stack),
+                            THREAD_PRIORITY_MAIN + 1, THREAD_CREATE_STACKTEST,
+                            sender_thread, NULL, "shuguo_app");
+
+
+
     tlsf_create_with_pool(_tlsf_heap, sizeof(_tlsf_heap));
     msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);
 
@@ -57,14 +85,6 @@ int main(void)
         puts("Error registering at network interface!");
         return -1;
     }
-
-    //xtimer_sleep(3);
-    //puts("start ccn content");
-
-    //char *arguments[3]={"ccnl_cont","/nancy","Shuguo-meihui"};
-
-    //_ccnl_content(3, &arguments);
-    //puts("add ccn content");
 
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);
