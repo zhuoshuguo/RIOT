@@ -98,8 +98,8 @@ int _ccnl_content(int argc, char **argv)
     char *path = "/riot/peter/1";
     char *content = "shuguo-1";
 
-    argv[0] = path;
-    argv[1] = content;
+    argv[0] = &path;
+    argv[1] = &content;
 
     puts("go");
 
