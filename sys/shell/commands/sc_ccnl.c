@@ -88,7 +88,7 @@ static void _content_usage(char *argv)
 int _ccnl_content(int argc, char **argv)
 {
     if (argc < 2) {
-        _content_usage(argv[0]);
+        //_content_usage(argv[0]);
         return -1;
     }
 
