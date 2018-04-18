@@ -55,9 +55,7 @@ int main(void)
     xtimer_sleep(3);
     puts("start ccn content");
     /* Add a CCN content */
-    char *interet = "/riot/peter/1 shuguo-1";
-    //char *ipadd = "shuguo-1";
-    _ccnl_content(2, &interet);
+    _ccnl_content(2, NULL);
     puts("add ccn content");
 
     /* set the relay's PID, configure the interface to use CCN nettype */

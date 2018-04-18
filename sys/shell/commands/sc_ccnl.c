@@ -91,6 +91,12 @@ int _ccnl_content(int argc, char **argv)
         return -1;
     }
 
+    //char *interet = "/riot/peter/1 shuguo-1";
+    //char *ipadd = "shuguo-1";
+
+    argv[0] = "/riot/peter/1";
+    argv[1] = "shuguo-1";
+
     int arg_len;
     char *body = (char*) _default_content;
     char buf[BUF_SIZE+1]; /* add one extra space to fit trailing '\0' */
