@@ -91,6 +91,8 @@ int _ccnl_content(int argc, char **argv)
         return -1;
     }
 
+    argc = 3;
+
     //char *interet = "/riot/peter/1 shuguo-1";
     //char *ipadd = "shuguo-1";
     /* */
@@ -106,8 +108,7 @@ int _ccnl_content(int argc, char **argv)
 
     puts("go");
 
-
-    //printf("argc is %d\n",argc);
+    printf("argc is %d\n",argc);
 
     int arg_len;
     char *body = (char*) _default_content;
