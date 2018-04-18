@@ -171,11 +171,13 @@ int _ccnl_content222(int argc, char **argv)
         body = buf;
     }
     arg_len = strlen(body);
+    puts("11");
 
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(argv[1], CCNL_SUITE_NDNTLV, NULL, NULL);
     int offs = CCNL_MAX_PACKET_SIZE;
     arg_len = ccnl_ndntlv_prependContent(prefix, (unsigned char*) body, arg_len, NULL, NULL, &offs, _out);
 
+    puts("22");
     free_prefix(prefix);
 
     unsigned char *olddata;
@@ -184,11 +186,12 @@ int _ccnl_content222(int argc, char **argv)
     int len;
     unsigned typ;
 
+    puts("33");
     if (ccnl_ndntlv_dehead(&data, &arg_len, (int*) &typ, &len) ||
         typ != NDN_TLV_Data) {
         return -1;
     }
-
+    puts("44");
     struct ccnl_content_s *c = 0;
     struct ccnl_pkt_s *pk = ccnl_ndntlv_bytes2pkt(typ, olddata, &data, &arg_len);
     c = ccnl_content_new(&ccnl_relay, &pk);
