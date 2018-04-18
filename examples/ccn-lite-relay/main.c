@@ -62,6 +62,7 @@ int main(void)
     shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);
 
     xtimer_sleep(3);
+    puts("start ccn content");
     /* Add a CCN content */
     char *interet = "/riot/peter/1 shuguo-1";
     //char *ipadd = "shuguo-1";
