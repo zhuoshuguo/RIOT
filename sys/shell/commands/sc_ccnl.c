@@ -84,19 +84,12 @@ static void _content_usage(char *argv)
             argv, argv, argv);
 }
 
-
 int _ccnl_content(int argc, char **argv)
 {
     if (argc < 2) {
         _content_usage(argv[0]);
         return -1;
     }
-
-    puts("go");
-
-    printf("argc is %d\n",argc);
-
-    printf("argv is %s\n",argv[2]);
 
     int arg_len;
     char *body = (char*) _default_content;
@@ -105,7 +98,7 @@ int _ccnl_content(int argc, char **argv)
     if (argc > 2) {
         unsigned pos = 0;
         for (int i = 2; (i < argc) && (pos < BUF_SIZE); ++i) {
-        	arg_len = strlen(argv[i]);
+            arg_len = strlen(argv[i]);
             if ((pos + arg_len) > BUF_SIZE) {
                 arg_len = BUF_SIZE - pos;
             }
