@@ -66,6 +66,7 @@ int main(void)
     char *interet = "/riot/peter/1 shuguo-1";
     //char *ipadd = "shuguo-1";
     _ccnl_content(2, &interet);
+    puts("add ccn content");
 
     return 0;
 }
