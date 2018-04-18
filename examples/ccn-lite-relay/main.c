@@ -25,6 +25,7 @@
 #include "shell.h"
 #include "ccn-lite-riot.h"
 #include "net/gnrc/netif.h"
+#include "xtimer.h"
 
 extern int _ccnl_content(int argc, char **argv);
 
@@ -60,6 +61,7 @@ int main(void)
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);
 
+    xtimer_sleep(3);
     /* Add a CCN content */
     char *interet = "/riot/peter/1 shuguo-1";
     //char *ipadd = "shuguo-1";
