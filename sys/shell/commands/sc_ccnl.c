@@ -93,9 +93,15 @@ int _ccnl_content(int argc, char **argv)
 
     //char *interet = "/riot/peter/1 shuguo-1";
     //char *ipadd = "shuguo-1";
+    puts("in ccn content");
 
-    argv[0] = "/riot/peter/1";
-    argv[1] = "shuguo-1";
+    char *path = "/riot/peter/1";
+    char *content = "shuguo-1";
+
+    argv[0] = path;
+    argv[1] = content;
+
+    puts("go");
 
     int arg_len;
     char *body = (char*) _default_content;
