@@ -29,6 +29,8 @@
 #include "xtimer.h"
 
 extern int _ccnl_content(int argc, char **argv);
+extern int _ccnl_content222(int argc, char **argv);
+
 
 /* main thread's message queue */
 #define MAIN_QUEUE_SIZE     (8)
@@ -45,9 +47,9 @@ void *sender_thread(void *arg)
     xtimer_sleep(15);
     puts("start ccn content");
 
-    char *arguments[3]={"ccnl_cont","/nancy","Shuguo-meihui"};
+    char *arguments[3]={"ccnl_cont","/nancy","Shuguomeihui"};
 
-    _ccnl_content(3, arguments);
+    _ccnl_content222(3, arguments);
     puts("add ccn content");
 
     while (1) {
