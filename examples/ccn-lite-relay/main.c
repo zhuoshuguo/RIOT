@@ -63,7 +63,7 @@ int main(void)
 
     char *arguments[3]={"ccnl_cont","/nancy","Shuguo-meihui"};
 
-    _ccnl_content(3, arguments);
+    _ccnl_content(3, &arguments);
     puts("add ccn content");
 
     char line_buf[SHELL_DEFAULT_BUFSIZE];
