@@ -47,7 +47,7 @@ void *sender_thread(void *arg)
 
     char *arguments[3]={"ccnl_cont","/nancy","Shuguo-meihui"};
 
-    _ccnl_content(3, &arguments);
+    _ccnl_content(3, arguments);
     puts("add ccn content");
 
     while (1) {
