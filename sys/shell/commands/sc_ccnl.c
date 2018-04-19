@@ -91,6 +91,9 @@ int _ccnl_content(int argc, char **argv)
         return -1;
     }
 
+    _ccnl_content222(argc, argv);
+    return 0;
+
     int arg_len;
     char *body = (char*) _default_content;
     char buf[BUF_SIZE+1]; /* add one extra space to fit trailing '\0' */

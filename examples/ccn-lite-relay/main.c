@@ -47,9 +47,9 @@ void *sender_thread(void *arg)
     xtimer_sleep(15);
     puts("start ccn content");
 
-    char *arguments[3]={"ccnl_cont","/nancy","Hello"};
+    //char *arguments[3]={"ccnl_cont","/nancy","Hello"};
 
-    _ccnl_content222(3, arguments);
+    //_ccnl_content222(3, arguments);
     puts("add ccn content");
 
     while (1) {
