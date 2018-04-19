@@ -23,12 +23,16 @@
 #include "net/gnrc/netif.h"
 #include "ccn-lite-riot.h"
 #include "ccnl-pkt-ndntlv.h"
+#include "net/gnrc/netdev.h"
+
 
 #define BUF_SIZE (64)
 
 #define MAX_ADDR_LEN            (8U)
 
 #define CCN_WAIT_TIME_SHUGUO (240000000U)
+
+extern gnrc_netdev_t gnrc_netdev;
 
 static unsigned char _int_buf[BUF_SIZE];
 static unsigned char _cont_buf[BUF_SIZE];
@@ -218,11 +222,22 @@ int _ccnl_interest(int argc, char **argv)
 
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(argv[1], CCNL_SUITE_NDNTLV, NULL, 0);
     ccnl_send_interest(prefix, _int_buf, BUF_SIZE);
+
+    gnrc_netdev.gomach.ccn_ini_time = xtimer_now_usec64();
+    gnrc_netdev.gomach.ccn_request_count ++;
+
     int res = 0;
     if (ccnl_wait_for_chunk(_cont_buf, BUF_SIZE, CCN_WAIT_TIME_SHUGUO) > 0) {
+    	gnrc_netdev.gomach.ccn_end_time = xtimer_now_usec64();
+    	gnrc_netdev.gomach.ccn_round_time = gnrc_netdev.gomach.ccn_end_time - gnrc_netdev.gomach.ccn_ini_time;
+    	gnrc_netdev.gomach.ccn_round_time_sum += gnrc_netdev.gomach.ccn_round_time;
         printf("Content received: %s\n", _cont_buf);
+        printf("interest round-time: %lu ms\n", (uint32_t)(gnrc_netdev.gomach.ccn_round_time / 1000));
+        printf("Averaged interest round-time: %lu ms\n", (uint32_t)(gnrc_netdev.gomach.ccn_round_time_sum / gnrc_netdev.gomach.ccn_request_count));
     }
     else {
+    	gnrc_netdev.gomach.ccn_request_count --;
+
         printf("Timeout! No content received in response to the Interest for %s.\n", argv[1]);
         res = -1;
     }
