@@ -40,6 +40,9 @@
 #include "net/gnrc/gomach/timeout.h"
 #include "include/gomach_internal.h"
 
+extern uint64_t ccn_round_time_sum;
+extern uint32_t ccn_request_count;
+
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
@@ -168,8 +171,8 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->tx.get_bcast_pkt = false;
     gnrc_netdev->tx.get_bcast_pkt_time = xtimer_now_usec();
 
-    gnrc_netdev->gomach.ccn_round_time_sum = 0;
-    gnrc_netdev->gomach.ccn_request_count = 0;
+    ccn_round_time_sum = 0;
+    ccn_request_count = 0;
 }
 
 static void _gomach_rtt_cb(void *arg)
