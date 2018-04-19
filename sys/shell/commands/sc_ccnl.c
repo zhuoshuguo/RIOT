@@ -97,6 +97,8 @@ int _ccnl_content(int argc, char **argv)
 
     printf("argc is %d\n",argc);
     printf("argv[1] is %s\n",argv[1]);
+
+    printf("argv[2] length is %s\n",strlen(argv[2]));
     printf("argv[2] is %s\n",argv[2]);
 
     if (argc > 2) {
