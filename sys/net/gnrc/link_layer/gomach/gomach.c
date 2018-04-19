@@ -168,8 +168,8 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->tx.get_bcast_pkt = false;
     gnrc_netdev->tx.get_bcast_pkt_time = xtimer_now_usec();
 
-    gnrc_netdev.gomach.ccn_round_time_sum = 0;
-    gnrc_netdev.gomach.ccn_request_count = 0;
+    gnrc_netdev->gomach.ccn_round_time_sum = 0;
+    gnrc_netdev->gomach.ccn_request_count = 0;
 }
 
 static void _gomach_rtt_cb(void *arg)
