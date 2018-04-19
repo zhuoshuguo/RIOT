@@ -84,70 +84,6 @@ static void _content_usage(char *argv)
             argv, argv, argv);
 }
 
-
-int _ccnl_content222(int argc, char **argv)
-{
-    int arg_len;
-    char *body = (char*) _default_content;
-    char buf[BUF_SIZE+1]; /* add one extra space to fit trailing '\0' */
-
-    printf("22argc is %d\n",argc);
-    printf("22argv[1] is %s\n",argv[1]);
-
-    printf("22argv[2] length is %d\n",strlen(argv[2]));
-    printf("22argv[2] is %s\n",argv[2]);
-
-    if (argc > 2) {
-        unsigned pos = 0;
-        for (int i = 2; (i < argc) && (pos < BUF_SIZE); ++i) {
-            arg_len = strlen(argv[i]);
-            if ((pos + arg_len) > BUF_SIZE) {
-                arg_len = BUF_SIZE - pos;
-            }
-            strncpy(&buf[pos], argv[i], arg_len);
-            pos += arg_len;
-            /* increment pos _after_ adding ' ' */
-            buf[pos++] = ' ';
-        }
-        /* decrement pos _before_ to overwrite last ' ' with '\0' */
-        buf[--pos] = '\0';
-        body = buf;
-    }
-    arg_len = strlen(body);
-
-    printf("arg_len length is %d\n",arg_len);
-
-    puts("11");
-
-    struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(argv[1], CCNL_SUITE_NDNTLV, NULL, NULL);
-    int offs = CCNL_MAX_PACKET_SIZE;
-    arg_len = ccnl_ndntlv_prependContent(prefix, (unsigned char*) body, arg_len, NULL, NULL, &offs, _out);
-
-    puts("22");
-    free_prefix(prefix);
-
-    unsigned char *olddata;
-    unsigned char *data = olddata = _out + offs;
-
-    int len;
-    unsigned typ;
-
-    puts("33");
-    if (ccnl_ndntlv_dehead(&data, &arg_len, (int*) &typ, &len) ||
-        typ != NDN_TLV_Data) {
-        return -1;
-    }
-    puts("44");
-    struct ccnl_content_s *c = 0;
-    struct ccnl_pkt_s *pk = ccnl_ndntlv_bytes2pkt(typ, olddata, &data, &arg_len);
-    c = ccnl_content_new(&ccnl_relay, &pk);
-    ccnl_content_add2cache(&ccnl_relay, c);
-    c->flags |= CCNL_CONTENT_FLAGS_STATIC;
-
-    return 0;
-}
-
-
 int _ccnl_content(int argc, char **argv)
 {
     if (argc < 2) {
@@ -155,18 +91,9 @@ int _ccnl_content(int argc, char **argv)
         return -1;
     }
 
-    _ccnl_content222(argc, argv);
-    return 0;
-
     int arg_len;
     char *body = (char*) _default_content;
     char buf[BUF_SIZE+1]; /* add one extra space to fit trailing '\0' */
-
-    printf("argc is %d\n",argc);
-    printf("argv[1] is %s\n",argv[1]);
-
-    printf("argv[2] length is %d\n",strlen(argv[2]));
-    printf("argv[2] is %s\n",argv[2]);
 
     if (argc > 2) {
         unsigned pos = 0;

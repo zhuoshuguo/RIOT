@@ -28,8 +28,7 @@
 #include "net/gnrc/netif.h"
 #include "xtimer.h"
 
-extern int _ccnl_content(int argc, char **argv);
-extern int _ccnl_content222(int argc, char **argv);
+extern int _ccnl_interest(int argc, char **argv);
 
 
 /* main thread's message queue */
@@ -44,13 +43,13 @@ void *sender_thread(void *arg)
 {
     (void) arg;
 
-    xtimer_sleep(15);
-    puts("start ccn content");
+    xtimer_sleep(25);
+    puts("start ccn init");
 
-    //char *arguments[3]={"ccnl_cont","/nancy","Hello"};
+    char *arguments[2]={"ccnl_int","/nancy"};
 
-    //_ccnl_content222(3, arguments);
-    puts("add ccn content");
+    _ccnl_interest(2, arguments);
+    puts("end ccn init");
 
     while (1) {
         ;
