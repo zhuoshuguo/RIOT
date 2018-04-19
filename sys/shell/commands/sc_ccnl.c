@@ -119,6 +119,8 @@ int _ccnl_content(int argc, char **argv)
     }
     arg_len = strlen(body);
 
+    printf("arg_len length is %d\n",arg_len);
+
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(argv[1], CCNL_SUITE_NDNTLV, NULL, NULL);
     int offs = CCNL_MAX_PACKET_SIZE;
     arg_len = ccnl_ndntlv_prependContent(prefix, (unsigned char*) body, arg_len, NULL, NULL, &offs, _out);
@@ -154,6 +156,8 @@ int _ccnl_content222(int argc, char **argv)
 
     printf("22argc is %d\n",argc);
     printf("22argv[1] is %s\n",argv[1]);
+
+    printf("22argv[2] length is %d\n",strlen(argv[2]));
     printf("22argv[2] is %s\n",argv[2]);
 
     if (argc > 2) {
@@ -173,6 +177,9 @@ int _ccnl_content222(int argc, char **argv)
         body = buf;
     }
     arg_len = strlen(body);
+
+    printf("arg_len length is %d\n",arg_len);
+
     puts("11");
 
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(argv[1], CCNL_SUITE_NDNTLV, NULL, NULL);
