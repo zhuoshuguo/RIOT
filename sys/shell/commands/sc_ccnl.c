@@ -24,6 +24,7 @@
 #include "net/gnrc/netif.h"
 #include "ccn-lite-riot.h"
 #include "ccnl-pkt-ndntlv.h"
+#include "xtimer.h"
 //#include "net/gnrc/netdev.h"
 
 typedef struct gnrc_netdev gnrc_netdev_t;
