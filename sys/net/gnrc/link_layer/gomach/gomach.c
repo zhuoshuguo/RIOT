@@ -109,9 +109,9 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_INIT;
 
     /* Initialize GoMacH's channels. */
-    gnrc_netdev->gomach.sub_channel_seq = 13;
-    gnrc_netdev->gomach.pub_channel_1 = 26;
-    gnrc_netdev->gomach.pub_channel_2 = 11;
+    gnrc_netdev->gomach.sub_channel_seq = 20;
+    gnrc_netdev->gomach.pub_channel_1 = 19;
+    gnrc_netdev->gomach.pub_channel_2 = 15;
     gnrc_netdev->gomach.cur_pub_channel = gnrc_netdev->gomach.pub_channel_1;
     gnrc_gomach_turn_channel(gnrc_netdev, gnrc_netdev->gomach.cur_pub_channel);
 
