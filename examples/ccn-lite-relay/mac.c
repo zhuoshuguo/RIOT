@@ -23,6 +23,8 @@
 
 #include "net/gnrc.h"
 #include "net/gnrc/mac/types.h"
+#include "net/gnrc/netdev.h"
+#include "net/gnrc/netif.h"
 
 int mac_cmd(int argc, char **argv)
 {
@@ -33,12 +35,12 @@ int mac_cmd(int argc, char **argv)
 
     if (strcmp(argv[1], "duty") == 0) {
 
-        gnrc_netif_t *netif = NULL;
-        netif = gnrc_netif_iter(netif);
+       // gnrc_netif_t *netif = NULL;
+       // netif = gnrc_netif_iter(netif);
 
         msg_t msg;
         msg.type = GNRC_MAC_TYPE_GET_DUTYCYCLE;
-        msg_send(&msg, netif->pid);
+        msg_send(&msg, 4);
 
        // puts("MAC: radio duty-cycle unavailable.");
 

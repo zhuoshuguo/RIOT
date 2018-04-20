@@ -241,7 +241,7 @@ int _ccnl_interest(int argc, char **argv)
     	ccn_round_time_sum += ccn_round_time;
         printf("Content received: %s\n", _cont_buf);
         printf("interest round-time: %lu ms\n", (uint32_t)(ccn_round_time / 1000));
-        printf("Averaged interest round-time: %lu ms\n", (uint32_t)(ccn_round_time_sum / ccn_request_count));
+        printf("Averaged interest round-time: %lu ms\n", (uint32_t)((ccn_round_time_sum / ccn_request_count)/1000));
     }
     else {
     	ccn_request_count --;
