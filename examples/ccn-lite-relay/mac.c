@@ -32,16 +32,16 @@ int mac_cmd(int argc, char **argv)
     }
 
     if (strcmp(argv[1], "duty") == 0) {
-#if (GNRC_MAC_ENABLE_DUTYCYCLE_RECORD == 1)
+
         gnrc_netif_t *netif = NULL;
         netif = gnrc_netif_iter(netif);
 
         msg_t msg;
         msg.type = GNRC_MAC_TYPE_GET_DUTYCYCLE;
         msg_send(&msg, netif->pid);
-#else
-        puts("MAC: radio duty-cycle unavailable.");
-#endif
+
+       // puts("MAC: radio duty-cycle unavailable.");
+
     }
     else {
         puts("error: invalid command");
