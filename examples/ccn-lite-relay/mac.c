@@ -40,7 +40,7 @@ int mac_cmd(int argc, char **argv)
 
         msg_t msg;
         msg.type = GNRC_MAC_TYPE_GET_DUTYCYCLE;
-        msg_send(&msg, 4);
+        msg_send(&msg, 3);
 
        // puts("MAC: radio duty-cycle unavailable.");
 
