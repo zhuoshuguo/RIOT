@@ -1510,17 +1510,6 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
     gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_ENABLE);
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_LISTEN;
     gnrc_gomach_set_update(gnrc_netdev, false);
-
-
-
-#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
-                    /* Output radio duty-cycle ratio */
-                    uint64_t duty;
-                    duty = (uint64_t) xtimer_now_usec64();
-                    duty = ((uint64_t) gnrc_netdev->gomach.awake_duration_sum_ticks) * 100 /
-                           (duty - (uint64_t)gnrc_netdev->gomach.system_start_time_ticks);
-                    printf("[GoMacH]: achieved radio duty-cycle: %lu %% \n", (uint32_t)duty);
-#endif
 }
 
 static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
@@ -2157,6 +2146,17 @@ static void *_gnrc_gomach_thread(void *args)
                 gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
             }
+#if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
+            case GNRC_MAC_TYPE_GET_DUTYCYCLE: {
+                /* Output radio duty-cycle ratio */
+                uint64_t duty;
+                duty = (uint64_t) xtimer_now_usec64();
+                duty = ((uint64_t) gnrc_netdev->gomach.awake_duration_sum_ticks) * 100 /
+                       (duty - (uint64_t)gnrc_netdev->gomach.system_start_time_ticks);
+                printf("[GoMacH]: achieved radio duty-cycle: %lu %% \n", (uint32_t)duty);
+                break;
+            }
+#endif
             default: {
                 DEBUG("gnrc_netdev: Unknown command %" PRIu16 "\n", msg.type);
                 break;

@@ -33,6 +33,12 @@ static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 /* 10kB buffer for the heap should be enough for everyone */
 #define TLSF_BUFFER     (10240 / sizeof(uint32_t))
 static uint32_t _tlsf_heap[TLSF_BUFFER];
+extern int mac_cmd(int argc, char **argv);
+
+static const shell_command_t shell_commands[] = {
+    { "mac", "get MAC protocol's internal information", mac_cmd },
+    { NULL, NULL, NULL }
+};
 
 int main(void)
 {
@@ -55,6 +61,6 @@ int main(void)
     }
 
     char line_buf[SHELL_DEFAULT_BUFSIZE];
-    shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);
+    shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
     return 0;
 }

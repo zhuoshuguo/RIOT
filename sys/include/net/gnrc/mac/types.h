@@ -38,6 +38,10 @@
 extern "C" {
 #endif
 
+#ifndef GNRC_MAC_TYPE_GET_DUTYCYCLE
+#define GNRC_MAC_TYPE_GET_DUTYCYCLE    (0x4401U)
+#endif
+
 /**
  * @brief definition for device transmission feedback types
  */
