@@ -1448,9 +1448,11 @@ static void _gomach_phase_backoff(gnrc_netdev_t *gnrc_netdev)
 static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
 {
 
-	if ((xtimer_now_usec() - gnrc_netdev->tx.get_bcast_pkt_time) > 8000000) {
+	if (((xtimer_now_usec() - gnrc_netdev->tx.get_bcast_pkt_time) > 8000000) && (gnrc_netdev->tx.get_bcast_pkt == true)) {
 		gnrc_netdev->tx.get_bcast_pkt = false;
 	}
+
+	printf("C: %lu/n",xtimer_now_usec());
 
     /* Reset last_seq_info, for avoiding receiving duplicate packets.
      * To-do: remove this in the future? */
