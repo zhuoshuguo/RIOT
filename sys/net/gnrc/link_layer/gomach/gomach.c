@@ -1452,7 +1452,7 @@ static void gomach_listen_init(gnrc_netdev_t *gnrc_netdev)
 		gnrc_netdev->tx.get_bcast_pkt = false;
 	}
 
-	printf("C: %lu/n",xtimer_now_usec());
+	printf("C: %lu\n",xtimer_now_usec());
 
     /* Reset last_seq_info, for avoiding receiving duplicate packets.
      * To-do: remove this in the future? */
