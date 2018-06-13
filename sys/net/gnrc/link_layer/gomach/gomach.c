@@ -2151,8 +2151,11 @@ static void *_gnrc_gomach_thread(void *args)
                 /* Output radio duty-cycle ratio */
                 uint64_t duty;
                 duty = (uint64_t) xtimer_now_usec64();
-                duty = ((uint64_t) gnrc_netdev->gomach.awake_duration_sum_ticks) * 100 /
-                       (duty - (uint64_t)gnrc_netdev->gomach.system_start_time_ticks);
+                duty = (gnrc_netdev->gomach.awake_duration_sum_ticks) * 100 /
+                       (duty - gnrc_netdev->gomach.system_start_time_ticks);
+
+                printf("[GoMacH]: active-time (ms): %lu %% \n", (uint32_t)(gnrc_netdev->gomach.awake_duration_sum_ticks / 1000);
+                printf("[GoMacH]: life-time (ms): %lu %% \n", (uint32_t)((xtimer_now_usec64() - gnrc_netdev->gomach.system_start_time_ticks) / 1000);
                 printf("[GoMacH]: achieved radio duty-cycle: %lu %% \n", (uint32_t)duty);
                 break;
             }
