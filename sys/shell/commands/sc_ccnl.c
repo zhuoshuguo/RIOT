@@ -33,7 +33,7 @@ typedef struct gnrc_netdev gnrc_netdev_t;
 
 #define MAX_ADDR_LEN            (8U)
 
-#define CCN_WAIT_TIME_SHUGUO (60000000U)
+#define CCN_WAIT_TIME_SHUGUO (120000000U)
 
 static unsigned char _int_buf[BUF_SIZE];
 static unsigned char _cont_buf[BUF_SIZE];
