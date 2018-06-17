@@ -2154,9 +2154,14 @@ static void *_gnrc_gomach_thread(void *args)
                 duty = (gnrc_netdev->gomach.awake_duration_sum_ticks) * 100 /
                        (duty - gnrc_netdev->gomach.system_start_time_ticks);
 
-                printf("[ %x ]: active-time (ms): %lu ms \n", *gnrc_netdev->l2_addr, (uint32_t)(gnrc_netdev->gomach.awake_duration_sum_ticks / 1000));
-                printf("[ %x ]: life-time (ms): %lu ms \n", *gnrc_netdev->l2_addr, (uint32_t)((xtimer_now_usec64() - gnrc_netdev->gomach.system_start_time_ticks) / 1000));
-                printf("[ %x ]: achieved radio duty-cycle: %lu %% \n", *gnrc_netdev->l2_addr, (uint32_t)duty);
+                uint16_t add = 0;
+                add = gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len - 2];
+                add = seed << 8;
+                add |= gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len - 1];
+
+                printf("[ %x ]: active-time (ms): %lu ms \n", add, (uint32_t)(gnrc_netdev->gomach.awake_duration_sum_ticks / 1000));
+                printf("[ %x ]: life-time (ms): %lu ms \n", add, (uint32_t)((xtimer_now_usec64() - gnrc_netdev->gomach.system_start_time_ticks) / 1000));
+                printf("[ %x ]: achieved radio duty-cycle: %lu %% \n", add, (uint32_t)duty);
                 break;
             }
 #endif
