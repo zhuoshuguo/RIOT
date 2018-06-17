@@ -2156,7 +2156,7 @@ static void *_gnrc_gomach_thread(void *args)
 
                 uint16_t add = 0;
                 add = gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len - 2];
-                add = seed << 8;
+                add = add << 8;
                 add |= gnrc_netdev->l2_addr[gnrc_netdev->l2_addr_len - 1];
 
                 printf("[ %x ]: active-time (ms): %lu ms \n", add, (uint32_t)(gnrc_netdev->gomach.awake_duration_sum_ticks / 1000));
