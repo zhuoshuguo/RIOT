@@ -163,7 +163,7 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     /* Set the Radio Gain. */
     xtimer_sleep(5);
     int16_t power_gain;
-    power_gain = -9;
+    power_gain = -7;
     printf("TXPower: %d dBm\n", power_gain);
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_TX_POWER, &power_gain, sizeof(power_gain));
     xtimer_sleep(1);
