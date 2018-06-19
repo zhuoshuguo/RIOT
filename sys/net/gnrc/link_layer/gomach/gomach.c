@@ -160,6 +160,15 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
 
     gnrc_netdev->tx.t2u_fail_count = 0;
 
+    /* Set the Radio Gain. */
+    xtimer_sleep(5);
+    int16_t power_gain;
+    power_gain = -12;
+    printf("TXPower: %d dBm\n", u16_power);
+    gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_TX_POWER, &power_gain, sizeof(power_gain));
+    xtimer_sleep(1);
+
+
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
     /* Start duty cycle recording */
     gnrc_netdev->gomach.system_start_time_ticks = xtimer_now_usec64();
