@@ -164,7 +164,7 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
     xtimer_sleep(5);
     int16_t power_gain;
     power_gain = -12;
-    printf("TXPower: %d dBm\n", u16_power);
+    printf("TXPower: %d dBm\n", power_gain);
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_TX_POWER, &power_gain, sizeof(power_gain));
     xtimer_sleep(1);
 
