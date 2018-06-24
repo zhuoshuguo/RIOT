@@ -157,14 +157,14 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
 
     gnrc_netdev->tx.t2u_fail_count = 0;
 
-    /*
+
     xtimer_sleep(5);
     int16_t u16_power;
-    u16_power = -5;
+    u16_power = -7;
     //printf("TXPower: %d dBm\n", u16_power);
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_TX_POWER, &u16_power, sizeof(u16_power));
     xtimer_sleep(1);
-    */
+
 
 
 #if (GNRC_GOMACH_ENABLE_DUTYCYLE_RECORD == 1)
