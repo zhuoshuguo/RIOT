@@ -32,7 +32,7 @@ USEMODULE += timex
 USEMODULE += xtimer
 USEMODULE += random
 USEMODULE += prng_minstd
-USEMODULE += gnrc_gomach
+#USEMODULE += gnrc_gomach
 
 USEPKG += tlsf
 
