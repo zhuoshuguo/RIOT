@@ -219,7 +219,7 @@ static void _dump(gnrc_pktsnip_t *pkt, uint32_t received_pkt_counter)
 
     //printf("%lx, %lu, %lu, %lu. \n", payload[1], payload[0], reception_list[i], received_pkt_counter);
 
-    printf("R");
+    printf("R\n");
 
     gnrc_pktbuf_release(pkt);
 }
