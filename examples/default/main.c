@@ -29,6 +29,7 @@
 #include "shell.h"
 #include "shell_commands.h"
 #include "timex.h"
+#include "random.h"
 #include "net/gnrc.h"
 #include "net/gnrc/netif.h"
 #include "net/gnrc/netapi.h"
@@ -324,7 +325,14 @@ void *sender_thread(void *arg)
         break;
     }
 
-   xtimer_usleep(500000);
+   //xtimer_usleep(500000);
+
+
+	uint32_t random_period;
+
+	random_period = random_uint32_range(0, 500000);
+
+	xtimer_usleep(random_period);
 
    exp_end = false;
 
