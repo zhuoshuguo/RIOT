@@ -82,15 +82,24 @@ static void generate_and_send_pkt(void){
 
 	    addr_len = 2;
 
-	    if(own_address2 == 0x103e) {
 
-	    		payload[3] = 0x00005ad6;
-		        addr[0] = 0x5a;
-		        addr[1] = 0xd6;
+	    // set destination (sink) address
+		payload[3] = 0x0000133a;
+        addr[0] = 0x13;
+        addr[1] = 0x3a;
 
-		        payload[0] = send_counter;
-		        //printf("%lx: %lu.\n", payload[3],send_counter);
-	    }
+        payload[0] = send_counter;
+        //printf("%lx: %lu.\n", payload[3],send_counter);
+
+//	    if(own_address2 == 0x103e) {
+//
+//	    		payload[3] = 0x00005ad6;
+//		        addr[0] = 0x5a;
+//		        addr[1] = 0xd6;
+//
+//		        payload[0] = send_counter;
+//		        //printf("%lx: %lu.\n", payload[3],send_counter);
+//	    }
 
 #if 0
 	    if(own_address2 == 0xbcc6) {
