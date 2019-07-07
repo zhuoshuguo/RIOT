@@ -259,6 +259,7 @@ void *sender_thread(void *arg)
 
     uint32_t data_rate;
     uint32_t total_gene_num;
+    uint32_t data_interval;
     data_rate = 0;
     total_gene_num = 0;
 
@@ -290,6 +291,7 @@ void *sender_thread(void *arg)
 
     gnrc_netreg_entry_t  me_reg = { .demux_ctx = GNRC_NETREG_DEMUX_CTX_ALL, .pid = thread_getpid() };
     gnrc_netreg_register(GNRC_NETTYPE_APP, &me_reg);
+
 
 
    while (1) {
@@ -336,9 +338,13 @@ void *sender_thread(void *arg)
 
    exp_end = false;
 
+   data_interval = (uint32_t) data_rate * 1000;
+
    while (1) {
    	//xtimer_sleep(1);
-   	xtimer_usleep((uint32_t) data_rate * 1000);
+	uint32_t random_wait_period;
+	random_wait_period = random_uint32_range(data_interval - 500000, data_interval + 500000);
+   	xtimer_usleep(random_wait_period);
 
    	if((send_counter < total_gene_num) && (rtt_get_counter() < exp_duration_ticks)){
    		for(int i=0; i<1; i++){
