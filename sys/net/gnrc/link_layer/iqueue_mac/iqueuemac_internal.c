@@ -1280,7 +1280,7 @@ int iqueuemac_send_exp_setting(iqueuemac_t* iqueuemac)
 	expset[0] = 3000;  //data generation interval, ms.
 
 	/* exp duration */
-	iqueuemac->exp_duration = 300;  //seconds
+	iqueuemac->exp_duration = 600;  //seconds
 	expset[1] = iqueuemac->exp_duration;
 
 	/* exp total generate packet number */
