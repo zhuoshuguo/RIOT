@@ -83,108 +83,125 @@ static void generate_and_send_pkt(void){
 
 	    addr_len = 8;
 
-	    if(own_address2 == 0x79f6) {  //5ad6
+	    /////// 5a:47:23:7e:a7:18:13:3a
+		payload[3] = 0x0000133a;
+        addr[0] = 0x5a;
+        addr[1] = 0x47;
 
-	    	//79:67:26:7e:69:76:4c:66
+        addr[2] = 0x23;
+        addr[3] = 0x7e;
 
-	    		payload[3] = 0x0000331e;
-		        addr[0] = 0x79;
-		        addr[1] = 0x67;
+        addr[4] = 0xa7;
+        addr[5] = 0x18;
 
-		        addr[2] = 0x08;
-		        addr[3] = 0x77;
+        addr[6] = 0x13;
+        addr[7] = 0x3a;
 
-		        addr[4] = 0x01;
-		        addr[5] = 0x9f;
+        payload[0] = send_counter;
 
-		        addr[6] = 0x33;
-		        addr[7] = 0x1e;
-
-		        payload[0] = send_counter;
-		        //printf("%lx: %lu.\n", payload[3],send_counter);
-	    }else if(own_address2 == 0x4c66) {  //6f46
-			//79:67:08:77:01:9f:33:1e
-	    	payload[3] = 0x0000331e;
-
-	        addr[0] = 0x79;
-	        addr[1] = 0x67;
-
-	        addr[2] = 0x08;
-	        addr[3] = 0x77;
-
-	        addr[4] = 0x01;
-	        addr[5] = 0x9f;
-
-	        addr[6] = 0x33;
-	        addr[7] = 0x1e;
-
-		}else if(own_address2 == 0x675e) {  //447e
-			//79:67:08:77:01:9f:33:1e
-	    	payload[3] = 0x0000331e;
-
-	        addr[0] = 0x79;
-	        addr[1] = 0x67;
-
-	        addr[2] = 0x08;
-	        addr[3] = 0x77;
-
-	        addr[4] = 0x01;
-	        addr[5] = 0x9f;
-
-	        addr[6] = 0x33;
-	        addr[7] = 0x1e;
-            //////////////////////////////////////////////////////////
-
-		}else if(own_address2 == 0x9fe6) {  //bcc6
-			//79:67:3c:7c:2b:2a:c1:3a
-	    	payload[3] = 0x0000331e;
-
-	        addr[0] = 0x79;
-	        addr[1] = 0x67;
-
-	        addr[2] = 0x08;
-	        addr[3] = 0x77;
-
-	        addr[4] = 0x01;
-	        addr[5] = 0x9f;
-
-	        addr[6] = 0x33;
-	        addr[7] = 0x1e;
-
-		}else if(own_address2 == 0x2c02) {  //0f22
-			//79:67:3c:7c:2b:2a:c1:3a
-	    	payload[3] = 0x0000331e;
-
-	        addr[0] = 0x79;
-	        addr[1] = 0x67;
-
-	        addr[2] = 0x08;
-	        addr[3] = 0x77;
-
-	        addr[4] = 0x01;
-	        addr[5] = 0x9f;
-
-	        addr[6] = 0x33;
-	        addr[7] = 0x1e;
-            //////////////////////////////////////////////////////////
-
-		}else if(own_address2 == 0x4262) {  //6142
-			//79:67:27:72:f4:57:9f:e6
-	    	payload[3] = 0x0000331e;
-
-	        addr[0] = 0x79;
-	        addr[1] = 0x67;
-
-	        addr[2] = 0x08;
-	        addr[3] = 0x77;
-
-	        addr[4] = 0x01;
-	        addr[5] = 0x9f;
-
-	        addr[6] = 0x33;
-	        addr[7] = 0x1e;
-
-		}
+//
+//	    if(own_address2 == 0x79f6) {  //5ad6
+//
+//	    	//79:67:26:7e:69:76:4c:66
+//
+//	    		payload[3] = 0x0000331e;
+//		        addr[0] = 0x79;
+//		        addr[1] = 0x67;
+//
+//		        addr[2] = 0x08;
+//		        addr[3] = 0x77;
+//
+//		        addr[4] = 0x01;
+//		        addr[5] = 0x9f;
+//
+//		        addr[6] = 0x33;
+//		        addr[7] = 0x1e;
+//
+//		        payload[0] = send_counter;
+//		        //printf("%lx: %lu.\n", payload[3],send_counter);
+//	    }else if(own_address2 == 0x4c66) {  //6f46
+//			//79:67:08:77:01:9f:33:1e
+//	    	payload[3] = 0x0000331e;
+//
+//	        addr[0] = 0x79;
+//	        addr[1] = 0x67;
+//
+//	        addr[2] = 0x08;
+//	        addr[3] = 0x77;
+//
+//	        addr[4] = 0x01;
+//	        addr[5] = 0x9f;
+//
+//	        addr[6] = 0x33;
+//	        addr[7] = 0x1e;
+//
+//		}else if(own_address2 == 0x675e) {  //447e
+//			//79:67:08:77:01:9f:33:1e
+//	    	payload[3] = 0x0000331e;
+//
+//	        addr[0] = 0x79;
+//	        addr[1] = 0x67;
+//
+//	        addr[2] = 0x08;
+//	        addr[3] = 0x77;
+//
+//	        addr[4] = 0x01;
+//	        addr[5] = 0x9f;
+//
+//	        addr[6] = 0x33;
+//	        addr[7] = 0x1e;
+//            //////////////////////////////////////////////////////////
+//
+//		}else if(own_address2 == 0x9fe6) {  //bcc6
+//			//79:67:3c:7c:2b:2a:c1:3a
+//	    	payload[3] = 0x0000331e;
+//
+//	        addr[0] = 0x79;
+//	        addr[1] = 0x67;
+//
+//	        addr[2] = 0x08;
+//	        addr[3] = 0x77;
+//
+//	        addr[4] = 0x01;
+//	        addr[5] = 0x9f;
+//
+//	        addr[6] = 0x33;
+//	        addr[7] = 0x1e;
+//
+//		}else if(own_address2 == 0x2c02) {  //0f22
+//			//79:67:3c:7c:2b:2a:c1:3a
+//	    	payload[3] = 0x0000331e;
+//
+//	        addr[0] = 0x79;
+//	        addr[1] = 0x67;
+//
+//	        addr[2] = 0x08;
+//	        addr[3] = 0x77;
+//
+//	        addr[4] = 0x01;
+//	        addr[5] = 0x9f;
+//
+//	        addr[6] = 0x33;
+//	        addr[7] = 0x1e;
+//            //////////////////////////////////////////////////////////
+//
+//		}else if(own_address2 == 0x4262) {  //6142
+//			//79:67:27:72:f4:57:9f:e6
+//	    	payload[3] = 0x0000331e;
+//
+//	        addr[0] = 0x79;
+//	        addr[1] = 0x67;
+//
+//	        addr[2] = 0x08;
+//	        addr[3] = 0x77;
+//
+//	        addr[4] = 0x01;
+//	        addr[5] = 0x9f;
+//
+//	        addr[6] = 0x33;
+//	        addr[7] = 0x1e;
+//
+//		}
 
 	    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
 	    if(hdr == NULL){
