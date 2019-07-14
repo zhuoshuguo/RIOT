@@ -353,10 +353,10 @@ int lwmac_send_exp_setting(gnrc_netdev2_t* gnrc_netdev2)
 
 
 	/* data rate */
-	expset[0] = 500;
+	expset[0] = 3000;
 
 	/* exp duration */
-	gnrc_netdev2->lwmac.exp_duration = 300; //seconds
+	gnrc_netdev2->lwmac.exp_duration = 600; //seconds
 	expset[1] = gnrc_netdev2->lwmac.exp_duration;
 
 	/* exp total generate packet number */
