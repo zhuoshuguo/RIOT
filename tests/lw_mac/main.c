@@ -291,29 +291,30 @@ void *sender_thread(void *arg)
             	payload = pkt->data;
             	data_rate = payload[0];
             	total_gene_num = payload[2];
-
-            	if(own_address2 == 0x79f6) {
-            	    total_gene_num = payload[2];
-
-            	} else if(own_address2 == 0x4c66) {
-            		total_gene_num = payload[2];
-
-            	}else if(own_address2 == 0x675e) {//447e
-            		total_gene_num = payload[2];
-            		                   /////////////////////////////////////////////////////////////////////
-            	}else if(own_address2 == 0x9fe6) {  //bcc6
-            		total_gene_num = payload[2];
-
-            	}else if(own_address2 == 0x2c02) {//0f22
-            		total_gene_num = payload[2];
-
-            		/////////////////////////////////////////////////////////////////////
-            	}else if(own_address2 == 0x4262) {   //6142
-            		total_gene_num = payload[2];
-
-            	}else {
-                    total_gene_num = 0;
-            	}
+//
+//
+//            	if(own_address2 == 0x79f6) {
+//            	    total_gene_num = payload[2];
+//
+//            	} else if(own_address2 == 0x4c66) {
+//            		total_gene_num = payload[2];
+//
+//            	}else if(own_address2 == 0x675e) {//447e
+//            		total_gene_num = payload[2];
+//            		                   /////////////////////////////////////////////////////////////////////
+//            	}else if(own_address2 == 0x9fe6) {  //bcc6
+//            		total_gene_num = payload[2];
+//
+//            	}else if(own_address2 == 0x2c02) {//0f22
+//            		total_gene_num = payload[2];
+//
+//            		/////////////////////////////////////////////////////////////////////
+//            	}else if(own_address2 == 0x4262) {   //6142
+//            		total_gene_num = payload[2];
+//
+//            	}else {
+//                    total_gene_num = 0;
+//            	}
 
             	exp_start_time = payload[5];
             	exp_duration_ticks = payload[1];
