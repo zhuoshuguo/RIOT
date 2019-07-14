@@ -29,7 +29,7 @@
 #include "shell.h"
 #include "shell_commands.h"
 #include "timex.h"
-#include <random.h>
+#include "random.h"
 #include "net/gnrc.h"
 #include "net/gnrc/netif.h"
 #include "net/gnrc/netapi.h"
@@ -241,6 +241,7 @@ void *sender_thread(void *arg)
 
     uint32_t data_rate;
     uint32_t total_gene_num;
+    uint32_t data_interval;
     data_rate = 0;
     total_gene_num = 0;
 
@@ -340,9 +341,15 @@ void *sender_thread(void *arg)
 
    exp_end = false;
 
+   data_interval = data_rate * 1000;
+
    while (1) {
    	//xtimer_sleep(1);
-   	xtimer_usleep((uint32_t) data_rate * 1000);
+   	//xtimer_usleep((uint32_t) data_rate * 1000);
+
+	uint32_t random_wait_period;
+	random_wait_period = random_uint32_range(data_interval - 500000, data_interval + 500000);
+	xtimer_usleep(random_wait_period);
 
 
    	if((send_counter < total_gene_num) && (rtt_get_counter() < (exp_duration_ticks + exp_start_time))){
