@@ -83,19 +83,19 @@ static void generate_and_send_pkt(void){
 
 	    addr_len = 8;
 
-	    /////// 5a:47:23:7e:a7:18:13:3a
-		payload[3] = 0x0000133a;
-        addr[0] = 0x5a;
-        addr[1] = 0x47;
+	    /////// 79:64:00:5d:84:3b:30:1a
+		payload[3] = 0x0000301a;
+        addr[0] = 0x79;
+        addr[1] = 0x64;
 
-        addr[2] = 0x23;
-        addr[3] = 0x7e;
+        addr[2] = 0x00;
+        addr[3] = 0x5d;
 
-        addr[4] = 0xa7;
-        addr[5] = 0x18;
+        addr[4] = 0x84;
+        addr[5] = 0x3b;
 
-        addr[6] = 0x13;
-        addr[7] = 0x3a;
+        addr[6] = 0x30;
+        addr[7] = 0x1a;
 
         payload[0] = send_counter;
 
