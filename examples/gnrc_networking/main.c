@@ -175,7 +175,7 @@ void *sender_thread(void *arg)
    data_rate = 60;
 
     while (1) {
-	    for(int i=0; i<5; i++){
+	    for(int i=0; i<1; i++){
 
 	    	generate_and_send_pkt();
 	    	/*
