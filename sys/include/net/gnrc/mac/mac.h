@@ -32,14 +32,14 @@ extern "C" {
  * @brief   The default rx queue size for incoming packets
  */
 #ifndef GNRC_MAC_RX_QUEUE_SIZE
-#define GNRC_MAC_RX_QUEUE_SIZE             (15U)
+#define GNRC_MAC_RX_QUEUE_SIZE             (30U)
 #endif
 
 /**
  * @brief   The default buffer size for storing dispatching packets
  */
 #ifndef GNRC_MAC_DISPATCH_BUFFER_SIZE
-#define GNRC_MAC_DISPATCH_BUFFER_SIZE      (8U)
+#define GNRC_MAC_DISPATCH_BUFFER_SIZE      (16U)
 #endif
 
 /**
@@ -53,7 +53,7 @@ extern "C" {
  * @brief   The default queue size for transmission packets coming from higher layers
  */
 #ifndef GNRC_MAC_TX_QUEUE_SIZE
-#define GNRC_MAC_TX_QUEUE_SIZE             (20U)
+#define GNRC_MAC_TX_QUEUE_SIZE             (40U)
 #endif
 
 #ifdef __cplusplus
