@@ -40,6 +40,10 @@
 #include "net/gnrc/gomach/timeout.h"
 #include "include/gomach_internal.h"
 
+#define GNRC_GOMACH_EX_NODE_NUM 70
+
+extern uint32_t idlist[GNRC_GOMACH_EX_NODE_NUM];
+
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
@@ -1922,6 +1926,13 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 		for(int j=0;j<70;j++){
 			//dd = (int) gnrc_netdev->gomach.slot_varia[j];
 			printf("%lu\n",gnrc_netdev->gomach.reception_list[j]);
+		}
+
+	    puts("node is list is.");
+		for(int j=0;j<70;j++){
+			//dd = (int) gnrc_netdev->gomach.slot_varia[j];
+			//idlist[GNRC_GOMACH_EX_NODE_NUM];
+			printf("%lu\n",idlist[j]);
 		}
 
 		while (1) {
