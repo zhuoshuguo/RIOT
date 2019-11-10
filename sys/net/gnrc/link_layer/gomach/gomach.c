@@ -1932,7 +1932,7 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 		for(int j=0;j<70;j++){
 			//dd = (int) gnrc_netdev->gomach.slot_varia[j];
 			//idlist[GNRC_GOMACH_EX_NODE_NUM];
-			printf("%lu\n",idlist[j]);
+			printf("%lx\n",idlist[j]);
 		}
 
 		while (1) {
