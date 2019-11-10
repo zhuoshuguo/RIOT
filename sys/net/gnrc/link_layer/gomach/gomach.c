@@ -160,7 +160,7 @@ static void gomach_init(gnrc_netdev_t *gnrc_netdev)
 
     xtimer_sleep(5);
     int16_t u16_power;
-    u16_power = -17;
+    u16_power = -7;
     //printf("TXPower: %d dBm\n", u16_power);
     gnrc_netdev->dev->driver->set(gnrc_netdev->dev, NETOPT_TX_POWER, &u16_power, sizeof(u16_power));
     xtimer_sleep(1);
@@ -1879,7 +1879,7 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 
 	//printf("%ld\n",RTT_TICKS_TO_MIN(rtt_get_counter()));
 
-	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 60) && (gnrc_netdev->gomach.exp_end == false)) {
+	if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 30) && (gnrc_netdev->gomach.exp_end == false)) {
 
 		gnrc_netdev->gomach.exp_end = true;
 		int dd;
