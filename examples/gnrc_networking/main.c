@@ -160,7 +160,7 @@ void *sender_thread(void *arg)
     while (1) {
         xtimer_sleep(10);
 
-        if (RTT_TICKS_TO_MIN(rtt_get_counter()) >= 20) {
+        if (RTT_TICKS_TO_MIN(rtt_get_counter()) >= 30) {
             break;
         }
     }
