@@ -1940,8 +1940,8 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 			printf("%lx\n",idlist[j]);
 		}
 
-		printf("Total generated data num: %lu\n", gen_data_sum);
-		printf("Total received data num: %lu\n", rec_data_sum);
+		printf("Total generated data num: %d\n", gen_data_sum);
+		printf("Total received data num: %d\n", rec_data_sum);
 
 
 		while (1) {
