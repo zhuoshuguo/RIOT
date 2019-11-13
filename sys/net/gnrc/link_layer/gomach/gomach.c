@@ -1916,16 +1916,21 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 			printf("%lu \n", (uint32_t)(gnrc_netdev->gomach.node_life_duration[j] >> 32));
 		}
 
+		int gen_data_sum=0;
+		int rec_data_sum=0;
+
 	    puts("Generate data record.");
 		for(int j=0;j<70;j++){
 			//dd = (int) gnrc_netdev->gomach.slot_varia[j];
 			printf("%lu\n",gnrc_netdev->gomach.generate_num[j]);
+			gen_data_sum += gnrc_netdev->gomach.generate_num[j];
 		}
 
 	    puts("Received data record.");
 		for(int j=0;j<70;j++){
 			//dd = (int) gnrc_netdev->gomach.slot_varia[j];
 			printf("%lu\n",gnrc_netdev->gomach.reception_list[j]);
+			rec_data_sum += gnrc_netdev->gomach.reception_list[j];
 		}
 
 	    puts("node is list is.");
@@ -1934,6 +1939,10 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
 			//idlist[GNRC_GOMACH_EX_NODE_NUM];
 			printf("%lx\n",idlist[j]);
 		}
+
+		printf("Total generated data num: %lu\n", gen_data_sum);
+		printf("Total received data num: %lu\n", rec_data_sum);
+
 
 		while (1) {
 		    ;
