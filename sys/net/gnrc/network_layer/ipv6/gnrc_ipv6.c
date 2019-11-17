@@ -289,7 +289,7 @@ static void *_event_loop(void *args)
             		if (msg.sender_pid != 6) {
             			gnrc_pktsnip_t *pkt2 = (gnrc_pktsnip_t *)msg.content.ptr;
             			gnrc_pktbuf_release(pkt2);
-            			puts("z");
+            			//puts("z");
             			break;
             		}
             	}
