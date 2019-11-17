@@ -477,7 +477,7 @@ static void gomach_init_end(gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_t2k_init(gnrc_netdev_t *gnrc_netdev)
 {
-    puts("k");
+    //puts("k");
     /* Turn off radio to conserve power */
     gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
 
@@ -691,7 +691,7 @@ static void gomach_t2k_wait_cp_txfeedback(gnrc_netdev_t *gnrc_netdev)
                 gnrc_netdev->tx.no_ack_counter++;
 
                 //LOG_DEBUG("[GOMACH] t2k %d times No-ACK.\n", gnrc_netdev->tx.no_ack_counter);
-                printf("k%d\n",gnrc_netdev->tx.no_ack_counter);
+                //printf("k%d\n",gnrc_netdev->tx.no_ack_counter);
 
                 /* This packet will be retried. Store the TX sequence number for this packet.
                  * Always use the same sequence number for sending the same packet. */
