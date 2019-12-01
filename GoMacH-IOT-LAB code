@@ -1,0 +1,154 @@
+
+
+user name : szhou
+
+code: shuguo39&ZJU
+
+ssh szhou@saclay.iot-lab.info
+
+ssh szhou@grenoble.iot-lab.info
+
+ssh szhou@strasbourg.iot-lab.info
+
+
+/////////// GOOD
+iotlab-experiment submit -d 150 -l strasbourg,m3,54,~/sink/sink.elf -l strasbourg,m3,1-9+11-13+15+17-21+23+25+29+30-40,~/sender/gnrc_networking.elf
+
+nc m3-54.strasbourg.iot-lab.info 20000
+
+
+iotlab-experiment submit -d 150 -l strasbourg,m3,54,~/sink/sink.elf -l strasbourg,m3,1-2+4+6-7+9+12-13+15+19-20+23+29-32+35-40,~/sender/gnrc_networking.elf
+
+//// Good-1
+iotlab-experiment submit -d 150 -l strasbourg,m3,54,~/sink/sink.elf -l strasbourg,m3,1-2+4+6-7+9+12-13+15+19-20+23+29-32+35-53+55-61,~/sender/gnrc_networking.elf
+
+//////////////////////   Grenoble  experiment
+
+iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,71-73,~/sender/gnrc_networking.elf
+
+
+iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,1-6+71-73+75-77+79+81-82+84+87+90-94+268-289,~/sender/gnrc_networking.elf
+
+
+iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,3+6+8+11+14+28+76+79+82+87+90+94+106+226+232+238+244+248+252+258+264+270+276+280+286,~/sender/gnrc_networking.elf
+
+/////////// GOOD
+iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,3+6+8+11+14+28+76+79+82+87+90+94+106+226+232-233+238-239+244-245+248+253+259+264-265+270-271+276-277+280+286,~/sender/gnrc_networking.elf
+
+///////////////////////////
+
+iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,3+6+8+11+14+28+76+79+82+87+90+94-96+101-102+106+109-110+115-116+226+232-233+238-239+244-245+248-249+252-253+258-259+264-265+270-271+276-277+280+286,~/sender/gnrc_networking.elf
+
+
+iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,3+6+8+11+14+28+76+79+82+87+90+94+106+208-209+220-221+214-215+226-227+232-233+238-239+244-245+248-249+252-253+258-259+264-265+270-271+276-277+280+286,~/sender/gnrc_networking.elf
+
+
+
+///////////
+iotlab-experiment submit -d 150 -l grenoble,m3,220,~/sink/sink.elf -l grenoble,m3,3+6+8+11+14+28+70+76+79+82+87+90+94+106+226+232-233+238-239+244-245+248-249+252-253+258-259+264-265+270-271+276-277+280+286,~/sender/gnrc_networking.elf
+
+///////////////////////////
+iotlab-experiment submit -d 70 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,3+6+8+11+14+28+76+79+82+87+90+94+100+106+112+118+226+232-233+238-239+244-245+248+253+259+264-265+270-271+276-277+280+286,~/sender/gnrc_networking.elf
+
+/////////// GOOD-2
+///////////////////////////
+
+
+
+
+   114   122
+  130
+
+iotlab-experiment  wait
+
+
+nc m3-70.grenoble.iot-lab.info 20000
+
+nc m3-220.grenoble.iot-lab.info 20000
+
+
+
+
+
+BOARD=samr21-xpro  make
+
+BOARD=iotlab-m3  make
+
+### Get experiments list with state Running
+iotlab-experiment get -e
+
+
+iotlab-experiment get -l
+
+
+################
+serial_aggregator -i       
+
+
+iotlab-experiment  wait
+  
+iotlab-experiment stop -i 7412
+
+#####################
+nc samr21-1.saclay.iot-lab.info 20000  (13:3a)
+
+nc samr21-3.saclay.iot-lab.info 20000
+
+########################
+iotlab-experiment submit -d 300 -l saclay,samr21,1,~/RIOT/examples/default/bin/samr21-xpro/default.elf
+
+iotlab-experiment submit -d 300 -l saclay,samr21,1,~/sink/default.elf
+
+
+
+
+################################
+iotlab-experiment submit -d 300 -l saclay,samr21,2-11,~/RIOT/examples/default/bin/samr21-xpro/default.elf
+
+iotlab-experiment submit -d 300 -l saclay,samr21,2,~/RIOT/examples/default/bin/samr21-xpro/default.elf
+
+iotlab-experiment submit -d 300 -l saclay,samr21,2-11,~/node/default.elf
+
+
+
+
+////////////////////lwmac
+
+nc samr21-1.saclay.iot-lab.info 20000
+
+iotlab-experiment submit -d 300 -l saclay,samr21,1,~/lwmac_sink/default.elf
+
+
+serial_aggregator -i
+
+iotlab-experiment submit -d 300 -l saclay,samr21,2-8,~/lwmac_node/default.elf
+
+iotlab-experiment submit -d 300 -l saclay,samr21,2,~/lwmac_node/default.elf
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
