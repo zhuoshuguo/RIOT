@@ -1,4 +1,4 @@
-
+zhuoshuguo
 
 user name : szhou
 
@@ -16,11 +16,16 @@ iotlab-experiment submit -d 150 -l strasbourg,m3,54,~/sink/sink.elf -l strasbour
 
 nc m3-54.strasbourg.iot-lab.info 20000
 
+nc m3-70.grenoble.iot-lab.info 20000
+
 
 iotlab-experiment submit -d 150 -l strasbourg,m3,54,~/sink/sink.elf -l strasbourg,m3,1-2+4+6-7+9+12-13+15+19-20+23+29-32+35-40,~/sender/gnrc_networking.elf
 
 //// Good-1
 iotlab-experiment submit -d 150 -l strasbourg,m3,54,~/sink/sink.elf -l strasbourg,m3,1-2+4+6-7+9+12-13+15+19-20+23+29-32+35-53+55-61,~/sender/gnrc_networking.elf
+
+//// Good-2 test
+iotlab-experiment submit -d 150 -l strasbourg,m3,54,~/sink/sink.elf -l strasbourg,m3,1-2+4+6-7+9+12-13+15+19-20+23+29-32+35-53+55-64,~/sender/gnrc_networking.elf
 
 //////////////////////   Grenoble  experiment
 
@@ -34,6 +39,12 @@ iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3
 
 /////////// GOOD
 iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,3+6+8+11+14+28+76+79+82+87+90+94+106+226+232-233+238-239+244-245+248+253+259+264-265+270-271+276-277+280+286,~/sender/gnrc_networking.elf
+
+
+/////////// GOOD -test
+iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,1-10+71-90+279-289,~/sender/gnrc_networking.elf
+
+
 
 ///////////////////////////
 
