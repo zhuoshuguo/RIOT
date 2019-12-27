@@ -17,6 +17,10 @@ iotlab-experiment submit -d 150 -l grenoble,m3,205,~/sink/sink.elf -l grenoble,m
 iotlab-experiment submit -d 150 -l strasbourg,m3,54,~/sink/sink.elf -l strasbourg,m3,1-2+4+6-7+9+12-13+15+19-20+23+29-32+35-53+55-64,~/sender/gnrc_networking.elf
 
 
+nc m3-54.strasbourg.iot-lab.info 20000
+
+nc m3-205.grenoble.iot-lab.info 20000
+
 
 /////////// GOOD
 iotlab-experiment submit -d 150 -l strasbourg,m3,54,~/sink/sink.elf -l strasbourg,m3,1-9+11-13+15+17-21+23+25+29+30-40,~/sender/gnrc_networking.elf
