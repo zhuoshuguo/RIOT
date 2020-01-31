@@ -83,6 +83,11 @@ static int _parse_packet(gnrc_pktsnip_t *pkt, gnrc_gomach_packet_info_t *info)
                                            GNRC_NETTYPE_GOMACH);
             break;
         }
+        case GNRC_GOMACH_FRAME_RIBEACON: {
+            gomach_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_preamble_t),
+                                           GNRC_NETTYPE_GOMACH);
+            break;
+        }
         case GNRC_GOMACH_FRAME_PREAMBLE_ACK: {
             gomach_snip = gnrc_pktbuf_mark(pkt, sizeof(gnrc_gomach_frame_preamble_ack_t),
                                            GNRC_NETTYPE_GOMACH);
@@ -570,7 +575,7 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
             case GNRC_GOMACH_FRAME_BROADCAST: {
                 /* Receive a broadcast packet, quit the listening period to avoid receive duplicate
                  * broadcast packet. */
-                gnrc_gomach_set_quit_cycle(gnrc_netdev, true);
+                //gnrc_gomach_set_quit_cycle(gnrc_netdev, true);
                 gnrc_gomach_dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
                 gnrc_mac_dispatch(&gnrc_netdev->rx);
                 break;
@@ -581,6 +586,71 @@ void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev)
             }
         }
     }
+}
+
+int gnrc_gomach_bcast_rcv_packet_process(gnrc_netdev_t *gnrc_netdev)
+{
+    assert(gnrc_netdev != NULL);
+
+    gnrc_pktsnip_t *pkt;
+    gnrc_gomach_packet_info_t receive_packet_info;
+
+    while ((pkt = gnrc_priority_pktqueue_pop(&gnrc_netdev->rx.queue)) != NULL) {
+        /* Parse the received packet, fetch key MAC informations. */
+        int res = _parse_packet(pkt, &receive_packet_info);
+        if (res != 0) {
+            LOG_DEBUG("[GOMACH] CP: Packet could not be parsed: %i\n", res);
+            gnrc_pktbuf_release(pkt);
+            continue;
+        }
+
+        switch (receive_packet_info.header->type) {
+            case GNRC_GOMACH_FRAME_PREAMBLE: {
+
+                gnrc_pktbuf_release(pkt);
+                return -1;
+            }
+
+            case GNRC_GOMACH_FRAME_DATA: {
+//                if (memcmp(&gnrc_netdev->l2_addr, &receive_packet_info.dst_addr.addr,
+//                           gnrc_netdev->l2_addr_len) == 0) {
+//                    /* The data is for itself, now update the sender's queue-length indicator. */
+//                    gnrc_gomach_indicator_update(gnrc_netdev, pkt, &receive_packet_info);
+//
+//                    /* Check that whether this is a duplicate packet. */
+//                    if ((gnrc_gomach_check_duplicate(gnrc_netdev, &receive_packet_info))) {
+//                        gnrc_pktbuf_release(pkt);
+//                        LOG_DEBUG("[GOMACH]: received a duplicate packet.\n");
+//                        return;
+//                    }
+//
+//                    gnrc_gomach_dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
+//                    gnrc_mac_dispatch(&gnrc_netdev->rx);
+//                }
+//                else {
+//                    /* If the data is not for the device, release it. */
+//                    gnrc_pktbuf_release(pkt);
+//                }
+                gnrc_pktbuf_release(pkt);
+                break;
+            }
+            case GNRC_GOMACH_FRAME_BROADCAST: {
+                gnrc_gomach_dispatch_defer(gnrc_netdev->rx.dispatch_buffer, pkt);
+                gnrc_mac_dispatch(&gnrc_netdev->rx);
+                break;
+            }
+            case GNRC_GOMACH_FRAME_RIBEACON: {
+            	gnrc_pktbuf_release(pkt);
+                return 1;
+            }
+            default: {
+                gnrc_pktbuf_release(pkt);
+                break;
+            }
+        }
+    }
+
+    return 0;
 }
 
 void gnrc_gomach_init_choose_subchannel(gnrc_netdev_t *gnrc_netdev)
@@ -644,6 +714,61 @@ int gnrc_gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_e
     pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
     if (pkt == NULL) {
         LOG_ERROR("ERROR: [GOMACH]: netif add failed in gnrc_gomach_send_preamble().\n");
+        gnrc_pktbuf_release(gomach_pkt);
+        return -ENOBUFS;
+    }
+    gomach_pkt = pkt;
+
+    gnrc_pktsnip_t *netif_snip = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
+    if (netif_snip == NULL) {
+        LOG_ERROR("[GOMACH]: No netif_hdr found in gnrc_gomach_send_preamble().\n");
+        gnrc_pktbuf_release(gomach_pkt);
+        return -ENOBUFS;
+    }
+    else {
+        nethdr_preamble = netif_snip->data;
+    }
+
+    /* Construct NETIF header and initiate address fields. */
+    gnrc_netif_hdr_init(nethdr_preamble, 0, 0);
+
+    /* Send preamble packet as broadcast. */
+    nethdr_preamble->flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
+
+    return gnrc_gomach_send(gnrc_netdev, pkt, csma_enable);
+}
+
+
+int gnrc_gomach_send_RI_beacon(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable)
+{
+    assert(gnrc_netdev != NULL);
+
+    gnrc_pktsnip_t *pkt;
+    gnrc_netif_hdr_t *nethdr_preamble;
+    gnrc_pktsnip_t *gomach_pkt;
+
+    /* Assemble the RI-beacon using preamble packet style. */
+    gnrc_gomach_frame_preamble_t gomach_preamble_hdr;
+
+    gomach_preamble_hdr.header.type = GNRC_GOMACH_FRAME_RIBEACON;
+
+    /* No need to use address */
+//    memcpy(gomach_preamble_hdr.dst_addr.addr,
+//           gnrc_netdev->tx.current_neighbor->l2_addr,
+//           gnrc_netdev->tx.current_neighbor->l2_addr_len);
+//    gomach_preamble_hdr.dst_addr.len = gnrc_netdev->tx.current_neighbor->l2_addr_len;
+
+    pkt = gnrc_pktbuf_add(NULL, &gomach_preamble_hdr, sizeof(gomach_preamble_hdr),
+                          GNRC_NETTYPE_GOMACH);
+    if (pkt == NULL) {
+        LOG_ERROR("ERROR: [GOMACH]: pktbuf add failed in gnrc_gomach_send_RI_beacon().\n");
+        return -ENOBUFS;
+    }
+    gomach_pkt = pkt;
+
+    pkt = gnrc_pktbuf_add(pkt, NULL, sizeof(gnrc_netif_hdr_t), GNRC_NETTYPE_NETIF);
+    if (pkt == NULL) {
+        LOG_ERROR("ERROR: [GOMACH]: netif add failed in gnrc_gomach_send_RI_beacon().\n");
         gnrc_pktbuf_release(gomach_pkt);
         return -ENOBUFS;
     }

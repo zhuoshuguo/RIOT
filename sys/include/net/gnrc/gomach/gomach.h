@@ -44,7 +44,7 @@ extern "C" {
  * In GoMacH, by default, we regard the wake-up period (WP) as the beginning of a cycle.
  */
 #ifndef GNRC_GOMACH_SUPERFRAME_DURATION_US
-#define GNRC_GOMACH_SUPERFRAME_DURATION_US        (200LU * US_PER_MS)
+#define GNRC_GOMACH_SUPERFRAME_DURATION_US        (500LU * US_PER_MS)
 #endif
 
 /**

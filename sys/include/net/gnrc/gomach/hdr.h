@@ -74,6 +74,8 @@ typedef struct {
  */
 #define GNRC_GOMACH_FRAME_ANNOUNCE           (0x06U)
 
+#define GNRC_GOMACH_FRAME_RIBEACON           (0x07U)
+
 /**
  * @brief   GoMacH frame header.
  */

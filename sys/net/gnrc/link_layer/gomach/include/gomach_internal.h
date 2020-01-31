@@ -846,6 +846,9 @@ void gnrc_gomach_indicator_update(gnrc_netdev_t *gnrc_netdev, gnrc_pktsnip_t *pk
  */
 void gnrc_gomach_cp_packet_process(gnrc_netdev_t *gnrc_netdev);
 
+
+int gnrc_gomach_bcast_rcv_packet_process(gnrc_netdev_t *gnrc_netdev);
+
 /**
  * @brief Choose a sub-channel for a device running GoMacH.
  *
@@ -874,6 +877,8 @@ int gnrc_gomach_bcast_subchann_seq(gnrc_netdev_t *gnrc_netdev, netopt_enable_t u
  * @return                 0< upon sending failure.
  */
 int gnrc_gomach_send_preamble(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable);
+
+int gnrc_gomach_send_RI_beacon(gnrc_netdev_t *gnrc_netdev, netopt_enable_t csma_enable);
 
 /**
  * @brief Process the received preamble-ACK packet to get phase-locked with the sender.
