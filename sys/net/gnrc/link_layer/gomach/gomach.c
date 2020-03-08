@@ -1863,7 +1863,7 @@ static void gomach_sleep_init(gnrc_netdev_t *gnrc_netdev)
 {
     /* Turn off the radio during sleep period to conserve power. */
     gnrc_gomach_set_netdev_state(gnrc_netdev, NETOPT_STATE_SLEEP);
-    printf("M: %u \n", RTT_TICKS_TO_MIN(rtt_get_counter()));
+    printf("M: %d \n", RTT_TICKS_TO_MIN(rtt_get_counter()));
 
     gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_SLEEP;
     gnrc_gomach_set_update(gnrc_netdev, true);
