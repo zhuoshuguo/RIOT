@@ -235,7 +235,7 @@ static void _gomach_rtt_handler(uint32_t event, gnrc_netdev_t *gnrc_netdev)
 
 static void gomach_bcast_init(gnrc_netdev_t *gnrc_netdev)
 {
-    puts("B");
+    //puts("B");
     /* Disable auto-ACK when sending broadcast packets, thus not to receive packet. */
     gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
 
@@ -316,7 +316,7 @@ static void gomach_send_bcast_packet(gnrc_netdev_t *gnrc_netdev)
 
     	    /* Start sending the broadcast packet. */
     	    gnrc_gomach_send(gnrc_netdev, gnrc_netdev->tx.packet, NETOPT_ENABLE);
-    	    printf("GoMacH: send bcast pkt \n");
+    	    //printf("GoMacH: send bcast pkt \n");
 
     	    gnrc_netdev->tx.bcast_state = GNRC_GOMACH_BCAST_WAIT_TX_FINISH;
     	    gnrc_gomach_set_update(gnrc_netdev, false);
@@ -995,7 +995,7 @@ static void gomach_t2u_init(gnrc_netdev_t *gnrc_netdev)
 {
     /* since t2u is right following CP period (wake-up period), the radio is still on,
      * so we don't need to turn on it again. */
-    puts("U");
+    //puts("U");
     LOG_DEBUG("[GOMACH] t2u initialization.\n");
 
     gnrc_netdev_set_rx_started(gnrc_netdev, false);
@@ -1445,7 +1445,7 @@ static void _gomach_phase_backoff(gnrc_netdev_t *gnrc_netdev)
 
     gnrc_gomach_update_neighbor_phase(gnrc_netdev);
 
-    puts("ph-bckf");
+    //puts("ph-bckf");
 }
 
 static void gomach_send_RI_beacon(gnrc_netdev_t *gnrc_netdev)
