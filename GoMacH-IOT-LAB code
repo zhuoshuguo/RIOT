@@ -10,6 +10,19 @@ ssh szhou@grenoble.iot-lab.info
 
 ssh szhou@strasbourg.iot-lab.info
 
+
+### Get experiments list with state Running 
+iotlab-experiment get -e
+
+
+iotlab-experiment get -l
+
+
+################ 集中显示节点输出命令
+serial_aggregator -i   
+
+
+
 //////////// Final exp
 
 iotlab-experiment submit -d 150 -l grenoble,m3,205,~/sink/sink.elf -l grenoble,m3,188-203+206-221+290-302,~/sender/gnrc_networking.elf
@@ -20,6 +33,8 @@ iotlab-experiment submit -d 150 -l strasbourg,m3,54,~/sink/sink.elf -l strasbour
 nc m3-54.strasbourg.iot-lab.info 20000
 
 nc m3-205.grenoble.iot-lab.info 20000
+
+nc m3-70.grenoble.iot-lab.info 20000
 
 
 /////////// GOOD
@@ -96,15 +111,7 @@ BOARD=samr21-xpro  make
 
 BOARD=iotlab-m3  make
 
-### Get experiments list with state Running
-iotlab-experiment get -e
-
-
-iotlab-experiment get -l
-
-
-################
-serial_aggregator -i       
+    
 
 
 iotlab-experiment  wait
