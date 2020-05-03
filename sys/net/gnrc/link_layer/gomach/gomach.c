@@ -1263,7 +1263,7 @@ static void gomach_t2u_send_data(gnrc_netdev_t *gnrc_netdev)
         if (gnrc_netdev->tx.packet != NULL) {
             gnrc_pktbuf_release(gnrc_netdev->tx.packet);
             gnrc_netdev->tx.packet = NULL;
-            nrc_netdev->gomach.t2u_error_loss_pkt ++;
+            gnrc_netdev->gomach.t2u_error_loss_pkt ++;
         }
 
         gnrc_netdev->tx.t2u_state = GNRC_GOMACH_T2U_END;
@@ -1377,7 +1377,7 @@ static void gomach_t2u_end(gnrc_netdev_t *gnrc_netdev)
             gnrc_netdev->tx.packet = NULL;
             gnrc_netdev->tx.no_ack_counter = 0;
             LOG_WARNING("WARNING: [GOMACH] t2u: drop packet.\n");
-            gnrc_netdev->gomach.final_loss_pkt ++;
+            gnrc_netdev->gomach.t2u_final_loss_pkt ++;
         }
         gnrc_netdev->tx.current_neighbor = NULL;
     }
@@ -1901,12 +1901,14 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
         gnrc_netdev->gomach.last_radio_on_time_ticks = gnrc_netdev->gomach.system_start_time_ticks;
         gnrc_netdev->gomach.awake_duration_sum_ticks = 0;
         gnrc_netdev->gomach.gomach_info |= GNRC_GOMACH_INTERNAL_INFO_RADIO_IS_ON;
+
+        gnrc_netdev->gomach.t2u_final_loss_pkt = 0;
+        gnrc_netdev->gomach.t2u_error_loss_pkt = 0;
     }
     
 
-    if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 60) && (gnrc_netdev->gomach.exp_end == false)) {
+    if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 60) && (gnrc_netdev->gomach.exp_started == true)) {
 
-    		gnrc_netdev->gomach.exp_end = true;
     		printf("Total record t2u final loss pkt num: %lu\n", (uint32_t)gnrc_netdev->gomach.t2u_final_loss_pkt);
     		printf("Total record t2u error loss pkt num: %lu\n", (uint32_t)gnrc_netdev->gomach.t2u_error_loss_pkt);
 
