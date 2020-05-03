@@ -1907,7 +1907,7 @@ static void gomach_sleep_end(gnrc_netdev_t *gnrc_netdev)
     }
     
 
-    if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 60) && (gnrc_netdev->gomach.exp_started == true)) {
+    if ((RTT_TICKS_TO_MIN(rtt_get_counter()) >= 50) && (gnrc_netdev->gomach.exp_started == true)) {
 
     		printf("Total record t2u final loss pkt num: %lu\n", (uint32_t)gnrc_netdev->gomach.t2u_final_loss_pkt);
     		printf("Total record t2u error loss pkt num: %lu\n", (uint32_t)gnrc_netdev->gomach.t2u_error_loss_pkt);
