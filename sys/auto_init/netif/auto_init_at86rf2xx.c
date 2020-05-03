@@ -17,7 +17,6 @@
  * @author  Kaspar Schleiser <kaspar@schleiser.de>
  */
 
-#ifdef MODULE_AT86RF2XX
 
 #include "board.h"
 #include "net/gnrc/netdev2.h"
@@ -67,8 +66,6 @@ void auto_init_at86rf2xx(void)
         }
     }
 }
-#else
-typedef int dont_be_pedantic;
-#endif /* MODULE_AT86RF2XX */
+
 
 /** @} */
