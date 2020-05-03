@@ -65,6 +65,9 @@
 
 #define NETDEV2_NETAPI_MSG_QUEUE_SIZE 8
 
+extern uint32_t t2u_final_loss_pkt;
+extern uint32_t tx_error_loss_pkt;
+
 
 static iqueuemac_t iqueuemac;
 
@@ -608,6 +611,7 @@ void iqueuemac_t2r_trans_in_cp(iqueuemac_t* iqueuemac){
 		if(iqueuemac->tx.tx_packet != NULL){
 			gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 			iqueuemac->tx.tx_packet = NULL;
+			tx_error_loss_pkt ++;
 		}
 
 		iqueuemac->tx.current_neighbour = NULL;
@@ -849,6 +853,7 @@ void iqueuemac_t2r_trans_in_slots(iqueuemac_t* iqueuemac){
 			if(iqueuemac->tx.tx_packet != NULL){
 				gnrc_pktbuf_release(iqueuemac->tx.tx_packet);
 				iqueuemac->tx.tx_packet = NULL;
+				tx_error_loss_pkt ++;
 			}
 			iqueuemac->tx.current_neighbour = NULL;
 			iqueuemac->device_states.iqueuemac_device_t2r_state = DEVICE_T2R_TRANS_END;
@@ -1398,6 +1403,7 @@ void iqueuemac_t2u_wait_tx_feedback(iqueuemac_t* iqueuemac){
 	    	    iqueuemac->tx.no_ack_contuer = 0;
 	    	    iqueuemac->tx.t2u_retry_contuer = 0;
 	    	    iqueuemac->device_states.iqueuemac_device_t2u_state = DEVICE_T2U_END;
+	    	    t2u_final_loss_pkt ++;
 	    	}else{
 	    		iqueuemac->tx.no_ack_contuer = IQUEUEMAC_REPHASELOCK_THRESHOLD;
 	    		netdev2_ieee802154_t *device_state = (netdev2_ieee802154_t *)iqueuemac->netdev->dev;
@@ -1427,6 +1433,7 @@ void iqueuemac_t2u_end(iqueuemac_t* iqueuemac){
 			iqueuemac->tx.tx_packet = NULL;
 			iqueuemac->tx.no_ack_contuer = 0;
 			//puts("drop pkt");
+			tx_error_loss_pkt ++;
 		}
 		iqueuemac->tx.current_neighbour = NULL;
 	}
@@ -1919,6 +1926,8 @@ void iqueue_mac_router_sleep_end(iqueuemac_t* iqueuemac){
 		duty = ((uint64_t) iqueuemac->awake_duration_sum)*100 / (duty - (uint64_t)iqueuemac->system_start_time);
 		printf("Device achieved duty-cycle: %lu %% \n", (uint32_t)duty);
 
+		printf("Device tx-error loss pkt: %lu %% \n", tx_error_loss_pkt);
+		printf("Device t2u final loss pkt: %lu %% \n", t2u_final_loss_pkt);
 	}
 }
 

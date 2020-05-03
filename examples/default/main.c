@@ -60,6 +60,9 @@ uint32_t own_address2;
 uint32_t exp_start_time;
 uint32_t exp_duration_ticks;
 
+uint32_t t2u_final_loss_pkt;
+uint32_t tx_error_loss_pkt;
+
 static void generate_and_send_pkt(void){
 
 	    kernel_pid_t dev;
@@ -84,10 +87,10 @@ static void generate_and_send_pkt(void){
 	    addr_len = 2;
 
 
-	    // set destination (sink) address
-		payload[3] = 0x0000133a;
-        addr[0] = 0x13;
-        addr[1] = 0x3a;
+	    // set destination (sink) address  grenoble m2-215  29:02
+		payload[3] = 0x00002902;
+        addr[0] = 0x29;
+        addr[1] = 0x02;
 
         payload[0] = send_counter;
         //printf("%lx: %lu.\n", payload[3],send_counter);
@@ -316,6 +319,9 @@ void *sender_thread(void *arg)
             	//printf("the exp-total_gene_num is %lu. \n", total_gene_num);
 
             	gnrc_pktbuf_release(pkt);
+
+            	t2u_final_loss_pkt = 0;
+            	tx_error_loss_pkt = 0;
 
             } break;
 
