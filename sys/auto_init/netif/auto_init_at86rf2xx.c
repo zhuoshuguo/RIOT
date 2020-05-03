@@ -22,11 +22,11 @@
 #include "board.h"
 #include "net/gnrc/netdev2.h"
 #include "net/gnrc/netdev2/ieee802154.h"
+#include "net/gnrc/iqueue_mac/iqueue_mac.h"
 #include "net/gnrc.h"
 
 #include "at86rf2xx.h"
 #include "at86rf2xx_params.h"
-#include "net/gnrc/iqueue_mac/iqueue_mac.h"
 
 #define ENABLE_DEBUG (0)
 #include "debug.h"
