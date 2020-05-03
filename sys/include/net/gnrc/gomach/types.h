@@ -298,6 +298,9 @@ typedef struct gomach {
     bool exp_started;
     uint32_t csma_count;
     uint32_t vtdma_count;
+
+    uint32_t t2u_final_loss_pkt;
+    uint32_t t2u_error_loss_pkt;
 } gnrc_gomach_t;
 
 #ifdef __cplusplus
