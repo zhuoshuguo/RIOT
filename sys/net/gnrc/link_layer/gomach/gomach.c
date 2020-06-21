@@ -1593,27 +1593,27 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
     /* If CP duration timeouted or we must quit CP, go to CP end. */
     if (gnrc_gomach_get_cp_end(gnrc_netdev)) {
         /* If we found ongoing reception, wait for reception complete. */
-        if (gnrc_netdev_get_rx_started(gnrc_netdev)) {
-            /* Set CP_end false! */
-            gnrc_gomach_set_cp_end(gnrc_netdev, false);
+//        if (gnrc_netdev_get_rx_started(gnrc_netdev)) {
+//            /* Set CP_end false! */
+//            gnrc_gomach_set_cp_end(gnrc_netdev, false);
+//
+//            gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
+//            gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END,
+//                                    GNRC_GOMACH_WAIT_RX_END_US);
+//
+//            gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
+//            gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END, GNRC_GOMACH_CP_DURATION_US);
+//        }
+//        else {
+//            gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
+//            gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
+//            gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
+//            gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX);
+//            gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_END;
+//            gnrc_gomach_set_update(gnrc_netdev, true);
+//       }
 
-            gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
-            gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END,
-                                    GNRC_GOMACH_WAIT_RX_END_US);
 
-            gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
-            gnrc_gomach_set_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END, GNRC_GOMACH_CP_DURATION_US);
-        }
-        else {
-            gnrc_gomach_set_autoack(gnrc_netdev, NETOPT_DISABLE);
-            gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
-            gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_END);
-            gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_CP_MAX);
-            gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_END;
-            gnrc_gomach_set_update(gnrc_netdev, true);
-       }
-
-        /*
         if ((gnrc_gomach_get_netdev_state(gnrc_netdev) == NETOPT_STATE_RX) &&
             (gnrc_netdev->gomach.cp_extend_count < GNRC_GOMACH_CP_EXTEND_THRESHOLD)) {
             gnrc_netdev->gomach.cp_extend_count++;
@@ -1628,7 +1628,7 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
             gnrc_netdev->rx.listen_state = GNRC_GOMACH_LISTEN_CP_END;
             gnrc_gomach_set_update(gnrc_netdev, true);
         }
-        */
+
     }
 }
 
