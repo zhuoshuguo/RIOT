@@ -10,6 +10,12 @@ ssh szhou@grenoble.iot-lab.info
 
 ssh szhou@strasbourg.iot-lab.info
 
+ssh szhou@grenoble.iot-lab.info
+
+
+/////////////////////////
+iotlab-experiment  wait
+
 
 ### Get experiments list with state Running 
 iotlab-experiment get -e
@@ -21,7 +27,30 @@ iotlab-experiment get -l
 ################ 集中显示节点输出命令
 serial_aggregator -i   
 
+serial_aggregator -i  210848 > test.log 2>&1 &  /// invalid
 
+serial_aggregator -i  210848  > data.txt &
+
+serial_aggregator -i  210848 >> data.txt &
+
+
+serial_aggregator -i 210857  > output.txt   //works!!
+
+ps -ef | grep serial_aggregator
+
+
+nc m3-1.saclay.iot-lab.info 20000
+
+./run.sh
+
+iotlab-experiment submit -d 150 -l strasbourg,m3,51,~/sink/sink.elf
+
+
+
+///////test t2u loss
+iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,3+6+8+11+28+76+79+82+87+90+94+106+226+232-233+238-239+244-245+248+253+259+264-265+270-271+276-277+280+286,~/sender/gnrc_networking.elf
+
+iotlab-experiment submit -d 150 -l saclay,m3,1,~/sink/sink.elf
 
 //////////// Final exp
 
@@ -64,7 +93,7 @@ iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3
 iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,3+6+8+11+28+76+79+82+87+90+94+106+226+232+238+244+248+252+258+264+270+276+280+286,~/sender/gnrc_networking.elf
 
 /////////// GOOD
-iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,3+6+8+11+14+28+76+79+82+87+90+94+106+226+232-233+238-239+244-245+248+253+259+264-265+270-271+276-277+280+286,~/sender/gnrc_networking.elf
+iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,3+6+8+11+28+76+79+82+87+90+94+106+226+232-233+238-239+244-245+248+253+259+264-265+270-271+276-277+280+286,~/sender/gnrc_networking.elf
 
 
 /////////// GOOD -test
@@ -96,7 +125,7 @@ iotlab-experiment submit -d 70 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,
    114   122
   130
 
-iotlab-experiment  wait
+
 
 
 nc m3-70.grenoble.iot-lab.info 20000
