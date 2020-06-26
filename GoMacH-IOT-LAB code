@@ -12,7 +12,9 @@ ssh szhou@strasbourg.iot-lab.info
 
 ssh szhou@grenoble.iot-lab.info
 
+ce7dcbb218
 
+////////////////// 
 /////////////////////////
 iotlab-experiment  wait
 
@@ -33,7 +35,7 @@ serial_aggregator -i  210848  > data.txt &
 
 serial_aggregator -i  210848 >> data.txt &
 
-
+sdfasdf
 serial_aggregator -i 210857  > output.txt   //works!!
 
 ps -ef | grep serial_aggregator
@@ -48,6 +50,10 @@ iotlab-experiment submit -d 150 -l strasbourg,m3,51,~/sink/sink.elf
 
 
 ///////test t2u loss
+# 10 nodes:  T-shape style
+iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,3+7+75+79+82+85+268+274+280+286,~/sender/gnrc_networking.elf
+
+
 iotlab-experiment submit -d 150 -l grenoble,m3,70,~/sink/sink.elf -l grenoble,m3,3+6+8+11+28+76+79+82+87+90+94+106+226+232-233+238-239+244-245+248+253+259+264-265+270-271+276-277+280+286,~/sender/gnrc_networking.elf
 
 iotlab-experiment submit -d 150 -l saclay,m3,1,~/sink/sink.elf
