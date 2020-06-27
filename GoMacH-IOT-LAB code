@@ -26,6 +26,8 @@ iotlab-experiment get -e
 iotlab-experiment get -l
 
 
+nc m3-70.grenoble.iot-lab.info 20000
+
 ################ 集中显示节点输出命令
 serial_aggregator -i   
 
