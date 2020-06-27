@@ -1595,6 +1595,7 @@ static void gomach_listen_cp_listen(gnrc_netdev_t *gnrc_netdev)
         /* If we found ongoing reception, wait for reception complete. */
         if (gnrc_netdev_get_rx_started(gnrc_netdev)) {
             /* Set CP_end false! */
+        	printf("[shuguo]:BG \n");
             gnrc_gomach_set_cp_end(gnrc_netdev, false);
 
             gnrc_gomach_clear_timeout(gnrc_netdev, GNRC_GOMACH_TIMEOUT_WAIT_RX_END);
