@@ -2087,7 +2087,7 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
         DEBUG("gnrc_netdev: event triggered -> %i\n", event);
         switch (event) {
             case NETDEV_EVENT_RX_STARTED: {
-            	printf("[Shuguo]: NETDEV_EVENT_RX_STARTED \n");
+            	printf("rx: s\n");
                 gnrc_netdev_set_rx_started(gnrc_netdev, true);
                 gnrc_gomach_set_update(gnrc_netdev, true);
                 break;
@@ -2105,6 +2105,7 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                     break;
                 }
 
+                /*
                 if (!gnrc_netdev_get_rx_started(gnrc_netdev)) {
                     LOG_DEBUG("[GOMACH] gnrc_netdev: maybe sending kicked in "
                               "and frame buffer is now corrupted?\n");
@@ -2112,6 +2113,7 @@ static void _event_cb(netdev_t *dev, netdev_event_t event)
                     gnrc_netdev_set_rx_started(gnrc_netdev, false);
                     break;
                 }
+                */
 
                 gnrc_netdev_set_rx_started(gnrc_netdev, false);
 
