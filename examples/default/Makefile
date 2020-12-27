@@ -51,14 +51,18 @@ ifneq (,$(filter $(BOARD),$(BOARD_PROVIDES_NETIF)))
   USEMODULE += gnrc_txtsnd
   # the application dumps received packets to stdout
   USEMODULE += gnrc_pktdump
+  
+  USEMODULE += gnrc_gomach
+  CFLAGS += -DGNRC_PKTBUF_SIZE=8192
+
 
   # We use only the lower layers of the GNRC network stack, hence, we can
   # reduce the size of the packet buffer a bit
-  CFLAGS += -DGNRC_PKTBUF_SIZE=512
+
 endif
 
 FEATURES_OPTIONAL += config
-FEATURES_OPTIONAL += periph_rtc
+#FEATURES_OPTIONAL += periph_rtc
 
 ifneq (,$(filter msb-430,$(BOARD)))
   USEMODULE += sht11
