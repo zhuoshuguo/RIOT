@@ -52,7 +52,7 @@ uint32_t send_counter;
 static void generate_and_send_pkt(void){
 
 	    kernel_pid_t dev;
-	    uint8_t addr[2];
+	    uint8_t addr[8];
 	    size_t addr_len;
 	    gnrc_pktsnip_t *hdr;
 	    int16_t dev2;
@@ -71,13 +71,31 @@ static void generate_and_send_pkt(void){
 	    /* parse interface */
 	    dev = (kernel_pid_t)dev2;
 
-	    addr_len = 2;
+//	    addr_len = 2;
+//
+//
+//	    // set destination (sink) address
+//		payload[3] = 0x0000331e;
+//        addr[0] = 0x1e;
+//        addr[1] = 0x33;
 
 
-	    // set destination (sink) address
+	    addr_len = 8;
+
+	    // set destination (sink) address  79:67:35:7e:54:3a:79:f6
 		payload[3] = 0x0000331e;
-        addr[0] = 0x1e;
-        addr[1] = 0x33;
+        addr[0] = 0x79;
+        addr[1] = 0x67;
+
+        addr[2] = 0x35;
+        addr[3] = 0x7e;
+
+        addr[4] = 0x54;
+        addr[5] = 0x3a;
+
+        addr[6] = 0x79;
+        addr[7] = 0xf6;
+
 
         payload[0] = send_counter;
         //printf("%lx: %lu.\n", payload[3],send_counter);
@@ -151,10 +169,19 @@ void *sender_thread(void *arg)
 
 //   data_interval = (uint32_t) data_rate * 1000;
 
+   	if (own_address2 == 0x4262) {
+   	   	printf("Shuguo: cool! I can send packet \n");
+   	} else {
+   		printf("Shuguo: sad! I can't send packet \n");
+   	}
+
    while (1) {
    	xtimer_sleep(1);
-   	printf("Shuguo: cool! And send packet \n");
-   	generate_and_send_pkt();
+   	if (own_address2 == 0x4262) {
+   	   	//printf("Shuguo: cool! And send packet \n");
+   	   	generate_and_send_pkt();
+   	}
+
 
 //	uint32_t random_wait_period;
 //	random_wait_period = random_uint32_range(data_interval - 500000, data_interval + 500000);
