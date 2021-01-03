@@ -121,14 +121,14 @@ static void _dump(gnrc_pktsnip_t *pkt)
     }
 
     printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
-
+ */
 
 	counter ++;
 	uint32_t *payload;
 	payload = pkt->data;
 
-	printf("%lx, %lu, %lu \n",payload[0],payload[1],counter);
- */
+	printf("from %lx, send-cnt-%lu, total-%lu \n", payload[1], payload[0], counter);
+
     gnrc_pktbuf_release(pkt);
 }
 
