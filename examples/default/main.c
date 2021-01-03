@@ -98,7 +98,7 @@ static void generate_and_send_pkt(void){
 
 
         payload[0] = send_counter;
-        //printf("%lx: %lu.\n", payload[3],send_counter);
+        printf("src: %lx:  ; send cnt: %lu.\n", payload[1],send_counter);
 
 	    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
 	    if(hdr == NULL){
@@ -169,14 +169,14 @@ void *sender_thread(void *arg)
 
 //   data_interval = (uint32_t) data_rate * 1000;
 
-   	if (own_address2 == 0x4262) {
+   	if (own_address2 == 0x4262) {  //6142
    	   	printf("Shuguo: cool! I can send packet \n");
    	} else {
    		printf("Shuguo: sad! I can't send packet \n");
    	}
 
    while (1) {
-   	xtimer_sleep(1);
+   	xtimer_sleep(3);
    	if (own_address2 == 0x4262) {
    	   	//printf("Shuguo: cool! And send packet \n");
    	   	generate_and_send_pkt();
