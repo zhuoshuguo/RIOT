@@ -36,6 +36,8 @@
 #include "od.h"
 
 uint32_t counter;
+uint32_t sender_array[10];
+uint32_t sender_tx_array[10];
 
 /**
  * @brief   PID of the pktdump thread
@@ -123,11 +125,43 @@ static void _dump(gnrc_pktsnip_t *pkt)
     printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
  */
 
+
 	counter ++;
 	uint32_t *payload;
 	payload = pkt->data;
 
 	printf("from %lx, send-cnt-%lu, total-%lu \n", payload[1], payload[0], counter);
+
+
+	/******************** Check for Leaking *********************/
+	uint32_t sender_addr;
+	uint8_t sender_seq;
+	uint32_t data_sum= 0;
+
+	sender_addr = payload[1];
+
+	sender_seq = 0;
+	for (int i=0;i<10;i++) {
+		if (sender_addr == sender_array[i]) {
+			break;
+		}
+
+		if (sender_array[i] != 0) {
+			sender_seq ++;
+		}
+	}
+
+	sender_array[sender_seq] = sender_addr;
+
+	sender_tx_array[sender_seq] = payload[0];
+
+
+	for (int i=0;i<10;i++) {
+		data_sum += sender_tx_array[i];
+	}
+	if (data_sum > counter) {
+		printf("[Shuguo]: Leaking!! Total sent - %lu, Rx-Cnt - %lu  \n", data_sum, counter);
+	}
 
     gnrc_pktbuf_release(pkt);
 }
@@ -145,6 +179,11 @@ static void *_eventloop(void *arg)
     reply.type = GNRC_NETAPI_MSG_TYPE_ACK;
 
     counter = 0;
+
+	for (int i=0;i<10;i++) {
+		sender_array[i] = 0;
+		sender_tx_array[i] = 0;
+	}
 
     while (1) {
         msg_receive(&msg);

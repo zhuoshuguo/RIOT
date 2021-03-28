@@ -83,18 +83,19 @@ static void generate_and_send_pkt(void){
 	    addr_len = 8;
 
 	    // set destination (sink) address  79:67:35:7e:54:3a:79:f6
+	    // 79:67:3d:4b:83:20:42:62
 		payload[3] = 0x0000331e;
         addr[0] = 0x79;
         addr[1] = 0x67;
 
-        addr[2] = 0x35;
-        addr[3] = 0x7e;
+        addr[2] = 0x3d;
+        addr[3] = 0x4b;
 
-        addr[4] = 0x54;
-        addr[5] = 0x3a;
+        addr[4] = 0x83;
+        addr[5] = 0x20;
 
-        addr[6] = 0x79;
-        addr[7] = 0xf6;
+        addr[6] = 0x42;
+        addr[7] = 0x62;
 
 
         payload[0] = send_counter;
@@ -143,6 +144,7 @@ void *sender_thread(void *arg)
 
 
     int16_t devpid;
+    uint32_t  max_sender_packet_num = 0;
 
     devpid = 4;
 
@@ -169,16 +171,46 @@ void *sender_thread(void *arg)
 
 //   data_interval = (uint32_t) data_rate * 1000;
 
+    /************** Experiment settings! ***************/
+    printf("########### Experiment settings! ########### \n");
+
+    max_sender_packet_num = 1000;
+
+    printf("[Shuguo]: max_sender_packet_num is %lu ! \n", max_sender_packet_num);
+    /************** End of Experiment settings! ***************/
+
+    printf("########### Experiment settings! ########### \n \n");
+
+    printf("###########  Self introduction!  ########### \n");
    	if (own_address2 == 0x4262) {  //6142
-   	   	printf("Shuguo: cool! I can send packet \n");
+   	   	printf("[Shuguo]: cool! I'm 0x4262, I am the server for processing packets!! \n");
    	} else {
-   		printf("Shuguo: sad! I can't send packet \n");
+   		printf("[Shuguo]: Ready to roll, we can send packets!! \n");
+   		printf("[Shuguo]: wait for 5 seconds to roll. \n");
+   		xtimer_sleep(5);
+   	}
+   	printf("###########  Self introduction!  ########### \n \n");
+
+
+   	if (own_address2 != 0x4262) {
+   	   	printf("############### Random wait ################ \n");
+   		uint32_t random_wait_period;
+   		random_wait_period = random_uint32_range(500, 3000);
+   	   	printf("[Shuguo]: start random wait of %lu us , Knock it! \n", random_wait_period);
+   	   	xtimer_usleep(random_wait_period);
+
+   	   	printf("[Shuguo]: Random wait finished, start Rolling! \n");
+   	   	printf("############### Random wait ################ \n \n");
    	}
 
    while (1) {
-   	xtimer_sleep(3);
-   	if (own_address2 == 0x4262) {
+   	xtimer_sleep(1);
+   	if (own_address2 != 0x4262) {
    	   	//printf("Shuguo: cool! And send packet \n");
+   		if (send_counter >= max_sender_packet_num) {
+   			printf("[Shuguo]: End of fun, now knock it off!! \n");
+   			break;
+   		}
    	   	generate_and_send_pkt();
    	}
 
